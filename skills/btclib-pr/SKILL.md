@@ -815,9 +815,10 @@ three hold on its head**:
   ([ISS 152](https://github.com/btclib-org/claude-process/issues/152)).
 
 Each pull request is armed on its own measurement: never by default, in
-bulk or by a workflow. Several may be armed at once. The bot's check is
-not a required check: a pull request armed earlier lands on an approval
-given before the bot answered, or after it asked for changes.
+bulk or by a workflow. Several may be armed at once, once *Landing* has
+tested their merge. The bot's check is not a required check: a pull
+request armed earlier lands on an approval given before the bot
+answered, or after it asked for changes.
 
 **The ACK may be missing only in these cases**, and in each the pull
 request is armed once every required check is green, no review thread
@@ -915,6 +916,88 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   mergeStateStatus`), read its threads first, with *What was raised*'s
   query, then its checks. Do not explain a block by a ruleset option you
   have not read.
+- **Before several pull requests land in one repository, test their
+  merge.** CI tested each against the `main` of its own run, and `main`
+  does not ask a head to be up to date with it (`CONTRIBUTING.md`'s
+  *Landing it*), so two green pull requests can turn `main` red. The set
+  is the pull requests about to be armed or landed and those already
+  armed, which *Arming auto-merge* lists. The test comes before any more
+  of them is armed, because auto-merge lands at a time the session does
+  not choose.
+
+  Every run of the test starts here, each repeat below included, because
+  fetching a pull request's ref leaves `origin/main` where it was:
+
+  ```shell
+  git -C <checkout> fetch origin
+  ```
+
+  The next command is run for each pull request. `<main sha>` is the
+  `origin/main` that fetch left, pinned (the shared *How you establish a
+  fact*), and each `<head>` is a `headRefOid`:
+
+  ```shell
+  git -C <checkout> fetch origin refs/pull/<n>/head
+  ```
+
+  ```shell
+  git -C <checkout> worktree add --detach <wt> <main sha>
+  ```
+
+  ```shell
+  git -C <wt> merge --no-ff --no-commit <head> <head> …
+  ```
+
+  With several heads `git merge` ignores `merge=union`, so it needs no
+  `-c`. Exit `0` leaves the merge staged and uncommitted. The tree's
+  gates run on it as the shared *The gates* says, the gate lock and
+  `gate_wait` included. A push to one of the pull requests voids the run.
+
+  **Where the merge exits non-zero, `merge-tree` says why.** This
+  exits `1` where `<a>` and `<b>` conflict. It runs on `<main sha>` with
+  each head, and on each pair of heads:
+
+  ```shell
+  git -C <wt> -c merge.union.driver=false \
+    merge-tree --write-tree --name-only <a> <b>
+  ```
+
+  A head that conflicts with `main` leaves the set and is rebased now.
+  Of a pair that conflicts, the repair of a red `main` lands first, then
+  the one approved on its head, since a push dismisses that approval,
+  then the lower number. The other of the pair leaves the set and is
+  rebased once the first has landed. Each rebase goes as the shared *A
+  rebase and the clearance* says. Where a head is an outside
+  contributor's, *Outside contributors* says who decides the order, and
+  `main` comes in by its merge, not a rebase.
+
+  Where every run exits `0`, the octopus failed on its own, as it does
+  on a file one head renames and another edits. Of the heads that change
+  the path its `ERROR:` line names, the last in that order leaves the
+  set, and is tested again once the others have landed.
+
+  A head that leaves the set is disarmed (*Arming auto-merge*), and the
+  test runs again on what remains. With one head left `git merge`
+  applies `merge=union`, so the `merge-tree` of `<main sha>` with that
+  head runs as well.
+
+  **A gate red on the merge and green on `main`** is a clash no merge
+  shows. The pull request it names gets the fix, in a new commit through
+  the shared *The rounds*, and the test runs again. A gate red on `main`
+  too is `main`'s, and *Landing*'s first bullet holds. That red can hide
+  a clash on that gate.
+
+  Whatever the outcome, `git -C <wt> merge --abort` ends the merge. It
+  exits `128` where an octopus stopped before its last head and left
+  nothing to abort. The worktree then goes (the shared *Debris goes when
+  its work ends*). Where a fixer left changes, the abort can exit `128`
+  too, and the worktree goes with `--force`.
+
+  The test covers those heads on that `main`, and nothing that lands
+  from outside the set afterwards. The re-read of armed pull requests in
+  the shared *A rebase and the clearance* reads their prose and runs no
+  gate.
+
 - **Squash, by auto-merge, armed as *Arming auto-merge* says.** The
   branch carries several commits once review has added any, so the
   subject and the message are written, not inherited:
