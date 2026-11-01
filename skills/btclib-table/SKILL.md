@@ -45,7 +45,8 @@ colours are the SVG's `fill` and `stop-color` values with an HSV
 saturation of 0.5 or more; the greys, white and black of the frame fall
 below that. An image renders green or blue where it has such a colour
 and each such colour has a hue from 70° (green) to 260° (blue). An image
-that does not download, or is grey only, does not.
+that does not download (a download that stalls for 10 s fails), or is
+grey only, does not.
 
 A `pypi/status` badge is not read: its colour is the development status,
 yellow at beta and red at alpha. A bestpractices badge titled `openssf
@@ -59,8 +60,11 @@ where a 404 means no README. A badge script that fails puts `error: the badge
 script failed` in `badges`. A row whose `iss` or `pr` holds an error is
 left out of the totals, and the last line says so.
 
-The measure reads six repositories at once, and the images of one README
-eight at a time. The rows print in repository order.
+The measure reads six repositories at once. Within one, it reads the
+counts, the CI, `release.yml` and the tags beside the README,
+`pyproject.toml` and the badges. It reads the workflows that get a call
+of their own eight at a time, as it does the images. The rows print in
+repository order.
 
 A PyPI project of the same name with no tag of ours is someone else's:
 say so in one line.
