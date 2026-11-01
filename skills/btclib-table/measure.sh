@@ -26,14 +26,84 @@ call() {
   printf '%s' "${o}"
 }
 r=$1
-iss=$(call gh issue list -R "btclib-org/${r}" --state open --limit 1000 \
-  --json number --jq length)
-prs=$(call gh pr list -R "btclib-org/${r}" --state open --limit 1000 \
-  --json number --jq length)
-case ${iss}${prs} in
-  *[!0-9]*) echo err > "${d}/${r}.tot" ;;
-  *) echo "${iss} ${prs}" > "${d}/${r}.tot" ;;
-esac
+# given a workflow id too: that workflow's ci entry, into "${d}/<repo>.wf.<id>"
+if [ $# -gt 1 ]; then
+  c=$(call gh api -X GET "repos/btclib-org/${r}/actions/workflows/${2}/runs" \
+    -f branch=main -f status=completed -f per_page=20 \
+    --jq "[.workflow_runs[] | select(.head_repository.full_name
+      == \"btclib-org/${r}\" and .conclusion != \"cancelled\")][0] // empty
+      | select(.conclusion | IN(\"success\", \"skipped\") | not)
+      | .name + \"=\" + .conclusion") || c="${2}=${c}"
+  printf '%s' "${c}" > "${d}/${r}.wf.${2}"
+  exit 0
+fi
+{
+  iss=$(call gh issue list -R "btclib-org/${r}" --state open --limit 1000 \
+    --json number --jq length)
+  prs=$(call gh pr list -R "btclib-org/${r}" --state open --limit 1000 \
+    --json number --jq length)
+  case ${iss}${prs} in
+    *[!0-9]*) echo err > "${d}/${r}.tot" ;;
+    *) echo "${iss} ${prs}" > "${d}/${r}.tot" ;;
+  esac
+  printf '%s' "iss=${iss} | pr=${prs}"
+} > "${d}/${r}.counts" &
+{
+  ci="" wfs=$(call gh api \
+    "repos/btclib-org/${r}/actions/workflows?per_page=100" \
+    --jq '.workflows[] | select(.state == "active")
+      | select(.path != ".github/workflows/release.yml") | .id') ||
+    ci="${wfs}"
+  if [ -z "${ci}" ] && [ -n "${wfs}" ]; then
+    ids=$(printf '%s' "${wfs}" | paste -sd, -)
+    page=$(call gh api -X GET "repos/btclib-org/${r}/actions/runs" \
+      -f branch=main -f status=completed -f per_page=100 \
+      --jq "[${ids}] as \$ids | .total_count as \$t | .workflow_runs as \$runs
+        | \$ids[] as \$w
+        | [\$runs[] | select(.workflow_id == \$w)] as \$mine
+        | [\$mine[:20][] | select(.head_repository.full_name
+            == \"btclib-org/${r}\" and .conclusion != \"cancelled\")][0] as \$c
+        | \"\(\$w)\t\" + if \$c != null then
+            (if \$c.conclusion | IN(\"success\", \"skipped\") then \"\"
+             else \"\(\$c.name)=\(\$c.conclusion)\" end)
+          elif (\$mine | length) >= 20 or \$t <= (\$runs | length) then \"\"
+          else \"?\" end") || page=""
+    # the workflows the page does not settle, or all where it failed, read
+    # eight at a time; the loop after it keeps the workflows' order
+    printf '%s\n' "${page:-$wfs}" | while read -r w c; do
+      if [ -n "${w}" ] && { [ "${c}" = "?" ] || [ -z "${page}" ]; }; then
+        echo "${w}"
+      fi
+    done > "${d}/${r}.todo"
+    [ ! -s "${d}/${r}.todo" ] ||
+      xargs -n 1 -P 8 sh "$0" "${r}" < "${d}/${r}.todo"
+    while read -r w c; do
+      [ -n "${w}" ] || continue
+      [ ! -f "${d}/${r}.wf.${w}" ] || c=$(cat "${d}/${r}.wf.${w}")
+      [ -z "${c}" ] || ci="${ci:+${ci},}${c}"
+    done <<EOF_WFS
+${page:-$wfs}
+EOF_WFS
+  fi
+  printf '%s' "${ci:-ok}"
+} > "${d}/${r}.ci" &
+{
+  rel=no
+  gh api "repos/btclib-org/${r}/contents/.github/workflows/release.yml" \
+    > /dev/null 2>&1 && rel=yes
+  printf '%s' "${rel}"
+} > "${d}/${r}.rel" &
+{
+  tag=$(gh api "repos/btclib-org/${r}/tags?per_page=100" --jq '.[].name' \
+    2>/dev/null | sort -V | tail -n 1)
+  since=""
+  [ -n "${tag}" ] && since=$(gh api \
+    "repos/btclib-org/${r}/compare/${tag}...HEAD" --jq '
+      .base_commit.commit.committer.date[:10] + " | since: "
+      + ([.commits[].commit.message | split("\n")[0]] | join(" || "))' \
+    2>/dev/null)
+  printf '%s' "tag=${tag:-none} ${since}"
+} > "${d}/${r}.tag" &
 badges="" readme=$(call gh api "repos/btclib-org/${r}/readme" \
   -H 'Accept: application/vnd.github.raw') || case ${readme} in
   *"(HTTP 404)"*) readme="" ;;
@@ -53,7 +123,8 @@ name, pypi = p.get("name", "-"), "-"
 if name != "-":
     url = f"https://pypi.org/pypi/{name}/json"
     try:
-        pypi = json.load(urllib.request.urlopen(url))["info"]["version"]
+        page = urllib.request.urlopen(url, timeout=10)
+        pypi = json.load(page)["info"]["version"]
     except Exception:
         pass
 deps = ", ".join(p.get("dependencies", [])) or "-"
@@ -61,7 +132,7 @@ r, bp = sys.argv[1:]
 bl3 = gold = "-"
 if bp:
     url = f"https://www.bestpractices.dev/projects/{bp}.json"
-    b = json.load(urllib.request.urlopen(url))
+    b = json.load(urllib.request.urlopen(url, timeout=10))
     url_seen = b["repo_url"]
     if url_seen.rstrip("/").split("/")[-1] not in (r, name):
         bl3 = gold = f"mismatch: {url_seen}"
@@ -70,41 +141,6 @@ if bp:
         gold = b["badge_percentage_2"]
 print(f"{name} | pypi={pypi} | bl3={bl3} gold={gold} | deps: {deps}")' \
   "${r}" "${bp}")
-ci="" wfs=$(call gh api \
-  "repos/btclib-org/${r}/actions/workflows?per_page=100" \
-  --jq '.workflows[] | select(.state == "active")
-    | select(.path != ".github/workflows/release.yml") | .id') ||
-  ci="${wfs}"
-if [ -z "${ci}" ] && [ -n "${wfs}" ]; then
-  ids=$(printf '%s' "${wfs}" | paste -sd, -)
-  page=$(call gh api -X GET "repos/btclib-org/${r}/actions/runs" \
-    -f branch=main -f status=completed -f per_page=100 \
-    --jq "[${ids}] as \$ids | .total_count as \$t | .workflow_runs as \$runs
-      | \$ids[] as \$w
-      | [\$runs[] | select(.workflow_id == \$w)] as \$mine
-      | [\$mine[:20][] | select(.head_repository.full_name
-          == \"btclib-org/${r}\" and .conclusion != \"cancelled\")][0] as \$c
-      | \"\(\$w)\t\" + if \$c != null then
-          (if \$c.conclusion | IN(\"success\", \"skipped\") then \"\"
-           else \"\(\$c.name)=\(\$c.conclusion)\" end)
-        elif (\$mine | length) >= 20 or \$t <= (\$runs | length) then \"\"
-        else \"?\" end") || page=""
-  while read -r w c; do
-    [ -n "${w}" ] || continue
-    if [ "${c}" = "?" ] || [ -z "${page}" ]; then
-      c=$(call gh api -X GET \
-        "repos/btclib-org/${r}/actions/workflows/${w}/runs" \
-        -f branch=main -f status=completed -f per_page=20 \
-        --jq "[.workflow_runs[] | select(.head_repository.full_name
-          == \"btclib-org/${r}\" and .conclusion != \"cancelled\")][0] // empty
-          | select(.conclusion | IN(\"success\", \"skipped\") | not)
-          | .name + \"=\" + .conclusion") || c="${w}=${c}"
-    fi
-    [ -z "${c}" ] || ci="${ci:+${ci},}${c}"
-  done <<EOF_WFS
-${page:-$wfs}
-EOF_WFS
-fi
 [ -n "${badges}" ] || badges=$(printf '%s' "${readme}" |
   uv run --no-project --python 3.15 python -c '
 import colorsys, re, sys, urllib.request
@@ -114,7 +150,7 @@ from concurrent.futures import ThreadPoolExecutor
 def check(url):
     req = urllib.request.Request(url, headers={"User-Agent": "btclib-table"})
     try:
-        svg = urllib.request.urlopen(req, timeout=30).read().decode()
+        svg = urllib.request.urlopen(req, timeout=10).read().decode()
     except Exception as e:
         return f"{url}: {e}"
     title = (re.findall(r"<title>([^<]*)", svg) or [url])[0]
@@ -138,20 +174,10 @@ urls = [u for u in urls if "/pypi/status/" not in u]
 with ThreadPoolExecutor(8) as pool:
     bad = [b for b in pool.map(check, urls) if b]
 print(" || ".join(bad))') || badges="error: the badge script failed"
-rel=no
-gh api "repos/btclib-org/${r}/contents/.github/workflows/release.yml" \
-  > /dev/null 2>&1 && rel=yes
-tag=$(gh api "repos/btclib-org/${r}/tags?per_page=100" --jq '.[].name' \
-  2>/dev/null | sort -V | tail -n 1)
-since=""
-[ -n "${tag}" ] && since=$(gh api \
-  "repos/btclib-org/${r}/compare/${tag}...HEAD" --jq '
-    .base_commit.commit.committer.date[:10] + " | since: "
-    + ([.commits[].commit.message | split("\n")[0]] | join(" || "))' \
-  2>/dev/null)
-printf '%s\n' "${r} | iss=${iss} | pr=${prs} | ${pkg} | release.yml=${rel}\
- | ci=${ci:-ok} | badges=${badges:-ok} | tag=${tag:-none} ${since}" \
-  > "${d}/${r}.row"
+wait
+printf '%s\n' "${r} | $(cat "${d}/${r}.counts") | ${pkg}\
+ | release.yml=$(cat "${d}/${r}.rel") | ci=$(cat "${d}/${r}.ci")\
+ | badges=${badges:-ok} | $(cat "${d}/${r}.tag")" > "${d}/${r}.row"
 EOF_ROW
 export d
 gh repo list btclib-org --no-archived --limit 200 \
