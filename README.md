@@ -10,8 +10,8 @@ workflow badge carries `?branch=main`, and its link the same filter. -->
 [![lint](https://github.com/btclib-org/ai-agents-process/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/btclib-org/ai-agents-process/actions/workflows/lint.yml?query=branch%3Amain)
 [![links](https://github.com/btclib-org/ai-agents-process/actions/workflows/links.yml/badge.svg?branch=main)](https://github.com/btclib-org/ai-agents-process/actions/workflows/links.yml?query=branch%3Amain)
 
-The process the btclib-org maintainers follow with a coding agent,
-[Claude Code](https://claude.com/claude-code) or
+The process the btclib-org maintainers follow with the coding agents
+[Claude Code](https://claude.com/claude-code) and
 [Codex](https://developers.openai.com/codex):
 
 - `skills/btclib-iss/SKILL.md` — the `/btclib-iss` skill, from an issue
@@ -50,7 +50,9 @@ process, and its *Clients* says what differs between the two agents.
 
 ## Prerequisites
 
-- Claude Code, Codex, or both.
+- Claude Code and Codex, both: a session runs in one, and its pull
+  requests' fresh reviewer in the other (`process/btclib-common.md`'s
+  *A pull request's rounds*).
 - `gh`, logged in (`gh auth login`).
 - `uv`.
 - `python3` on the `PATH`, which runs `scripts/git-c-allow.py`.
@@ -79,7 +81,7 @@ printf 'export PROCESS=%q\n' "${PROCESS:?}" >> ~/.zshenv
 git clone https://github.com/btclib-org/ai-agents-process "${PROCESS:?}"
 ```
 
-Then link its files where your agent reads them. Each link holds the
+Then link its files where each agent reads them. Each link holds the
 clone's path as it was when the link was made: a clone moved later
 leaves the links pointing at nothing; remove them and make them again
 from the new path. `ln -s` refuses to overwrite an existing file: move
