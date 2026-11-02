@@ -84,6 +84,17 @@ which tracker, the prefix says which kind.
 A workflow run, a job or an environment approval named to the human
 carries its URL.
 
+A pull request named to the human — in a decision, a report or a
+table — carries its diff balance, written `2 files, +50/-4`: the files
+changed, then the lines added and removed (`1 file` when it is one).
+For a pull request the counts are the forge's, `gh pr view` or
+`gh pr list` with `--json additions,deletions,changedFiles`. The forge
+counts against the branch the pull request targets, so a stacked pull
+request is measured against its parent. A branch not yet a pull
+request takes the same counts from
+`git diff --shortstat <base>...<head>`, `<base>` being the branch it
+will target.
+
 A bare `#123` stands only where the forge or the standard fixes the
 form: the closing keyword in a pull request body, and the `(closes #N)`
 or `(issue #N)` on the subject that lands (*Citations and closing
@@ -506,7 +517,11 @@ rule, and report the outcome in one line.
 
 - a brief context: what is at stake, why work stops here, and its link;
 - the recommendation first, with its reason;
-- the other alternatives, each with what it costs.
+- the other alternatives, each with what it costs;
+- where an alternative changes a pull request's diff, the delta it
+  brings, written as the diff balance is, measured on the alternative
+  drafted in a scratch worktree, or else estimated and marked as an
+  estimate.
 
 Number the alternatives, so that one number answers.
 

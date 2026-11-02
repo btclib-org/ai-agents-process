@@ -41,6 +41,15 @@ gh search prs --owner btclib-org --state open --review-requested @me \
   --limit 200 --json url
 ```
 
+`gh search prs` has no size fields, so each repository with open pull
+requests gives their diff balance (the shared *How an issue and a pull
+request are named*):
+
+```shell
+gh pr list --repo <owner>/<repo> --state open --limit 200 \
+  --json number,additions,deletions,changedFiles
+```
+
 Show the human one table, grouped:
 
 - waiting on the human's review;
@@ -51,11 +60,12 @@ Show the human one table, grouped:
 - outside contributors';
 - the rest: by day, listed and not worked.
 
-Each row is a `PR` link and what it waits on. A draft is listed and not
-worked. Then put one decision (the shared *When the human has to
-decide*): which to work, and in what order, the recommended order first
-with its reason. In a repository whose `main` is red, its repair comes
-first (*Landing*'s first bullet).
+Each row is a `PR` link with its diff balance (the shared *How an issue
+and a pull request are named*) and what it waits on. A draft is listed
+and not worked. Then put one decision (the shared *When the human has
+to decide*): which to work, and in what order, the recommended order
+first with its reason. In a repository whose `main` is red, its repair
+comes first (*Landing*'s first bullet).
 
 **At night, no decision is put: every pull request that is not a draft
 is worked** up to the approval, in the recommended order, a red `main`'s
