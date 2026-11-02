@@ -56,9 +56,12 @@ metal, grey `#c0c0c0` for silver.
 The other calls behind `iss`, `pr` and `ci`, and the README fetch, go
 through `call`: one that fails, or prints anything on stderr, puts
 `error:` and its message in that value, or in `badges` for the README,
-where a 404 means no README. A badge script that fails puts `error: the badge
-script failed` in `badges`. A row whose `iss` or `pr` holds an error is
-left out of the totals, and the last line says so.
+where a 404 means no README. A badge script that fails puts `error: the
+badge script failed` in `badges`. A bestpractices fetch that fails, or
+whose answer is not JSON holding the fields read, puts `error:` and its
+message in `bl3` and `gold`, and the row keeps its name, `pypi` and
+`deps`. A row whose `iss` or `pr` holds an error is left out of the
+totals, and the last line says so.
 
 The measure reads six repositories at once. Within one, it reads the
 counts, the CI, `release.yml` and the tags beside the README,
@@ -130,14 +133,14 @@ reads in the terminal:
 └───────────────┴─────┴────┴─────┴─────┴────┴────┴────────────┴─────┘
 ```
 
-The columns are Repository, ISS, PR, BL3, 🥇%, CI, 📛, last 🚀 and
-new 🚀?, in that order, each heading on two lines. The first line of ISS and
-PR is the total on the measure's last line, which leaves out a row whose
+The columns are Repository, ISS, PR, BL3, 🥇%, CI, 📛, last 🚀 and new 🚀?,
+in that order, each heading on two lines. The first line of ISS and PR
+is the total on the measure's last line, which leaves out a row whose
 ISS or PR count is an error. BL3 is the badge project's baseline
 percentage. 🥇% is its gold percentage, `🥇` where that is 100. Both are
 `-` where the repository has no badge project. CI and 📛 are `✅` where
-the measure's `ci` and `badges` say `ok`, and `❌` otherwise. An ISS or
-PR cell whose value is an error shows `err`.
+the measure's `ci` and `badges` say `ok`, and `❌` otherwise. An ISS, PR,
+BL3 or 🥇% cell whose value is an error shows `err`.
 
 last 🚀 is the latest tag without its leading `v`, `never` where
 there is none. A cell holds its value and nothing else.

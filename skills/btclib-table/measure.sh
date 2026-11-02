@@ -132,13 +132,17 @@ r, bp = sys.argv[1:]
 bl3 = gold = "-"
 if bp:
     url = f"https://www.bestpractices.dev/projects/{bp}.json"
-    b = json.load(urllib.request.urlopen(url, timeout=10))
-    url_seen = b["repo_url"]
-    if url_seen.rstrip("/").split("/")[-1] not in (r, name):
-        bl3 = gold = f"mismatch: {url_seen}"
-    else:
-        bl3 = b["badge_percentage_baseline_3"]
-        gold = b["badge_percentage_2"]
+    try:
+        b = json.load(urllib.request.urlopen(url, timeout=10))
+        url_seen = b["repo_url"]
+        if url_seen.rstrip("/").split("/")[-1] not in (r, name):
+            bl3 = gold = f"mismatch: {url_seen}"
+        else:
+            bl3 = b["badge_percentage_baseline_3"]
+            gold = b["badge_percentage_2"]
+    except Exception as e:
+        msg = " ".join(f"{type(e).__name__}: {e}".split())
+        bl3 = gold = f"error: {msg}"
 print(f"{name} | pypi={pypi} | bl3={bl3} gold={gold} | deps: {deps}")' \
   "${r}" "${bp}")
 [ -n "${badges}" ] || badges=$(printf '%s' "${readme}" |
