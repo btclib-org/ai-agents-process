@@ -126,6 +126,56 @@ the process names its own files by their path under it. Claude Code's
   `~/.codex/agents/*.toml`. It starts one when asked to spawn the custom
   agent of that name, and resumes one by a follow-up to its agent thread.
   Starting always makes a new agent.
+- **The reviewer in the other client** (*A pull request's rounds*) is
+  started from the shell, in a detached worktree at the sha to review.
+  Its brief, in a file of the scratch directory, holds what a fresh
+  reviewer's brief holds, the bot's prompt included. A new run of the
+  same command, whose brief adds its last verdict and the sha that
+  verdict named, is how it is resumed: for *The rounds* it is the same
+  reviewer, though a new process. A run that times out exits `124`.
+
+  Its sandbox refuses part of what a reviewer runs. Under Codex's
+  `-s read-only`, `git merge-tree --write-tree`, `git fetch` and `uv run`
+  fail with `Operation not permitted`, a heredoc cannot create its
+  temporary file, and `git log --format=%G?` reads a signed commit as
+  `N`. Under `workspace-write`, `uv run` and `%G?` fail the same way.
+  So the session that starts it first runs, outside any sandbox (from
+  Codex through an escalation request, as *Git writes under Codex*
+  says), `git fetch origin`, the `merge-tree` of *A pull request's
+  rounds*, the checks of *Signed and signed off* with the sign-off
+  control, and the gates where no run on the sha is on the record. The
+  brief carries them as runs on the record, the merge's tree sha
+  included, and asks for no heredoc. The reviewer relies on them, says
+  so, and reads with `git show` and `git diff` at shas, which the
+  sandbox allows.
+
+  Claude Code starts a Codex reviewer with `codex exec`. That spawns no
+  custom agent by name, so the brief's first sentence says to read
+  `~/.codex/agents/reviewer.toml` and follow it. `-o` writes its last
+  message, the verdict, to a file:
+
+  ```shell
+  env -C <wt> timeout 900 codex exec -s read-only --skip-git-repo-check \
+    -o <scratch>/<name>.last.md - \
+    < <scratch>/<name>-brief.txt > <scratch>/<name>.log 2>&1
+  ```
+
+  Codex starts a Claude Code reviewer with `claude -p --agent reviewer`,
+  outside its sandbox through an escalation request, as it does a git
+  write (*Git writes under Codex*). The brief goes on stdin, because
+  `--allowedTools` takes every argument after it, a trailing prompt
+  included. The `-u` flags keep the variables of a Claude Code session
+  out of it, and are harmless where unset:
+
+  ```shell
+  tools='Bash(git *),Bash(gh pr view *),Bash(gh issue view *),Bash(gh api *),'
+  tools="${tools}Bash(cat *),Bash(sed -n *),Bash(grep *),Read,Grep,Glob"
+  env -C <wt> -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT timeout 1800 \
+    claude -p --agent reviewer --max-turns 80 --output-format text \
+    --allowedTools "${tools:?}" \
+    < <scratch>/<name>-brief.txt > <scratch>/<name>.log 2>&1
+  ```
+
 - **Hooks.** Claude Code reads them from `~/.claude/settings.json`,
   Codex from `~/.codex/hooks.json`. Both run `scripts/git-c-allow.py`.
 - **Git writes under Codex.** Its `workspace-write` sandbox keeps each
@@ -1025,6 +1075,13 @@ The fresh reviewer is what reads the branch whole before GitHub's
 review bot. Without it, each finding the bot makes costs a push, a CI
 run and another bot run.
 
+- **The fresh reviewer runs in the other client**, on a model of a
+  vendor other than the writer's, because two models of one vendor
+  share blind spots. Where the writer runs in Claude Code, the fresh
+  reviewer runs in Codex, and the other way round. The dedicated
+  reviewer runs in the writer's client, and so does the fresh reviewer
+  of a text to be posted. *Clients* says how each client starts and
+  resumes a reviewer in the other.
 - The fresh reviewer reads the branch's whole diff from its parent,
   briefed with *Local review* and with the bot's prompt: the `prompt:`
   block of `btclib-org/.github`'s `reusable-claude-review.yml` at the ref
@@ -1314,7 +1371,9 @@ A pull request found with a false sentence is disarmed at once
   makes to the general model advice in `AGENTS.md`. The orchestrator may
   run on Opus. In Codex the agent files set no model: an agent runs on
   the one its spawn request names, else on the `[agents]` default of
-  `config.toml`, else on the orchestrator's.
+  `config.toml`, else on the orchestrator's. A reviewer `codex exec`
+  starts runs on the model `-m` names, else on the `model` of
+  `config.toml`.
 - **A worker that exceeds the time you set is interrupted**, not waited
   for.
 - **Writing runs in parallel; gating runs under the gate lock** (*The
