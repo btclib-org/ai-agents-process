@@ -101,8 +101,8 @@ is:
   branch becoming the writer's own. Where a session still holds it,
   stop.
 - **A bot's** — Dependabot, pre-commit.ci. The reviewer checks that the
-  diff moves what its title says and nothing else (but for `uv.lock`'s
-  `revision` line, as *The decision* says), and in which
+  diff moves what its title says and nothing else, `uv.lock` apart,
+  which *The decision*'s *The reproduced lock* measures, and in which
   direction: Dependabot follows the default branch, so a submodule
   pinned off it is offered a rollback. Its branch is the bot's: where
   it conflicts, the bot's own rebase command brings it up to date, or
@@ -433,8 +433,11 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
 - [ ] every other file in the list is a doc, a test, `pyproject.toml`
       or `uv.lock`, or the exported lock (*The exported lock*, below):
       the third command below prints nothing and exits `1`
-- [ ] `pyproject.toml` and `uv.lock` only move dependencies they
-      already hold to a new version, read from the fourth command below
+- [ ] `pyproject.toml` only moves requirements it already holds to a
+      new version, read from the fourth command below
+- [ ] the head's `uv.lock`, its `revision` line apart, is what uv
+      writes from the base's lock and the versions the body names (*The
+      reproduced lock*, below)
 - [ ] on a bot's pull request (*A bot's pins*, below), its pin files
       only move pins: the fifth command below prints nothing
 - [ ] a major move of a dependency, a hook or an action has the latest
@@ -488,22 +491,17 @@ grep -Ev '^(docs|tests)/|\.md$|^(pyproject\.toml|uv\.lock)$' <list file> |
   grep -vxFf <export file>
 ```
 
-The fourth prints the diff of `pyproject.toml` and `uv.lock`:
+The fourth prints the diff of `pyproject.toml`:
 
 ```shell
-awk '/^diff --git /{p = ($(3) == "a/pyproject.toml" || $(3) == "a/uv.lock")}
-  p' <diff file>
+awk '/^diff --git /{p = ($(3) == "a/pyproject.toml")} p' <diff file>
 ```
 
 It writes the third field as `$(3)`, and the fifth writes the line as
 `$(0)`: Claude Code replaces a `$` and a digit in a skill with an
 argument of the skill.
 
-Any other change in them fails this item, a new requirement or
-`[[package]]` included, but for one: the `revision = N` line at the top
-of `uv.lock` may change. The number depends on the uv that wrote the
-lock, and uv's documentation says it tracks backwards-compatible
-lockfile changes.
+Any other change in it fails this item, a new requirement included.
 
 **A bot's pins.** On a pull request whose `.author.login`, as `gh pr
 view` prints it, is `app/pre-commit-ci` or `app/dependabot`, the pin
@@ -546,18 +544,18 @@ awk '/^diff --git /{f = $(3); h = 1; r = ""
   END {for (k in n) if (n[k]) print "unpaired: " k}' <diff file>
 ```
 
-**The exported lock.** On a pull request whose `.author.login` is
-`app/dependabot`, and whose list holds
-`.clusterfuzzlite/requirements.txt`, that file passes the third command
-where the commands below regenerate it on `<sha>` and find it byte for
-byte the same
-([ISS 249](https://github.com/btclib-org/claude-process/issues/249)).
-They run the `uv-export` hook, which runs `uv export` with the tree's
-arguments, by the command the tree's `CONTRIBUTING.md` gives an owner
-(*A bot's*, under *Whose pull request it is*). The clone directory is a
-new one of your own. Shell state does not survive between calls
-(*Where you work*), so each fence sets the values it reads at its head:
-fill them in every fence.
+**The clone.** *The exported lock* and *The reproduced lock* run in one
+clone of `<sha>`, made once where either applies, before both. The
+clone directory is a new one of your own. Shell state does not survive
+between calls (*Where you work*), so each fence sets the values it reads
+at its head: fill them in every fence. `<base>` is the merge base of
+`<sha>` with `baseRefName` (*Whose pull request it is*), which this
+prints:
+
+```shell
+gh api --jq .merge_base_commit.sha \
+  repos/<owner>/<repo>/compare/<baseRefName>...<sha>
+```
 
 ```shell
 clone=<clone dir>
@@ -567,8 +565,10 @@ git init --quiet "${clone:?}"
 ```shell
 clone=<clone dir>
 sha=<sha>
+base=<base>
 repo=<owner>/<repo>
-git -C "${clone:?}" fetch --quiet --depth 1 "https://github.com/${repo:?}" "${sha:?}"
+git -C "${clone:?}" fetch --quiet --depth 1 "https://github.com/${repo:?}" \
+  "${sha:?}" "${base:?}"
 ```
 
 ```shell
@@ -576,6 +576,16 @@ clone=<clone dir>
 sha=<sha>
 git -C "${clone:?}" checkout --quiet --detach "${sha:?}"
 ```
+
+**The exported lock.** On a pull request whose `.author.login` is
+`app/dependabot`, and whose list holds
+`.clusterfuzzlite/requirements.txt`, that file passes the third command
+where the commands below regenerate it on `<sha>` and find it byte for
+byte the same
+([ISS 249](https://github.com/btclib-org/ai-agents-process/issues/249)).
+They run the `uv-export` hook, which runs `uv export` with the tree's
+arguments, by the command the tree's `CONTRIBUTING.md` gives an owner
+(*A bot's*, under *Whose pull request it is*), in the clone.
 
 The file is removed first, so that a hook that does not run leaves it
 missing, which the last command reads as a difference:
@@ -603,6 +613,78 @@ git -C "${clone:?}" cat-file -e "${sha:?}:.clusterfuzzlite/requirements.txt" &&
   echo .clusterfuzzlite/requirements.txt > "${exported:?}"
 ```
 
+**The reproduced lock.** Where the list holds `uv.lock`, the commands
+below run in the clone, after *The exported lock* where it applies,
+since its hook reads the head's lock. In place of the head's lock they
+put the base's, then move each package the pull request's body names
+to the version it names. Dependabot names a group's moves one a line,
+``Updates `x` from 1.0 to 1.1``, and a single move on the body's first
+line, which starts `Bumps [x]` and ends `from 1.0 to 1.1.` The fence
+below reads both forms. The item holds where the lock uv writes is the
+head's, byte for byte, but for the `revision = N` line at its top, whose
+number depends on the uv that wrote the lock. Every other change in the
+lock, such as a version moved, a package dropped, an extra emptied, a
+new requirement or a changed marker, is then what uv makes of those
+moves. Run them with a uv the tree's `[tool.uv]` `required-version`
+admits, where one is set: uv refuses any other.
+
+uv resolves what it adds or moves against the index as it is when the
+commands run. Where a release came out after the bot wrote its lock,
+the two locks can differ: the item then fails, and the human decides.
+
+This writes the moves, one `--upgrade-package` argument a line. It takes
+only a package name and a version from each line it reads, so the body
+can pass `uv lock` no other argument:
+
+```shell
+n=<n>
+repo=<owner>/<repo>
+moves=<moves file>
+gh pr view "${n:?}" --repo "${repo:?}" --json body --jq .body |
+  uv run --no-project --python 3.15 python -c 'import re, sys
+t = sys.stdin.read()
+N, V = r"([A-Za-z0-9][A-Za-z0-9._-]*)", r"([A-Za-z0-9._+!-]+)"
+m = re.findall(rf"^Updates `{N}` from \S+ to {V}$", t, re.M) + \
+    re.findall(rf"^Bumps \[{N}\]\(\S*\) from \S+ to {V}\.$", t, re.M)
+for n, v in sorted(set(m)):
+    print(f"--upgrade-package={n}=={v}")' > "${moves:?}"
+```
+
+This prints each package the head's lock adds, by name, for the
+approval's body (below):
+
+```shell
+clone=<clone dir>
+base=<base>
+git -C "${clone:?}" show "${base:?}:uv.lock" |
+  uv run --no-project --python 3.15 python -c 'import sys, tomllib
+b = {p["name"] for p in tomllib.loads(sys.stdin.read())["package"]}
+h = {p["name"] for p in tomllib.load(open(sys.argv[1], "rb"))["package"]}
+for n in sorted(h - b):
+    print(n)' "${clone:?}/uv.lock"
+```
+
+```shell
+clone=<clone dir>
+base=<base>
+git -C "${clone:?}" show "${base:?}:uv.lock" > "${clone:?}/uv.lock"
+```
+
+```shell
+clone=<clone dir>
+moves=<moves file>
+env -C "${clone:?}" uv lock $(cat "${moves:?}")
+```
+
+This exits `0` where the lock is the head's, its `revision` line apart:
+
+```shell
+clone=<clone dir>
+sha=<sha>
+git -C "${clone:?}" cat-file -e "${sha:?}:uv.lock" &&
+  git -C "${clone:?}" diff --quiet -I '^revision = [0-9]+$' -- uv.lock
+```
+
 Then the clone goes:
 
 ```shell
@@ -626,7 +708,8 @@ gh api repos/<owner>/<repo>/pulls/<n>/reviews -f event=APPROVE \
 The body is a one-line summary naming the head it approves, `<sha>`,
 then one paragraph: the `CLEARED` it relies on and the rebase case; the
 bot's ACK as a link, or during a 429 the 429 run as a link; that every
-check passed or was skipped, the 429 run apart; for a major move, the
+check passed or was skipped, the 429 run apart; each package *The
+reproduced lock* finds the head's lock adds; for a major move, the
 dependency, hook or action and the notes its `CLEARED` names; and what
 was not checked.
 
