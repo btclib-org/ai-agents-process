@@ -1004,8 +1004,9 @@ the orchestrator in the pull request.
 ## Local review
 
 **`REVIEWING.md` says what the reviewer looks for.** This section says
-how the rounds run. Every reviewer is a `reviewer` agent at fresh
-context, never the author on itself.
+how the rounds run, and what each reviewer does beyond `REVIEWING.md`.
+Every reviewer is a `reviewer` agent at fresh context, never the author
+on itself.
 
 ### The rounds
 
@@ -1054,20 +1055,64 @@ branch, or a text to be posted.
 - **The orchestrator checks that the rounds converge.** It keeps each
   verdict's findings, each marked open or closed, in a file in its
   scratch directory. The rounds do not converge where a closed finding
-  comes back, from any reviewer, or where a fix leaves the reviewer that
-  asked for it with as many findings as before, or more. Then the
-  orchestrator puts it to the human as one decision (*When the human has
-  to decide*): another round, the branch as it stands, or a cut-back,
-  with the writer's and the reviewer's positions. The rounds wait for
-  the answer.
+  comes back, from any reviewer, where a fix leaves the reviewer that
+  asked for it with as many findings as before, or more, or where the
+  third fresh reviewer since the dedicated reviewer last cleared, or any
+  after it, gives a first verdict of `CHANGES REQUESTED` with a finding
+  a prose-only fix cannot answer. Then the orchestrator puts it to the
+  human as one decision (*When the human has to decide*): another round,
+  the branch as it stands, or a cut-back, with the writer's and the
+  reviewer's positions. The rounds wait for the answer.
 - A non-blocking finding waits for the next change; *Which prose is
   worth a round* says which prose blocks.
+- **Every reviewer tries to break the change.** It lists each claim the
+  change makes — a behaviour, an equivalence with the code it replaces,
+  a bound, a figure in the commit message, the pull request body or a
+  text to be posted — and builds inputs meant to falsify each. They
+  cover the shapes `btclib-org/.github`'s `REVIEWING.md` lists in *What
+  a diff decides with is run, not read*, the ends of each range, and
+  what the tests do not reach. It runs them. A rule in prose is tried
+  the same way, on the cases it has to decide. Where the change makes
+  more claims than a handful of runs can try, the claims the tests reach
+  least go first, after the classes *The classes of defect found carry
+  forward* puts first. An input that breaks a claim is a finding. It
+  blocks where the claim is in the tree, or in a text to be posted that
+  the rounds review on its own, within the limit a differential *Done
+  when* sets (below); a claim of a branch's commit message, pull request
+  body or reply is weighed as *Which prose is worth a round* says. The
+  fix of a blocking one adds the input as a test where the tree tests
+  that code. The verdict lists each claim tried, with the inputs run
+  against it and what they printed, and names the claims left untried.
+- **Where an oracle is at hand, the inputs run through it**, rather than
+  being read against a specification: a built reference implementation,
+  such as Bitcoin Core or libsecp256k1, a second independent
+  implementation, or the base for a claim of equivalence. A difference
+  is a finding until it is explained. An oracle that would first have to
+  be built or installed is named in the verdict as not run. *Another
+  project's source is read from a checkout* says where a reference
+  implementation is found.
 - **A *Done when* that is a differential over generated inputs** (against
   Bitcoin Core or another implementation) has its input set fixed before
   the writer starts: a generator with its seed, or a corpus, named in the
   issue or the brief. Every reviewer judges the branch on that set. An
   input outside it blocks only where the branch does worse than `main`
   on it; otherwise it becomes a new issue.
+- **The classes of defect found carry forward.** The orchestrator's
+  findings file (*The orchestrator checks that the rounds converge*)
+  gives each finding its class: the shape of input or the step of
+  reasoning it broke. It records the findings of its own reviewers and
+  of every review on the forge, a review bot's and a maintainer's
+  included. The brief of each later reviewer of the branch, and of the
+  writer and the reviewer of another branch of the session on the same
+  files, lists the classes of the findings that held, and asks the
+  writer to guard against each and the reviewer to try each first. A
+  finding a forge review makes after a local `CLEARED`, and that holds
+  (the fix accepts it or the human upholds it), is marked in that file
+  as one the local rounds missed, and the session's report to the human
+  names its class and proposes where the next session will read it: for
+  a btclib-org tree, its `REVIEWING.md`'s *This repository in
+  particular*, or the shared part in `btclib-org/.github` where the
+  class is not that tree's own (*Wrap-up*).
 
 ### A pull request's rounds
 
@@ -1151,6 +1196,8 @@ run and another bot run.
 - [ ] which gate case you were in, and whose runs you rely on
 - [ ] every finding carries its measurement, and its weight (*Which
       prose is worth a round*)
+- [ ] the claims tried, as *Every reviewer tries to break the change*
+      says
 - [ ] where the change touches a rule the tree states, the writer's
       search is complete (*A rule stated more than once*)
 - [ ] on a branch, the prose it adds was read on the merge with
@@ -1416,8 +1463,8 @@ chmod -R u+w <dir>
 rm -rf <dir>
 ```
 
-At the end of a session, report two things to the human, and edit
-neither file on your own:
+At the end of a session, report these to the human, and edit none of
+the files they name on your own:
 
 - **What the session learned that could improve `AGENTS.md`**: a
   stable fact needed to work in this tree, what it says, and where it
@@ -1425,8 +1472,11 @@ neither file on your own:
 - **Where the process fell short of what the session needed**: a rule
   unclear when it mattered, a case it had no answer for. Say what and
   roughly where — this file or a skill.
+- **Each class of defect the local rounds missed**, and where the next
+  session will read it, as *The classes of defect found carry forward*
+  says.
 
-Both are proposals. Closing them is the human's call, and for the
+These are proposals. Closing them is the human's call, and for the
 process files the maintainer's, since they are shared. Each one that
 needs their answer is put to them as its own decision (*When the human
 has to decide*).
