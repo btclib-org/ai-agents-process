@@ -127,35 +127,55 @@ the process names its own files by their path under it. Claude Code's
   agent of that name, and resumes one by a follow-up to its agent thread.
   Starting always makes a new agent.
 - **The reviewer in the other client** (*A pull request's rounds*) is
-  started from the shell, in a detached worktree at the sha to review.
+  started from the shell, and reviews a detached worktree at the sha.
   Its brief, in a file of the scratch directory, holds what a fresh
   reviewer's brief holds, the bot's prompt included. A new run of the
   same command, whose brief adds its last verdict and the sha that
   verdict named, is how it is resumed: for *The rounds* it is the same
   reviewer, though a new process. A run that times out exits `124`.
 
-  Its sandbox refuses part of what a reviewer runs. Under Codex's
-  `-s read-only`, `git merge-tree --write-tree`, `git fetch` and `uv run`
-  fail with `Operation not permitted`, a heredoc cannot create its
-  temporary file, and `git log --format=%G?` reads a signed commit as
-  `N`. Under `workspace-write`, `uv run` and `%G?` fail the same way.
-  So the session that starts it first runs, outside any sandbox (from
-  Codex through an escalation request, as *Git writes under Codex*
-  says), `git fetch origin`, the `merge-tree` of *A pull request's
-  rounds*, the checks of *Signed and signed off* with the sign-off
-  control, and the gates where no run on the sha is on the record. The
-  brief carries them as runs on the record, the merge's tree sha
-  included, and asks for no heredoc. The reviewer relies on them, says
-  so, and reads with `git show` and `git diff` at shas, which the
-  sandbox allows.
+  In Codex it runs under `workspace-write` with one writable root: its
+  own directory in the scratch directory, which is also its working
+  directory. There it writes the inputs of *Every reviewer tries to
+  break the change* and runs them with `uv run`, its `UV_CACHE_DIR`
+  inside that directory. A write anywhere else fails with
+  `Operation not permitted`, the worktree it reviews included, and so do
+  `git fetch` and `git merge-tree --write-tree`, which write in the git
+  directory, and a heredoc, which cannot create its temporary file.
+  `git log --format=%G?` reads a signed commit as `N`. So the session
+  that starts it first runs, outside any sandbox, `git fetch origin`,
+  the `merge-tree` of *A pull request's rounds*, the checks of *Signed
+  and signed off* with the sign-off control, and the gates where no run
+  on the sha is on the record. The brief carries them as runs on the
+  record, the merge's tree sha included, names the worktree, and asks
+  for no heredoc. The reviewer relies on them, says so, and reads the
+  worktree with `git -C <wt> show` and `git diff` at shas, which the
+  sandbox allows. The session removes the reviewer's directory once that
+  reviewer's rounds end (*Debris goes when its work ends*).
 
   Claude Code starts a Codex reviewer with `codex exec`. That spawns no
   custom agent by name, so the brief's first sentence says to read
   `~/.codex/agents/reviewer.toml` and follow it. `-o` writes its last
-  message, the verdict, to a file:
+  message, the verdict, to a file. The `-c` settings replace any
+  `writable_roots` of `config.toml` with the reviewer's directory, keep
+  the network on for an input that installs a dependency, and drop
+  `/tmp` and `$TMPDIR`, which `workspace-write` otherwise makes
+  writable, a worktree under `/tmp` included. `--ignore-rules` keeps out
+  the user's `.rules` files: a command a rule allows, such as `git`,
+  runs outside the sandbox.
 
   ```shell
-  env -C <wt> timeout 900 codex exec -s read-only --skip-git-repo-check \
+  mkdir -p <scratch>/<name>
+  ```
+
+  ```shell
+  env -C <scratch>/<name> UV_CACHE_DIR=<scratch>/<name>/uv-cache \
+    timeout 900 codex exec -s workspace-write --skip-git-repo-check \
+    --ignore-rules \
+    -c 'sandbox_workspace_write.writable_roots=["<scratch>/<name>"]' \
+    -c sandbox_workspace_write.network_access=true \
+    -c sandbox_workspace_write.exclude_slash_tmp=true \
+    -c sandbox_workspace_write.exclude_tmpdir_env_var=true \
     -o <scratch>/<name>.last.md - \
     < <scratch>/<name>-brief.txt > <scratch>/<name>.log 2>&1
   ```
