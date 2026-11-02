@@ -142,9 +142,10 @@ as last pushed*, and its *Check what landed*. Under `--land`, all of
   worktrees hold here**, and *Debris goes when its work ends* removes
   the worktrees once the session hands the pull request over to whom it
   waits on.
-- **Report to the human** each pull request as a `PR` link, what it
-  closes, and whom it waits on or that it landed. What arrives after
-  the session ends — a review, a conflict with `main` — is
-  `/btclib-pr`'s.
+- **Report to the human** each pull request as a `PR` link with its
+  diff balance (the shared *How an issue and a pull request are
+  named*), what it closes, and whom it waits on or that it landed.
+  What arrives after the session ends — a review, a conflict with
+  `main` — is `/btclib-pr`'s.
 
 Then the shared *Wrap-up*.
