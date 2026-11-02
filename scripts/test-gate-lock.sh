@@ -2,7 +2,10 @@
 # Sessions ask for the gate lock's slots while others hold them:
 #
 #   sh scripts/test-gate-lock.sh [<gate-lock.sh>]
+#   TEST_GATE_LOCK_PS=1 sh scripts/test-gate-lock.sh [<gate-lock.sh>]
 #
+# The second form runs the sessions with libproc stubbed out, so that they
+# read start times through ps, as they do off macOS.
 # Each session is a `sh` of its own, since the holder is its PID. Load,
 # memory and disk are stubbed, so that the test does not depend on the
 # machine: a session redefines _gl_idle, _gl_load, _gl_level, _gl_free and
@@ -57,6 +60,9 @@
 # - The real _gl_idle prints an integer from 0 to 100.
 # - _gl_admit is called with each idle percentage, load, disk, level and
 #   free percentage in the tables below.
+# - Libproc and ps, where libproc reads this shell. Both print the same
+#   start time for a live process and nothing for a dead one, and a ticket
+#   written through either is alive to the other.
 
 # The stubs are called by the sourced script, and the script is a variable.
 # The stubs are text a session evals, and they read $idle.
@@ -80,6 +86,7 @@ stubs='
   _gl_free() { echo 50; }
   _gl_disk() { echo 100; }
 '
+[ -z "${TEST_GATE_LOCK_PS:-}" ] || stubs="$stubs _gl_libproc() { return 2; }"
 
 session() { # <name> <scratchpad> <seconds held>
   exec sh -c '
@@ -607,3 +614,27 @@ CASES
   exit "$bad"
 ) || exit 1
 echo "ok: memory is admissible at level 1, or at level 2 with 30% free, never at level 4"
+
+# Libproc and ps. A ticket is written by gate_take as "<pid>", its start
+# time and the worktree, one a line.
+(
+  . "$script"
+  _gl_libproc "$$" > /dev/null || { echo "skipped: libproc does not read this shell"; exit 0; }
+  sleep 30 &
+  live=$!
+  sh -c : &
+  dead=$!
+  wait "$dead"
+  lp=$(_gl_started "$live") lpdead=$(_gl_started "$dead")
+  printf '%s\n%s\n%s\n' "$live" "$lp" wt > "$tmp/ticket-libproc"
+  _gl_libproc() { return 2; }
+  ps=$(_gl_started "$live") psdead=$(_gl_started "$dead")
+  printf '%s\n%s\n%s\n' "$live" "$ps" wt > "$tmp/ticket-ps"
+  _gl_alive "$tmp/ticket-libproc" || { echo "FAIL: ps reads a ticket written through libproc as dead"; kill "$live"; exit 1; }
+  . "$script"
+  _gl_alive "$tmp/ticket-ps" || { echo "FAIL: libproc reads a ticket written through ps as dead"; kill "$live"; exit 1; }
+  kill "$live"
+  [ -n "$lp" ] && [ "$lp" = "$ps" ] || { echo "FAIL: libproc '$lp', ps '$ps'"; exit 1; }
+  [ -z "$lpdead" ] && [ -z "$psdead" ] || { echo "FAIL: dead pid: libproc '$lpdead', ps '$psdead'"; exit 1; }
+  echo "ok: libproc and ps both read '$lp' for a live process and nothing for a dead one"
+) || exit 1
