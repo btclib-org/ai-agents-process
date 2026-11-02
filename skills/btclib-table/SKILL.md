@@ -85,7 +85,7 @@ with no section heading (the human knows them):
    organization's;
 1. packages that depend on other packages of the organization, each
    below every one it depends on;
-1. bbt, btclib-benchmarks and btclib-functional-tests: they depend on
+1. bbt, benchmarks and functional-tests: they depend on
    the organization's packages, and have no tag and no `release.yml`;
 1. portanode: it uses no package of the organization;
 1. btclib-org.github.io: it has a folder for each other repository.
