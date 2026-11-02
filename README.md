@@ -1,4 +1,4 @@
-# claude-process
+# ai-agents-process
 
 <!-- One badge per property of the tree, in the order section 2 of
 btclib-org/.github's README.md fixes. Nothing here is a Python package
@@ -6,9 +6,9 @@ and there is no `release.yml`, so the first group is empty; the second
 holds the gates, pre-commit.ci and then `lint`, and then the sentinels,
 which section 10's record gives this tree as `links` alone. Every
 workflow badge carries `?branch=main`, and its link the same filter. -->
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/btclib-org/claude-process/main.svg)](https://results.pre-commit.ci/latest/github/btclib-org/claude-process/main)
-[![lint](https://github.com/btclib-org/claude-process/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/btclib-org/claude-process/actions/workflows/lint.yml?query=branch%3Amain)
-[![links](https://github.com/btclib-org/claude-process/actions/workflows/links.yml/badge.svg?branch=main)](https://github.com/btclib-org/claude-process/actions/workflows/links.yml?query=branch%3Amain)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/btclib-org/ai-agents-process/main.svg)](https://results.pre-commit.ci/latest/github/btclib-org/ai-agents-process/main)
+[![lint](https://github.com/btclib-org/ai-agents-process/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/btclib-org/ai-agents-process/actions/workflows/lint.yml?query=branch%3Amain)
+[![links](https://github.com/btclib-org/ai-agents-process/actions/workflows/links.yml/badge.svg?branch=main)](https://github.com/btclib-org/ai-agents-process/actions/workflows/links.yml?query=branch%3Amain)
 
 The process the btclib-org maintainers follow with a coding agent,
 [Claude Code](https://claude.com/claude-code) or
@@ -65,10 +65,10 @@ and where every later shell reads it, `~/.zshenv` for zsh: each command
 either agent runs is a new shell, and the process finds its files
 through `$PROCESS`. The clone can sit at any absolute path without `"`,
 `$`, `` ` ``, `\`, `|` or `&`, which the hook below cannot carry;
-`~/Git/claude-process` is only an example:
+`~/Git/ai-agents-process` is only an example:
 
 ```shell
-export PROCESS=~/Git/claude-process
+export PROCESS=~/Git/ai-agents-process
 ```
 
 ```shell
@@ -76,7 +76,7 @@ printf 'export PROCESS=%q\n' "${PROCESS:?}" >> ~/.zshenv
 ```
 
 ```shell
-git clone https://github.com/btclib-org/claude-process "${PROCESS:?}"
+git clone https://github.com/btclib-org/ai-agents-process "${PROCESS:?}"
 ```
 
 Then link its files where your agent reads them. Each link holds the

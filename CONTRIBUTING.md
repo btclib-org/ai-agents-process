@@ -384,6 +384,6 @@ own absence is this section instead. Measured rather than asserted, and
 re-derivable, each answering `0`:
 
 ```shell
-gh api repos/btclib-org/claude-process/releases --jq 'length'
-gh api repos/btclib-org/claude-process/tags --jq 'length'
+gh api repos/btclib-org/ai-agents-process/releases --jq 'length'
+gh api repos/btclib-org/ai-agents-process/tags --jq 'length'
 ```
