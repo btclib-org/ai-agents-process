@@ -269,7 +269,7 @@ them.
 
   **After a close and reopen, a check `gh pr checks` shows as skipped may
   have failed**
-  ([ISS 198](https://github.com/btclib-org/claude-process/issues/198)).
+  ([ISS 198](https://github.com/btclib-org/ai-agents-process/issues/198)).
   `gh pr checks` shows one run of each check. A workflow that runs on the
   `closed` event and skips its jobs there writes a skipped run of each,
   and that run can be the one shown. This writes the name of each check
@@ -425,7 +425,7 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
       holds no `CHANGES_REQUESTED`
 - [ ] no item waits on a decision or on the author, and the branch
       takes no decision its issue reserved
-- [ ] the repository is not `btclib-org/claude-process`, whose every
+- [ ] the repository is not `btclib-org/ai-agents-process`, whose every
       file gives instructions or rules
 - [ ] the list holds no file that gives instructions or rules: the
       first command below prints nothing, and the second, where it
@@ -708,8 +708,8 @@ actor, as above, and is otherwise armed.
 
 A pull request whose description says it breaks the live setup, in a
 *Breaks* section as
-[PR 175](https://github.com/btclib-org/claude-process/pull/175) has, is
-put to the human before it lands through the bypass.
+[PR 175](https://github.com/btclib-org/ai-agents-process/pull/175)
+has, is put to the human before it lands through the bypass.
 
 ## Outside contributors
 
@@ -822,7 +822,7 @@ three hold on its head**:
 - every required check passed or was skipped;
 - the review bot's latest review starts `ACK <head>`;
 - no review thread is unresolved, read as *What was raised* says
-  ([ISS 152](https://github.com/btclib-org/claude-process/issues/152)).
+  ([ISS 152](https://github.com/btclib-org/ai-agents-process/issues/152)).
 
 Each pull request is armed on its own measurement: never by default, in
 bulk or by a workflow. Several may be armed at once, once *Landing* has
@@ -841,7 +841,7 @@ is unresolved, and the latest fresh reviewer's `CLEARED` names the head:
   default branch's, and its check fails;
 - the pull request comes from a fork, `isCrossRepository` being `true`
   in *Whose pull request it is*
-  ([ISS 248](https://github.com/btclib-org/claude-process/issues/248)).
+  ([ISS 248](https://github.com/btclib-org/ai-agents-process/issues/248)).
   `btclib-org/.github`'s `reusable-claude-review.yml` skips the review
   where `head.repo.full_name` is not the calling repository. The human's
   approval then lands it (*Outside contributors*).
@@ -1093,12 +1093,12 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   Then run this section's first bullet again: where the merge turned
   `main` red, its repair comes first.
 
-- **A landing in `btclib-org/claude-process` brings its primary checkout
-  forward at once**, by the shared fast-forward. Where that checkout is
-  the clone `$PROCESS` names, every session reads the process through
-  it, and reads the old one until then. Then read a landed line back
-  where sessions read it: under `$PROCESS`, or through the link of the
-  skill or agent it changed.
+- **A landing in `btclib-org/ai-agents-process` brings its primary
+  checkout forward at once**, by the shared fast-forward. Where that
+  checkout is the clone `$PROCESS` names, every session reads the
+  process through it, and reads the old one until then. Then read a
+  landed line back where sessions read it: under `$PROCESS`, or through
+  the link of the skill or agent it changed.
 - **The collateral goes back now** (the shared *Collateral*), before
   anything new starts.
 - **Remove the worktrees** — yours, and tell the writer to remove its

@@ -22,7 +22,7 @@ listed rather than restated in a second place that would have to be kept
 true:
 
 ```shell
-grep -o 'repos/btclib-org/claude-process[a-z/-]*' REPOSITORY.md | sort -u
+grep -o 'repos/btclib-org/ai-agents-process[a-z/-]*' REPOSITORY.md | sort -u
 ```
 
 When each answer was read is the commit that wrote it: `git blame
@@ -38,7 +38,7 @@ preference.** Rulesets are a paid feature for a private repository on the
 free plan, and everything below depends on them.
 
 ```shell
-gh api repos/btclib-org/claude-process \
+gh api repos/btclib-org/ai-agents-process \
   --jq '{visibility, has_issues}'
 # {"has_issues":true,"visibility":"public"}
 ```
@@ -46,7 +46,7 @@ gh api repos/btclib-org/claude-process \
 ## Required checks on main
 
 ```shell
-gh api repos/btclib-org/claude-process/branches/main/protection \
+gh api repos/btclib-org/ai-agents-process/branches/main/protection \
   --jq '.required_status_checks | {strict, checks}'
 # {"checks":[{"app_id":15368,"context":"Lint"},
 #            {"app_id":15368,"context":"Dependency review"},
@@ -71,7 +71,7 @@ need not be up to date with `main`. All three contexts are bound to
 No ruleset on `main` carries a `required_status_checks` rule:
 
 ```shell
-gh api repos/btclib-org/claude-process/rules/branches/main \
+gh api repos/btclib-org/ai-agents-process/rules/branches/main \
   --jq '[.[] | {type, ruleset_id}]'
 ```
 
@@ -81,7 +81,7 @@ The protection is the same object `.github`, `portanode` and
 is in every ruleset over `main`. [Section 11][s11-branch] gives the reason for both.
 
 ```shell
-gh api repos/btclib-org/claude-process/branches/main/protection \
+gh api repos/btclib-org/ai-agents-process/branches/main/protection \
   --jq '{reviews: .required_pull_request_reviews
            | {n: .required_approving_review_count,
               dismiss: .dismiss_stale_reviews},
@@ -109,14 +109,14 @@ header says why.
 `main` is the repository's default branch and its only one:
 
 ```shell
-gh api repos/btclib-org/claude-process --jq '.default_branch'
+gh api repos/btclib-org/ai-agents-process --jq '.default_branch'
 # main
 ```
 
 ```shell
-gh api repos/btclib-org/claude-process/rulesets --jq '.[].id' \
+gh api repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
   | xargs -I{} gh api \
-    repos/btclib-org/claude-process/rulesets/{} \
+    repos/btclib-org/ai-agents-process/rulesets/{} \
     --jq '{name, target, enforcement, refs: .conditions.ref_name.include,
            rules: [.rules[].type],
            bypass: [.bypass_actors[]?.bypass_mode]}'
@@ -143,9 +143,9 @@ gh api repos/btclib-org/claude-process/rulesets --jq '.[].id' \
   `refs/tags/v*` rather than over a branch, with **no bypass actor**.
 
 ```shell
-gh api repos/btclib-org/claude-process/rulesets --jq '.[].id' \
+gh api repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
   | xargs -I{} gh api \
-    repos/btclib-org/claude-process/rulesets/{} \
+    repos/btclib-org/ai-agents-process/rulesets/{} \
     --jq '.rules[] | select(.type=="pull_request") | .parameters'
 # {"allowed_merge_methods":["squash"],
 #  "dismiss_stale_reviews_on_push":true,
@@ -157,7 +157,7 @@ gh api repos/btclib-org/claude-process/rulesets --jq '.[].id' \
 ```
 
 ```shell
-gh api repos/btclib-org/claude-process/rulesets/24293514 \
+gh api repos/btclib-org/ai-agents-process/rulesets/24293514 \
   --jq '.bypass_actors'
 # [{"actor_id":3296421,"actor_type":"User","bypass_mode":"pull_request"}]
 ```
@@ -186,7 +186,7 @@ lightweight, so the rule does not check a tag's signature
 ## Merge methods
 
 ```shell
-gh api repos/btclib-org/claude-process \
+gh api repos/btclib-org/ai-agents-process \
   --jq '{squash: .allow_squash_merge, merge: .allow_merge_commit,
          rebase: .allow_rebase_merge, auto: .allow_auto_merge,
          delete_on_merge: .delete_branch_on_merge,
@@ -207,7 +207,7 @@ merged pull request.
 ## Features
 
 ```shell
-gh api repos/btclib-org/claude-process \
+gh api repos/btclib-org/ai-agents-process \
   --jq '{wiki: .has_wiki, projects: .has_projects, issues: .has_issues}'
 # {"issues":true,"projects":false,"wiki":false}
 ```
@@ -223,7 +223,7 @@ here.
 answers with its absence**, so what is read is the status line alone:
 
 ```shell
-gh api -i repos/btclib-org/claude-process/pages 2>/dev/null | head -1
+gh api -i repos/btclib-org/ai-agents-process/pages 2>/dev/null | head -1
 # HTTP/2.0 404 Not Found
 ```
 
@@ -234,7 +234,7 @@ serves `btclib.org`, answers `HTTP/2.0 200 OK`, which is what makes the
 ## Topics
 
 ```shell
-gh api repos/btclib-org/claude-process --jq '.topics'
+gh api repos/btclib-org/ai-agents-process --jq '.topics'
 # ["btclib","claude-code","development-process"]
 ```
 
@@ -247,7 +247,7 @@ has no topics.
 ## The repository description
 
 ```shell
-gh api repos/btclib-org/claude-process --jq '{description, homepage}'
+gh api repos/btclib-org/ai-agents-process --jq '{description, homepage}'
 # {"description":"The btclib-org process for coding agents: the
 #  btclib-iss, btclib-pr and btclib-table skills, the file they share,
 #  and the writer and reviewer agents","homepage":null}
@@ -260,7 +260,7 @@ here.
 ## Token permissions
 
 ```shell
-gh api repos/btclib-org/claude-process/actions/permissions/workflow
+gh api repos/btclib-org/ai-agents-process/actions/permissions/workflow
 # {"default_workflow_permissions":"read",
 #  "can_approve_pull_request_reviews":false}
 ```
@@ -278,7 +278,7 @@ Whoever moves the organization default reads this repository back
 afterwards rather than assuming it moved.
 
 ```shell
-gh api repos/btclib-org/claude-process/actions/permissions \
+gh api repos/btclib-org/ai-agents-process/actions/permissions \
   --jq '{enabled, allowed_actions, sha_pinning_required}'
 # {"allowed_actions":"all","enabled":true,"sha_pinning_required":true}
 ```
@@ -289,7 +289,7 @@ the standard has the reasons for both fields][s11-tokens].
 ## Sign-off on web commits
 
 ```shell
-gh api repos/btclib-org/claude-process --jq .web_commit_signoff_required
+gh api repos/btclib-org/ai-agents-process --jq .web_commit_signoff_required
 # true
 gh api orgs/btclib-org --jq .web_commit_signoff_required
 # true
@@ -301,7 +301,7 @@ gives][s11-sigs].
 ## Secret scanning and Dependabot
 
 ```shell
-gh api repos/btclib-org/claude-process --jq '.security_and_analysis'
+gh api repos/btclib-org/ai-agents-process --jq '.security_and_analysis'
 # {"dependabot_security_updates":{"status":"enabled"},
 #  "secret_scanning":{"status":"enabled"},
 #  "secret_scanning_non_provider_patterns":{"status":"disabled"},
@@ -322,9 +322,9 @@ says so with its status — 204 for enabled, 404 for not — and security
 updates, the pull requests that answer an alert, at another:
 
 ```shell
-gh api -i repos/btclib-org/claude-process/vulnerability-alerts | head -1
+gh api -i repos/btclib-org/ai-agents-process/vulnerability-alerts | head -1
 # HTTP/2.0 204 No Content
-gh api repos/btclib-org/claude-process/automated-security-fixes
+gh api repos/btclib-org/ai-agents-process/automated-security-fixes
 # {"enabled":true,"paused":false}
 ```
 
@@ -338,7 +338,7 @@ pre-commit.ci for hook `rev:` bumps instead
 ## Private vulnerability reporting
 
 ```shell
-gh api repos/btclib-org/claude-process/private-vulnerability-reporting
+gh api repos/btclib-org/ai-agents-process/private-vulnerability-reporting
 # {"enabled":true}
 ```
 
@@ -350,7 +350,7 @@ one publishes nothing.
 ## Secrets and environments
 
 ```shell
-gh api repos/btclib-org/claude-process/actions/secrets \
+gh api repos/btclib-org/ai-agents-process/actions/secrets \
   --jq '[.secrets[].name]'
 # []
 gh api orgs/btclib-org/actions/secrets/CLAUDE_CODE_OAUTH_TOKEN \
@@ -369,7 +369,7 @@ Actions secrets, so a token registered only in the second resolves to the
 empty string on exactly the pull requests `.github/dependabot.yml` opens.
 
 ```shell
-gh api repos/btclib-org/claude-process/environments \
+gh api repos/btclib-org/ai-agents-process/environments \
   --jq '[.environments[].name]'
 # []
 ```
@@ -386,7 +386,7 @@ over one of the same name on the organization, so the repository's own
 store is read too:
 
 ```shell
-gh api repos/btclib-org/claude-process/actions/variables --jq .total_count
+gh api repos/btclib-org/ai-agents-process/actions/variables --jq .total_count
 # 0
 ```
 
@@ -395,14 +395,15 @@ gh api repos/btclib-org/claude-process/actions/variables --jq .total_count
 - **No code scanning**, and GitHub's default setup off with it:
 
   ```shell
-  gh api repos/btclib-org/claude-process/code-scanning/default-setup \
+  gh api repos/btclib-org/ai-agents-process/code-scanning/default-setup \
     --jq '{state, languages}'
-  # {"languages":["actions"],"state":"not-configured"}
+  # {"languages":["actions","python"],"state":"not-configured"}
   ```
 
   Section 10 of the standard names the trees that run `codeql`, and this
   is not one of them. Default setup would scan `actions`, the workflows
-  `actionlint` and `zizmor` read in the gate.
+  `actionlint` and `zizmor` read in the gate, and `python`, the scripts
+  `ruff` and `mypy` read there.
 - **No `SECURITY.md`, `RELEASING.md` or `RELEASE_NOTES.md`.** Those are
   the rows section 2 of the standard marks for a repository that
   publishes.
@@ -412,10 +413,10 @@ gh api repos/btclib-org/claude-process/actions/variables --jq .total_count
 The API answers for more than this repository decides, and what is left
 out is left out by the scope above rather than by oversight.
 
-**What no call sets.** `gh api repos/btclib-org/claude-process` answers
-with the repository document, most of which is URLs, counts and derived
-state. The fields of it that are settings are the ones the sections above
-quote.
+**What no call sets.** `gh api repos/btclib-org/ai-agents-process`
+answers with the repository document, most of which is URLs, counts and
+derived state. The fields of it that are settings are the ones the
+sections above quote.
 
 **A facility nobody reached for.** Self-hosted runners, webhooks, deploy
 keys, autolinks and custom property values each answer empty here, and an
