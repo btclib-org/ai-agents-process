@@ -162,14 +162,18 @@ the process names its own files by their path under it. Claude Code's
   `/tmp` and `$TMPDIR`, which `workspace-write` otherwise makes
   writable, a worktree under `/tmp` included. `--ignore-rules` keeps out
   the user's `.rules` files: a command a rule allows, such as `git`,
-  runs outside the sandbox.
+  runs outside the sandbox. `env -i` passes it only `HOME`, where Codex
+  finds its login, `PATH` and `UV_CACHE_DIR`, so the variables of the
+  session that starts it, its tokens included, do not reach what the
+  reviewer runs.
 
   ```shell
   mkdir -p <scratch>/<name>
   ```
 
   ```shell
-  env -C <scratch>/<name> UV_CACHE_DIR=<scratch>/<name>/uv-cache \
+  env -i -C <scratch>/<name> HOME="$HOME" PATH="$PATH" \
+    UV_CACHE_DIR=<scratch>/<name>/uv-cache \
     timeout 900 codex exec -s workspace-write --skip-git-repo-check \
     --ignore-rules \
     -c 'sandbox_workspace_write.writable_roots=["<scratch>/<name>"]' \
