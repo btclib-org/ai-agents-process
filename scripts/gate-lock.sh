@@ -68,9 +68,10 @@
 # A process is gone only where one of them answers that no process has its
 # PID. A process neither can read, as another user's under that sandbox,
 # counts as alive, so no waiter removes its ticket or its slot: where it
-# is in fact gone, its slot or ticket stays until the human removes it, as
-# below. Such a slot is one slot fewer; such a ticket, once the oldest,
-# holds every waiter behind it, and such a gate.generator every generator.
+# is in fact gone, its slot or ticket stays until the human removes it: a
+# slot as below, a ticket from gate.queue. Such a slot is one slot fewer;
+# such a ticket, once the oldest, holds every waiter behind it, and such a
+# gate.generator every generator.
 #
 # gate_take writes the holder's PID into the slot's owner file, so that
 # only the holder releases it. A slot whose holder's process is gone is
