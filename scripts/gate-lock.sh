@@ -65,6 +65,11 @@
 # A start time, and whether a process is alive, are read through libproc's
 # proc_pidinfo from /usr/bin/python3, which Codex's sandbox allows where it
 # refuses ps, and through ps where libproc cannot answer, as off macOS.
+# A process is gone only where one of them answers that no process has its
+# PID. A process neither can read, as another user's under that sandbox,
+# counts as alive, so no waiter removes its ticket or its slot: where it
+# is in fact gone, the lock waits until the human removes its slot, as
+# below, or its ticket from gate.queue.
 #
 # gate_take writes the holder's PID into the slot's owner file, so that
 # only the holder releases it. A slot whose holder's process is gone is
@@ -158,29 +163,45 @@ print("%s %s %d %02d:%02d:%02d %d" % (
 ' "$1" 2>/dev/null
 }
 
-# The start time of PID $1, in UTC, as `ps -o lstart=` prints it with its
-# spaces squeezed, or nothing where no process has that PID. Tickets carry
-# it, so libproc and ps print the same text: a ticket written through one
-# is read through the other. A zombie, which ps still lists, libproc
-# reads as gone.
+# Prints the start time of PID $1, in UTC, as `ps -o lstart=` prints it
+# with its spaces squeezed. Fails with 1 where no process has that PID, and
+# with 2 where neither libproc nor ps can tell. Tickets carry the time, so
+# libproc and ps print the same text: a ticket written through one is read
+# through the other. A zombie, which ps still lists, libproc reads as gone.
 _gl_started() {
   _gl_libproc "$1" && return 0
-  [ $? -eq 3 ] && return 0
+  [ $? -eq 3 ] && return 1
+  # ps exits 1 for a PID it does not find, 126 where it is refused and 127
+# where it is absent
+  _gl_ps=$(LC_ALL=C TZ=UTC0 ps -o lstart= -p "$1" 2>/dev/null)
+  case $? in
+    0) ;;
+    1) return 1 ;;
+    *) return 2 ;;
+  esac
+  [ -n "$_gl_ps" ] || return 2
   # ps pads the time with spaces, which `read` strips: squeeze them so that
   # the ticket and a fresh read compare equal
-  LC_ALL=C TZ=UTC0 ps -o lstart= -p "$1" 2>/dev/null |
-    tr -s ' ' | sed 's/^ //; s/ $//'
+  echo "$_gl_ps" | tr -s ' ' | sed 's/^ //; s/ $//'
 }
 
-# Succeeds while a process has PID $1
-_gl_running() { [ -n "$(_gl_started "$1")" ]; }
+# Succeeds unless no process has PID $1
+_gl_running() {
+  _gl_started "$1" >/dev/null
+  [ $? -ne 1 ]
+}
 
 _gl_alive() {
   # $1 is a ticket: "<pid>" on its first line, its start time on the second
   _gl_tpid="" _gl_tstart=""
   { { read -r _gl_tpid; read -r _gl_tstart; } < "$1"; } 2>/dev/null || return 1
-  [ -n "$_gl_tpid" ] && [ -n "$_gl_tstart" ] &&
-    [ "$(_gl_started "$_gl_tpid")" = "$_gl_tstart" ]
+  [ -n "$_gl_tpid" ] && [ -n "$_gl_tstart" ] || return 1
+  _gl_tnow=$(_gl_started "$_gl_tpid")
+  case $? in
+    0) [ "$_gl_tnow" = "$_gl_tstart" ] ;;
+    1) return 1 ;;
+    *) return 0 ;;
+  esac
 }
 
 # The 1-minute load, read under LC_ALL=C because some locales print a

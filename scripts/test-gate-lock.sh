@@ -60,9 +60,13 @@
 # - The real _gl_idle prints an integer from 0 to 100.
 # - _gl_admit is called with each idle percentage, load, disk, level and
 #   free percentage in the tables below.
+# - A process neither libproc nor ps can read is alive: its ticket is
+#   alive and its slot is not reclaimed. Once ps answers that no process
+#   has its PID, it is gone, and its slot is reclaimed.
 # - Libproc and ps, where libproc reads this shell. Both print the same
 #   start time for a live process and nothing for a dead one, and a ticket
-#   written through either is alive to the other.
+#   written through either is alive to the other. Libproc reads an
+#   unreaped zombie as gone.
 
 # The stubs are called by the sourced script, and the script is a variable.
 # The stubs are text a session evals, and they read $idle.
@@ -615,6 +619,31 @@ CASES
 ) || exit 1
 echo "ok: memory is admissible at level 1, or at level 2 with 30% free, never at level 4"
 
+# A process that cannot be read, then one ps answers is gone.
+(
+  . "$script"
+  _gl_libproc() { return 2; }
+  ps() { return 126; }
+  sh -c : &
+  dead=$!
+  wait "$dead"
+  _gl_d=$tmp/unread _gl_me=$$
+  _gl_s=$_gl_d/gate.lock
+  mkdir -p "$_gl_s"
+  echo "$dead 0 wt" > "$_gl_s/owner"
+  printf '%s\n%s\n%s\n' "$dead" "Mon Nov 2 00:00:00 2026" wt > "$tmp/ticket-unread"
+  _gl_running "$dead" || { echo "FAIL: a process ps cannot read is not running"; exit 1; }
+  _gl_alive "$tmp/ticket-unread" || { echo "FAIL: the ticket of a process ps cannot read is dead"; exit 1; }
+  ! _gl_reclaim > /dev/null && [ -f "$_gl_s/owner" ] ||
+    { echo "FAIL: the slot of a process ps cannot read was reclaimed"; exit 1; }
+  unset -f ps
+  ! _gl_running "$dead" || { echo "FAIL: a PID ps does not find is running"; exit 1; }
+  ! _gl_alive "$tmp/ticket-unread" || { echo "FAIL: the ticket of a PID ps does not find is alive"; exit 1; }
+  _gl_reclaim > /dev/null && [ ! -d "$_gl_s" ] ||
+    { echo "FAIL: the slot of a PID ps does not find was not reclaimed"; exit 1; }
+) || exit 1
+echo "ok: a process that cannot be read holds its slot, and one ps does not find loses it"
+
 # Libproc and ps. A ticket is written by gate_take as "<pid>", its start
 # time and the worktree, one a line.
 (
@@ -637,4 +666,19 @@ echo "ok: memory is admissible at level 1, or at level 2 with 30% free, never at
   [ -n "$lp" ] && [ "$lp" = "$ps" ] || { echo "FAIL: libproc '$lp', ps '$ps'"; exit 1; }
   [ -z "$lpdead" ] && [ -z "$psdead" ] || { echo "FAIL: dead pid: libproc '$lpdead', ps '$psdead'"; exit 1; }
   echo "ok: libproc and ps both read '$lp' for a live process and nothing for a dead one"
+  # a zombie: the shell that exec's sleep never waits for its child
+  sh -c 'sleep 0 & echo $! > "$1"; exec sleep 30' sh "$tmp/zombie" &
+  parent=$!
+  i=0
+  until [ -s "$tmp/zombie" ] && read -r zombie < "$tmp/zombie" &&
+    case $(ps -o stat= -p "$zombie") in Z*) true ;; *) false ;; esac; do
+    i=$((i + 1))
+    [ "$i" -le 30 ] || { echo "FAIL: no zombie to read"; kill "$parent"; exit 1; }
+    sleep 1
+  done
+  _gl_libproc "$zombie" > /dev/null
+  rc=$?
+  kill "$parent"
+  [ "$rc" -eq 3 ] || { echo "FAIL: libproc read the zombie $zombie with exit $rc, not 3"; exit 1; }
+  echo "ok: libproc reads a zombie, which ps lists, as gone"
 ) || exit 1
