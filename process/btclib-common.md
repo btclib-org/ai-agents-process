@@ -342,6 +342,24 @@ the process names its own files by their path under it. Claude Code's
   worktree beside it, not inside it. **Read back from the repository
   what you wrote from a file**: `git show -s --format=%B HEAD` after a
   `-F`, the committed file after a fixer.
+- **A deletion under test prints its path first.** Where a test, a
+  fixture or a rehearsal runs `rm` or another deletion on a path that a
+  tilde, a variable or a glob builds, run the same line first, in the
+  same shell, with `printf '[%s]\n'` in place of the command and its
+  options. Run the real line only where the `realpath` of every path
+  printed starts with the `realpath` of your scratch directory and a
+  `/`. Compared as text, a path inside your scratch directory can pass
+  through a symbolic link that leads out of it.
+
+  A tilde can escape a fixture's `HOME`: Homebrew's bash expands `~` to
+  the home it started with after a script assigns `HOME`, while `$HOME`
+  prints the new value
+  ([ISS ai-agents-process#273](https://github.com/btclib-org/ai-agents-process/issues/273)).
+
+  A cleanup is not under test: a deletion inside a directory that the
+  same script or session made, on a path built from the variable that
+  holds that directory, as `rm -r "$tmp"` after `tmp=$(mktemp -d)` or
+  `rm -rf "${clone:?}"`.
 - **A measurement that must hold is taken against shas**, `git show
   <sha>:<path>`, `git diff` and `git merge-tree` on explicit shas, not
   from a working file another session might share.
