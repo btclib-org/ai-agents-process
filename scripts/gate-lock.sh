@@ -50,9 +50,9 @@
 #   cat "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.lock*/owner
 #   cat "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.generator/owner
 #
-# and this the waiters, each ticket under its file name:
+# and this the waiters, each line of a ticket after its file name:
 #
-#   tail -n +1 "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.queue/*
+#   grep -r . "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.queue
 #
 # To check, from the repository root in a fresh sh, with a directory of
 # your own so as not to wait on a real gate:
