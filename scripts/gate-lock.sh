@@ -50,6 +50,10 @@
 #   cat "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.lock*/owner
 #   cat "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.generator/owner
 #
+# and this the waiters, each line of a ticket after its file name:
+#
+#   grep -r . "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.queue
+#
 # To check, from the repository root in a fresh sh, with a directory of
 # your own so as not to wait on a real gate:
 #
@@ -62,6 +66,16 @@
 # A ticket holds its PID, that process's start time, read in UTC, and the
 # worktree. A ticket whose process is gone, or whose PID now belongs to a
 # process started at another time, is dead, and any waiter removes it.
+# A start time, and whether a process is alive, are read through libproc's
+# proc_pidinfo from /usr/bin/python3, which Codex's sandbox allows where it
+# refuses ps, and through ps where libproc cannot answer, as off macOS.
+# A process is gone only where one of them answers that no process has its
+# PID. A process neither can read, as another user's under that sandbox,
+# counts as alive: a live one releases as any holder does, and a gone one
+# keeps its ticket or slot until the human removes it (a slot as below, a
+# ticket from gate.queue). Such a slot is one slot fewer; such a ticket,
+# once the oldest, holds every waiter behind it, and such a gate.generator
+# every generator.
 #
 # gate_take writes the holder's PID into the slot's owner file, so that
 # only the holder releases it. A slot whose holder's process is gone is
@@ -128,19 +142,72 @@ _gl_slot() {
   else _gl_s="$_gl_d/gate.lock.$1"; fi
 }
 
+# The start time of PID $1 read through libproc, as _gl_started prints it.
+# Exits 3 where no process has that PID, and any other code but 0 where
+# libproc cannot answer: off macOS, without /usr/bin/python3, or for
+# another user's process.
+_gl_libproc() {
+  /usr/bin/python3 -I -c '
+import ctypes, errno, struct, sys, time
+try:
+    proc_pidinfo = ctypes.CDLL("/usr/lib/libproc.dylib", use_errno=True).proc_pidinfo
+except (OSError, AttributeError):
+    sys.exit(2)
+pid = int(sys.argv[1])
+# PROC_PIDTBSDINFO fills a struct proc_bsdinfo of 136 bytes, its pid at
+# offset 12 and its start time in seconds at offset 120
+info = ctypes.create_string_buffer(136)
+if proc_pidinfo(pid, 3, ctypes.c_uint64(0), info, 136) != 136:
+    sys.exit(3 if ctypes.get_errno() == errno.ESRCH else 2)
+if struct.unpack_from("=I", info, 12)[0] != pid:
+    sys.exit(2)
+t = time.gmtime(struct.unpack_from("=Q", info, 120)[0])
+print("%s %s %d %02d:%02d:%02d %d" % (
+    "Mon Tue Wed Thu Fri Sat Sun".split()[t.tm_wday],
+    "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()[t.tm_mon - 1],
+    t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, t.tm_year))
+' "$1" 2>/dev/null
+}
+
+# Prints the start time of PID $1, in UTC, as `ps -o lstart=` prints it
+# with its spaces squeezed. Fails with 1 where no process has that PID, and
+# with 2 where neither libproc nor ps can tell. Tickets carry the time, so
+# libproc and ps print the same text: a ticket written through one is read
+# through the other. A zombie, which ps still lists, libproc reads as gone.
 _gl_started() {
+  _gl_libproc "$1" && return 0
+  [ $? -eq 3 ] && return 1
+  # ps exits 1 for a PID it does not find; the shell gives 126 or 127 where
+  # ps is refused or absent
+  _gl_ps=$(LC_ALL=C TZ=UTC0 ps -o lstart= -p "$1" 2>/dev/null)
+  case $? in
+    0) ;;
+    1) return 1 ;;
+    *) return 2 ;;
+  esac
+  [ -n "$_gl_ps" ] || return 2
   # ps pads the time with spaces, which `read` strips: squeeze them so that
   # the ticket and a fresh read compare equal
-  LC_ALL=C TZ=UTC0 ps -o lstart= -p "$1" 2>/dev/null |
-    tr -s ' ' | sed 's/^ //; s/ $//'
+  echo "$_gl_ps" | tr -s ' ' | sed 's/^ //; s/ $//'
+}
+
+# Succeeds unless no process has PID $1
+_gl_running() {
+  _gl_started "$1" >/dev/null
+  [ $? -ne 1 ]
 }
 
 _gl_alive() {
   # $1 is a ticket: "<pid>" on its first line, its start time on the second
   _gl_tpid="" _gl_tstart=""
   { { read -r _gl_tpid; read -r _gl_tstart; } < "$1"; } 2>/dev/null || return 1
-  [ -n "$_gl_tpid" ] && [ -n "$_gl_tstart" ] &&
-    [ "$(_gl_started "$_gl_tpid")" = "$_gl_tstart" ]
+  [ -n "$_gl_tpid" ] && [ -n "$_gl_tstart" ] || return 1
+  _gl_tnow=$(_gl_started "$_gl_tpid")
+  case $? in
+    0) [ "$_gl_tnow" = "$_gl_tstart" ] ;;
+    1) return 1 ;;
+    *) return 0 ;;
+  esac
 }
 
 # The 1-minute load, read under LC_ALL=C because some locales print a
@@ -214,7 +281,7 @@ _gl_held() {
     _gl_hn=$((_gl_hn + 1))
     _gl_hpid=""
     [ -r "$_gl_s/owner" ] && read -r _gl_hpid _ < "$_gl_s/owner"
-    [ -n "$_gl_hpid" ] && ps -p "$_gl_hpid" >/dev/null 2>&1 && return 0
+    [ -n "$_gl_hpid" ] && _gl_running "$_gl_hpid" && return 0
   done
   return 1
 }
@@ -236,7 +303,7 @@ _gl_reclaim() {
   _gl_pid=""
   [ -r "$_gl_s/owner" ] && read -r _gl_pid _ < "$_gl_s/owner"
   [ -n "$_gl_pid" ] || return 1
-  ! ps -p "$_gl_pid" >/dev/null 2>&1 || return 1
+  ! _gl_running "$_gl_pid" || return 1
   mv "$_gl_s/owner" "$_gl_s/stale.$_gl_me" 2>/dev/null || return 1
   _gl_now=""
   read -r _gl_now _ < "$_gl_s/stale.$_gl_me"
@@ -256,7 +323,7 @@ gate_take() {
   _gl_queue="$_gl_d/gate.queue"
   _gl_start=$(_gl_started "$_gl_me")
   [ -n "$_gl_start" ] || {
-    echo "gate_take: ps -o lstart= prints nothing for pid $_gl_me"
+    echo "gate_take: cannot read the start time of pid $_gl_me"
     return 1
   }
   _gl_ticket="$_gl_queue/$(date +%s).$(printf '%010d' "$_gl_me")"
