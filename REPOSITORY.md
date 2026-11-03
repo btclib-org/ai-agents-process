@@ -265,12 +265,21 @@ gh api repos/btclib-org/ai-agents-process/actions/permissions/workflow
 #  "can_approve_pull_request_reviews":false}
 ```
 
-`read` is the floor every workflow here starts from. `claude-review.yml`
-is the only one whose job elevates it — `pull-requests: write` to post a
-comment and `id-token: write` for the OIDC token the action mints at
-startup, on the `claude-review` job that calls `btclib-org/.github`'s
-`reusable-claude-review.yml`. `lint.yml` and `links.yml` read the tree
-and the network and write nothing back.
+`read` is the floor every workflow here starts from. A job that
+elevates it declares a scope at `write`, and this lists each such
+declaration:
+
+```shell
+git grep -nE '^ +[a-z-]+: write' -- .github/workflows/
+```
+
+`claude-review` takes `pull-requests: write` to post a comment, and
+`claude-implement` takes `issues: write` to post an assessment and apply
+a label. Each calls the `btclib-org/.github` workflow of its name with
+`reusable-` before it, and takes `id-token: write` for the OIDC token
+the action mints at startup. `claude-implement` also needs it for the
+token its callee's `publish` job trades for the App's token. `lint.yml`
+and `links.yml` read the tree and the network and write nothing back.
 
 **What this call cannot say is whether that value is this repository's
 own or the organization's**, there being no endpoint that answers.
@@ -361,12 +370,18 @@ gh api orgs/btclib-org/dependabot/secrets/CLAUDE_CODE_OAUTH_TOKEN \
 # all
 ```
 
-`claude-review.yml` is the only workflow here that reads a secret, and
-this repository holds none of its own. **The two organization commands
-are not one asked twice.** A `pull_request` run whose actor is
-`dependabot[bot]` is handed the Dependabot secrets rather than the
-Actions secrets, so a token registered only in the second resolves to the
-empty string on exactly the pull requests `.github/dependabot.yml` opens.
+This repository holds no secret of its own. A workflow here that reads
+one names it as `secrets.<name>`, and this lists those workflows:
+
+```shell
+git grep -lF 'secrets.' -- .github/workflows/
+```
+
+**The two organization commands above are not one asked twice.** A
+`pull_request` run whose actor is `dependabot[bot]` is handed the
+Dependabot secrets rather than the Actions secrets, so a token
+registered only in the second resolves to the empty string on exactly
+the pull requests `.github/dependabot.yml` opens.
 
 ```shell
 gh api repos/btclib-org/ai-agents-process/environments \
@@ -379,15 +394,26 @@ being published.
 
 ## Variables
 
-**A switch this repository does not set.** `claude-review.yml` calls
-`btclib-org/.github`'s `reusable-claude-review.yml`, whose jobs guard on
-`vars.CLAUDE_REVIEW_ENABLED`; a variable set here would take precedence
-over one of the same name on the organization, so the repository's own
-store is read too:
+**Switches this repository does not set.** A switch is a variable that
+the jobs of a `btclib-org/.github` workflow called here guard on:
+`reusable-claude-review.yml`, which `claude-review.yml` calls, guards
+on `vars.CLAUDE_REVIEW_ENABLED`, and `reusable-claude-implement.yml`,
+which `claude-implement.yml` calls, on `vars.CLAUDE_IMPLEMENT_ENABLED`.
+A variable set here would take precedence over one of the same name on
+the organization, so the repository's own store is read too:
 
 ```shell
 gh api repos/btclib-org/ai-agents-process/actions/variables --jq .total_count
 # 0
+```
+
+The organization does not set `CLAUDE_IMPLEMENT_ENABLED`, so the agent
+runs nothing here:
+
+```shell
+gh api -i orgs/btclib-org/actions/variables/CLAUDE_IMPLEMENT_ENABLED \
+  2>/dev/null | head -1
+# HTTP/2.0 404 Not Found
 ```
 
 ## What is not configured, and why
