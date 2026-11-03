@@ -68,8 +68,9 @@
 # A process is gone only where one of them answers that no process has its
 # PID. A process neither can read, as another user's under that sandbox,
 # counts as alive, so no waiter removes its ticket or its slot: where it
-# is in fact gone, the lock waits until the human removes its slot, as
-# below, or its ticket from gate.queue.
+# is in fact gone, its slot or ticket stays until the human removes it, as
+# below. Such a slot is one slot fewer; such a ticket, once the oldest,
+# holds every waiter behind it, and such a gate.generator every generator.
 #
 # gate_take writes the holder's PID into the slot's owner file, so that
 # only the holder releases it. A slot whose holder's process is gone is
@@ -172,7 +173,7 @@ _gl_started() {
   _gl_libproc "$1" && return 0
   [ $? -eq 3 ] && return 1
   # ps exits 1 for a PID it does not find, 126 where it is refused and 127
-# where it is absent
+  # where it is absent
   _gl_ps=$(LC_ALL=C TZ=UTC0 ps -o lstart= -p "$1" 2>/dev/null)
   case $? in
     0) ;;
