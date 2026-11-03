@@ -66,7 +66,8 @@
 # - Libproc and ps, where libproc reads this shell. Both print the same
 #   start time for a live process and nothing for a dead one, and a ticket
 #   written through either is alive to the other. Libproc reads an
-#   unreaped zombie as gone.
+#   unreaped zombie as gone. With ps refused, a dead PID and a zombie lose
+#   their ticket and their slot on libproc's answer alone.
 
 # The stubs are called by the sourced script, and the script is a variable.
 # The stubs are text a session evals, and they read $idle.
@@ -678,7 +679,24 @@ echo "ok: a process that cannot be read holds its slot, and one ps does not find
   done
   _gl_libproc "$zombie" > /dev/null
   rc=$?
+  # with ps refused, libproc alone says that both are gone
+  ps() { return 126; }
+  _gl_d=$tmp/refused _gl_me=$$
+  _gl_s=$_gl_d/gate.lock
+  for pid in "$dead" "$zombie"; do
+    mkdir -p "$_gl_s"
+    echo "$pid 0 wt" > "$_gl_s/owner"
+    printf '%s\n%s\n%s\n' "$pid" "Mon Nov 2 00:00:00 2026" wt > "$tmp/ticket-refused"
+    ! _gl_running "$pid" && ! _gl_alive "$tmp/ticket-refused" &&
+      _gl_reclaim > /dev/null && [ ! -d "$_gl_s" ] || {
+      echo "FAIL: with ps refused, PID $pid, gone to libproc, kept its ticket or slot"
+      kill "$parent"
+      exit 1
+    }
+  done
+  unset -f ps
   kill "$parent"
   [ "$rc" -eq 3 ] || { echo "FAIL: libproc read the zombie $zombie with exit $rc, not 3"; exit 1; }
   echo "ok: libproc reads a zombie, which ps lists, as gone"
+  echo "ok: with ps refused, a dead PID and a zombie lost their ticket and slot"
 ) || exit 1

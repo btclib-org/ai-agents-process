@@ -50,6 +50,10 @@
 #   cat "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.lock*/owner
 #   cat "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.generator/owner
 #
+# and this the waiters, each ticket under its file name:
+#
+#   tail -n +1 "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.queue/*
+#
 # To check, from the repository root in a fresh sh, with a directory of
 # your own so as not to wait on a real gate:
 #
@@ -67,11 +71,10 @@
 # refuses ps, and through ps where libproc cannot answer, as off macOS.
 # A process is gone only where one of them answers that no process has its
 # PID. A process neither can read, as another user's under that sandbox,
-# counts as alive, so no waiter removes its ticket or its slot: where it
-# is in fact gone, its slot or ticket stays until the human removes it: a
-# slot as below, a ticket from gate.queue. Such a slot is one slot fewer;
-# such a ticket, once the oldest, holds every waiter behind it, and such a
-# gate.generator every generator.
+# counts as alive, and keeps its ticket or slot until the human removes it
+# (a slot as below, a ticket from gate.queue). Such a slot is one slot
+# fewer; such a ticket, once the oldest, holds every waiter behind it, and
+# such a gate.generator every generator.
 #
 # gate_take writes the holder's PID into the slot's owner file, so that
 # only the holder releases it. A slot whose holder's process is gone is
@@ -173,8 +176,8 @@ print("%s %s %d %02d:%02d:%02d %d" % (
 _gl_started() {
   _gl_libproc "$1" && return 0
   [ $? -eq 3 ] && return 1
-  # ps exits 1 for a PID it does not find, 126 where it is refused and 127
-  # where it is absent
+  # ps exits 1 for a PID it does not find; the shell gives 126 or 127 where
+  # ps is refused or absent
   _gl_ps=$(LC_ALL=C TZ=UTC0 ps -o lstart= -p "$1" 2>/dev/null)
   case $? in
     0) ;;
