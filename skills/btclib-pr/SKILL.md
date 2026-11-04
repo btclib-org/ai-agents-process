@@ -396,7 +396,9 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
 - [ ] the author is not the human: `.author.login` differs from
       `gh api user --jq .login`
 - [ ] the latest fresh reviewer's `CLEARED` names `<sha>`, or *A rebase
-      and the clearance* carries it to `<sha>`
+      and the clearance* carries it to `<sha>`; where the other client
+      is unavailable, the dedicated reviewer's does (the shared *A pull
+      request's rounds*)
 - [ ] every check passed or was skipped, required or not:
       `gh pr checks <n> --repo <owner>/<repo> --json bucket --jq
       'length > 0 and all(.[]; .bucket == "pass" or .bucket ==
@@ -443,7 +445,8 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
 - [ ] a major move of a dependency, a hook or an action has the latest
       fresh reviewer's `CLEARED` name the release notes or changelog it
       read between the two versions, and say that nothing in them breaks
-      the tree
+      the tree; where the other client is unavailable, the dedicated
+      reviewer's does (the shared *A pull request's rounds*)
 
 The first prints each file under `.github/` or any `.claude/`, any top-level
 `RELEASING.md`, `REPOSITORY.md` or `SECURITY.md`, and any `AGENTS.md`,
@@ -915,7 +918,9 @@ answered, or after it asked for changes.
 
 **The ACK may be missing only in these cases**, and in each the pull
 request is armed once every required check is green, no review thread
-is unresolved, and the latest fresh reviewer's `CLEARED` names the head:
+is unresolved, and the latest fresh reviewer's `CLEARED` names the head,
+or the dedicated reviewer's where the other client is unavailable (the
+shared *A pull request's rounds*):
 
 - the bot's run failed with a 429, its quota exhausted, matched as
   *Rebase and CI* says;

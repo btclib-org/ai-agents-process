@@ -90,7 +90,9 @@ open:**
 
 - [ ] the latest fresh reviewer's `CLEARED` (the shared *Local review*)
       names the branch's content, or *A rebase and the clearance*
-      carries it to the rebased branch
+      carries it to the rebased branch; where the other client is
+      unavailable, the dedicated reviewer's does (the shared *A pull
+      request's rounds*)
 - [ ] no conflict with `origin/main` (`/btclib-pr`'s *Rebase and CI*);
       where there was one, rebased and the gates re-run (the shared *A
       rebase and the clearance*)
