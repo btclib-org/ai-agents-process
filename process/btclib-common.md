@@ -932,6 +932,18 @@ the orchestrator in the pull request.
   the report says the gate saw the new files.
 - **Read exit codes, not output.** `… > log 2>&1; echo $?`. A
   multi-batch hook's tail can show a clean batch after a failed one.
+- **A local gate run that fails because the network is down has not
+  run.** Its log names a failed name resolution or connection, as git's
+  `Could not resolve host:` or uv's `dns error` do, and a known host
+  fails in the same minute: `git -C <wt> ls-remote origin`. The log
+  alone does not say the network is down, since a dead host or a lapsed
+  domain prints the same. The gate is re-run once that host answers, and
+  the earlier exit is never reported as its result; until then it is
+  reported as not run. A failure that repeats once the network answers
+  is the gate's red. The re-run is not the retry *A failure that does
+  not reproduce is measured* forbids. A CI check is re-run as
+  `/btclib-pr`'s *Rebase and CI* says, and a sandbox with the network
+  off by design is the case of *An outside contributor's branch*.
 - **A gate can leave the tree dirty**: in-place fixers exit having
   modified files. Check `git status --porcelain` afterwards.
 - **An install that Aikido Device Protection refuses is a stop.**
