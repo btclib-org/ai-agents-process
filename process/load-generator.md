@@ -21,7 +21,7 @@ which Codex's `workspace-write` sandbox allows. The measured run goes in
 the same shell call, inside that hold, with no `gate_take` of its own.
 The session records the PIDs, kills them within 15 minutes of the start
 of the measured run, as the example's watchdog does, and checks with
-`ps` that they are gone before `gate_release_all`:
+`kill -0` that they are gone before `gate_release_all`:
 
 ```shell
 . "${PROCESS:?}/scripts/gate-lock.sh"
@@ -45,7 +45,11 @@ gate_take_all <worktree> > "$out" 2>&1 && {
   wait "$run"
   while read -r pid; do kill "$pid" 2>/dev/null; done < "$pids"
   sleep 1
-  while read -r pid; do ! ps -p "$pid" > /dev/null || exit 1; done < "$pids"
+  # Codex's sandbox refuses ps, and kill -0 also fails for another user's
+  # process: only "No such process" reads as gone
+  while read -r pid; do
+    LC_ALL=C kill -0 "$pid" 2>&1 | grep -qi 'no such process' || exit 1
+  done < "$pids"
   trap - EXIT HUP INT TERM
   gate_release_all
 }
