@@ -243,14 +243,17 @@ the process names its own files by their path under it. Claude Code's
   scratchpads and the worktrees in them. So each run moves it to a new
   directory with `CLAUDE_CODE_TMPDIR`, on a short path: past some length
   Claude Code falls back to the default for sandboxed commands. `env -i`
-  passes only `PATH`, the two `UV_` variables, and what `claude` needs to
-  find its login: `HOME`, `USER`, and `CLAUDE_CONFIG_DIR` where it is set.
-  So the session's variables, its tokens included, do not reach what the
-  reviewer runs.
+  passes only `PATH`, `CLAUDE_CODE_TMPDIR`, the two `UV_` variables, and
+  what `claude` needs to find its login: `HOME`, `USER`, and
+  `CLAUDE_CONFIG_DIR` where it is set. So the session's variables, its
+  tokens included, do not reach what the reviewer runs.
 
   The session creates the reviewer's directory, links the agent into it,
-  makes the run's temporary directory, starts the reviewer, and removes
-  the temporary directory once the run ends:
+  and makes the run's temporary directory. `mktemp` prints its path,
+  which stands for `<tmp>` in the two blocks after it. The session then
+  starts the reviewer, and removes the temporary directory once the run
+  ends. The run starts `claude` only where `CLAUDE_CODE_TMPDIR` names a
+  directory, so an empty or missing value stops it:
 
   ```shell
   mkdir -p <scratch>/<name>/.claude/agents
@@ -262,7 +265,7 @@ the process names its own files by their path under it. Claude Code's
   ```
 
   ```shell
-  tmp=$(mktemp -d /tmp/rv.XXXXXX)
+  mktemp -d /tmp/rv.XXXXXX
   ```
 
   ```shell
@@ -271,8 +274,9 @@ the process names its own files by their path under it. Claude Code's
   sbx="${sbx}"'"network":{"strictAllowlist":true}}}'
   env -i -C <scratch>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
     ${CLAUDE_CONFIG_DIR:+"CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"} \
-    CLAUDE_CODE_TMPDIR="${tmp:?}" UV_CACHE_DIR=<scratch>/<name>/uv-cache \
-    UV_OFFLINE=1 timeout 1800 \
+    CLAUDE_CODE_TMPDIR=<tmp> UV_CACHE_DIR=<scratch>/<name>/uv-cache \
+    UV_OFFLINE=1 sh -c 'test -d "${CLAUDE_CODE_TMPDIR:?}" && exec "$@"' \
+    sh timeout 1800 \
     claude -p --agent reviewer --max-turns 80 --output-format text \
     --setting-sources project --permission-mode dontAsk \
     --settings "${sbx:?}" --allowedTools Bash,Read,Grep,Glob \
@@ -280,7 +284,7 @@ the process names its own files by their path under it. Claude Code's
   ```
 
   ```shell
-  rm -rf "${tmp:?}"
+  rm -rf <tmp>
   ```
 
 - **Hooks.** Claude Code reads them from `~/.claude/settings.json`,
