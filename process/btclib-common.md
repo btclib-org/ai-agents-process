@@ -239,6 +239,38 @@ the process names its own files by their path under it. Claude Code's
   a push — runs outside the sandbox, through an escalation request, and
   never with signing turned off (*Signed and signed off*).
 
+  Under the approval policy `never`, which `~/.codex/config.toml` may
+  set, Codex makes no escalation request: its instructions then read
+  "Approval policy is currently never. Do not provide the
+  `sandbox_permissions` for any reason, commands will be rejected."
+  In Codex 0.163.0, the runs of `codex exec` measured ran under these
+  policies. `--approve-for-me`, which refuses `-s`, ran it under
+  `on-request` whatever `approval_policy` said. Without it,
+  `-c approvals_reviewer="auto_review"`, an automatic reviewer of the
+  requests, ran it under `on-request` where `approval_policy` was
+  `on-request` or set nowhere, and under `never` where it was `never`,
+  in `config.toml` or in a `-c`. With `approvals_reviewer` left at
+  `user`, it ran under `never`, `-c approval_policy="on-request"`
+  included. An `-a` before `exec` did not reach it. These are the
+  settings measured, not every one. Which policy an interactive session
+  needs is not measured
+  ([ISS ai-agents-process#278](https://github.com/btclib-org/ai-agents-process/issues/278)).
+
+  Each run records its policy in its rollout, with credits or without,
+  so this re-checks a setting before an escalation is relied on. It runs
+  as one block, since Codex later compresses a rollout to `.jsonl.zst`,
+  which the glob does not match. `<settings>` are the flags under test,
+  `-s workspace-write` among them except with `--approve-for-me`:
+
+  ```shell
+  set -- <settings>
+  id=$(codex exec --json --skip-git-repo-check "$@" 'Reply ok.' < /dev/null |
+    jq -r 'select(.type == "thread.started") | .thread_id')
+  jq -c 'select(.type == "turn_context") | .payload
+    | {approval_policy, approvals_reviewer}' \
+    ~/.codex/sessions/*/*/*/rollout-*-"${id:?}".jsonl
+  ```
+
 ### Shell, checkouts and prose
 
 - **Never open a command with `cd`.** The working directory resets to
