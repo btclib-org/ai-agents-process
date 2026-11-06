@@ -215,16 +215,62 @@ the process names its own files by their path under it. Claude Code's
   outside its sandbox through an escalation request, as it does a git
   write (*Git writes under Codex*). The brief goes on stdin, because
   `--allowedTools` takes every argument after it, a trailing prompt
-  included. The `-u` flags keep the variables of a Claude Code session
-  out of it, and are harmless where unset:
+  included.
+
+  Its Bash commands run in Claude Code's own sandbox, so that the inputs
+  it writes and runs are held as a Codex reviewer's are, for the same
+  reason: they write only in the reviewer's directory, which is its
+  working directory, and in a temporary directory of the run's own, and
+  reach no host. The session prepares the reviewer and its brief, and
+  removes its directory, as it does for a Codex reviewer. The reviewer
+  reads the worktree and runs its inputs with `uv run` the same way. An
+  input that needs a package neither the worktree's `.venv` nor the
+  standard library holds is handled the same way too: the verdict names
+  it as not run, the session reads it and runs it outside the sandbox,
+  and the reviewer's resumed run gets its result.
+
+  The flags make this hold whatever the user's settings say.
+  `--setting-sources project` loads no user settings, because the sandbox
+  makes each directory their `additionalDirectories` names writable. The
+  reviewer agent is then found through a link in the reviewer's
+  directory. `--settings` turns the sandbox on, refuses every host, and
+  runs no command outside the sandbox, even where it cannot start.
+  `--permission-mode dontAsk` refuses a call that would otherwise wait
+  for an answer.
+
+  The sandbox also makes Claude Code's temporary directory writable. On
+  macOS that is `/tmp/claude-<uid>`, which holds Claude Code sessions'
+  scratchpads and the worktrees in them. So each run moves it to a new
+  directory with `CLAUDE_CODE_TMPDIR`, on a short path: past some length
+  Claude Code falls back to the default for sandboxed commands. `env -i`
+  passes only `PATH`, the two `UV_` variables, and what `claude` needs to
+  find its login: `HOME`, `USER`, and `CLAUDE_CONFIG_DIR` where it is set.
+  So the session's variables, its tokens included, do not reach what the
+  reviewer runs.
+
+  The session creates the reviewer's directory with the link, and starts
+  the reviewer:
 
   ```shell
-  tools='Bash(git *),Bash(gh pr view *),Bash(gh issue view *),Bash(gh api *),'
-  tools="${tools}Bash(cat *),Bash(sed -n *),Bash(grep *),Read,Grep,Glob"
-  env -C <wt> -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT timeout 1800 \
+  mkdir -p <scratch>/<name>/.claude/agents
+  ln -s "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/reviewer.md" \
+    <scratch>/<name>/.claude/agents/reviewer.md
+  ```
+
+  ```shell
+  sbx='{"sandbox":{"enabled":true,"failIfUnavailable":true,'
+  sbx="${sbx}"'"allowUnsandboxedCommands":false,'
+  sbx="${sbx}"'"network":{"strictAllowlist":true}}}'
+  tmp=$(mktemp -d /tmp/rv.XXXXXX)
+  env -i -C <scratch>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
+    ${CLAUDE_CONFIG_DIR:+"CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"} \
+    CLAUDE_CODE_TMPDIR="$tmp" UV_CACHE_DIR=<scratch>/<name>/uv-cache \
+    UV_OFFLINE=1 timeout 1800 \
     claude -p --agent reviewer --max-turns 80 --output-format text \
-    --allowedTools "${tools:?}" \
+    --setting-sources project --permission-mode dontAsk \
+    --settings "${sbx:?}" --allowedTools Bash,Read,Grep,Glob \
     < <scratch>/<name>-brief.txt > <scratch>/<name>.log 2>&1
+  rm -rf "${tmp:?}"
   ```
 
 - **Hooks.** Claude Code reads them from `~/.claude/settings.json`,
@@ -1124,7 +1170,7 @@ branch, or a text to be posted.
   of the first verdict> <cleared sha>`, or, where a rebase came between,
   of `git range-diff <old base>..<sha of the first verdict>
   <new base>..<cleared sha>`, to check that each fix is a prose-only fix.
-- **A Codex reviewer's `CLEARED` that names an input its sandbox left
+- **A fresh reviewer's `CLEARED` that names an input its sandbox left
   unrun ends no rounds** (*Clients*). The `CLEARED` of the reviewer's
   resumed run, with that input's result on the record, stands in for it
   in the next bullet.
