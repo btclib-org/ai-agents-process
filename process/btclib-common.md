@@ -143,13 +143,13 @@ the process names its own files by their path under it. Claude Code's
   reviewer's directory, which holds what that sync had to download.
   Otherwise they run with `uv run --no-project`, on the standard library
   alone. An input that needs a package these do not hold is named in
-  the verdict as not run. The session then runs it outside the sandbox,
-  as it runs the gates, and resumes the reviewer with its result on the
-  record: the rounds do not end on a verdict that names such an input.
-  A write anywhere else fails with `Operation not permitted`, the
-  worktree it reviews included, and so do `git fetch` and
-  `git merge-tree --write-tree`, which write in the git directory, and a
-  heredoc, which cannot create its temporary file.
+  the verdict as not run. The session runs it outside the sandbox after
+  reading it, as it runs the gates, and resumes the reviewer with its
+  result on the record (*The rounds*). A write anywhere else fails with
+  `Operation not permitted`, the worktree it reviews included, and so do
+  `git fetch` and `git merge-tree --write-tree`, which write in the git
+  directory, and a heredoc in the `zsh` Codex runs commands in, which
+  puts its temporary file under `/tmp`.
   `git log --format=%G?` reads a signed commit as `N`, and the network
   is off (below). So the session that starts it first runs, outside any
   sandbox, `git fetch origin`, the `merge-tree` of *A pull request's
@@ -1101,6 +1101,9 @@ branch, or a text to be posted.
   of the first verdict> <cleared sha>`, or, where a rebase came between,
   of `git range-diff <old base>..<sha of the first verdict>
   <new base>..<cleared sha>`, to check that each fix is a prose-only fix.
+- **A `CLEARED` that names an input left unrun ends no rounds**
+  (*Clients*). The `CLEARED` of the reviewer's resumed run, with that
+  input's result on the record, stands in for it in the next bullet.
 - **The rounds end when a fresh reviewer's first verdict is `CLEARED`**,
   or at the `CLEARED` that the fresh-reviewer bullet above lets end them.
 - **The orchestrator checks that the rounds converge.** It keeps each
