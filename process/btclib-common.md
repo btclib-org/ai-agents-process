@@ -1527,7 +1527,51 @@ A pull request found with a false sentence is disarmed at once
   reviewer has answered.**
 - **A session that runs long re-reads what can arrive meanwhile**
   between rounds: new pull requests, new reviews and comments on the
-  ones it works.
+  ones it works, and the process (*The process is re-read when `main`
+  changes it*).
+- **The process is re-read when `main` changes it.** Before the session
+  first reads this file, it notes the sha of `$PROCESS`'s `HEAD` in a
+  file of its scratch directory:
+
+  ```shell
+  scratch=<the session's scratch directory>
+  git -C "${PROCESS:?}" rev-parse HEAD > "${scratch:?}/process.sha"
+  ```
+
+  Between rounds, and before it briefs a worker, it brings `$PROCESS`
+  forward (*Shell, checkouts and prose*) and notes the `HEAD` it
+  compares:
+
+  ```shell
+  scratch=<the session's scratch directory>
+  git -C "${PROCESS:?}" rev-parse HEAD > "${scratch:?}/process.next"
+  ```
+
+  It compares that sha with the noted one:
+
+  ```shell
+  scratch=<the session's scratch directory>
+  started=$(cat "${scratch:?}/process.sha")
+  next=$(cat "${scratch:?}/process.next")
+  git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- process/ skills/
+  ```
+
+  Where the diff prints anything, the session re-reads each section it
+  touches. A markdown hunk's header shows a body line, not a heading:
+  the hunk's section is the last heading above its line, among those
+  `grep -n '^#' <file>` lists. Then the compared sha becomes the noted
+  one, whatever the diff printed, since another session may have moved
+  `HEAD` meanwhile:
+
+  ```shell
+  scratch=<the session's scratch directory>
+  mv "${scratch:?}/process.next" "${scratch:?}/process.sha"
+  ```
+
+  Where `process.sha` is missing or empty, the session notes `HEAD` with
+  the first command, then re-reads this file and its skill whole. A
+  brief to a worker already running names the changed sections that are
+  its role's.
 
 ## Night mode
 

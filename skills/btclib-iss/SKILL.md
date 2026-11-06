@@ -13,8 +13,9 @@ author (*Following it*).
 
 **First read `$PROCESS/process/btclib-common.md`, whole**:
 `echo "$PROCESS"` prints the clone's path. Its opening says what it
-holds and what this file holds. What the session writes,
-and this file, follow its *Write plainly*.
+holds and what this file holds. What the session writes, and this file,
+follow its *Write plainly*. `$PROCESS`'s `HEAD` is noted before it is
+read, as its *The process is re-read when `main` changes it* says.
 
 **Where $ARGUMENTS names no issue, ask the human which, before reading
 anything**: no tracker, no checkout, and no earlier context stands in for

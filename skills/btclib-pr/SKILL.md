@@ -13,8 +13,9 @@ was raised*, *Answering it*, *Rebase and CI*, *The decision* and
 
 **First read `$PROCESS/process/btclib-common.md`, whole**:
 `echo "$PROCESS"` prints the clone's path. Its opening says what it
-holds and what this file holds. What the session writes,
-and this file, follow its *Write plainly*.
+holds and what this file holds. What the session writes, and this file,
+follow its *Write plainly*. `$PROCESS`'s `HEAD` is noted before it is
+read, as its *The process is re-read when `main` changes it* says.
 
 The shared *Where you work* says how the repository is named.
 
@@ -1183,10 +1184,12 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
 
 - **A landing in `btclib-org/ai-agents-process` brings its primary
   checkout forward at once**, by the shared fast-forward. Where that
-  checkout is the clone `$PROCESS` names, every session reads the
-  process through it, and reads the old one until then. Then read a
-  landed line back where sessions read it: under `$PROCESS`, or through
-  the link of the skill or agent it changed.
+  checkout is the clone `$PROCESS` names, a session that starts reads
+  the process through it, and reads the old one until then. A session
+  already running re-reads what changed as the shared *The process is
+  re-read when `main` changes it* says. Then read a landed line back
+  where sessions read it: under `$PROCESS`, or through the link of the
+  skill or agent it changed.
 - **The collateral goes back now** (the shared *Collateral*), before
   anything new starts.
 - **Remove the worktrees** — yours, and tell the writer to remove its
