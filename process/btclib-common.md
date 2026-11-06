@@ -137,47 +137,58 @@ the process names its own files by their path under it. Claude Code's
   In Codex it runs under `workspace-write` with one writable root: its
   own directory in the scratch directory, which is also its working
   directory. There it writes the inputs of *Every reviewer tries to
-  break the change* and runs them with `uv run`, its `UV_CACHE_DIR`
-  inside that directory. A write anywhere else fails with
-  `Operation not permitted`, the worktree it reviews included, and so do
-  `git fetch` and `git merge-tree --write-tree`, which write in the git
-  directory, and a heredoc, which cannot create its temporary file.
-  `git log --format=%G?` reads a signed commit as `N`. So the session
-  that starts it first runs, outside any sandbox, `git fetch origin`,
-  the `merge-tree` of *A pull request's rounds*, the checks of *Signed
-  and signed off* with the sign-off control, and the gates where no run
-  on the sha is on the record. The brief carries them as runs on the
-  record, the merge's tree sha included, names the worktree, and asks
-  for no heredoc. The reviewer relies on them, says so, and reads the
-  worktree with `git -C <wt> show` and `git diff` at shas, which the
-  sandbox allows. The session removes the reviewer's directory once that
-  reviewer's rounds end (*Debris goes when its work ends*).
+  break the change* and runs them with `uv run --project <wt>`, offline,
+  from a `UV_CACHE_DIR` inside that directory. An input that needs a
+  package not in that cache is named in the verdict as not run. A write
+  anywhere else fails with `Operation not permitted`, the worktree it
+  reviews included, and so do `git fetch` and
+  `git merge-tree --write-tree`, which write in the git directory, and a
+  heredoc, which cannot create its temporary file.
+  `git log --format=%G?` reads a signed commit as `N`, and the network
+  is off (below). So the session that starts it first runs, outside any
+  sandbox, `git fetch origin`, the `merge-tree` of *A pull request's
+  rounds*, the checks of *Signed and signed off* with the sign-off
+  control, `uv sync --locked` in the worktree, which fills that cache,
+  and the gates where no run on the sha is on the record. The brief
+  carries them as runs on the record, the merge's tree sha included,
+  names the worktree, and asks for no heredoc. The reviewer relies on
+  them, says so, and reads the worktree with `git -C <wt> show` and
+  `git diff` at shas, which the sandbox allows. The session removes the
+  reviewer's directory once that reviewer's rounds end (*Debris goes
+  when its work ends*).
 
   Claude Code starts a Codex reviewer with `codex exec`. That spawns no
   custom agent by name, so the brief's first sentence says to read
   `~/.codex/agents/reviewer.toml` and follow it. `-o` writes its last
   message, the verdict, to a file. The `-c` settings replace any
-  `writable_roots` of `config.toml` with the reviewer's directory, keep
-  the network on for an input that installs a dependency, and drop
-  `/tmp` and `$TMPDIR`, which `workspace-write` otherwise makes
-  writable, a worktree under `/tmp` included. `--ignore-rules` keeps out
-  the user's `.rules` files: a command a rule allows, such as `git`,
-  runs outside the sandbox. `env -i` passes it only `HOME`, where Codex
-  finds its login, `PATH` and `UV_CACHE_DIR`, so the variables of the
-  session that starts it, its tokens included, do not reach what the
+  `writable_roots` of `config.toml` with the reviewer's directory, turn
+  off the network, which `config.toml` may turn on, and drop `/tmp` and
+  `$TMPDIR`, which `workspace-write` otherwise makes writable, a
+  worktree under `/tmp` included. `--ignore-rules` keeps out the user's
+  `.rules` files: a command a rule allows, such as `git`, runs outside
+  the sandbox. `env -i` passes it only `HOME`, where Codex finds its
+  login, `PATH`, `UV_CACHE_DIR` and `UV_OFFLINE`, so the variables of
+  the session that starts it, its tokens included, do not reach what the
   reviewer runs.
+
+  The network is off because an input runs the branch's code, and the
+  sandbox still reads credentials such as `~/.codex/auth.json` and
+  `~/.gnupg`. With the network on, it could send them to any host, and
+  it could read the keychain too, through `gh auth token` and
+  `git credential fill`.
 
   ```shell
   mkdir -p <scratch>/<name>
+  env -C <wt> UV_CACHE_DIR=<scratch>/<name>/uv-cache uv sync --locked
   ```
 
   ```shell
   env -i -C <scratch>/<name> HOME="$HOME" PATH="$PATH" \
-    UV_CACHE_DIR=<scratch>/<name>/uv-cache \
+    UV_CACHE_DIR=<scratch>/<name>/uv-cache UV_OFFLINE=1 \
     timeout 900 codex exec -s workspace-write --skip-git-repo-check \
     --ignore-rules \
     -c 'sandbox_workspace_write.writable_roots=["<scratch>/<name>"]' \
-    -c sandbox_workspace_write.network_access=true \
+    -c sandbox_workspace_write.network_access=false \
     -c sandbox_workspace_write.exclude_slash_tmp=true \
     -c sandbox_workspace_write.exclude_tmpdir_env_var=true \
     -o <scratch>/<name>.last.md - \
