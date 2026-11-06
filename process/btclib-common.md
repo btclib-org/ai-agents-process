@@ -935,20 +935,22 @@ the orchestrator in the pull request.
     UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR=<sbx>/uv-cache \
     PRE_COMMIT_HOME=<sbx>/pre-commit UV_OFFLINE=1 \
     sandbox-exec -f "${PROCESS:?}/scripts/gate-sandbox.sb" \
-    -D WT=<wt> -D SBX=<sbx> -D HOME="$HOME" -D UV_PYTHON="$(uv python dir)" \
+    -D WT="$(realpath <wt>)" -D SBX="$(realpath <sbx>)" \
+    -D HOME="$(realpath "$HOME")" -D UV_PYTHON="$(uv python dir)" \
     -D GIT_DIR="$(git -C <wt> rev-parse --path-format=absolute --git-dir)" \
     -D GIT_COMMON_DIR="$(git -C <wt> rev-parse --path-format=absolute \
       --git-common-dir)" \
     uv sync --locked
   ```
 
-  `scripts/gate-sandbox.sb` says what the sandbox allows. It reads no
-  file under `$HOME` but uv's interpreters and the worktree's git
-  directories, so the keychain and `git credential fill` fail inside it,
-  and `~/.gnupg` and the tokens of `gh` and Codex cannot be read; files
-  outside `$HOME` are read, other sessions' scratch directories included.
-  It writes in `<wt>` and `<sbx>` only, never in a git directory, and
-  signals only its own processes.
+  `scripts/gate-sandbox.sb` says what the sandbox allows, and why the
+  paths go through `realpath`. It reads no file under `$HOME` but uv's
+  interpreters, `<wt>`, `<sbx>` and the worktree's git directories, so
+  the keychain and `git credential fill` fail inside it, and `~/.gnupg`
+  and the tokens of `gh` and Codex cannot be read; files outside `$HOME`
+  are read, other sessions' scratch directories included. It writes in
+  `<wt>` and `<sbx>` only, never in a git directory, and signals only its
+  own processes.
 
   Apple Events still leave it, so code inside can drive any application
   the session's host application holds Automation permission for:
@@ -1115,14 +1117,15 @@ the orchestrator in the pull request.
   ```shell
   gh api -H 'Accept: application/vnd.github.raw' \
     repos/btclib-org/.github/contents/.github/scripts/check_sign_off.py |
-    env -C <wt> uv run --no-config --no-project --python 3.15 \
-      python -I - <base>..
+    env -C <scratch> GIT_DIR="$(git -C <wt> rev-parse --absolute-git-dir)" \
+      uv run --no-config --no-project --python 3.15 python -I - <base>..
   ```
 
-  `--no-config` keeps uv from reading a `uv.toml` the worktree holds, and
-  `python -I` keeps a module the worktree holds, a `subprocess.py` say,
-  from being imported in place of the standard library's, whoever wrote
-  the branch.
+  It runs in the scratch directory, with git pointed at the worktree,
+  whoever wrote the branch. From the worktree, uv would run the
+  interpreter of a `.venv` there, whose `.pth` files run even under
+  `python -I`, would read a `uv.toml` there, and Python would import a
+  `subprocess.py` there in place of the standard library's.
 
   Its control is commit `c1786962edc1` of `btclib-org/.github`, which
   carries no `Signed-off-by:` trailer. A tree's own commits may all carry

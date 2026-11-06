@@ -12,10 +12,15 @@
 (deny network*)
 
 ; No file under the user's home is read, its tokens, keys and keychains
-; included, except uv's interpreters and the worktree's git directories.
+; included, except uv's interpreters, the worktree, SBX and the
+; worktree's git directories. Seatbelt compares resolved paths, so WT,
+; SBX and HOME are passed through realpath: /tmp is a link to
+; /private/tmp.
 (deny file-read-data (subpath (param "HOME")))
 (allow file-read-data
   (subpath (param "UV_PYTHON"))
+  (subpath (param "WT"))
+  (subpath (param "SBX"))
   (subpath (param "GIT_DIR"))
   (subpath (param "GIT_COMMON_DIR")))
 
