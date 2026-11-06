@@ -722,13 +722,15 @@ context does not exist, and another session will take the work.
 
 **A reviewer blocks on a sentence in the tree's own files that is false,
 misleading, or a rule stated a second time (*Write plainly*), as on a
-code defect.** The tree's own files are every tracked file, docstrings
-and comments included. Only wording that could be better does not
-block. A wording finding is still made, with the shorter text, and is
-fixed with the next change to the branch.
+code defect, where the branch adds it, falsifies it or makes it
+materially worse (*Collateral*).** The tree's own files are every
+tracked file, docstrings and comments included. Only wording that could
+be better does not block. A wording finding on what the branch adds is
+still made, with the shorter text, and is fixed with the next change to
+the branch.
 
-**A false or misleading sentence anywhere else does not send a cleared
-branch back**:
+**A false or misleading sentence outside the tree does not send a
+cleared branch back**:
 pull request bodies, issues, comments, reports, the commit message.
 Answer `CLEARED <sha>` with the finding underneath. It is still fixed
 with the next change to the branch. The commit message is corrected in
@@ -1508,25 +1510,26 @@ A pull request found with a false sentence is disarmed at once
 
 ## Collateral
 
-- **Filed only where a user, a build or a release is affected**: a wrong
-  command, a red gate, a wrong setting, a packaging or security defect.
-  Prose is never filed, unless it leads to a wrong action. Wrong prose in
-  a file the diff already touches is fixed there; elsewhere it is named
-  in the report. A new rule in `README.md` lands with the gate that reads
-  it, or does not land (btclib-org/.github#1075).
-- **Small and in the same file or subsystem — a few lines, no separate
-  design decision, no separate gate risk: fix it in the branch**, and say
-  so in the report and the commit.
-- **Everything else is a new issue, filed by whoever noticed it, when
-  they notice it**, in the repository hosting that code, or, for code
-  outside btclib-org, as the next bullet says. Search first
-  (`gh issue list --repo <owner>/<repo> --state open --search
-  "<word> <word>"`). Measure first; where that would mean leaving the
-  work at hand, put the deciding
-  command in the body and say it was not run. A small, self-contained
-  one that no red gate, security or packaging defect waits on is filed
-  with the `good first issue` label, a *Done when* and the file to look
-  at.
+- **A branch carries its subject and nothing beside** (`REVIEWING.md`'s
+  *What to look for*). Its subject is what its issues ask, wherever the
+  defect they name shows; a sentence its diff falsifies (*Where your diff
+  falsifies a sentence elsewhere*); and what was already wrong that its
+  diff makes materially worse (`REVIEWING.md`'s *What is filed, and what
+  is not*). A shared file or subsystem is not a shared subject.
+- **Anything else noticed goes where `REVIEWING.md`'s *What is filed,
+  and what is not* says**; what it does not file is named in the report,
+  for the next change on its subject. Wrong prose in a file the diff
+  touches takes the same route: a reviewer cannot ack a diff for a
+  question it was not opened for. A new rule in `README.md` lands with
+  the gate that reads it, or does not land (btclib-org/.github#1075).
+- **A new issue is filed by whoever noticed it, when they notice it**, in
+  the repository hosting that code, or, for code outside btclib-org, as
+  the next bullet says. Search first (`gh issue list --repo <owner>/<repo>
+  --state open --search "<word> <word>"`). Measure first; where that would
+  mean leaving the work at hand, put the deciding command in the body and
+  say it was not run. A small, self-contained one that no red gate,
+  security or packaging defect waits on is filed with the `good first
+  issue` label, a *Done when* and the file to look at.
 - **Code outside btclib-org** is reported first in the btclib-org
   repository where it was found, not in its own tracker: `gh issue create
   --repo btclib-org/<repo> --label upstream-report`. Section 11 of
