@@ -1529,49 +1529,42 @@ A pull request found with a false sentence is disarmed at once
   between rounds: new pull requests, new reviews and comments on the
   ones it works, and the process (*The process is re-read when `main`
   changes it*).
-- **The process is re-read when `main` changes it.** Before the session
-  first reads this file, it notes the sha of `$PROCESS`'s `HEAD` in a
-  file of its scratch directory:
+- **The process is re-read when `main` changes it.** The session notes
+  `$PROCESS`'s `HEAD` in `<scratchpad>/orchestrator/process.sha` before
+  it first reads this file, as its skill's opening says. Between rounds,
+  and before it briefs a worker, it brings `$PROCESS` forward (*Shell,
+  checkouts and prose*) and notes the `HEAD` it compares:
 
   ```shell
-  scratch=<the session's scratch directory>
-  git -C "${PROCESS:?}" rev-parse HEAD > "${scratch:?}/process.sha"
-  ```
-
-  Between rounds, and before it briefs a worker, it brings `$PROCESS`
-  forward (*Shell, checkouts and prose*) and notes the `HEAD` it
-  compares:
-
-  ```shell
-  scratch=<the session's scratch directory>
-  git -C "${PROCESS:?}" rev-parse HEAD > "${scratch:?}/process.next"
+  scratchpad=<the session's scratchpad>
+  git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.next"
   ```
 
   It compares that sha with the noted one:
 
   ```shell
-  scratch=<the session's scratch directory>
-  started=$(cat "${scratch:?}/process.sha")
-  next=$(cat "${scratch:?}/process.next")
+  scratchpad=<the session's scratchpad>
+  started=$(cat "${scratchpad:?}/orchestrator/process.sha")
+  next=$(cat "${scratchpad:?}/orchestrator/process.next")
   git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- process/ skills/
   ```
 
   Where the diff prints anything, the session re-reads each section it
-  touches. A markdown hunk's header shows a body line, not a heading:
-  the hunk's section is the last heading above its line, among those
-  `grep -n '^#' <file>` lists. Then the compared sha becomes the noted
-  one, whatever the diff printed, since another session may have moved
-  `HEAD` meanwhile:
+  touches. A markdown hunk's header shows a body line, not a heading: a
+  hunk's sections are the last heading above its first line and every
+  heading within its lines, among those `grep -n '^#' <file>` lists.
+  Where the diff exited `0`, the compared sha becomes the noted one,
+  since another session may have moved `HEAD` meanwhile:
 
   ```shell
-  scratch=<the session's scratch directory>
-  mv "${scratch:?}/process.next" "${scratch:?}/process.sha"
+  scratchpad=<the session's scratchpad>
+  mv "${scratchpad:?}/orchestrator/process.next" "${scratchpad:?}/orchestrator/process.sha"
   ```
 
-  Where `process.sha` is missing or empty, the session notes `HEAD` with
-  the first command, then re-reads this file and its skill whole. A
-  brief to a worker already running names the changed sections that are
-  its role's.
+  Where the diff exited non-zero, or `process.sha` is missing or empty,
+  the session notes `HEAD` again as its skill's opening says, then
+  re-reads this file and its skill whole. A brief to a worker already
+  running names the changed sections that are its role's.
 
 ## Night mode
 
