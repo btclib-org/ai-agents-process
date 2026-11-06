@@ -136,26 +136,27 @@ the process names its own files by their path under it. Claude Code's
 
   In Codex it runs under `workspace-write` with one writable root: its
   own directory in the scratch directory, which is also its working
-  directory. There it writes the inputs of *Every reviewer tries to
-  break the change* and runs them offline. Where the worktree holds a
+  directory. There it writes the inputs of *Every reviewer tries to break
+  the change* and runs them offline. Where the worktree holds a
   `uv.lock`, they run with `uv run --project <wt>`, from the worktree's
   `.venv`, which the session syncs, and from a `UV_CACHE_DIR` inside the
   reviewer's directory, which holds what that sync had to download.
   Otherwise they run with `uv run --no-project`, on the standard library
-  alone. An input that needs a package these do not hold is named in
-  the verdict as not run. The session runs it outside the sandbox after
-  reading it, as it runs the gates, and resumes the reviewer with its
+  alone. An input that needs a package these do not hold is named in the
+  verdict as not run. The session runs it after reading it, where and as
+  it runs the gates (*The gates*), and resumes the reviewer with its
   result on the record (*The rounds*). A write anywhere else fails with
   `Operation not permitted`, the worktree it reviews included, and so do
   `git fetch` and `git merge-tree --write-tree`, which write in the git
   directory, and a heredoc in the `zsh` Codex runs commands in, which
-  puts its temporary file under `/tmp`.
-  `git log --format=%G?` reads a signed commit as `N`, and the network
-  is off (below). So the session that starts it first runs, outside any
-  sandbox, `git fetch origin`, the `merge-tree` of *A pull request's
-  rounds*, the checks of *Signed and signed off* with the sign-off
-  control, `uv sync --locked` where the worktree holds a `uv.lock`, and
-  the gates where no run on the sha is on the record. The brief carries
+  puts its temporary file under `/tmp`. `git log --format=%G?` reads a
+  signed commit as `N`, and the network is off (below). So the session
+  that starts it first runs, outside the reviewer's sandbox,
+  `git fetch origin`, the `merge-tree` of *A pull request's rounds*, the
+  checks of *Signed and signed off* with the sign-off control,
+  `uv sync --locked` where the worktree holds a `uv.lock`, and the gates
+  where no run on the sha is on the record, the last two in the sandbox
+  of *The gates* on an outside contributor's branch. The brief carries
   them as runs on the record, the merge's tree sha included, names the
   worktree, and asks for no heredoc. The reviewer relies on them, says
   so, and reads the worktree with `git -C <wt> show` and
@@ -186,7 +187,9 @@ the process names its own files by their path under it. Claude Code's
 
   The session creates the reviewer's directory, syncs the worktree where
   it holds a `uv.lock`, and starts the reviewer. The `-u` keeps the sync
-  in the worktree's `.venv`, where the reviewer's `uv run` looks for it:
+  in the worktree's `.venv`, where the reviewer's `uv run` looks for it.
+  On an outside contributor's branch the sync is the sandboxed one of
+  *The gates* instead of the second command:
 
   ```shell
   mkdir -p <scratch>/<name>/tmp
@@ -901,6 +904,74 @@ the orchestrator in the pull request.
   Nothing goes around it: no build from a clone or a `git archive`, no
   other index, no wheel fetched by hand, no TLS change, no `aikidoctl
   pause`. The gate it holds is reported as not run.
+- **An outside contributor's branch, or a tree that merges its head, is
+  gated in a sandbox with no network and no credentials** (`/btclib-pr`'s
+  *Outside contributors*, and the octopus of its *Landing*). Its gates
+  run code nobody in btclib-org wrote: `uv sync` builds the branch's
+  project with the backend its `[build-system]` names, and the suite and
+  the hooks run its code. Outside the sandbox the session fetches only
+  what `origin/main` locks and installs, from a new detached worktree at
+  `origin/main`, into a new directory `<sbx>` in the scratch directory.
+  The fetch and every gate take the same variables, so that pre-commit
+  picks the same hook environments outside and inside:
+
+  ```shell
+  mkdir -p <sbx>/home <sbx>/tmp
+  ```
+
+  ```shell
+  env -i -C <main wt> HOME=<sbx>/home PATH="$PATH" TMPDIR=<sbx>/tmp \
+    UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR=<sbx>/uv-cache \
+    PRE_COMMIT_HOME=<sbx>/pre-commit \
+    sh -c 'uv sync --locked --all-groups && uv run pre-commit install-hooks'
+  ```
+
+  Then each gate runs in the branch's worktree, offline, under
+  `sandbox-exec`, with its command in place of the `uv sync --locked`
+  that runs first:
+
+  ```shell
+  env -i -C <wt> HOME=<sbx>/home PATH="$PATH" TMPDIR=<sbx>/tmp \
+    UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR=<sbx>/uv-cache \
+    PRE_COMMIT_HOME=<sbx>/pre-commit UV_OFFLINE=1 \
+    sandbox-exec -f "${PROCESS:?}/scripts/gate-sandbox.sb" \
+    -D WT=<wt> -D SBX=<sbx> -D HOME="$HOME" -D UV_PYTHON="$(uv python dir)" \
+    -D GIT_DIR="$(git -C <wt> rev-parse --path-format=absolute --git-dir)" \
+    -D GIT_COMMON_DIR="$(git -C <wt> rev-parse --path-format=absolute \
+      --git-common-dir)" \
+    uv sync --locked
+  ```
+
+  `scripts/gate-sandbox.sb` says what the sandbox allows. It reads no
+  file under `$HOME` but uv's interpreters and the worktree's git
+  directories, so the keychain and `git credential fill` fail inside it,
+  and `~/.gnupg` and the tokens of `gh` and Codex cannot be read; files
+  outside `$HOME` are read, other sessions' scratch directories included.
+  It writes in `<wt>` and `<sbx>` only, never in a git directory, and
+  signals only its own processes.
+
+  Apple Events still leave it, so code inside can drive any application
+  the session's host application holds Automation permission for:
+  Terminal's `do script`, for one, runs a command outside the sandbox,
+  with the network and the credentials. Where such a permission is held,
+  the sandbox does not keep the network and the credentials from the
+  branch's code.
+
+  Nothing in `<wt>` or `<sbx>` runs outside the sandbox, except the Codex
+  reviewer's inputs, which run from `<wt>`'s `.venv` in its own sandbox
+  (*Clients*). That one has the network off too, though it reads
+  `~/.codex/auth.json` and `~/.gnupg`. `<sbx>` is new for each fetch. The
+  Sign-off check runs as *Signed and signed off* says. A commit or a
+  merge in that tree runs with `git -c core.hooksPath=/dev/null`, which
+  runs no hook, where `git commit --no-verify` still lets
+  `prepare-commit-msg` and `post-commit` run, and with no path under
+  `<wt>` or `<sbx>` on `PATH`. `<sbx>` and the worktree at `origin/main`
+  go once the branch's gates are done (*Debris goes when its work ends*).
+
+  A gate that fails in the sandbox for want of the network, or of a
+  package or a hook that the branch adds and `origin/main` does not hold,
+  is not run locally. The session relies on CI's run of that gate on the
+  head, and says so.
 - **The whole suite, never a narrowed run**, for anything you write
   down. `-k` and single files relax the coverage floor.
 - **Coverage at 100% and defensive branches.** Move the safety where a
@@ -1044,8 +1115,14 @@ the orchestrator in the pull request.
   ```shell
   gh api -H 'Accept: application/vnd.github.raw' \
     repos/btclib-org/.github/contents/.github/scripts/check_sign_off.py |
-    env -C <wt> uv run --no-project --python 3.15 - <base>..
+    env -C <wt> uv run --no-config --no-project --python 3.15 \
+      python -I - <base>..
   ```
+
+  `--no-config` keeps uv from reading a `uv.toml` the worktree holds, and
+  `python -I` keeps a module the worktree holds, a `subprocess.py` say,
+  from being imported in place of the standard library's, whoever wrote
+  the branch.
 
   Its control is commit `c1786962edc1` of `btclib-org/.github`, which
   carries no `Signed-off-by:` trailer. A tree's own commits may all carry
@@ -1071,9 +1148,10 @@ the orchestrator in the pull request.
   --cleanup=verbatim -F <saved message>`. Better, never wrap a body line
   so that it begins with `#`.
 - **A failed hook can make `git commit --amend` a no-op** that looks
-  successful. Put the venv on `PATH` in the same call (`env
-  PATH=/abs/wt/.venv/bin:$PATH git -C /abs/wt commit …`) and read the
-  commit back.
+  successful. Put the venv on `PATH` in the same call
+  (`env PATH=/abs/wt/.venv/bin:$PATH git -C /abs/wt commit …`) and read
+  the commit back. On an outside contributor's branch the commit runs as
+  *The gates* says instead.
 
 ## Local review
 

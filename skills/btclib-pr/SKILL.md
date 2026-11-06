@@ -800,7 +800,8 @@ has, is put to the human before it lands through the bypass.
 ## Outside contributors
 
 Its issue stays theirs, and no competing branch is opened. The reviewer
-reviews it against `REVIEWING.md`.
+reviews it against `REVIEWING.md`. Its gates run in the sandbox of the
+shared *The gates*, whoever runs them.
 
 **It is completed in place where `maintainerCanModify` is `true`**, with
 every fix the approval needs, blocking findings and nits alike, as the
@@ -813,9 +814,10 @@ must land first and touches their lines, the maintainer decides the
 order, and the contributor is told on their pull request what moved and
 how to resolve it. Completing it:
 
-- **Add, never rewrite.** Their commits stay byte for byte. `main` comes
-  in by a signed merge, not a rebase. The fixes are a
-  signed commit of ours on top, signed off by us.
+- **Add, never rewrite.** Their commits stay byte for byte. `main`
+  comes in by a signed merge, not a rebase, run with hooks off as the
+  shared *The gates* says. The fixes are a signed commit of ours on top,
+  signed off by us.
 - **Their sign-off is theirs to add.** A commit of theirs without the
   trailer is not ours to fix: a sign-off we add for them is not their
   attestation. Ask them, before we push anything to their branch, to
@@ -1043,13 +1045,16 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   ```
 
   ```shell
-  git -C <wt> merge --no-ff --no-commit <head> <head> …
+  git -C <wt> -c core.hooksPath=/dev/null \
+    merge --no-ff --no-commit <head> <head> …
   ```
 
   With several heads `git merge` ignores `merge=union`, so it needs no
-  `-c`. Exit `0` leaves the merge staged and uncommitted. The tree's
-  gates run on it as the shared *The gates* says, the gate lock and
-  `gate_wait` included. A push to one of the pull requests voids the run.
+  `merge.union.driver`, and `core.hooksPath` keeps hooks from running on
+  what the heads hold. Exit `0` leaves the merge staged and uncommitted.
+  The tree's gates run on it as the shared *The gates* says, the gate lock
+  and `gate_wait` included, and in its sandbox where any head is an
+  outside contributor's. A push to one of the pull requests voids the run.
 
   **Where the merge exits non-zero, `merge-tree` says why.** This
   exits `1` where `<a>` and `<b>` conflict. It runs on `<main sha>` with
