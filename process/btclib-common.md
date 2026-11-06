@@ -1101,9 +1101,10 @@ branch, or a text to be posted.
   of the first verdict> <cleared sha>`, or, where a rebase came between,
   of `git range-diff <old base>..<sha of the first verdict>
   <new base>..<cleared sha>`, to check that each fix is a prose-only fix.
-- **A `CLEARED` that names an input left unrun ends no rounds**
-  (*Clients*). The `CLEARED` of the reviewer's resumed run, with that
-  input's result on the record, stands in for it in the next bullet.
+- **A Codex reviewer's `CLEARED` that names an input its sandbox left
+  unrun ends no rounds** (*Clients*). The `CLEARED` of the reviewer's
+  resumed run, with that input's result on the record, stands in for it
+  in the next bullet.
 - **The rounds end when a fresh reviewer's first verdict is `CLEARED`**,
   or at the `CLEARED` that the fresh-reviewer bullet above lets end them.
 - **The orchestrator checks that the rounds converge.** It keeps each
