@@ -127,35 +127,86 @@ the process names its own files by their path under it. Claude Code's
   agent of that name, and resumes one by a follow-up to its agent thread.
   Starting always makes a new agent.
 - **The reviewer in the other client** (*A pull request's rounds*) is
-  started from the shell, in a detached worktree at the sha to review.
+  started from the shell, and reviews a detached worktree at the sha.
   Its brief, in a file of the scratch directory, holds what a fresh
   reviewer's brief holds, the bot's prompt included. A new run of the
   same command, whose brief adds its last verdict and the sha that
   verdict named, is how it is resumed: for *The rounds* it is the same
   reviewer, though a new process. A run that times out exits `124`.
 
-  Its sandbox refuses part of what a reviewer runs. Under Codex's
-  `-s read-only`, `git merge-tree --write-tree`, `git fetch` and `uv run`
-  fail with `Operation not permitted`, a heredoc cannot create its
-  temporary file, and `git log --format=%G?` reads a signed commit as
-  `N`. Under `workspace-write`, `uv run` and `%G?` fail the same way.
-  So the session that starts it first runs, outside any sandbox (from
-  Codex through an escalation request, as *Git writes under Codex*
-  says), `git fetch origin`, the `merge-tree` of *A pull request's
+  In Codex it runs under `workspace-write` with one writable root: its
+  own directory in the scratch directory, which is also its working
+  directory. There it writes the inputs of *Every reviewer tries to
+  break the change* and runs them offline. Where the worktree holds a
+  `uv.lock`, they run with `uv run --project <wt>`, from the worktree's
+  `.venv`, which the session syncs, and from a `UV_CACHE_DIR` inside the
+  reviewer's directory, which holds what that sync had to download.
+  Otherwise they run with `uv run --no-project`, on the standard library
+  alone. An input that needs a package these do not hold is named in
+  the verdict as not run. The session runs it outside the sandbox after
+  reading it, as it runs the gates, and resumes the reviewer with its
+  result on the record (*The rounds*). A write anywhere else fails with
+  `Operation not permitted`, the worktree it reviews included, and so do
+  `git fetch` and `git merge-tree --write-tree`, which write in the git
+  directory, and a heredoc in the `zsh` Codex runs commands in, which
+  puts its temporary file under `/tmp`.
+  `git log --format=%G?` reads a signed commit as `N`, and the network
+  is off (below). So the session that starts it first runs, outside any
+  sandbox, `git fetch origin`, the `merge-tree` of *A pull request's
   rounds*, the checks of *Signed and signed off* with the sign-off
-  control, and the gates where no run on the sha is on the record. The
-  brief carries them as runs on the record, the merge's tree sha
-  included, and asks for no heredoc. The reviewer relies on them, says
-  so, and reads with `git show` and `git diff` at shas, which the
-  sandbox allows.
+  control, `uv sync --locked` where the worktree holds a `uv.lock`, and
+  the gates where no run on the sha is on the record. The brief carries
+  them as runs on the record, the merge's tree sha included, names the
+  worktree, and asks for no heredoc. The reviewer relies on them, says
+  so, and reads the worktree with `git -C <wt> show` and
+  `git -C <wt> diff` at shas, which the sandbox allows. The session
+  removes the reviewer's directory once that reviewer's rounds end
+  (*Debris goes when its work ends*).
 
   Claude Code starts a Codex reviewer with `codex exec`. That spawns no
   custom agent by name, so the brief's first sentence says to read
   `~/.codex/agents/reviewer.toml` and follow it. `-o` writes its last
-  message, the verdict, to a file:
+  message, the verdict, to a file. The `-c` settings replace any
+  `writable_roots` of `config.toml` with the reviewer's directory, turn
+  off the network, which `config.toml` may turn on, and drop `/tmp` and
+  `$TMPDIR`, which `workspace-write` otherwise makes writable, a
+  worktree under `/tmp` included. `--ignore-rules` keeps out the user's
+  `.rules` files: a command a rule allows, such as `git`, runs outside
+  the sandbox. `env -i` passes it only `HOME`, where Codex finds its
+  login, `PATH`, `UV_CACHE_DIR`, `UV_OFFLINE` and a `TMPDIR` inside the
+  reviewer's directory, where `mktemp` writes, so the variables of the
+  session that starts it, its tokens included, do not reach what the
+  reviewer runs.
+
+  The network is off because an input runs the branch's code, and the
+  sandbox still reads credentials such as `~/.codex/auth.json` and
+  `~/.gnupg`. With the network on, it could send them to any host, and
+  it could read the keychain too, through `gh auth token` and
+  `git credential fill`.
+
+  The session creates the reviewer's directory, syncs the worktree where
+  it holds a `uv.lock`, and starts the reviewer. The `-u` keeps the sync
+  in the worktree's `.venv`, where the reviewer's `uv run` looks for it:
 
   ```shell
-  env -C <wt> timeout 900 codex exec -s read-only --skip-git-repo-check \
+  mkdir -p <scratch>/<name>/tmp
+  ```
+
+  ```shell
+  env -C <wt> -u UV_PROJECT_ENVIRONMENT \
+    UV_CACHE_DIR=<scratch>/<name>/uv-cache uv sync --locked
+  ```
+
+  ```shell
+  env -i -C <scratch>/<name> HOME="$HOME" PATH="$PATH" \
+    UV_CACHE_DIR=<scratch>/<name>/uv-cache UV_OFFLINE=1 \
+    TMPDIR=<scratch>/<name>/tmp \
+    timeout 900 codex exec -s workspace-write --skip-git-repo-check \
+    --ignore-rules \
+    -c 'sandbox_workspace_write.writable_roots=["<scratch>/<name>"]' \
+    -c sandbox_workspace_write.network_access=false \
+    -c sandbox_workspace_write.exclude_slash_tmp=true \
+    -c sandbox_workspace_write.exclude_tmpdir_env_var=true \
     -o <scratch>/<name>.last.md - \
     < <scratch>/<name>-brief.txt > <scratch>/<name>.log 2>&1
   ```
@@ -1073,6 +1124,10 @@ branch, or a text to be posted.
   of the first verdict> <cleared sha>`, or, where a rebase came between,
   of `git range-diff <old base>..<sha of the first verdict>
   <new base>..<cleared sha>`, to check that each fix is a prose-only fix.
+- **A Codex reviewer's `CLEARED` that names an input its sandbox left
+  unrun ends no rounds** (*Clients*). The `CLEARED` of the reviewer's
+  resumed run, with that input's result on the record, stands in for it
+  in the next bullet.
 - **The rounds end when a fresh reviewer's first verdict is `CLEARED`**,
   or at the `CLEARED` that the fresh-reviewer bullet above lets end them,
   or at the dedicated reviewer's `CLEARED` where the other client is
