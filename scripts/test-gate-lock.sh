@@ -58,8 +58,12 @@
 #   ceiling to 3 times the cores, the idle to 30, and the workers to the
 #   cores divided by the slots, at least 1.
 # - The real _gl_idle prints an integer from 0 to 100.
+# - On macOS, with sysctl and iostat refused as Codex's sandbox refuses
+#   them, the real readers still print the idle percentage, the load and
+#   the percentage free, and no level.
 # - _gl_admit is called with each idle percentage, load, disk, level and
 #   free percentage in the tables below.
+# - _gl_status names the reads that failed, and only those.
 # - A process neither libproc nor ps can read is alive: its ticket is
 #   alive and its slot is not reclaimed. Once ps answers that no process
 #   has its PID, it is gone, and its slot is reclaimed.
@@ -546,6 +550,29 @@ echo "ok: gate_wait waited for idle CPU after the slot was taken"
 ) || exit 1
 echo "ok: _gl_idle printed a percentage, over the poll interval"
 
+# The real readers where sysctl and iostat are refused, on macOS only: off
+# it, /proc answers the idle and the load, and nothing the free.
+if [ "$(uname -s)" = Darwin ]; then
+  (
+    . "$script"
+    GATE_LOCK_POLL=2
+    sysctl() { echo "sysctl: refused" >&2; return 1; }
+    iostat() { echo "iostat: refused" >&2; return 1; }
+    t0=$(date +%s)
+    u=$(_gl_idle) l=$(_gl_load) p=$(_gl_level) f=$(_gl_free)
+    [ $(($(date +%s) - t0)) -ge 2 ] || { echo "FAIL: _gl_idle took under the poll"; exit 1; }
+    case $u in "" | *[!0-9]*) echo "FAIL: _gl_idle printed '$u'"; exit 1 ;; esac
+    [ "$u" -le 100 ] || { echo "FAIL: _gl_idle printed '$u'"; exit 1; }
+    case $l in [0-9]*.[0-9]*) ;; *) echo "FAIL: _gl_load printed '$l'"; exit 1 ;; esac
+    case $f in "" | *[!0-9]*) echo "FAIL: _gl_free printed '$f'"; exit 1 ;; esac
+    [ "$f" -le 100 ] || { echo "FAIL: _gl_free printed '$f'"; exit 1; }
+    [ -z "$p" ] || { echo "FAIL: _gl_level printed '$p' with sysctl refused"; exit 1; }
+    echo "ok: with sysctl and iostat refused, idle $u%, load $l and $f% free were read, and no level"
+  ) || exit 1
+else
+  echo "skipped: not macOS, so no sysctl or iostat to refuse"
+fi
+
 # Idle: percentage idle, expected admission ("-" is a failed read).
 (
   . "$script"
@@ -613,12 +640,37 @@ echo "ok: a gate is admitted under load 30, and with 20 GB of disk free"
 2 29 wait
 4 90 wait
 2 - admit
-- 5 admit
+- 5 wait
+- 30 admit
+- 29 wait
 - - admit
 CASES
   exit "$bad"
 ) || exit 1
-echo "ok: memory is admissible at level 1, or at level 2 with 30% free, never at level 4"
+echo "ok: memory is admissible at level 1, or at level 2 or an unread level with 30% free, never at level 4"
+
+# The status names the reads that failed ("-"), in the order it prints them.
+(
+  . "$script"
+  read_as() { [ "$1" = - ] || echo "$1"; }
+  bad=0
+  while read -r u l p f g want; do
+    _gl_u=$(read_as "$u") _gl_l=$(read_as "$l") _gl_p=$(read_as "$p")
+    _gl_f=$(read_as "$f") _gl_g=$(read_as "$g")
+    got=$(_gl_status)
+    case $want in
+      -) case $got in *"not read"*) echo "FAIL: '$got', want all read"; bad=1 ;; esac ;;
+      *) case $got in *"; not read: $want") ;; *) echo "FAIL: '$got', want '$want' not read"; bad=1 ;; esac ;;
+    esac
+  done <<'CASES'
+80 5.00 1 50 100 -
+80 5.00 - 50 100 memory pressure level
+- - - - - CPU idle, load, memory pressure level, memory free, disk free
+80 - 2 - 100 load, memory free
+CASES
+  exit "$bad"
+) || exit 1
+echo "ok: the status names the reads that failed, and none where all were read"
 
 # A process that cannot be read, then one ps answers is gone.
 (

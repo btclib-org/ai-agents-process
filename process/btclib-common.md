@@ -575,8 +575,8 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
   is discarded. A local timing holds every slot of the gate lock
   (`gate_take_all`, as `process/load-generator.md` says of a generator),
   so that no gate runs beside it. It reports the one-minute load, the
-  first number `LC_ALL=C sysctl -n vm.loadavg` prints, beside its
-  numbers.
+  first number after `load averages:` in what `LC_ALL=C uptime` prints,
+  beside its numbers.
 - **A repository's state is read from the API, or from a checkout
   brought forward** (*Shell, checkouts and prose*) — instruction files
   included. The orchestrator brings the primary checkout forward; a
@@ -912,8 +912,8 @@ the orchestrator in the pull request.
   whatever the last run says.
 - **Every worker that gates reports the CPU idle percentage, the load,
   the memory pressure level, the percentage of memory free and the disk
-  free at each run** (what `gate_wait` prints), a reviewer running the
-  gates itself included.
+  free at each run** (what `gate_wait` prints, naming the readings it
+  could not make), a reviewer running the gates itself included.
 - **Call `gate_wait` before each heavy gate**: the suite, the hooks and
   the docs build, inside the lock (*The gate lock*). `gate_take` waits
   once, at the start, and the load, the memory and the disk move while a
