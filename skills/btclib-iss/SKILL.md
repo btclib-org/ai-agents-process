@@ -27,7 +27,7 @@ git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.sha
 ```
 
 The client loaded this file before that note, so the session reads it
-again, whole, from `$PROCESS/skills/btclib-iss/SKILL.md`.
+again, whole and once, from `$PROCESS/skills/btclib-iss/SKILL.md`.
 
 **Then read `$PROCESS/process/btclib-common.md`, whole.** Its opening
 says what it holds and what this file holds. What the session writes,

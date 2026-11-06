@@ -1553,10 +1553,10 @@ A pull request found with a false sentence is disarmed at once
   touches. A markdown hunk's header shows a body line, not a heading: a
   hunk's sections are the last heading above its first line and every
   heading within its lines, among those `grep -n '^#' <file>` lists. A
-  heading the diff removes, a line starting `-#`, is a section that is
-  gone: the session stops following it. Where the diff exited `0`, the
-  compared sha becomes the noted one, since another session may have
-  moved `HEAD` meanwhile:
+  heading the diff removes, a line starting `-#`, and adds nowhere is a
+  section that is gone: the session stops following it. Where the diff
+  exited `0`, the compared sha becomes the noted one, since another
+  session may have moved `HEAD` meanwhile:
 
   ```shell
   scratchpad=<the session's scratchpad>
@@ -1564,13 +1564,14 @@ A pull request found with a false sentence is disarmed at once
   ```
 
   A brief to a worker already running names the changed sections that
-  are its role's, and those removed.
+  are its role's, and those gone.
 
   Where the diff exited non-zero, or `process.sha` is missing or empty,
   the changed sections are not known. The session notes `HEAD` again as
   its skill's opening says, then re-reads whole every file under
-  `process/` and `skills/` it has read. The next brief to each worker
-  already running asks it to re-read its role's sections whole.
+  `process/` and `skills/` it has read, and every one where it cannot
+  tell. The next brief to each worker already running asks it to
+  re-read its role's sections whole.
 
 ## Night mode
 
