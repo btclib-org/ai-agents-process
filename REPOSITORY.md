@@ -22,7 +22,7 @@ listed rather than restated in a second place that would have to be kept
 true:
 
 ```shell
-grep -o 'repos/btclib-org/ai-agents-process[a-z/-]*' REPOSITORY.md | sort -u
+grep -oE '(repos|orgs|users)/[A-Za-z0-9/{}._-]*' REPOSITORY.md | sort -u
 ```
 
 When each answer was read is the commit that wrote it: `git blame
