@@ -245,11 +245,15 @@ the process names its own files by their path under it. Claude Code's
   Claude Code falls back to the default for sandboxed commands. `env -i`
   passes only `PATH`, `CLAUDE_CODE_TMPDIR`, `ZDOTDIR`, the two `UV_`
   variables, and what `claude` needs to find its login: `HOME`, `USER`,
-  and `CLAUDE_CONFIG_DIR` where it is set. On macOS the reviewer's
-  commands run in `zsh`, which reads `~/.zshenv` unless `ZDOTDIR` names
-  another directory, so `ZDOTDIR` names the reviewer's. The session's
-  variables, its tokens included, then do not reach what the reviewer
-  runs.
+  and `CLAUDE_CONFIG_DIR` where it is set. On macOS, `claude` starts two
+  `zsh` shells outside the sandbox, and the reviewer's commands run in
+  `zsh` inside it. Each reads its startup files from `ZDOTDIR`, or from
+  `HOME` where that is unset. `ZDOTDIR` is `/var/empty`, which macOS
+  ships empty and owned by root, so neither the user's `~/.zshenv` nor a
+  file the reviewer writes is read. One it wrote in its own directory
+  would run outside the sandbox at the next run, a resumed one included.
+  The session's variables, its tokens included, then do not reach what
+  the reviewer runs.
 
   The login the run finds is the one `claude auth login` saves. `env -i`
   drops `ANTHROPIC_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN`, and
@@ -284,7 +288,7 @@ the process names its own files by their path under it. Claude Code's
   env -i -C <scratch>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
     ${CLAUDE_CONFIG_DIR:+"CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"} \
     CLAUDE_CODE_TMPDIR=<tmp> UV_CACHE_DIR=<scratch>/<name>/uv-cache \
-    UV_OFFLINE=1 ZDOTDIR=<scratch>/<name> \
+    UV_OFFLINE=1 ZDOTDIR=/var/empty \
     sh -c 'test -d "${CLAUDE_CODE_TMPDIR:?}" && exec "$@"' sh timeout 1800 \
     claude -p --agent reviewer --max-turns 80 --output-format text \
     --setting-sources project --permission-mode dontAsk \
