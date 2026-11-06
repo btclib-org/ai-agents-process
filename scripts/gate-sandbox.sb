@@ -1,0 +1,50 @@
+; The sandbox macOS's sandbox-exec runs an outside contributor's gates
+; in, as process/btclib-common.md's *The gates* says. Its parameters:
+; WT, the worktree; SBX, the directory that holds the gates' caches,
+; HOME and TMPDIR; HOME, the user's home; UV_PYTHON, what
+; `uv python dir` prints; GIT_DIR and GIT_COMMON_DIR, what
+; `git -C <wt> rev-parse --path-format=absolute` prints for
+; --git-dir and --git-common-dir.
+(version 1)
+(allow default)
+
+; No network, loopback included.
+(deny network*)
+
+; No file under the user's home is read, its tokens, keys and keychains
+; included, except uv's interpreters, the worktree, SBX and the
+; worktree's git directories. Seatbelt compares resolved paths, so WT,
+; SBX and HOME are passed through realpath: /tmp is a link to
+; /private/tmp.
+(deny file-read-data (subpath (param "HOME")))
+(allow file-read-data
+  (subpath (param "UV_PYTHON"))
+  (subpath (param "WT"))
+  (subpath (param "SBX"))
+  (subpath (param "GIT_DIR"))
+  (subpath (param "GIT_COMMON_DIR")))
+
+; Writes go to the worktree and to SBX only, and never to a git
+; directory: a configuration or a hook written there would run when
+; git runs outside the sandbox. WT/.git is the git directory of a clone,
+; and the file that names it in a worktree.
+(deny file-write*)
+(allow file-write*
+  (subpath (param "WT"))
+  (subpath (param "SBX"))
+  (literal "/dev/null")
+  (literal "/dev/tty")
+  (regex #"^/dev/fd/"))
+(deny file-write*
+  (subpath (string-append (param "WT") "/.git"))
+  (subpath (param "GIT_DIR"))
+  (subpath (param "GIT_COMMON_DIR")))
+
+; Signals reach only processes of this sandbox.
+(deny signal)
+(allow signal (target same-sandbox))
+
+; No application is opened, as a file opened in Terminal would run
+; outside the sandbox. Apple Events are not stopped: no rule here
+; blocks them.
+(deny lsopen)
