@@ -248,28 +248,38 @@ the process names its own files by their path under it. Claude Code's
   So the session's variables, its tokens included, do not reach what the
   reviewer runs.
 
-  The session creates the reviewer's directory with the link, and starts
-  the reviewer:
+  The session creates the reviewer's directory, links the agent into it,
+  makes the run's temporary directory, starts the reviewer, and removes
+  the temporary directory once the run ends:
 
   ```shell
   mkdir -p <scratch>/<name>/.claude/agents
+  ```
+
+  ```shell
   ln -s "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/reviewer.md" \
     <scratch>/<name>/.claude/agents/reviewer.md
+  ```
+
+  ```shell
+  tmp=$(mktemp -d /tmp/rv.XXXXXX)
   ```
 
   ```shell
   sbx='{"sandbox":{"enabled":true,"failIfUnavailable":true,'
   sbx="${sbx}"'"allowUnsandboxedCommands":false,'
   sbx="${sbx}"'"network":{"strictAllowlist":true}}}'
-  tmp=$(mktemp -d /tmp/rv.XXXXXX)
   env -i -C <scratch>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
     ${CLAUDE_CONFIG_DIR:+"CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"} \
-    CLAUDE_CODE_TMPDIR="$tmp" UV_CACHE_DIR=<scratch>/<name>/uv-cache \
+    CLAUDE_CODE_TMPDIR="${tmp:?}" UV_CACHE_DIR=<scratch>/<name>/uv-cache \
     UV_OFFLINE=1 timeout 1800 \
     claude -p --agent reviewer --max-turns 80 --output-format text \
     --setting-sources project --permission-mode dontAsk \
     --settings "${sbx:?}" --allowedTools Bash,Read,Grep,Glob \
     < <scratch>/<name>-brief.txt > <scratch>/<name>.log 2>&1
+  ```
+
+  ```shell
   rm -rf "${tmp:?}"
   ```
 
