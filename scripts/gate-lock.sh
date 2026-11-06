@@ -38,11 +38,13 @@
 # more of disk is free where $GATE_LOCK_DIR sits (/tmp when it is unset),
 # and memory is admissible: pressure level 1, or level 2 with GATE_LOCK_FREE
 # percent of memory or more free, never level 4 (macOS answers 1 normal,
-# 2 warn, 4 critical). Where a read fails, as
-# off macOS, it does not wait on that read. It prints the idle percentage,
-# the load, the level, the percentage free and the disk free. The idle
-# percentage is the gate; the load, which on macOS counts threads that use
-# no CPU, is only a ceiling that catches a runaway. These waits have no
+# 2 warn, 4 critical). Where the level cannot be read, the percentage free
+# decides alone, as at level 2. Where any other read fails, as off macOS,
+# it does not wait on that read. It prints the idle percentage, the load,
+# the level, the percentage free and the disk free, `?` for each read that
+# failed, and then names those reads. The idle percentage is the gate; the
+# load, which on macOS counts threads that use no CPU, is only a ceiling
+# that catches a runaway. These waits have no
 # bound, nor has the wait for gate.generator: holders that never finish keep
 # every waiter waiting, and a timeout on the call that runs the gates covers
 # the gates, not gate_take. This names them:
@@ -76,6 +78,11 @@
 # ticket from gate.queue). Such a slot is one slot fewer; such a ticket,
 # once the oldest, holds every waiter behind it, and such a gate.generator
 # every generator.
+#
+# Codex's workspace-write sandbox refuses sysctl and iostat. There the load
+# is read through uptime, the percentage free through memory_pressure, and
+# the idle percentage through Mach's host_statistics from /usr/bin/python3.
+# The sandbox refuses the pressure level to sysctl, by name and by number.
 #
 # gate_take writes the holder's PID into the slot's owner file, so that
 # only the holder releases it. A slot whose holder's process is gone is
@@ -211,17 +218,51 @@ _gl_alive() {
 }
 
 # The 1-minute load, read under LC_ALL=C because some locales print a
-# decimal comma
+# decimal comma. Where sysctl is refused, uptime reads it.
 _gl_load() {
-  if [ -r /proc/loadavg ]; then cut -d' ' -f1 /proc/loadavg
-  else LC_ALL=C sysctl -n vm.loadavg | cut -d' ' -f2; fi
+  if [ -r /proc/loadavg ]; then cut -d' ' -f1 /proc/loadavg; return; fi
+  _gl_o=$(LC_ALL=C sysctl -n vm.loadavg 2>/dev/null | cut -d' ' -f2)
+  [ -n "$_gl_o" ] ||
+    _gl_o=$(LC_ALL=C uptime 2>/dev/null | sed -n 's/.*load averages*: *\([0-9.]*\).*/\1/p')
+  [ -z "$_gl_o" ] || echo "$_gl_o"
+}
+
+# The percentage of CPU idle over the next $1 seconds, read through Mach's
+# host_statistics from /usr/bin/python3. Exits 2 at once where it cannot
+# read, and prints nothing after the wait where the second read fails.
+_gl_ticks() {
+  /usr/bin/python3 -I -c '
+import ctypes, sys, time
+try:
+    lib = ctypes.CDLL("/usr/lib/libSystem.dylib")
+    lib.mach_host_self.restype = ctypes.c_uint
+    host = lib.mach_host_self()
+except (OSError, AttributeError):
+    sys.exit(2)
+def ticks():
+    # HOST_CPU_LOAD_INFO fills the user, system, idle and nice ticks
+    t = (ctypes.c_uint * 4)()
+    n = ctypes.c_uint(4)
+    return list(t) if lib.host_statistics(host, 3, t, ctypes.byref(n)) == 0 else None
+t0 = ticks()
+if t0 is None:
+    sys.exit(2)
+time.sleep(float(sys.argv[1]))
+t1 = ticks()
+if t1 is not None:
+    # the counters are 32 bits wide and wrap
+    d = [(b - a) % 2**32 for a, b in zip(t0, t1)]
+    if sum(d) > 0:
+        print(d[2] * 100 // sum(d))
+' "$1" 2>/dev/null
 }
 
 # The percentage of CPU idle over the next GATE_LOCK_POLL seconds, as an
 # integer. The read is the wait of a poll, so that a poll costs the same
 # time whether or not the read works. Linux reads /proc/stat twice; macOS
 # reads the second line of `iostat -c 2`, the first being the average since
-# boot. Where it fails it prints nothing.
+# boot, and where iostat is refused, _gl_ticks. Where all fail it prints
+# nothing.
 _gl_idle() {
   if [ -r /proc/stat ]; then
     { head -n 1 /proc/stat; sleep "$GATE_LOCK_POLL"; head -n 1 /proc/stat; } |
@@ -231,12 +272,19 @@ _gl_idle() {
   else
     _gl_o=$(LC_ALL=C iostat -c 2 -w "$GATE_LOCK_POLL" 2>/dev/null |
       awk 'END { if ($(NF-3) ~ /^[0-9]+$/) print $(NF-3) }')
-    if [ -n "$_gl_o" ]; then echo "$_gl_o"; else sleep "$GATE_LOCK_POLL"; fi
+    [ -n "$_gl_o" ] || _gl_o=$(_gl_ticks "$GATE_LOCK_POLL") || sleep "$GATE_LOCK_POLL"
+    [ -z "$_gl_o" ] || echo "$_gl_o"
   fi
 }
 
 _gl_level() { sysctl -n kern.memorystatus_vm_pressure_level 2>/dev/null; }
-_gl_free() { sysctl -n kern.memorystatus_level 2>/dev/null; }
+
+# Where sysctl is refused, memory_pressure reads the same percentage
+_gl_free() {
+  sysctl -n kern.memorystatus_level 2>/dev/null ||
+    memory_pressure -Q 2>/dev/null |
+      sed -n 's/^System-wide memory free percentage: \([0-9]*\)%$/\1/p'
+}
 
 # GB available, in units of 1024^3 bytes as `df -g` counts them
 _gl_disk() {
@@ -245,19 +293,28 @@ _gl_disk() {
 }
 
 # Reads idle, load, level, free and disk into _gl_u, _gl_l, _gl_p, _gl_f and
-# _gl_g; succeeds when all five admit a gate. An empty read admits.
+# _gl_g; succeeds when all five admit a gate. An empty read admits, except
+# that an empty level leaves the free percentage to decide, as at level 2.
 _gl_admit() {
   _gl_u=$(_gl_idle 2>/dev/null) _gl_l=$(_gl_load 2>/dev/null)
   _gl_p=$(_gl_level) _gl_f=$(_gl_free) _gl_g=$(_gl_disk)
   [ -z "$_gl_u" ] || [ "$_gl_u" -ge "$GATE_LOCK_IDLE" ] || return 1
   [ -z "${_gl_l%.*}" ] || [ "${_gl_l%.*}" -lt "$GATE_LOCK_LOAD" ] || return 1
   [ -z "$_gl_g" ] || [ "$_gl_g" -ge "$GATE_LOCK_DISK" ] || return 1
-  [ -z "$_gl_p" ] || [ "$_gl_p" -le 1 ] && return 0
-  [ "$_gl_p" -eq 2 ] && { [ -z "$_gl_f" ] || [ "$_gl_f" -ge "$GATE_LOCK_FREE" ]; }
+  [ -n "$_gl_p" ] && [ "$_gl_p" -le 1 ] && return 0
+  [ -z "$_gl_p" ] || [ "$_gl_p" -eq 2 ] || return 1
+  [ -z "$_gl_f" ] || [ "$_gl_f" -ge "$GATE_LOCK_FREE" ]
 }
 
+# The readings, then the names of those that could not be read
 _gl_status() {
-  echo "${_gl_u:-?}% CPU idle, load ${_gl_l:-?}, memory pressure level ${_gl_p:-?}, ${_gl_f:-?}% free, ${_gl_g:-?} GB disk free"
+  _gl_x=""
+  [ -n "$_gl_u" ] || _gl_x="$_gl_x, CPU idle"
+  [ -n "$_gl_l" ] || _gl_x="$_gl_x, load"
+  [ -n "$_gl_p" ] || _gl_x="$_gl_x, memory pressure level"
+  [ -n "$_gl_f" ] || _gl_x="$_gl_x, memory free"
+  [ -n "$_gl_g" ] || _gl_x="$_gl_x, disk free"
+  echo "${_gl_u:-?}% CPU idle, load ${_gl_l:-?}, memory pressure level ${_gl_p:-?}, ${_gl_f:-?}% free, ${_gl_g:-?} GB disk free${_gl_x:+; not read: ${_gl_x#, }}"
 }
 
 # Succeeds when GATE_LOCK_STAGGER seconds or more have passed since the last
