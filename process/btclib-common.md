@@ -137,25 +137,28 @@ the process names its own files by their path under it. Claude Code's
   In Codex it runs under `workspace-write` with one writable root: its
   own directory in the scratch directory, which is also its working
   directory. There it writes the inputs of *Every reviewer tries to
-  break the change* and runs them with `uv run --project <wt>`, offline,
-  from a `UV_CACHE_DIR` inside that directory. An input that needs a
-  package not in that cache is named in the verdict as not run. A write
-  anywhere else fails with `Operation not permitted`, the worktree it
-  reviews included, and so do `git fetch` and
-  `git merge-tree --write-tree`, which write in the git directory, and a
-  heredoc, which cannot create its temporary file.
+  break the change* and runs them offline. Where the worktree holds a
+  `uv.lock`, they run with `uv run --project <wt>`, from the worktree's
+  `.venv`, which the session syncs, and from a `UV_CACHE_DIR` inside the
+  reviewer's directory, which holds what that sync had to download.
+  Otherwise they run with `uv run --no-project`, on the standard library
+  alone. An input that needs a package these do not hold is named in
+  the verdict as not run. A write anywhere else fails with
+  `Operation not permitted`, the worktree it reviews included, and so do
+  `git fetch` and `git merge-tree --write-tree`, which write in the git
+  directory, and a heredoc, which cannot create its temporary file.
   `git log --format=%G?` reads a signed commit as `N`, and the network
   is off (below). So the session that starts it first runs, outside any
   sandbox, `git fetch origin`, the `merge-tree` of *A pull request's
   rounds*, the checks of *Signed and signed off* with the sign-off
-  control, `uv sync --locked` in the worktree, which fills that cache,
-  and the gates where no run on the sha is on the record. The brief
-  carries them as runs on the record, the merge's tree sha included,
-  names the worktree, and asks for no heredoc. The reviewer relies on
-  them, says so, and reads the worktree with `git -C <wt> show` and
-  `git diff` at shas, which the sandbox allows. The session removes the
-  reviewer's directory once that reviewer's rounds end (*Debris goes
-  when its work ends*).
+  control, `uv sync --locked` where the worktree holds a `uv.lock`, and
+  the gates where no run on the sha is on the record. The brief carries
+  them as runs on the record, the merge's tree sha included, names the
+  worktree, and asks for no heredoc. The reviewer relies on them, says
+  so, and reads the worktree with `git -C <wt> show` and
+  `git -C <wt> diff` at shas, which the sandbox allows. The session
+  removes the reviewer's directory once that reviewer's rounds end
+  (*Debris goes when its work ends*).
 
   Claude Code starts a Codex reviewer with `codex exec`. That spawns no
   custom agent by name, so the brief's first sentence says to read
@@ -177,8 +180,14 @@ the process names its own files by their path under it. Claude Code's
   it could read the keychain too, through `gh auth token` and
   `git credential fill`.
 
+  The session creates the reviewer's directory, syncs the worktree where
+  it holds a `uv.lock`, and starts the reviewer:
+
   ```shell
   mkdir -p <scratch>/<name>
+  ```
+
+  ```shell
   env -C <wt> UV_CACHE_DIR=<scratch>/<name>/uv-cache uv sync --locked
   ```
 
