@@ -1323,11 +1323,15 @@ run and another bot run.
   of a text to be posted. *Clients* says how each client starts and
   resumes a reviewer in the other.
 - **Where the other client is unavailable, the branch goes on without
-  the fresh reviewer.** Unavailable means the client refuses the run, as
-  Codex does with `Your workspace is out of credits`. It is judged once,
-  when the rounds reach the fresh reviewer: the run is tried, and once
-  refused it is not retried, even where the client comes back before
-  the branch lands. It does not apply to the resumed run of a fresh
+  the fresh reviewer.** Unavailable means the client refuses the run. It
+  is judged once, when the rounds reach the fresh reviewer: the run is
+  tried, and once refused it is not retried, even where the client comes
+  back before the branch lands. A refusal the session cannot clear, as
+  Codex's `Your workspace is out of credits` is, also holds for the
+  session's later branches: they go on without the fresh reviewer, with
+  no new try. A limit that names a reset time within the session is not
+  one: once the reset has passed, a later branch tries the run again.
+  Only the hold on later branches applies to the resumed run of a fresh
   reviewer that answered `CHANGES REQUESTED` and has not cleared: its
   findings wait for its own re-review (*The rounds*). The rounds then
   end at the dedicated reviewer's `CLEARED` of the head, which stands
@@ -1335,10 +1339,11 @@ run and another bot run.
   dedicated reviewer's last `CLEARED` names an earlier sha, it is
   resumed on the head first. The branch is opened, and lands once
   everything else `/btclib-pr` asks of it holds, the bot's `ACK <head>`
-  included where it asks for one. The pull request body says that the
-  fresh review in the other client is missing, quoting the error the
-  client printed, and, where the bot's ACK is missing too, that it is
-  and why. No review in the other client is owed after it lands.
+  included where it asks for one. The pull request body, a later
+  branch's included, says that the fresh review in the other client is
+  missing, quoting the error the client printed, and, where the bot's
+  ACK is missing too, that it is and why. No review in the other client
+  is owed after it lands.
 - The fresh reviewer reads the branch's whole diff from its parent,
   briefed with *Local review* and with the bot's prompt: the `prompt:`
   block of `btclib-org/.github`'s `reusable-claude-review.yml` at the ref
