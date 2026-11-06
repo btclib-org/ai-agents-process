@@ -236,6 +236,19 @@ the process names its own files by their path under it. Claude Code's
   a push — runs outside the sandbox, through an escalation request, and
   never with signing turned off (*Signed and signed off*).
 
+  Under the approval policy `never`, which `~/.codex/config.toml` may
+  set, Codex makes no escalation request: its instructions then read
+  "Approval policy is currently never. Do not provide the
+  `sandbox_permissions` for any reason, commands will be rejected."
+  In Codex 0.163.0, `codex exec` runs under `never` unless an automatic
+  reviewer takes the requests, with `--approve-for-me`, which refuses
+  `-s`, or with `-c approval_policy="on-request"` and
+  `-c approvals_reviewer="auto_review"` together. Either runs it under
+  `on-request`. `-c approval_policy="on-request"` alone, and
+  `codex -a on-request exec`, still run it under `never`. Which policy
+  an interactive session needs is not measured
+  ([ISS ai-agents-process#278](https://github.com/btclib-org/ai-agents-process/issues/278)).
+
 ### Shell, checkouts and prose
 
 - **Never open a command with `cd`.** The working directory resets to
