@@ -143,10 +143,13 @@ the process names its own files by their path under it. Claude Code's
   reviewer's directory, which holds what that sync had to download.
   Otherwise they run with `uv run --no-project`, on the standard library
   alone. An input that needs a package these do not hold is named in
-  the verdict as not run. A write anywhere else fails with
-  `Operation not permitted`, the worktree it reviews included, and so do
-  `git fetch` and `git merge-tree --write-tree`, which write in the git
-  directory, and a heredoc, which cannot create its temporary file.
+  the verdict as not run. The session then runs it outside the sandbox,
+  as it runs the gates, and resumes the reviewer with its result on the
+  record: the rounds do not end on a verdict that names such an input.
+  A write anywhere else fails with `Operation not permitted`, the
+  worktree it reviews included, and so do `git fetch` and
+  `git merge-tree --write-tree`, which write in the git directory, and a
+  heredoc, which cannot create its temporary file.
   `git log --format=%G?` reads a signed commit as `N`, and the network
   is off (below). So the session that starts it first runs, outside any
   sandbox, `git fetch origin`, the `merge-tree` of *A pull request's
@@ -170,8 +173,9 @@ the process names its own files by their path under it. Claude Code's
   worktree under `/tmp` included. `--ignore-rules` keeps out the user's
   `.rules` files: a command a rule allows, such as `git`, runs outside
   the sandbox. `env -i` passes it only `HOME`, where Codex finds its
-  login, `PATH`, `UV_CACHE_DIR` and `UV_OFFLINE`, so the variables of
-  the session that starts it, its tokens included, do not reach what the
+  login, `PATH`, `UV_CACHE_DIR`, `UV_OFFLINE` and a `TMPDIR` inside the
+  reviewer's directory, where `mktemp` writes, so the variables of the
+  session that starts it, its tokens included, do not reach what the
   reviewer runs.
 
   The network is off because an input runs the branch's code, and the
@@ -181,19 +185,22 @@ the process names its own files by their path under it. Claude Code's
   `git credential fill`.
 
   The session creates the reviewer's directory, syncs the worktree where
-  it holds a `uv.lock`, and starts the reviewer:
+  it holds a `uv.lock`, and starts the reviewer. The `-u` keeps the sync
+  in the worktree's `.venv`, where the reviewer's `uv run` looks for it:
 
   ```shell
-  mkdir -p <scratch>/<name>
+  mkdir -p <scratch>/<name>/tmp
   ```
 
   ```shell
-  env -C <wt> UV_CACHE_DIR=<scratch>/<name>/uv-cache uv sync --locked
+  env -C <wt> -u UV_PROJECT_ENVIRONMENT \
+    UV_CACHE_DIR=<scratch>/<name>/uv-cache uv sync --locked
   ```
 
   ```shell
   env -i -C <scratch>/<name> HOME="$HOME" PATH="$PATH" \
     UV_CACHE_DIR=<scratch>/<name>/uv-cache UV_OFFLINE=1 \
+    TMPDIR=<scratch>/<name>/tmp \
     timeout 900 codex exec -s workspace-write --skip-git-repo-check \
     --ignore-rules \
     -c 'sandbox_workspace_write.writable_roots=["<scratch>/<name>"]' \
