@@ -38,10 +38,11 @@ says which a number is. A pull request among the arguments is
 - **Never as a batch; never hold one that is ready.** Open each pull
   request as soon as it is cleared, except an embargoed fix (the shared
   *Committing and rebasing*).
-- **Bundle by file or by decision.** Related issues — same file or same
-  decision — make one pull request; otherwise one pull request per
-  issue. Before assigning a worker, look for open issues sharing a file
-  or a decision with the one at hand (`gh issue view` each) and take them
+- **Bundle by subject, not by file**, as the tree's `CONTRIBUTING.md`
+  says in *One subject, opened as soon as it is written*. Issues one
+  decision answers share a subject; issues that only touch the same file
+  do not. Before assigning a worker, look for open issues sharing a
+  subject with the one at hand (`gh issue view` each) and take them
   together.
 - **A port asks for convergence.** Hash the copies first; ask each tree
   to take the source byte for byte rather than apply the delta you
