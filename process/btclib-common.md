@@ -240,14 +240,30 @@ the process names its own files by their path under it. Claude Code's
   set, Codex makes no escalation request: its instructions then read
   "Approval policy is currently never. Do not provide the
   `sandbox_permissions` for any reason, commands will be rejected."
-  In Codex 0.163.0, `codex exec` runs under `never` unless an automatic
-  reviewer takes the requests, with `--approve-for-me`, which refuses
-  `-s`, or with `-c approval_policy="on-request"` and
-  `-c approvals_reviewer="auto_review"` together. Either runs it under
-  `on-request`. `-c approval_policy="on-request"` alone, and
-  `codex -a on-request exec`, still run it under `never`. Which policy
-  an interactive session needs is not measured
+  In Codex 0.163.0, the runs of `codex exec` measured ran under
+  `on-request` with `--approve-for-me`, which refuses `-s`, and with
+  `-c approvals_reviewer="auto_review"`, an automatic reviewer of the
+  requests, where `approval_policy` was `on-request` or set nowhere.
+  They ran under `never` where `approvals_reviewer` stayed `user`, with
+  `-c approval_policy="on-request"` too, and where `approval_policy` was
+  `never`, in `config.toml` or in a `-c`, whatever the reviewer. An `-a`
+  before `exec` did not reach it. These are the settings measured, not
+  every one. Which policy an interactive session needs is not measured
   ([ISS ai-agents-process#278](https://github.com/btclib-org/ai-agents-process/issues/278)).
+
+  Each run records its policy in its rollout, with credits or without,
+  so this re-checks a setting before an escalation is relied on. The
+  `<settings>` are the flags under test, `-s` dropped for
+  `--approve-for-me`:
+
+  ```shell
+  id=$(codex exec --json -s workspace-write --skip-git-repo-check \
+    <settings> 'Reply ok.' < /dev/null |
+    jq -r 'select(.type == "thread.started") | .thread_id')
+  jq -c 'select(.type == "turn_context") | .payload
+    | {approval_policy, approvals_reviewer}' \
+    ~/.codex/sessions/*/*/*/rollout-*-"${id:?}".jsonl
+  ```
 
 ### Shell, checkouts and prose
 
