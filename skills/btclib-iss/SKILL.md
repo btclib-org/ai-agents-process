@@ -11,9 +11,26 @@ and take each to an open pull request, written, gated and cleared by a
 local review (*Opening the pull request*). Then follow each as its
 author (*Following it*).
 
-**First read `$PROCESS/process/btclib-common.md`, whole**:
-`echo "$PROCESS"` prints the clone's path. Its opening says what it
-holds and what this file holds. What the session writes,
+**First note where the process stands**, before reading it: the
+session keeps `$PROCESS`'s `HEAD` in a directory of its scratchpad, for
+the shared *The process is re-read when `main` changes it*.
+`echo "$PROCESS"` prints the clone's path.
+
+```shell
+scratchpad=<the session's scratchpad>
+mkdir -p "${scratchpad:?}/orchestrator"
+```
+
+```shell
+scratchpad=<the session's scratchpad>
+git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.sha"
+```
+
+The client loaded this file before that note, so the session reads it
+again, whole and once, from `$PROCESS/skills/btclib-iss/SKILL.md`.
+
+**Then read `$PROCESS/process/btclib-common.md`, whole.** Its opening
+says what it holds and what this file holds. What the session writes,
 and this file, follow its *Write plainly*.
 
 **Where $ARGUMENTS names no issue, ask the human which, before reading

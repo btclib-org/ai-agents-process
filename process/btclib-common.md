@@ -1743,7 +1743,59 @@ A pull request found with a false sentence is disarmed at once
   reviewer has answered.**
 - **A session that runs long re-reads what can arrive meanwhile**
   between rounds: new pull requests, new reviews and comments on the
-  ones it works.
+  ones it works, and the process (*The process is re-read when `main`
+  changes it*).
+- **The process is re-read when `main` changes it.** The session notes
+  `$PROCESS`'s `HEAD` in `<scratchpad>/orchestrator/process.sha` before
+  it first reads this file, as its skill's opening says. Between rounds,
+  and before it briefs a worker, it brings `$PROCESS` forward (*Shell,
+  checkouts and prose*) and notes the `HEAD` it compares:
+
+  ```shell
+  scratchpad=<the session's scratchpad>
+  git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.next"
+  ```
+
+  It compares that sha with the noted one:
+
+  ```shell
+  scratchpad=<the session's scratchpad>
+  started=$(cat "${scratchpad:?}/orchestrator/process.sha")
+  next=$(cat "${scratchpad:?}/orchestrator/process.next")
+  git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- process/ skills/
+  ```
+
+  Where the diff prints anything, the session re-reads each section it
+  touches, and whole each file it touches that is not markdown, such as
+  a script. It reads them at `next`, as
+  `git -C "$PROCESS" show "${next:?}:<file>"` prints them: the hunks'
+  line numbers are `next`'s, and another session may have moved the
+  checkout since. A markdown hunk's header shows a body line, not a
+  heading: a hunk's sections are the last heading above its first line
+  and every heading within its lines, among those that output piped to
+  `grep -n '^#'` lists. In a markdown file, a heading the diff removes,
+  a line starting `-#`, and adds nowhere is a section that is gone: the
+  session stops following it. Where the diff exited `0`, the compared
+  sha becomes the noted one, since another session may have moved `HEAD`
+  meanwhile:
+
+  ```shell
+  scratchpad=<the session's scratchpad>
+  mv "${scratchpad:?}/orchestrator/process.next" "${scratchpad:?}/orchestrator/process.sha"
+  ```
+
+  A brief to a worker already running names the changed sections that
+  are its role's, and those gone. Where a map of *Which sections are
+  yours* changed, it also names each section the map now gives that
+  role, changed or not, and each it no longer gives, which the worker
+  stops following.
+
+  Where the diff exited non-zero, or `process.sha` is missing or empty,
+  the changed sections are not known. The session notes `HEAD` again as
+  its skill's opening says, then re-reads whole every file under
+  `process/` and `skills/` it has read, and every one where it cannot
+  tell. The next brief to each worker already running asks it to
+  re-read its role's sections whole.
 
 ## Night mode
 

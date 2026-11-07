@@ -11,9 +11,26 @@ Take the open pull requests named in $ARGUMENTS, in repositories of
 was raised*, *Answering it*, *Rebase and CI*, *The decision* and
 *Landing*. With no argument, start from *The sweep*.
 
-**First read `$PROCESS/process/btclib-common.md`, whole**:
-`echo "$PROCESS"` prints the clone's path. Its opening says what it
-holds and what this file holds. What the session writes,
+**First note where the process stands**, before reading it: the
+session keeps `$PROCESS`'s `HEAD` in a directory of its scratchpad, for
+the shared *The process is re-read when `main` changes it*.
+`echo "$PROCESS"` prints the clone's path.
+
+```shell
+scratchpad=<the session's scratchpad>
+mkdir -p "${scratchpad:?}/orchestrator"
+```
+
+```shell
+scratchpad=<the session's scratchpad>
+git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.sha"
+```
+
+The client loaded this file before that note, so the session reads it
+again, whole and once, from `$PROCESS/skills/btclib-pr/SKILL.md`.
+
+**Then read `$PROCESS/process/btclib-common.md`, whole.** Its opening
+says what it holds and what this file holds. What the session writes,
 and this file, follow its *Write plainly*.
 
 The shared *Where you work* says how the repository is named.
@@ -1188,10 +1205,12 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
 
 - **A landing in `btclib-org/ai-agents-process` brings its primary
   checkout forward at once**, by the shared fast-forward. Where that
-  checkout is the clone `$PROCESS` names, every session reads the
-  process through it, and reads the old one until then. Then read a
-  landed line back where sessions read it: under `$PROCESS`, or through
-  the link of the skill or agent it changed.
+  checkout is the clone `$PROCESS` names, a session that starts reads
+  the process through it, and reads the old one until then. A session
+  already running re-reads what changed as the shared *The process is
+  re-read when `main` changes it* says. Then read a landed line back
+  where sessions read it: under `$PROCESS`, or through the link of the
+  skill or agent it changed.
 - **The collateral goes back now** (the shared *Collateral*), before
   anything new starts.
 - **Remove the worktrees** — yours, and tell the writer to remove its
