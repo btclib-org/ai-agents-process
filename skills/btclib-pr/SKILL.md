@@ -193,6 +193,22 @@ answered one of three ways:
   reserved decision. It goes to the human or the maintainer, as the
   shared *When the human has to decide* says.
 
+**A bot's finding, the review bot's or CodeRabbit's, takes the first of
+these routes that fits**, measured on the head, unless it needs a
+decision:
+
+- **declined** where it does not hold: it needs a condition the text
+  already rules out, the sentence it calls false is true where the text
+  applies it and leads no reader to a wrong step, or it is a matter of
+  taste (`REVIEWING.md`'s *The standard an ack is given against*).
+- **accepted** where it is the branch's own: a defect or a false
+  sentence its diff or its pull request body adds, or anything else the
+  shared *Collateral* counts as the branch's subject (the shared *A pull
+  request's rounds* says how a fix to the branch is reviewed).
+- **filed** where it is older than the branch and the branch does not
+  make it materially worse: it goes where the shared *Collateral* says,
+  and the reply names the issue where one is filed.
+
 **Every inline `suggestion` is applied in the worktree or declined with
 its measurement.** It is not applied with GitHub's button, so that the
 gates run on it.
