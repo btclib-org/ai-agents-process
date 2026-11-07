@@ -77,7 +77,7 @@ gate_take_all <worktree> > "$out" 2>&1 && {
   # the trap
   <the measured run> & run=$!; gen_add "$run"
   # the watchdog is recorded ahead of its nap, so that gen_stop ends it
-  # before it can read the nap gone
+  # first: this narrows the time it can signal a reaped run
   sleep 900 & nap=$!
   ( until gen_gone "$nap"; do sleep 5; done
     kill "$run"; sleep 1; gen_gone "$run" || kill -9 "$run" ) 2>/dev/null &
@@ -113,4 +113,11 @@ generator, the watchdog or its `sleep 900`, is reaped by the shell, and
 `gen_stop` still signals its PID, which another process may hold by
 then. That window runs from its end to `gen_stop`, which starts at most
 900 seconds after the measured run does, plus the watchdog's poll and
-its second.
+its second. That bound fails where another process takes the nap's PID
+before that poll: the watchdog then reads the nap as there, and neither
+stops the run nor ends until that process does.
+
+The watchdog can itself signal the reaped run. Where the run ends on its
+own just as the watchdog reads the nap gone, `wait` may reap it before
+the watchdog sends SIGTERM, which then goes to the reaped PID before
+`gen_stop` ends the watchdog.
