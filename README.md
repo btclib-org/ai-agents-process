@@ -1,15 +1,5 @@
 # ai-agents-process
 
-<!-- One badge per property of the tree, in the order section 2 of
-btclib-org/.github's README.md fixes. Nothing here is a Python package
-and there is no `release.yml`, so the first group is empty; the second
-holds the gates, pre-commit.ci and then `lint`, and then the sentinels,
-which section 10's record gives this tree as `links` alone. Every
-workflow badge carries `?branch=main`, and its link the same filter. -->
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/btclib-org/ai-agents-process/main.svg)](https://results.pre-commit.ci/latest/github/btclib-org/ai-agents-process/main)
-[![lint](https://github.com/btclib-org/ai-agents-process/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/btclib-org/ai-agents-process/actions/workflows/lint.yml?query=branch%3Amain)
-[![links](https://github.com/btclib-org/ai-agents-process/actions/workflows/links.yml/badge.svg?branch=main)](https://github.com/btclib-org/ai-agents-process/actions/workflows/links.yml?query=branch%3Amain)
-
 The process the btclib-org maintainers follow with the coding agents
 [Claude Code](https://claude.com/claude-code) and
 [Codex](https://developers.openai.com/codex):
@@ -279,3 +269,10 @@ Development is LLM-based: humans are welcome, as long as they are
 comfortable with agentic development ;-). A contribution must have been
 read and understood by the person who submits it.
 [`CONTRIBUTING.md`](./CONTRIBUTING.md#working-with-an-llm) has the rules.
+
+## Status
+
+<!-- Section 2 of btclib-org/.github's README.md says which badges sit here. -->
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/btclib-org/ai-agents-process/main.svg)](https://results.pre-commit.ci/latest/github/btclib-org/ai-agents-process/main)
+[![lint](https://github.com/btclib-org/ai-agents-process/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/btclib-org/ai-agents-process/actions/workflows/lint.yml?query=branch%3Amain)
+[![links](https://github.com/btclib-org/ai-agents-process/actions/workflows/links.yml/badge.svg?branch=main)](https://github.com/btclib-org/ai-agents-process/actions/workflows/links.yml?query=branch%3Amain)
