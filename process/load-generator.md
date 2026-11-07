@@ -31,7 +31,21 @@ gate_take_all <worktree> > "$out" 2>&1 && {
   case $idle in ''|*[!0-9]*) idle=0 ;; esac
   free=$(( $(getconf _NPROCESSORS_ONLN) * idle / 100 - workers ))
   : > "$pids"
-  trap 'while read -r pid; do kill "$pid" 2>/dev/null; done < "$pids"' EXIT
+  # Codex's sandbox refuses ps, and kill -0 also fails for another user's
+  # process: only "No such process" reads as gone
+  gen_gone() { LC_ALL=C kill -0 "$1" 2>&1 | grep -qi 'no such process'; }
+  gen_stop() {
+    trap '' HUP INT TERM
+    while read -r pid; do kill "$pid" 2>/dev/null; done < "$pids"
+    sleep 1
+    while read -r pid; do
+      gen_gone "$pid" || kill -9 "$pid" 2>/dev/null
+    done < "$pids"
+    while read -r pid; do
+      until gen_gone "$pid"; do sleep 5; done
+    done < "$pids"
+  }
+  trap gen_stop EXIT
   trap 'exit 1' HUP INT TERM
   while [ "$free" -gt 0 ]; do
     yes > /dev/null & echo $! >> "$pids"
@@ -40,21 +54,21 @@ gate_take_all <worktree> > "$out" 2>&1 && {
   # the measured run goes in the background so that a signal reaches
   # the trap, and the watchdog kills it after 15 minutes (900 seconds)
   <the measured run> & run=$!; echo "$run" >> "$pids"
-  ( sleep 900 & echo $! >> "$pids"; wait $!; kill "$run" ) 2>/dev/null &
+  ( sleep 900 & echo $! >> "$pids"; wait $!
+    kill "$run"; sleep 1; gen_gone "$run" || kill -9 "$run" ) 2>/dev/null &
   echo $! >> "$pids"
   wait "$run"
-  while read -r pid; do kill "$pid" 2>/dev/null; done < "$pids"
-  sleep 1
-  # Codex's sandbox refuses ps, and kill -0 also fails for another user's
-  # process: only "No such process" reads as gone
-  while read -r pid; do
-    LC_ALL=C kill -0 "$pid" 2>&1 | grep -qi 'no such process' || exit 1
-  done < "$pids"
+  gen_stop
   trap - EXIT HUP INT TERM
   gate_release_all
 }
 ```
 
-The trap kills the processes when the shell exits or receives SIGHUP,
-SIGINT or SIGTERM. A SIGKILL of the shell leaves the processes, and the
-PID file is there to kill them by hand.
+`gen_stop` runs when the measured run ends, and from the trap when the
+shell exits or receives SIGHUP, SIGINT or SIGTERM. It sends SIGTERM,
+then SIGKILL to each process not gone a second later, and returns only
+once each is gone, ignoring those three signals meanwhile. So the shell
+holds the slots until then: where a PID never reads as gone, as another
+user's does, until the human sends the shell SIGKILL. A SIGKILL of the
+shell leaves the processes, and the PID file is there to kill them by
+hand.
