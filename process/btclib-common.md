@@ -218,16 +218,89 @@ the process names its own files by their path under it. Claude Code's
   outside its sandbox through an escalation request, as it does a git
   write (*Git writes under Codex*). The brief goes on stdin, because
   `--allowedTools` takes every argument after it, a trailing prompt
-  included. The `-u` flags keep the variables of a Claude Code session
-  out of it, and are harmless where unset:
+  included.
+
+  Its Bash commands run in Claude Code's own sandbox, so that the inputs
+  it writes and runs are held as a Codex reviewer's are, for the same
+  reason: they write only in the reviewer's directory, which is its
+  working directory, and in a temporary directory of the run's own, and
+  reach no host. The session prepares the reviewer and its brief, and
+  removes its directory, as it does for a Codex reviewer. The reviewer
+  reads the worktree and runs its inputs with `uv run` the same way. An
+  input that needs a package neither the worktree's `.venv` nor the
+  standard library holds is handled the same way too: the verdict names
+  it as not run, the session reads it and runs it outside the sandbox,
+  and the reviewer's resumed run gets its result.
+
+  The flags make this hold whatever the user's settings say.
+  `--setting-sources project` loads no user settings, because the sandbox
+  makes each directory their `additionalDirectories` names writable. The
+  reviewer agent is then found through a link in the reviewer's
+  directory. `--settings` turns the sandbox on, refuses every host, and
+  runs no command outside the sandbox, even where it cannot start.
+  `--permission-mode dontAsk` refuses a call that would otherwise wait
+  for an answer.
+
+  The sandbox also makes Claude Code's temporary directory writable. On
+  macOS that is `/tmp/claude-<uid>`, which holds Claude Code sessions'
+  scratchpads and the worktrees in them. So each run moves it to a new
+  directory with `CLAUDE_CODE_TMPDIR`, on a short path: past some length
+  Claude Code falls back to the default for sandboxed commands. `env -i`
+  passes only `PATH`, `CLAUDE_CODE_TMPDIR`, `ZDOTDIR`, the two `UV_`
+  variables, and what `claude` needs to find its login: `HOME`, `USER`,
+  and `CLAUDE_CONFIG_DIR` where it is set. On macOS, `claude` starts two
+  `zsh` shells outside the sandbox, and the reviewer's commands run in
+  `zsh` inside it. Each reads its startup files from `ZDOTDIR`, or from
+  `HOME` where that is unset. `ZDOTDIR` is `/var/empty`, which macOS
+  ships empty and owned by root, so neither the user's `~/.zshenv` nor a
+  file the reviewer writes is read. One it wrote in its own directory
+  would run outside the sandbox at the next run, a resumed one included.
+  The session's variables, its tokens included, then do not reach what
+  the reviewer runs.
+
+  The login the run finds is the one `claude auth login` saves. `env -i`
+  drops `ANTHROPIC_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN`, and
+  `--setting-sources project` drops an `apiKeyHelper` in the user's
+  settings. Without a saved login the run prints `Not logged in · Please
+  run /login` and exits `1`.
+
+  The session creates the reviewer's directory, links the agent into it,
+  and makes the run's temporary directory. `mktemp` prints its path,
+  which stands for `<tmp>` in the two blocks after it. The session then
+  starts the reviewer, and removes the temporary directory once the run
+  ends. The run starts `claude` only where `CLAUDE_CODE_TMPDIR` names a
+  directory, so an empty or missing value stops it:
 
   ```shell
-  tools='Bash(git *),Bash(gh pr view *),Bash(gh issue view *),Bash(gh api *),'
-  tools="${tools}Bash(cat *),Bash(sed -n *),Bash(grep *),Read,Grep,Glob"
-  env -C <wt> -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT timeout 1800 \
+  mkdir -p <scratch>/<name>/.claude/agents
+  ```
+
+  ```shell
+  ln -s "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/reviewer.md" \
+    <scratch>/<name>/.claude/agents/reviewer.md
+  ```
+
+  ```shell
+  mktemp -d /tmp/rv.XXXXXX
+  ```
+
+  ```shell
+  sbx='{"sandbox":{"enabled":true,"failIfUnavailable":true,'
+  sbx="${sbx}"'"allowUnsandboxedCommands":false,'
+  sbx="${sbx}"'"network":{"strictAllowlist":true}}}'
+  env -i -C <scratch>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
+    ${CLAUDE_CONFIG_DIR:+"CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"} \
+    CLAUDE_CODE_TMPDIR=<tmp> UV_CACHE_DIR=<scratch>/<name>/uv-cache \
+    UV_OFFLINE=1 ZDOTDIR=/var/empty \
+    sh -c 'test -d "${CLAUDE_CODE_TMPDIR:?}" && exec "$@"' sh timeout 1800 \
     claude -p --agent reviewer --max-turns 80 --output-format text \
-    --allowedTools "${tools:?}" \
+    --setting-sources project --permission-mode dontAsk \
+    --settings "${sbx:?}" --allowedTools Bash,Read,Grep,Glob \
     < <scratch>/<name>-brief.txt > <scratch>/<name>.log 2>&1
+  ```
+
+  ```shell
+  rm -rf <tmp>
   ```
 
 - **Hooks.** Claude Code reads them from `~/.claude/settings.json`,
@@ -1251,7 +1324,7 @@ branch, or a text to be posted.
   of the first verdict> <cleared sha>`, or, where a rebase came between,
   of `git range-diff <old base>..<sha of the first verdict>
   <new base>..<cleared sha>`, to check that each fix is a prose-only fix.
-- **A Codex reviewer's `CLEARED` that names an input its sandbox left
+- **A fresh reviewer's `CLEARED` that names an input its sandbox left
   unrun ends no rounds** (*Clients*). The `CLEARED` of the reviewer's
   resumed run, with that input's result on the record, stands in for it
   in the next bullet.
