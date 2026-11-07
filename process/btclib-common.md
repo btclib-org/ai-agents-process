@@ -657,10 +657,11 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
   sources the primary clone's.
 
   Neither form holds a slot of the shared lock, so the rehearsal starts
-  no load: its stand-in reports 0% idle, where the example starts no
-  generator, or its `yes` becomes `sleep 900`.
+  no load: its `yes` becomes a `sleep` that outlasts the watchdog, as
+  `sleep 1000`.
 
-  Before the block runs, the rehearsal refuses a stand-in block where
+  Before the block runs, the rehearsal refuses either form where
+  `grep -cw yes <block>` does not print `0`, and a stand-in block where
   `grep -cw -e gate-lock -e PROCESS <block>` does not print `0`. It
   refuses a block of the real script where `head -n 1 <block>` is not
   that assignment or holds a `$`, or where `grep -cw PROCESS <block>`
