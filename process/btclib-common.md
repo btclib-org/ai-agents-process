@@ -1212,14 +1212,14 @@ the orchestrator in the pull request.
 
 ### Committing and rebasing
 
-- **Push the first commit as soon as work exists**, before any long
-  step; it needs no gate. After that, push a commit or an amend only
-  once a gate run on that very commit exited 0, never after a failed
-  one. Check `git ls-remote origin <branch>` against `HEAD` after every
-  push. On an open pull request, a fix is pushed only once the rounds of
-  *Local review* have ended, and the orchestrator then has the writer
-  push it. An armed pull request is disarmed before any push to it
-  (`/btclib-pr`'s *Arming auto-merge*).
+- **A branch's first push waits for the gates.** Push a commit or an
+  amend only once a gate run on that very commit exited 0, never after a
+  failed one. A fix the gates find before the first push amends a commit
+  not yet pushed. Check `git ls-remote origin <branch>` against `HEAD`
+  after every push. On an open pull request, a fix is pushed only once
+  the rounds of *Local review* have ended, and the orchestrator then has
+  the writer push it. An armed pull request is disarmed before any push
+  to it (`/btclib-pr`'s *Arming auto-merge*).
 - **An embargoed fix is the exception: it is pushed to `origin` only
   once its release commit is ready on top of it.** It is gated locally.
   The standard's section 12, *A security advisory is worked in this
