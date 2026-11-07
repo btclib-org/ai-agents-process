@@ -212,11 +212,14 @@ decision:
   it goes where the shared *Collateral* says, and the reply names the
   issue where one is filed. A line the branch rewrote can carry an older
   limit, so the case is read on the base's file, not the line looked for
-  in the diff. The first command prints the merge base, `<base>`, and
-  the second the file there:
+  in the diff. The first command prints `<base>`, the merge base with
+  the pull request's base branch, `baseRefName` (*Whose pull request it
+  is*), and the second the file there. `<path>` is the file's path at
+  `<base>`, the old one where `git diff --name-status -M <base> <head>`
+  shows a rename:
 
   ```shell
-  git -C <wt> merge-base origin/main <head>
+  git -C <wt> merge-base origin/<baseRefName> <head>
   ```
 
   ```shell
