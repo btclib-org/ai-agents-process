@@ -660,14 +660,15 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
   no load: its `yes` becomes a `sleep` that outlasts the watchdog, as
   `sleep 1000`.
 
-  Before the block runs, the rehearsal refuses either form where
-  `grep -cw yes <block>` does not print `0`, and a stand-in block where
+  Before the block runs, the rehearsal refuses a stand-in block where
   `grep -cw -e gate-lock -e PROCESS <block>` does not print `0`. It
   refuses a block of the real script where `head -n 1 <block>` is not
   that assignment or holds a `$`, or where `grep -cw PROCESS <block>`
-  does not print `0`. Each check's control is the block as extracted,
-  which it refuses: each grep prints `1` there. `-w` keeps the example's
-  `_NPROCESSORS_ONLN` from matching.
+  does not print `0`. Where the block as extracted starts `yes`, it
+  refuses either form where `grep -cw yes <block>` does not print `0`.
+  Each check's control is the block as extracted, which it refuses where
+  that block holds the check's pattern, as the example holds all three.
+  `-w` keeps the example's `_NPROCESSORS_ONLN` from matching.
 - **A tool's zero covers only what it read.** A skipped file prints what
   a clean one prints. Ask the tool its input set (pre-commit `files:` and
   `exclude:`, `lychee --dump-inputs`, ruff on notebooks without language
