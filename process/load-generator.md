@@ -33,7 +33,20 @@ gate_take_all <worktree> > "$out" 2>&1 && {
   : > "$pids"
   # Codex's sandbox refuses ps, and kill -0 also fails for another user's
   # process: only "No such process" reads as gone
-  gen_gone() { LC_ALL=C kill -0 "$1" 2>&1 | grep -qi 'no such process'; }
+  gen_gone() {
+    case $(LC_ALL=C kill -0 "$1" 2>&1) in
+      *[Nn]'o such process'*) ;;
+      *) return 1 ;;
+    esac
+  }
+  # a PID that cannot be recorded is killed, and the shell exits once it
+  # is gone
+  gen_add() {
+    echo "$1" >> "$pids" && return
+    kill -9 "$1"
+    until gen_gone "$1"; do sleep 1; done
+    exit 1
+  }
   gen_stop() {
     trap '' HUP INT TERM
     while read -r pid; do kill "$pid" 2>/dev/null; done < "$pids"
@@ -46,17 +59,22 @@ gate_take_all <worktree> > "$out" 2>&1 && {
     done < "$pids"
   }
   trap gen_stop EXIT
-  trap 'exit 1' HUP INT TERM
+  # a signal while the processes start is acted on once each is recorded
+  stop=
+  trap 'stop=1' HUP INT TERM
   while [ "$free" -gt 0 ]; do
-    yes > /dev/null & echo $! >> "$pids"
+    yes > /dev/null & gen_add $!
     free=$(( free - 1 ))
   done
   # the measured run goes in the background so that a signal reaches
   # the trap, and the watchdog kills it after 15 minutes (900 seconds)
-  <the measured run> & run=$!; echo "$run" >> "$pids"
-  ( sleep 900 & echo $! >> "$pids"; wait $!
+  <the measured run> & run=$!; gen_add "$run"
+  sleep 900 & nap=$!; gen_add "$nap"
+  ( until gen_gone "$nap"; do sleep 5; done
     kill "$run"; sleep 1; gen_gone "$run" || kill -9 "$run" ) 2>/dev/null &
-  echo $! >> "$pids"
+  gen_add $!
+  trap 'exit 1' HUP INT TERM
+  [ -z "$stop" ] || exit 1
   wait "$run"
   gen_stop
   trap - EXIT HUP INT TERM
