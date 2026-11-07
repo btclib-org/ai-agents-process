@@ -16,11 +16,12 @@ hold the slots it has for longer.
 The session that runs it starts at most one single-threaded process per
 free core: the cores times the idle fraction on the last line
 `gate_take_all` printed, rounded down, minus the workers of the measured
-run. The measured run goes in the same
-shell call, inside that hold, with no `gate_take` of its own. The
-session records the PIDs, kills them within 15 minutes of the start of
-the measured run, as the example's watchdog does, and checks with `ps`
-that they are gone before `gate_release_all`:
+run. The example counts the cores with `getconf _NPROCESSORS_ONLN`,
+which Codex's `workspace-write` sandbox allows. The measured run goes in
+the same shell call, inside that hold, with no `gate_take` of its own.
+The session records the PIDs, kills them within 15 minutes of the start
+of the measured run, as the example's watchdog does, and checks with
+`ps` that they are gone before `gate_release_all`:
 
 ```shell
 . "${PROCESS:?}/scripts/gate-lock.sh"
@@ -28,7 +29,7 @@ out=<scratchpad>/gen.out pids=<scratchpad>/gen.pids workers=<n>
 gate_take_all <worktree> > "$out" 2>&1 && {
   idle=$(tail -n 1 "$out" | sed 's/.* at \([0-9]*\)% CPU idle.*/\1/')
   case $idle in ''|*[!0-9]*) idle=0 ;; esac
-  free=$(( $(sysctl -n hw.ncpu) * idle / 100 - workers ))
+  free=$(( $(getconf _NPROCESSORS_ONLN) * idle / 100 - workers ))
   : > "$pids"
   trap 'while read -r pid; do kill "$pid" 2>/dev/null; done < "$pids"' EXIT
   trap 'exit 1' HUP INT TERM
