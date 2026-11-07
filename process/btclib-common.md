@@ -164,6 +164,18 @@ the process names its own files by their path under it. Claude Code's
   removes the reviewer's directory once that reviewer's rounds end
   (*Debris goes when its work ends*).
 
+  An input a reviewer names as not run may be one the session cannot run
+  either. The branch then goes to the human as one decision (*When the
+  human has to decide*), which carries the input and why no one could
+  run it. One such input needs a package that an outside contributor's
+  branch adds: the sandbox of *The gates* does not hold it, and CI, on
+  which *The gates* then relies, runs no reviewer's input. The branch is
+  held as *A hold is recorded* says. The human's answer stands in for
+  the input's result: the reviewer's resumed run, or the dedicated
+  reviewer that takes over from it (*A pull request's rounds*), gets the
+  answer on the record in its place. The pull request body records the
+  decision and the answer.
+
   Claude Code starts a Codex reviewer with `codex exec`. That spawns no
   custom agent by name, so the brief's first sentence says to read
   `~/.codex/agents/reviewer.toml` and follow it. `-o` writes its last
@@ -228,9 +240,7 @@ the process names its own files by their path under it. Claude Code's
   removes its directory, as it does for a Codex reviewer. The reviewer
   reads the worktree and runs its inputs with `uv run` the same way. An
   input that needs a package neither the worktree's `.venv` nor the
-  standard library holds is handled the same way too: the verdict names
-  it as not run, the session reads it and runs it outside the sandbox,
-  and the reviewer's resumed run gets its result.
+  standard library holds is handled as a Codex reviewer's is, above.
 
   The flags make this hold whatever the user's settings say.
   `--setting-sources project` loads no user settings, because the sandbox
@@ -1442,19 +1452,20 @@ run and another bot run.
 
   A fresh reviewer is owed a resumed run where it answered
   `CHANGES REQUESTED` and has not cleared, or where its verdict names an
-  input its sandbox left unrun (*The rounds*). Where the client refuses
+  input its sandbox left unrun (*Clients*). Where the client refuses
   that run, or the hold on later branches keeps it from being tried, the
   refusal is judged then. Where the session can clear it, what that
   reviewer is owed waits for it, and the resumed run is tried again once
   the refusal is cleared. Where it cannot, the dedicated reviewer takes
   over what that reviewer is owed: it re-reviews the fix of its
-  findings, and judges the result of each input it left unrun, which the
-  session runs as *Clients* says. The dedicated reviewer's `CLEARED` of
-  the head ends the rounds only where it came after those results. The
-  branch then goes on as above, without the fresh reviewer, the hold on
-  later branches included. The pull request body says that the fresh
-  reviewer's re-review is missing, where it would say the fresh review
-  is, and that the dedicated reviewer took it over.
+  findings, and judges the result of each input it left unrun, or the
+  human's answer that stands in for it, as *Clients* says. Where the
+  fresh reviewer left inputs unrun, the dedicated reviewer's `CLEARED`
+  of the head ends the rounds only where it came after their results or
+  answers. The branch then goes on as above, without the fresh reviewer,
+  the hold on later branches included. The pull request body says that
+  the fresh reviewer's re-review is missing, where it would say the
+  fresh review is, and that the dedicated reviewer took it over.
 - The fresh reviewer reads the branch's whole diff from its parent,
   briefed with *Local review* and with the bot's prompt: the `prompt:`
   block of `btclib-org/.github`'s `reusable-claude-review.yml` at the ref
