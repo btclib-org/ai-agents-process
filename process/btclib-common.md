@@ -1293,16 +1293,17 @@ branch, or a text to be posted.
   text, it reads the first version and each fix answering a review on
   GitHub.
 - **A reviewer stays until it clears.** This holds for the dedicated
-  reviewer and for every fresh one. Its `CHANGES REQUESTED` goes back
-  to the writer, and the fix goes back to the same reviewer
-  (resumed as *Clients* says), which reads the delta from what it last
-  read. No new reviewer starts before the one in charge has answered
-  `CLEARED`. Where a finding is declined and its reviewer still holds
-  it, both positions go to the human as one decision (*When the human
-  has to decide*, `REVIEWING.md`'s *Re-review*), and the rounds wait for
-  the answer. Where the human upholds the finding, the fix goes back to
-  that reviewer. Where they decline it, their answer stands in for that
-  reviewer's `CLEARED`.
+  reviewer and for every fresh one. Its `CHANGES REQUESTED` goes back to
+  the writer, and the fix goes back to the same reviewer (resumed as
+  *Clients* says), which reads the delta from what it last read. No new
+  reviewer starts before the one in charge has answered `CLEARED`. *A
+  pull request's rounds* says when the dedicated reviewer takes over a
+  fresh reviewer's findings. Where a finding is declined and its
+  reviewer still holds it, both positions go to the human as one
+  decision (*When the human has to decide*, `REVIEWING.md`'s
+  *Re-review*), and the rounds wait for the answer. Where the human
+  upholds the finding, the fix goes back to that reviewer. Where they
+  decline it, their answer stands in for that reviewer's `CLEARED`.
 - **Then a fresh reviewer reads the whole of it.** It is a new worker,
   started once the reviewer before it has cleared. Where its first
   verdict is `CHANGES REQUESTED`, it stays until it clears, as above.
@@ -1408,27 +1409,35 @@ run and another bot run.
   of a text to be posted. *Clients* says how each client starts and
   resumes a reviewer in the other.
 - **Where the other client is unavailable, the branch goes on without
-  the fresh reviewer.** Unavailable means the client refuses the run. It
-  is judged once, when the rounds reach the fresh reviewer: the run is
-  tried, and once refused it is not retried, even where the client comes
-  back before the branch lands. A refusal the session cannot clear, as
-  Codex's `Your workspace is out of credits` is, also holds for the
-  session's later branches: they go on without the fresh reviewer, with
-  no new try. A limit that names a reset time within the session is not
-  one: once the reset has passed, a later branch tries the run again.
-  Only the hold on later branches applies to the resumed run of a fresh
-  reviewer that answered `CHANGES REQUESTED` and has not cleared: its
-  findings wait for its own re-review (*The rounds*). The rounds then
-  end at the dedicated reviewer's `CLEARED` of the head, which stands
-  wherever the process asks for the latest fresh reviewer's. Where the
-  dedicated reviewer's last `CLEARED` names an earlier sha, it is
-  resumed on the head first. The branch is opened, and lands once
-  everything else `/btclib-pr` asks of it holds, the bot's `ACK <head>`
-  included where it asks for one. The pull request body, a later
-  branch's included, says that the fresh review in the other client is
-  missing, quoting the error the client printed, and, where the bot's
-  ACK is missing too, that it is and why. No review in the other client
-  is owed after it lands.
+  the fresh reviewer.** Unavailable means the client refuses the run.
+  The first run is judged when the rounds reach the fresh reviewer: it
+  is tried, and once refused it is not retried, even where the client
+  comes back before the branch lands. A refusal the session cannot
+  clear, as Codex's `Your workspace is out of credits` is, also holds
+  for the session's later branches: they go on without the fresh
+  reviewer, with no new try. A limit that names a reset time within the
+  session is not one: once the reset has passed, a later branch tries
+  the run again. The rounds end at the dedicated reviewer's `CLEARED` of
+  the head, which stands wherever the process asks for the latest fresh
+  reviewer's. Where the dedicated reviewer's last `CLEARED` names an
+  earlier sha, it is resumed on the head first. The branch is opened,
+  and lands once everything else `/btclib-pr` asks of it holds, the
+  bot's `ACK <head>` included where it asks for one. The pull request
+  body, a later branch's included, says that the fresh review in the
+  other client is missing, quoting the error the client printed, and,
+  where the bot's ACK is missing too, that it is and why. No review in
+  the other client is owed after it lands.
+
+  Where the client refuses the resumed run of a fresh reviewer that
+  answered `CHANGES REQUESTED` and has not cleared, the refusal is
+  judged then. Where the session can clear it, the findings wait for
+  that reviewer's own re-review (*The rounds*), and the resumed run is
+  tried again once the refusal is cleared. Where it cannot, the
+  dedicated reviewer takes over those findings and re-reviews the fix,
+  and the branch goes on as above, without the fresh reviewer, the hold
+  on later branches included. The pull request body says that the fresh
+  reviewer's re-review is missing, where it would say the fresh review
+  is, and that the dedicated reviewer took its findings over.
 - The fresh reviewer reads the branch's whole diff from its parent,
   briefed with *Local review* and with the bot's prompt: the `prompt:`
   block of `btclib-org/.github`'s `reusable-claude-review.yml` at the ref
