@@ -1328,7 +1328,8 @@ branch, or a text to be posted.
 - **A fresh reviewer's `CLEARED` that names an input its sandbox left
   unrun ends no rounds** (*Clients*). The `CLEARED` of the reviewer's
   resumed run, with that input's result on the record, stands in for it
-  in the next bullet.
+  in the next bullet. *A pull request's rounds* says what stands in for
+  it where the client refuses that run.
 - **The rounds end when a fresh reviewer's first verdict is `CLEARED`**,
   or at the `CLEARED` that the fresh-reviewer bullet above lets end them,
   or at the dedicated reviewer's `CLEARED` where the other client is
@@ -1417,28 +1418,34 @@ run and another bot run.
   for the session's later branches: they go on without the fresh
   reviewer, with no new try. A limit that names a reset time within the
   session is not one: once the reset has passed, a later branch tries
-  the run again. The rounds end at the dedicated reviewer's `CLEARED` of
-  the head, which stands wherever the process asks for the latest fresh
+  the run again. The hold on later branches ends with the session: a new
+  session tries the run again at its first branch not already refused.
+  The rounds end at the dedicated reviewer's `CLEARED` of the head,
+  which stands wherever the process asks for the latest fresh
   reviewer's. Where the dedicated reviewer's last `CLEARED` names an
   earlier sha, it is resumed on the head first. The branch is opened,
   and lands once everything else `/btclib-pr` asks of it holds, the
   bot's `ACK <head>` included where it asks for one. The pull request
   body, a later branch's included, says that the fresh review in the
-  other client is missing, quoting the error the client printed, and,
-  where the bot's ACK is missing too, that it is and why. No review in
-  the other client is owed after it lands.
+  other client is missing, and quotes the refusal that holds for it: the
+  error the client printed, and the time it came. Where the bot's ACK is
+  missing too, the body says so and why. No review in the other client
+  is owed after it lands.
 
-  Where the client refuses the resumed run of a fresh reviewer that
-  answered `CHANGES REQUESTED` and has not cleared, or the hold on later
-  branches keeps it from being tried, the refusal is judged then. Where
-  the session can clear it, the findings wait for that reviewer's own
-  re-review (*The rounds*), and the resumed run is tried again once the
-  refusal is cleared. Where it cannot, the dedicated reviewer takes over
-  those findings and re-reviews the fix, and the branch goes on as
-  above, without the fresh reviewer, the hold on later branches
-  included. The pull request body says that the fresh reviewer's
-  re-review is missing, where it would say the fresh review is, and that
-  the dedicated reviewer took its findings over.
+  A fresh reviewer is owed a resumed run where it answered
+  `CHANGES REQUESTED` and has not cleared, or where its verdict names an
+  input its sandbox left unrun (*The rounds*). Where the client refuses
+  that run, or the hold on later branches keeps it from being tried, the
+  refusal is judged then. Where the session can clear it, what that
+  reviewer is owed waits for it, and the resumed run is tried again once
+  the refusal is cleared. Where it cannot, the dedicated reviewer takes
+  over what that reviewer is owed: it re-reviews the fix of its
+  findings, and judges the result of each input it left unrun, which the
+  session runs as *Clients* says. The branch then goes on as above,
+  without the fresh reviewer, the hold on later branches included. The
+  pull request body says that the fresh reviewer's re-review is missing,
+  where it would say the fresh review is, and that the dedicated
+  reviewer took it over.
 - The fresh reviewer reads the branch's whole diff from its parent,
   briefed with *Local review* and with the bot's prompt: the `prompt:`
   block of `btclib-org/.github`'s `reusable-claude-review.yml` at the ref
