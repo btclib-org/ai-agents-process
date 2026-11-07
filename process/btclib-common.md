@@ -640,6 +640,35 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
   same shape, read from the source, before its outcome is reported: a
   stand-in that differs in shape passes or fails for a reason the real
   file does not share.
+- **A rehearsal of a block that takes the gate lock names its stand-in
+  by a literal path, in the block**: its
+  `. "${PROCESS:?}/scripts/gate-lock.sh"` becomes `. <scratch>/<file>`,
+  a file whose name holds no `gate-lock`. The environment does not reach
+  the block intact. `codex sandbox -c 'sandbox_mode="workspace-write"'`
+  passes it through, but zsh then reads `~/.zshenv`, where `README.md`'s
+  *Setup* exports `PROCESS`. So a block run by zsh, in that sandbox or
+  outside it, sources the real script whatever `PROCESS` the rehearsal
+  set, and with `GATE_LOCK_DIR` unset takes slots of the real lock. A
+  rehearsal of the real script instead assigns and exports
+  `GATE_LOCK_DIR`, a directory of its scratch by its literal path, on the
+  block's first line: under `env -i`, `GATE_LOCK_DIR=$SCR` falls back to
+  the real lock. It sources the script by its literal path too, the
+  worktree's copy where the branch changes it: through `PROCESS`, zsh
+  sources the primary clone's.
+
+  Neither form holds a slot of the shared lock, so the rehearsal starts
+  no load: its `yes` becomes a `sleep` that outlasts the watchdog, as
+  `sleep 1000`.
+
+  Before the block runs, the rehearsal refuses a stand-in block where
+  `grep -cw -e gate-lock -e PROCESS <block>` does not print `0`. It
+  refuses a block of the real script where `head -n 1 <block>` is not
+  that assignment or holds a `$`, or where `grep -cw PROCESS <block>`
+  does not print `0`. Where the block as extracted starts `yes`, it
+  refuses either form where `grep -cw yes <block>` does not print `0`.
+  Each check's control is the block as extracted, which it refuses where
+  that block holds the check's pattern, as the example holds all three.
+  `-w` keeps the example's `_NPROCESSORS_ONLN` from matching.
 - **A tool's zero covers only what it read.** A skipped file prints what
   a clean one prints. Ask the tool its input set (pre-commit `files:` and
   `exclude:`, `lychee --dump-inputs`, ruff on notebooks without language
