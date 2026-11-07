@@ -538,6 +538,17 @@ question names it.
   by when the work reaches them, and the maps say which role reads
   which. A rule added under a heading the role that needs it does not
   read is a rule that role never sees.
+- **Does an exception now reach the rule the change adds, and should
+  it?** A sentence such as "None of this applies…", "This does not
+  apply…" or "Except…" can come to cover a rule added beside it, left
+  as it stands or rewritten in the same change. In
+  [PR ai-agents-process#317](https://github.com/btclib-org/ai-agents-process/pull/317)
+  the commit that added a session hold also rewrote the next sentence
+  from "It does not apply to the resumed run of a fresh reviewer" to
+  "None of this applies…", which then exempted that run from the hold
+  too. `process/btclib-common.md`'s *A second reason gets its own
+  paragraph*, under *What the prose that lands may say*, is the
+  writer's side.
 - **Do the skills still lean on the standard rather than copy it?**
   The organization's rules are `btclib-org/.github`'s `README.md`, and
   this tree points at a section by the words it holds. A paragraph that
