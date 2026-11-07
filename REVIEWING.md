@@ -548,7 +548,14 @@ question names it.
   "None of this applies…", which then exempted that run from the hold
   too. `process/btclib-common.md`'s *A second reason gets its own
   paragraph*, under *What the prose that lands may say*, is the
-  writer's side.
+  writer's side. `git diff` shows three lines around a change by
+  default, so an exception left as it stands can fall outside the hunk;
+  this shows twenty:
+
+    ```shell
+    git diff -U20 origin/main... -- '*.md'
+    ```
+
 - **Do the skills still lean on the standard rather than copy it?**
   The organization's rules are `btclib-org/.github`'s `README.md`, and
   this tree points at a section by the words it holds. A paragraph that
