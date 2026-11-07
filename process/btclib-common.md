@@ -650,16 +650,22 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
   outside it, sources the real script whatever `PROCESS` the rehearsal
   set, and with `GATE_LOCK_DIR` unset takes slots of the real lock. A
   rehearsal of the real script instead assigns and exports
-  `GATE_LOCK_DIR`, a directory of its scratch, on the block's first line.
-  Where the branch changes `scripts/gate-lock.sh`, it sources the
-  worktree's copy by its literal path: through `PROCESS`, zsh sources
-  the primary clone's.
+  `GATE_LOCK_DIR`, a directory of its scratch by its literal path, on the
+  block's first line: under `env -i`, `GATE_LOCK_DIR=$SCR` falls back to
+  the real lock. It sources the script by its literal path too, the
+  worktree's copy where the branch changes it: through `PROCESS`, zsh
+  sources the primary clone's.
+
+  Neither form holds a slot of the shared lock, so the rehearsal starts
+  no load: its stand-in reports 0% idle, where the example starts no
+  generator, or its `yes` becomes `sleep 900`.
 
   Before the block runs, the rehearsal refuses a stand-in block where
-  `grep -cw -e gate-lock -e PROCESS <block>` does not print `0`, and a
-  block of the real script where `head -n 1 <block>` is not that
-  assignment. Each check's control is the block as extracted, which it
-  refuses: the grep prints `1` or more there. `-w` keeps the example's
+  `grep -cw -e gate-lock -e PROCESS <block>` does not print `0`. It
+  refuses a block of the real script where `head -n 1 <block>` is not
+  that assignment or holds a `$`, or where `grep -cw PROCESS <block>`
+  does not print `0`. Each check's control is the block as extracted,
+  which it refuses: each grep prints `1` there. `-w` keeps the example's
   `_NPROCESSORS_ONLN` from matching.
 - **A tool's zero covers only what it read.** A skipped file prints what
   a clean one prints. Ask the tool its input set (pre-commit `files:` and
