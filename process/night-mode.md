@@ -25,7 +25,8 @@ issue reserved — becomes an item of the morning report, and the work that
 depends on it stops there. A decision that goes to the maintainer (*When
 the human has to decide*) is a hold, not an item. A branch taking a
 reserved decision is opened, not landed, and its cut-back is one of the
-decision's alternatives.
+decision's alternatives. *When the human has to decide* says when a
+design question a branch's issue did not reserve stops that branch.
 
 - **Record each item as a hold**, its comment carrying, in prose, what
   the shape *When the human has to decide* gives; a missing label is not

@@ -774,6 +774,14 @@ the human's: which pull requests to work, an approval, the session's own
 review rounds (*The rounds*), a finding its reviewer still holds
 included.
 
+**A design question a writer raises on a branch, which its issue did
+not reserve, is filed as its own issue** (*Collateral*) and decided
+there. Ask what each answer would do to what the branch's issue asks.
+The branch waits for the answer only where one answer would undo or
+replace that; otherwise it is judged as written. An answer that changes
+only the lines carrying the question is left to the question's own
+issue.
+
 **At night**, *Night mode* says what becomes of a decision.
 
 **A hold is recorded on the issue or pull request**, in the same turn it
