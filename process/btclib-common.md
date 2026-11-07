@@ -1441,11 +1441,12 @@ run and another bot run.
   the refusal is cleared. Where it cannot, the dedicated reviewer takes
   over what that reviewer is owed: it re-reviews the fix of its
   findings, and judges the result of each input it left unrun, which the
-  session runs as *Clients* says. The branch then goes on as above,
-  without the fresh reviewer, the hold on later branches included. The
-  pull request body says that the fresh reviewer's re-review is missing,
-  where it would say the fresh review is, and that the dedicated
-  reviewer took it over.
+  session runs as *Clients* says. The dedicated reviewer's `CLEARED` of
+  the head ends the rounds only where it came after those results. The
+  branch then goes on as above, without the fresh reviewer, the hold on
+  later branches included. The pull request body says that the fresh
+  reviewer's re-review is missing, where it would say the fresh review
+  is, and that the dedicated reviewer took it over.
 - The fresh reviewer reads the branch's whole diff from its parent,
   briefed with *Local review* and with the bot's prompt: the `prompt:`
   block of `btclib-org/.github`'s `reusable-claude-review.yml` at the ref
