@@ -672,7 +672,10 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
 - **A tool's zero covers only what it read.** A skipped file prints what
   a clean one prints. Ask the tool its input set (pre-commit `files:` and
   `exclude:`, `lychee --dump-inputs`, ruff on notebooks without language
-  metadata) before believing its answer.
+  metadata) before believing its answer. A gate the change writes or
+  changes is such a tool: each shape its docstring says it reaches, as a
+  function under an `if`, in a nested class, or an `async def`, gets a
+  control holding that shape, and a run showing the gate reaches it.
 - **Name the question a number answers before reading it.** A correct
   number can answer a different question from the sentence being
   written. **Re-prove a control in the round you use it**: as the tree
@@ -928,28 +931,37 @@ The writer's section; the reviewer judges its result.
       carries no stray closing keyword
 - [ ] the commit message was re-read, not carried by `--no-edit`
 - [ ] every claim in prose that lands was measured
+- [ ] the diff's added lines were searched for a numeral beside an
+      upstream name (*No counts*)
 - [ ] an edit inside a filled paragraph refilled it whole, proved
       whitespace-only against the committed text (`git diff
       --word-diff=porcelain <sha> -- <file> | sed '1,/^@@/d' | grep -c
       '^[-+]'` answers `0`): width gates bound the longest line, not the
       fill
 - [ ] collateral filed, by number
-- [ ] where the change touches a rule the tree states, the search of
-      *A rule stated more than once* is in the report
+- [ ] where the change touches a rule the tree states, or makes a
+      sentence false or narrower, the search of *A rule stated more
+      than once* is in the report
+- [ ] where the change removes tests, each refusal they asserted that a
+      public caller still reaches is asserted again through that caller
 - [ ] the report says what was **not** checked, and why
 
 ### A rule stated more than once
 
 **Before writing, search for every sentence that states the rule you
-change.** Run one search over every file `git ls-files` lists, with a
-pattern for each way the rule is worded, matched across line breaks
-(*`grep` reads lines, and prose wraps*). List each hit as `file:line`
-with what you do with it. Change them all in one round. A restatement
-becomes a pointer to the section that holds the rule (*Write plainly*).
-The report carries the patterns and the hits. The reviewer runs the same
+change**, and for every sentence the change makes false or narrows, rule
+or not: a claim narrowed in one comment still stands, unnarrowed, in the
+docstring and the documents beside it (*Where your diff falsifies a
+sentence elsewhere*). Run one search over every file `git ls-files`
+lists, with a pattern for each way the rule or the claim is worded,
+matched across line breaks (*`grep` reads lines, and prose wraps*). List
+each hit as `file:line` with what you do with it. Change them all in one
+round. A restatement becomes a pointer to the section that holds the
+rule (*Write plainly*), and a sentence made false is corrected. The
+report carries the patterns and the hits. The reviewer runs the same
 search, adds the patterns it would have used, and reads the files where
-the rule is stated. A sentence either search finds and the list lacks is
-a finding.
+the rule or the claim is stated. A sentence either search finds and the
+list lacks is a finding.
 
 **A tree-wide sweep starts from a census** of every spelling over `git
 ls-files`, and ends at the census re-run answering zero, its exceptions
@@ -957,6 +969,10 @@ listed. It names any file class it left out.
 
 **A pointer keeps every condition of the text it replaces**: the target
 states each one, or the condition stays where it was.
+
+**Each item of a list states its own condition**, or the list's opening
+states it for every item: a condition one item carries does not reach
+the items beside it.
 
 **The organization's copies are in the list.** Section 14 of
 `btclib-org/.github`'s `README.md` lists the files copied verbatim into
@@ -975,11 +991,16 @@ filed there as collateral (*Collateral*).
   the pull request body.
 - **No counts** — not entries, tests, errors or files. Exhaustive words
   ("the only three", "every other") hold only where a command counted
-  them, and then the command is written, not the total. A count that
-  decided the change belongs in the report and the pull request body.
-  A list of call sites reads as the whole population and goes stale at
-  the next call: state what decides membership, and label names as
-  examples.
+  them, and then the command is written, not the total. A sentence about
+  several walks, functions or files is checked against each one it
+  covers, not only the one in view. A count that decided the change
+  belongs in the report and the pull request body. A figure of an
+  upstream source, as a vector file's cases or a tool's version, stands
+  only in the ledger that pins it, and nowhere where none does: the
+  diff's added lines are searched for a numeral beside an upstream name
+  (vectors, cases, tests, a tool and its version). A list of call sites
+  reads as the whole population and goes stale at the next call: state
+  what decides membership, and label names as examples.
 - **Say what is true now.** No "was", "has always", "is now". The
   exception is the defect being corrected, and that "before" is measured
   against a snapshot. A rule carries no attribution or date: its pull
@@ -1566,8 +1587,9 @@ run and another bot run.
       prose is worth a round*)
 - [ ] the claims tried, as *Every reviewer tries to break the change*
       says
-- [ ] where the change touches a rule the tree states, the writer's
-      search is complete (*A rule stated more than once*)
+- [ ] where the change touches a rule the tree states, or makes a
+      sentence false or narrower, the writer's search is complete (*A
+      rule stated more than once*)
 - [ ] on a branch, the prose it adds was read on the merge with
       `origin/main`, whose sha it names (*A pull request's rounds*)
 - [ ] where the diff moves a dependency, a hook or an action to a new
