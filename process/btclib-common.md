@@ -1551,13 +1551,17 @@ A pull request found with a false sentence is disarmed at once
 
   Where the diff prints anything, the session re-reads each section it
   touches, and whole each file it touches that is not markdown, such as
-  a script. A markdown hunk's header shows a body line, not a heading: a
-  hunk's sections are the last heading above its first line and every
-  heading within its lines, among those `grep -n '^#' <file>` lists. In
-  a markdown file, a heading the diff removes, a line starting `-#`, and
-  adds nowhere is a section that is gone: the session stops following
-  it. Where the diff exited `0`, the compared sha becomes the noted one,
-  since another session may have moved `HEAD` meanwhile:
+  a script. It reads them at `next`, as
+  `git -C "$PROCESS" show "${next:?}:<file>"` prints them: the hunks'
+  line numbers are `next`'s, and another session may have moved the
+  checkout since. A markdown hunk's header shows a body line, not a
+  heading: a hunk's sections are the last heading above its first line
+  and every heading within its lines, among those that output piped to
+  `grep -n '^#'` lists. In a markdown file, a heading the diff removes,
+  a line starting `-#`, and adds nowhere is a section that is gone: the
+  session stops following it. Where the diff exited `0`, the compared
+  sha becomes the noted one, since another session may have moved `HEAD`
+  meanwhile:
 
   ```shell
   scratchpad=<the session's scratchpad>
@@ -1567,7 +1571,8 @@ A pull request found with a false sentence is disarmed at once
   A brief to a worker already running names the changed sections that
   are its role's, and those gone. Where a map of *Which sections are
   yours* changed, it also names each section the map now gives that
-  role, changed or not.
+  role, changed or not, and each it no longer gives, which the worker
+  stops following.
 
   Where the diff exited non-zero, or `process.sha` is missing or empty,
   the changed sections are not known. The session notes `HEAD` again as
