@@ -1429,15 +1429,16 @@ run and another bot run.
   the other client is owed after it lands.
 
   Where the client refuses the resumed run of a fresh reviewer that
-  answered `CHANGES REQUESTED` and has not cleared, the refusal is
-  judged then. Where the session can clear it, the findings wait for
-  that reviewer's own re-review (*The rounds*), and the resumed run is
-  tried again once the refusal is cleared. Where it cannot, the
-  dedicated reviewer takes over those findings and re-reviews the fix,
-  and the branch goes on as above, without the fresh reviewer, the hold
-  on later branches included. The pull request body says that the fresh
-  reviewer's re-review is missing, where it would say the fresh review
-  is, and that the dedicated reviewer took its findings over.
+  answered `CHANGES REQUESTED` and has not cleared, or the hold on later
+  branches keeps it from being tried, the refusal is judged then. Where
+  the session can clear it, the findings wait for that reviewer's own
+  re-review (*The rounds*), and the resumed run is tried again once the
+  refusal is cleared. Where it cannot, the dedicated reviewer takes over
+  those findings and re-reviews the fix, and the branch goes on as
+  above, without the fresh reviewer, the hold on later branches
+  included. The pull request body says that the fresh reviewer's
+  re-review is missing, where it would say the fresh review is, and that
+  the dedicated reviewer took its findings over.
 - The fresh reviewer reads the branch's whole diff from its parent,
   briefed with *Local review* and with the bot's prompt: the `prompt:`
   block of `btclib-org/.github`'s `reusable-claude-review.yml` at the ref
