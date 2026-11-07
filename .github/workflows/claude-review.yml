@@ -86,7 +86,7 @@ jobs:
     # by a comment gets no cache access, which is what actionlint's
     # cache-call-unrestricted asks for
     cache-mode: none
-    uses: btclib-org/.github/.github/workflows/reusable-claude-review.yml@5be4b0fbb5231cff001a3ee0eaa8f7d82bffef11 # v2026.11.5
+    uses: btclib-org/.github/.github/workflows/reusable-claude-review.yml@5e35daa02e22926633e52293b3b661c1c98797b1 # v2026.11.7
     permissions:
       contents: read
       pull-requests: write # posting the review, and the reply to a mention
