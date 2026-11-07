@@ -204,10 +204,24 @@ decision:
 - **accepted** where it is the branch's own: a defect or a false
   sentence its diff or its pull request body adds, or anything else the
   shared *Collateral* counts as the branch's subject (the shared *A pull
-  request's rounds* says how a fix to the branch is reviewed).
-- **filed** where it is older than the branch and the branch does not
-  make it materially worse: it goes where the shared *Collateral* says,
-  and the reply names the issue where one is filed.
+  request's rounds* says how a fix to the branch is reviewed). A
+  sentence of the body is weighed as the shared *Which prose is worth a
+  round* says, and is fixed by editing the body, which the reply names.
+- **filed** where it is older than the branch, holding on the file at
+  the merge base too, and the branch does not make it materially worse:
+  it goes where the shared *Collateral* says, and the reply names the
+  issue where one is filed. A line the branch rewrote can carry an older
+  limit, so the case is read on the base's file, not the line looked for
+  in the diff. The first command prints the merge base, `<base>`, and
+  the second the file there:
+
+  ```shell
+  git -C <wt> merge-base origin/main <head>
+  ```
+
+  ```shell
+  git -C <wt> show <base>:<path>
+  ```
 
 **Every inline `suggestion` is applied in the worktree or declined with
 its measurement.** It is not applied with GitHub's button, so that the
