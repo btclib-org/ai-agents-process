@@ -407,13 +407,14 @@ gh api repos/btclib-org/ai-agents-process/actions/variables --jq .total_count
 # 0
 ```
 
-The organization does not set `CLAUDE_IMPLEMENT_ENABLED`, so the agent
-runs nothing here:
+The agent runs only while the organization's `CLAUDE_IMPLEMENT_ENABLED`,
+as this repository sees it, is `true`. This prints its value, and
+nothing where it is unset or not visible here:
 
 ```shell
-gh api -i orgs/btclib-org/actions/variables/CLAUDE_IMPLEMENT_ENABLED \
-  2>/dev/null | head -1
-# HTTP/2.0 404 Not Found
+gh api --paginate \
+  repos/btclib-org/ai-agents-process/actions/organization-variables \
+  --jq '.variables[] | select(.name == "CLAUDE_IMPLEMENT_ENABLED") | .value'
 ```
 
 ## What is not configured, and why

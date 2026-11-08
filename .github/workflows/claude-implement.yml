@@ -13,6 +13,9 @@ name: claude-implement
 # `true`: the callee's agent jobs guard on it, and its other jobs run
 # only after them. REPOSITORY.md's *Variables* reads it back.
 
+# no `workflow_dispatch`, an exception to section 10's *`workflow_dispatch`
+# on everything*, as claude-review.yml is: the event carries no issue, and
+# the callee's `assess` job runs only on `issues`
 on:
   issues:
     types: [opened, labeled, unlabeled]
