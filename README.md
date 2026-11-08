@@ -272,7 +272,7 @@ read and understood by the person who submits it.
 
 ## Status
 
-<!-- Section 2 of btclib-org/.github's README.md says which badges sit here. -->
+<!-- Section 2 of the organization's standard says which badges sit here. -->
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/btclib-org/ai-agents-process/main.svg)](https://results.pre-commit.ci/latest/github/btclib-org/ai-agents-process/main)
 [![lint](https://github.com/btclib-org/ai-agents-process/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/btclib-org/ai-agents-process/actions/workflows/lint.yml?query=branch%3Amain)
 [![links](https://github.com/btclib-org/ai-agents-process/actions/workflows/links.yml/badge.svg?branch=main)](https://github.com/btclib-org/ai-agents-process/actions/workflows/links.yml?query=branch%3Amain)
