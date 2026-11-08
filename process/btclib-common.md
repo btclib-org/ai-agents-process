@@ -996,7 +996,8 @@ filed there as collateral (*Collateral*).
   covers, not only the one in view. A count that decided the change
   belongs in the report and the pull request body. A figure of an
   upstream source, as a vector file's cases or a tool's version, stands
-  only in the ledger that pins it, and nowhere where none does: the
+  only in the file that pins it (a vendored vector's pin, a tool's
+  version in its configuration), and nowhere where none does: the
   diff's added lines are searched for a numeral beside an upstream name
   (vectors, cases, tests, a tool and its version). A list of call sites
   reads as the whole population and goes stale at the next call: state
