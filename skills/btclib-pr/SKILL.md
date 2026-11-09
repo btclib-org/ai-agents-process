@@ -927,10 +927,10 @@ and every file the diff touches is one it can name: a Python module or
 test under `src/` or `tests/`, `conftest.py` apart, or prose in
 Markdown or reStructuredText, with no component of its path starting
 with `.`, and no line of a workflow, an action or `pyproject.toml` of
-the base branch names it, a line that is only a comment apart. It says
-so on the pull request. Otherwise the human approves them, and the
-session tells the human which step stopped it, and, where one did, the
-file.
+the base branch names it, a line that is only a comment apart, and no
+other open pull request has its head. It says so on the pull request.
+Otherwise the human approves them, and the session tells the human
+which step stopped it, and, where one did, the file.
 
 Anything else can change what the CI runs: a workflow, a script, test
 data, a file a tool reads for what to run or install (`pyproject.toml`,
@@ -982,8 +982,8 @@ These steps, in order, show that every file the diff touches passes:
    a workflow, an action or `pyproject.toml` of the base branch names a
    file the diff touches, a line that is only a comment apart.
    `FETCH_HEAD` is the base just fetched, whatever the remote's refspec
-   maps; a fetch that fails leaves it at what an earlier fetch wrote,
-   and the search silent. `git grep` reads the ref, not the files on
+   maps; a fetch that fails empties it, and the search then fails
+   printing nothing. `git grep` reads the ref, not the files on
    disk, so any checkout of the repository does; `-F` takes each path
    as a string, not a pattern, and `-h` leaves the line alone for the
    comment filter:
