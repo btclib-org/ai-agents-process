@@ -881,7 +881,7 @@ does it before briefing anybody.
   ```
 
   ```shell
-  gh pr list --repo <owner>/<repo> --state open \
+  gh pr list --repo <owner>/<repo> --state open --limit 200 \
     --search "<issue> in:title,body" --json number,title
   ```
 
