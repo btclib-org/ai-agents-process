@@ -978,21 +978,24 @@ These steps, in order, show that every file the diff touches passes:
    grep -E '(^|/)conftest\.py$' <files file>
    ```
 
-1. The fetch exits `0`, and the search then prints nothing: no line of
-   a workflow, an action or `pyproject.toml` of the base branch names a
-   file the diff touches, a line that is only a comment apart.
+1. The fetch exits `0`, the search exits `0` or `1`, and the filter
+   then prints nothing: no line of a workflow, an action or
+   `pyproject.toml` of the base branch names a file the diff touches, a
+   line that is only a comment apart. A search that exits `2` or more
+   failed, and the runs are the human's: its silence is no pass.
    `FETCH_HEAD` is the base just fetched, whatever the remote's refspec
-   maps; a fetch that fails empties it, and the search then fails
-   printing nothing. `git grep` reads the ref, not the files on
-   disk, so any checkout of the repository does; `-F` takes each path
-   as a string, not a pattern, and `-h` leaves the line alone for the
-   comment filter:
+   maps; after a fetch that fails it is not that base, so the search
+   counts only after a fetch that exits `0`. `git grep` reads the ref,
+   not the files on disk, so any checkout of the repository does;
+   `git -C` reads a relative `<files file>` from the checkout, so it is
+   an absolute path; `-F` takes each path as a string, not a pattern,
+   and `-h` leaves the line alone for the comment filter:
 
    ```shell
    git -C <checkout> fetch -q origin <base>
    git -C <checkout> grep -h -F -f <files file> FETCH_HEAD -- \
-     .github/workflows/ .github/actions/ pyproject.toml |
-     grep -v -E '^[[:space:]]*#'
+     .github/workflows/ .github/actions/ pyproject.toml > <hits file>
+   grep -v -E '^[[:space:]]*#' <hits file>
    ```
 
 1. The first step's command prints `<head>` and `<base>` again.
