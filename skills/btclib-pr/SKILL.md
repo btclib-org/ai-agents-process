@@ -979,10 +979,12 @@ These steps, in order, show that every file the diff touches passes:
    ```
 
 1. The fetch exits `0`, the search exits `0` or `1`, and the filter
-   then prints nothing: no line of a workflow, an action or
-   `pyproject.toml` of the base branch names a file the diff touches, a
-   line that is only a comment apart. A search that exits `2` or more
-   failed, and the runs are the human's: its silence is no pass.
+   then exits `1`, printing nothing: no line of a workflow, an action
+   or `pyproject.toml` of the base branch names a file the diff
+   touches, a line that is only a comment apart. A search or a filter
+   that exits `2` or more failed, as where the hits file cannot be
+   written or read, and the runs are the human's: its silence is no
+   pass.
    `FETCH_HEAD` is the base just fetched, whatever the remote's refspec
    maps; after a fetch that fails it is not that base, so the search
    counts only after a fetch that exits `0`. `git grep` reads the ref,
