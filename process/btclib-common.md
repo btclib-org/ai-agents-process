@@ -974,10 +974,10 @@ states each one, or the condition stays where it was.
 states it for every item: a condition one item carries does not reach
 the items beside it.
 
-**The organization's copies are in the list.** Section 14 of
-`btclib-org/.github`'s `README.md` lists the files copied verbatim into
-every tree, and their rules count too. A copy the change cannot touch is
-filed there as collateral (*Collateral*).
+**The organization's copies are in the list.** Section 14 of the
+organization's standard lists the files copied verbatim into every tree,
+and their rules count too. A copy the change cannot touch is filed in
+btclib-org/.github's tracker as collateral (*Collateral*).
 
 ### What the prose that lands may say
 
@@ -1712,7 +1712,7 @@ A pull request found with a false sentence is disarmed at once
 - **Code outside btclib-org** is reported first in the btclib-org
   repository where it was found, not in its own tracker: `gh issue create
   --repo btclib-org/<repo> --label upstream-report`. Section 11 of
-  `btclib-org/.github`'s `README.md` (*Labels and issue types*) says what
+  the organization's standard (*Labels and issue types*) says what
   becomes of the issue once the report is filed upstream. The text for the
   external tracker goes to the human, and nothing is posted there before
   the human has read it.
