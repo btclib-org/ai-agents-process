@@ -67,14 +67,24 @@ gh pr list --repo <owner>/<repo> --state open --limit 200 \
   --json number,additions,deletions,changedFiles
 ```
 
+**Before the table, start the outside contributors' CI.** For every
+pull request of an outside contributor (*Whose pull request it is*)
+whose head has runs waiting as `action_required`, the session reads
+the diff and approves those runs where *Outside contributors* allows
+it. A pull request whose diff fails *Outside contributors*' check is
+listed with that as what it waits on: its runs are the human's to
+approve. The human then reads the table with that CI running or done,
+and a session that works the pull request finds its checks already
+there.
+
 Show the human one table, grouped:
 
+- outside contributors';
 - waiting on the human's review;
 - the human's own, with something to do: a review or thread
    unanswered, changes requested, a red or missing check, a conflict
    with its base;
 - bots';
-- outside contributors';
 - the rest: by day, listed and not worked.
 
 Each row is a `PR` link with its diff balance (the shared *How an issue
@@ -82,17 +92,20 @@ and a pull request are named*) and what it waits on. A draft is listed
 and not worked. Then put one decision (the shared *When the human has
 to decide*): which to work, and in what order, the recommended order
 first with its reason. In a repository whose `main` is red, its repair
-comes first (*Landing*'s first bullet).
+comes first (*Landing*'s first bullet). Outside contributors' pull
+requests come next, oldest first: their author waits on us, and a reply
+that comes days late can lose a contributor.
 
 **At night, no decision is put: every pull request that is not a draft
 is worked** up to the approval, in the recommended order, a red `main`'s
-repair first: review rounds, rebase and CI, every item of *What was
-raised* answered. Each is worked as *Whose pull request it is* says for
-its case, and goes on to *The decision*, or to *The human's own pull
-request*. One whose approval is not obvious ends as a deferred item
-(*Where it is not obvious*), never as "not worked". Where the session
-cannot push to another person's branch, its findings are posted as
-*Another person's branch* says, and the deferred item names the author
+repair first and outside contributors' pull requests next: review
+rounds, rebase and CI, every item of *What was raised* answered. Each
+is worked as *Whose pull request it is* says for its case, and goes
+on to *The decision*, or to *The human's own pull request*. One whose
+approval is not obvious ends as a deferred item (*Where it is not
+obvious*), never as "not worked". Where the session cannot push to
+another person's branch, its findings are posted as *Another person's
+branch* says, and the deferred item names the author
 as what it waits on.
 
 ## Whose pull request it is
@@ -897,27 +910,50 @@ other where `gh pr checks` shows no review — the ACK is not an item of
 *The decision*, and the approval is never obvious: it goes to the
 human. A fork's pull request is armed as *Arming auto-merge* says.
 
-**A first-time contributor's workflow runs wait for approval as
-`action_required`**, as on PR btclib-org/btclib#2823. Under
-`pull_request`, a fork's run uses the workflows of the pull request's
-merge commit, with a read-only `GITHUB_TOKEN` and no other secret. The
-session approves the runs once it has read the diff and the diff touches
-nothing under `.github/`, where the workflows and the actions are. It
-says so on the pull request. Otherwise the human approves them.
+**A fork's workflow runs can wait for approval as `action_required`**,
+as on PR btclib-org/btclib#2823. Since 2026-11-09 the organization's
+policy is `first_time_contributors_new_to_github`, so only an account
+new to GitHub waits, and runs queued before the change still do:
 
-These steps, in order, show that the diff touches nothing under
-`.github/`:
+```shell
+gh api orgs/btclib-org/actions/permissions/fork-pr-contributor-approval \
+  --jq .approval_policy
+```
 
-1. This prints the head, `<head>`. The files endpoint takes no sha, so
-   step 5 reads it again:
+Under `pull_request`, a fork's run uses the workflows of the pull
+request's merge commit, with a read-only `GITHUB_TOKEN` and no other
+secret. The session approves the runs once it has read the diff whole
+and every file the diff touches is one it can name: a Python module or
+test under `src/` or `tests/`, `conftest.py` apart, or prose in
+Markdown or reStructuredText, with no component of its path starting
+with `.`, and no line of a workflow, an action or `pyproject.toml` of
+the base branch names it, a line that is only a comment apart. It says
+so on the pull request. Otherwise the human approves them, and the
+session tells the human which step stopped it, and, where one did, the
+file.
+
+Anything else can change what the CI runs: a workflow, a script, test
+data, a file a tool reads for what to run or install (`pyproject.toml`,
+`uv.lock`, `conftest.py`, `pytest.ini`, `.coveragerc`, Sphinx's
+`conf.py`, and more), which the reusable workflows of btclib-org/.github
+read without the caller naming them. A list of such files is never
+complete, so the check names what passes rather than what stops. A name
+matched after code on a line stops it too, a trailing comment included:
+the check errs on the side of the human.
+
+These steps, in order, show that every file the diff touches passes:
+
+1. This prints the head, `<head>`, and the base branch, `<base>`. The
+   files endpoint takes no sha, so the last step reads them again:
 
    ```shell
    gh pr view <n> --repo <owner>/<repo> \
-     --json headRefOid --jq .headRefOid
+     --json headRefOid,baseRefName --jq '.headRefOid, .baseRefName'
    ```
 
 1. This prints a number below 3000. The files endpoint returns at most
-   3000 files, so a larger pull request can hide a `.github/` file:
+   3000 files, so a larger pull request can hide a file that does not
+   pass:
 
    ```shell
    gh pr view <n> --repo <owner>/<repo> \
@@ -925,20 +961,40 @@ These steps, in order, show that the diff touches nothing under
    ```
 
 1. This exits `0` and writes a file that is not empty.
-   `previous_filename` catches a file renamed out of `.github/`:
+   `previous_filename` brings in the old name of a renamed file:
 
    ```shell
    gh api --paginate repos/<owner>/<repo>/pulls/<n>/files \
      --jq '.[] | .filename, (.previous_filename // empty)' > <files file>
    ```
 
-1. This prints nothing:
+1. These print nothing: the first, every file outside the names that
+   pass, a path with a component starting with `.` among them; the
+   second, a `conftest.py`:
 
    ```shell
-   grep '^\.github/' <files file>
+   grep -v -E -e '^(src|tests)/([^./][^/]*/)*[^./][^/]*\.py$' \
+     -e '^([^./][^/]*/)*[^./][^/]*\.(md|rst)$' <files file>
+   grep -E '(^|/)conftest\.py$' <files file>
    ```
 
-1. The first step's command prints `<head>` again.
+1. The fetch exits `0`, and the search then prints nothing: no line of
+   a workflow, an action or `pyproject.toml` of the base branch names a
+   file the diff touches, a line that is only a comment apart. A fetch
+   that fails leaves the search reading a stale ref, or none, and
+   printing nothing. `git grep` reads the ref, not
+   the files on disk, so any checkout of the repository does once
+   fetched; `-F` takes each path as a string, not a pattern, and `-h`
+   leaves the line alone for the comment filter:
+
+   ```shell
+   git -C <checkout> fetch -q origin <base>
+   git -C <checkout> grep -h -F -f <files file> origin/<base> -- \
+     .github/workflows/ .github/actions/ pyproject.toml |
+     grep -v -E '^[[:space:]]*#'
+   ```
+
+1. The first step's command prints `<head>` and `<base>` again.
 
 This lists the runs waiting on `<head>`, and the second command approves
 one:
