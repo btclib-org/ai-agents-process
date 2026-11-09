@@ -870,13 +870,26 @@ does it before briefing anybody.
 - **Look for another session on it, all four ways**, each seeing what
   the others cannot: `git worktree list` (a session that has just
   started), remote branches, recent comments on the issue or pull
-  request, and open pull requests citing the issue:
+  request, and open pull requests citing the issue, by both commands
+  below. The second, GitHub's search, also finds the issue cited only by
+  its URL:
 
   ```shell
   gh pr list --repo <owner>/<repo> --state open --limit 200 \
     --json number,title,body \
     --jq '.[] | select((.title + .body) | test("#<issue>\\b")) | .number'
   ```
+
+  ```shell
+  gh pr list --repo <owner>/<repo> --state open \
+    --search "<issue> in:title,body" --json number,title
+  ```
+
+  Each hit is read, since a number can be cited in passing. A pull
+  request for the issue counts whatever its `closingIssuesReferences`
+  says: a `(closes #<issue>)` in its title alone leaves that empty.
+  `/btclib-iss`'s *Where a pull request is already open for an issue*
+  says whose it is.
 
 - **Claim it before work starts.** The orchestrator comments on the
   issue or pull request that a session is taking it, in a comment
