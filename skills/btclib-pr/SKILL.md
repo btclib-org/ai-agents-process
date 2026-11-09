@@ -986,13 +986,21 @@ These steps, in order, show that every file the diff touches passes:
    path that does not exist before the search, so a redirect that
    fails, which exits `1` without searching, leaves no file, and the
    filter exits `2`.
-   `FETCH_HEAD` is the base just fetched, whatever the remote's refspec
-   maps; after a fetch that fails it is not that base, so the search
-   counts only after a fetch that exits `0`. `git grep` reads the ref,
-   not the files on disk, so any checkout of the repository does;
-   `git -C` reads a relative `<files file>` from the checkout, so it is
-   an absolute path; `-F` takes each path as a string, not a pattern,
-   and `-h` leaves the line alone for the comment filter.
+   The search reads `<base sha>`, the base's commit as GitHub has it,
+   not a ref: another session fetching into the same checkout moves
+   `FETCH_HEAD` and the remote-tracking refs, never a sha. Where the
+   checkout cannot read that commit, the search exits `128`. `git grep`
+   reads the commit, not the files on disk, so any checkout of the
+   repository does; `git -C` reads a relative `<files file>` from the
+   checkout, so it is an absolute path; `-F` takes each path as a
+   string, not a pattern, and `-h` leaves the line alone for the
+   comment filter.
+
+   This prints `<base sha>`:
+
+   ```shell
+   gh api repos/<owner>/<repo>/commits/<base> --jq .sha
+   ```
 
    This exits `0`:
 
@@ -1003,7 +1011,7 @@ These steps, in order, show that every file the diff touches passes:
    This exits `0` or `1`:
 
    ```shell
-   git -C <checkout> grep -h -F -f <files file> FETCH_HEAD -- \
+   git -C <checkout> grep -h -F -f <files file> <base sha> -- \
      .github/workflows/ .github/actions/ pyproject.toml > <hits file>
    ```
 
