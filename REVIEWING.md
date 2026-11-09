@@ -557,10 +557,10 @@ question names it.
     ```
 
 - **Do the skills still lean on the standard rather than copy it?**
-  The organization's rules are `btclib-org/.github`'s `README.md`, and
-  this tree points at a section by the words it holds. A paragraph that
-  restates one is a copy, and a pointer to a heading that no longer
-  exists is a rule a session cannot find.
+  The organization's standard holds the rules, and this tree points at
+  a section by the words it holds. A paragraph that restates one is a
+  copy, and a pointer to a heading that no longer exists is a rule a
+  session cannot find.
 - **Is each new command one a session can paste?** A placeholder is bare
   and last, and a line that writes has a fence of its own, as section 9
   of the standard says; `unquoted-placeholder` reads the first half.
