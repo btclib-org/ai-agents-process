@@ -911,9 +911,9 @@ other where `gh pr checks` shows no review — the ACK is not an item of
 human. A fork's pull request is armed as *Arming auto-merge* says.
 
 **A fork's workflow runs can wait for approval as `action_required`**,
-as on PR btclib-org/btclib#2823. Since 2026-11-09 the organization's
-policy is `first_time_contributors_new_to_github`, so only an account
-new to GitHub waits, and runs queued before the change still do:
+as on PR btclib-org/btclib#2823. This prints the organization's
+policy; under `first_time_contributors_new_to_github` only an account
+new to GitHub waits:
 
 ```shell
 gh api orgs/btclib-org/actions/permissions/fork-pr-contributor-approval \
@@ -980,21 +980,33 @@ These steps, in order, show that every file the diff touches passes:
 
 1. The fetch exits `0`, and the search then prints nothing: no line of
    a workflow, an action or `pyproject.toml` of the base branch names a
-   file the diff touches, a line that is only a comment apart. A fetch
-   that fails leaves the search reading a stale ref, or none, and
-   printing nothing. `git grep` reads the ref, not
-   the files on disk, so any checkout of the repository does once
-   fetched; `-F` takes each path as a string, not a pattern, and `-h`
-   leaves the line alone for the comment filter:
+   file the diff touches, a line that is only a comment apart.
+   `FETCH_HEAD` is the base just fetched, whatever the remote's refspec
+   maps; a fetch that fails leaves it at what an earlier fetch wrote,
+   and the search silent. `git grep` reads the ref, not the files on
+   disk, so any checkout of the repository does; `-F` takes each path
+   as a string, not a pattern, and `-h` leaves the line alone for the
+   comment filter:
 
    ```shell
    git -C <checkout> fetch -q origin <base>
-   git -C <checkout> grep -h -F -f <files file> origin/<base> -- \
+   git -C <checkout> grep -h -F -f <files file> FETCH_HEAD -- \
      .github/workflows/ .github/actions/ pyproject.toml |
      grep -v -E '^[[:space:]]*#'
    ```
 
 1. The first step's command prints `<head>` and `<base>` again.
+
+A run waiting on `<head>` is this pull request's only where no other
+open pull request has that head: one opened from the same branch
+against another base runs the same head on another diff. This prints
+`1`, or the runs are the human's:
+
+```shell
+gh pr list --repo <owner>/<repo> --state open --limit 200 \
+  --json number,headRefOid \
+  --jq '[.[] | select(.headRefOid == "<head>")] | length'
+```
 
 This lists the runs waiting on `<head>`, and the second command approves
 one:
