@@ -979,26 +979,37 @@ These steps, in order, show that every file the diff touches passes:
    grep -E '(^|/)conftest\.py$' <files file>
    ```
 
-1. The fetch exits `0`, the search exits `0` or `1`, and the filter
-   then exits `1`, printing nothing: no line of a workflow, an action
-   or `pyproject.toml` of the base branch names a file the diff
-   touches, a line that is only a comment apart. A search or a filter
-   that exits `2` or more failed, and the runs are the human's: its
-   silence is no pass. `<hits file>` is a path that does not exist
-   before the search, so a redirect that fails, which exits `1` without
-   searching, leaves no file, and the filter exits `2`.
+1. No line of a workflow, an action or `pyproject.toml` of the base
+   branch names a file the diff touches, a line that is only a comment
+   apart. A search or a filter that exits `2` or more failed, and the
+   runs are the human's: its silence is no pass. `<hits file>` is a
+   path that does not exist before the search, so a redirect that
+   fails, which exits `1` without searching, leaves no file, and the
+   filter exits `2`.
    `FETCH_HEAD` is the base just fetched, whatever the remote's refspec
    maps; after a fetch that fails it is not that base, so the search
    counts only after a fetch that exits `0`. `git grep` reads the ref,
    not the files on disk, so any checkout of the repository does;
    `git -C` reads a relative `<files file>` from the checkout, so it is
    an absolute path; `-F` takes each path as a string, not a pattern,
-   and `-h` leaves the line alone for the comment filter:
+   and `-h` leaves the line alone for the comment filter.
+
+   This exits `0`:
 
    ```shell
    git -C <checkout> fetch -q origin <base>
+   ```
+
+   This exits `0` or `1`:
+
+   ```shell
    git -C <checkout> grep -h -F -f <files file> FETCH_HEAD -- \
      .github/workflows/ .github/actions/ pyproject.toml > <hits file>
+   ```
+
+   This exits `1`, printing nothing:
+
+   ```shell
    grep -v -E '^[[:space:]]*#' <hits file>
    ```
 
