@@ -962,8 +962,8 @@ The writer's section; the reviewer judges its result.
       `HEAD`, unless *Committing and rebasing* holds the push
 - [ ] `git log --format='%h %G? %GS' <base>..` shows no `N` on the
       session's own commits (*Signed and signed off*)
-- [ ] every commit of `<base>..` is signed off by its author, the
-      `Sign-off` script exiting `0` (*Signed and signed off*)
+- [ ] the `Sign-off` script exits `0` on `<base>..` (*Signed and signed
+      off*)
 - [ ] every gate the tree names ran on this tip, committed, with exit
       code `0`, under the gate lock (*The gates*)
 - [ ] `git status --porcelain` is empty in the worktree, checked after
@@ -1338,8 +1338,9 @@ the orchestrator in the pull request.
   git write is refused as a whole. Run each in its own call.
 - **Signed and signed off.** Commit with `-s`: `main` requires the
   `Sign-off` check, which refuses a commit without a `Signed-off-by:`
-  trailer naming its author's address. After a rebase, cherry-pick or
-  amend, check the whole range. In
+  trailer naming its author's address, except a bot's, the agent's
+  included, whose addresses the script's `BOTS` holds. After a rebase,
+  cherry-pick or amend, check the whole range. In
   `git log --format='%h %G? %GS' <base>..` any valid signer is fine and
   `N` is the defect.
 
@@ -1663,7 +1664,7 @@ and another review.
   say so. A rebase or amend since the run voids it. A branch that fails
   differently on every run is not cleared (*A failure that does not
   reproduce is measured*).
-- **A branch with a commit its author did not sign off is not
+- **A branch with a commit the `Sign-off` script refuses is not
   cleared**, measured as *Signed and signed off* says.
 - **Look for the finding in the fix itself**, not only in what it
   replaced. A compound condition can be covered operand by operand and

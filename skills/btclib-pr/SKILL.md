@@ -84,7 +84,8 @@ Show the human one table, grouped:
 - the human's own, with something to do: a review or thread
    unanswered, changes requested, a red or missing check, a conflict
    with its base;
-- the agent's (`app/claude`);
+- the agent's: `claude[bot]` in `gh search prs`, `app/claude` in
+  `gh pr view`;
 - bots';
 - the rest: by day, listed and not worked.
 
