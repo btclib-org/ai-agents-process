@@ -84,6 +84,7 @@ Show the human one table, grouped:
 - the human's own, with something to do: a review or thread
    unanswered, changes requested, a red or missing check, a conflict
    with its base;
+- the agent's (`app/claude`);
 - bots';
 - the rest: by day, listed and not worked.
 
@@ -127,6 +128,17 @@ is:
 - **Another person's, on a branch of the repository.** The session
   works it as its reviewer, and changes it as *Another person's branch*
   says.
+- **The agent's**, opened by `app/claude` from `claude/issue-<n>`
+  (`CONTRIBUTING.md`'s *Working with an LLM*). The session works it as
+  another person's on a branch of the repository, not as a bot's. The
+  agent cannot push a fix: its workflow pushes the branch once, without
+  force, before it opens the pull request, and the review bot's token
+  has `contents: read`. So every fix the approval needs is the
+  session's own signed commit, added on top: the agent's commit stays as
+  it is (the shared *Signed and signed off*). The body's `## Evidence`
+  gives the gates of the agent's run, on the agent's commit, so once
+  the session pushes a fix it updates that section with its own runs on
+  the new head. *The decision* leaves the approval to the human.
 - **Left by a session that no longer runs**: the shared take-over, the
   branch becoming the writer's own. Where a session still holds it,
   stop.
@@ -291,8 +303,8 @@ them.
   parent.
 - **A pull request is rebased onto the default branch only where
   `CONTRIBUTING.md`'s *Landing it* says, or for a retarget.** An outside
-  contributor's branch is never rebased: *Outside contributors* brings
-  `main` in by a merge.
+  contributor's branch, or the agent's, is never rebased: *Outside
+  contributors* brings `main` in by a merge.
 - **After a rebase or a merge of `main`, run the gates and push**; an
   armed pull request is disarmed first (*Arming auto-merge*). Ask the
   merge the forge will compute, locally:
@@ -458,6 +470,9 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
 
 - [ ] the author is not the human: `.author.login` differs from
       `gh api user --jq .login`
+- [ ] the author is not the agent: `.author.login` is not `app/claude`.
+      Whoever approves the agent's pull request reads every line
+      (`CONTRIBUTING.md`'s *Working with an LLM*), so the human decides
 - [ ] the latest fresh reviewer's `CLEARED` names `<sha>`, or *A rebase
       and the clearance* carries it to `<sha>`; where the other client
       is unavailable, the dedicated reviewer's does (the shared *A pull
@@ -1215,8 +1230,9 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   then the lower number. The other of the pair leaves the set and is
   rebased once the first has landed. Each rebase goes as the shared *A
   rebase and the clearance* says. Where a head is an outside
-  contributor's, *Outside contributors* says who decides the order, and
-  `main` comes in by its merge, not a rebase.
+  contributor's or the agent's, `main` comes in by its merge, not a
+  rebase (*Rebase and CI*). Where it is an outside contributor's,
+  *Outside contributors* says who decides the order.
 
   Where every run exits `0`, the octopus failed on its own, as it does
   on a file one head renames and another edits. Of the heads that change

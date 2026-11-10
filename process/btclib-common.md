@@ -891,6 +891,33 @@ does it before briefing anybody.
   `/btclib-iss`'s *Where a pull request is already open for an issue*
   says whose it is.
 
+- **The agent of `claude-implement.yml` is another session.** It takes
+  the issues that the header of `reusable-claude-implement.yml` in
+  `btclib-org/.github` names under *Who starts it*, among them one an
+  administrator labels `agent` and one a member opens, a session's own
+  collateral included. It runs only in a repository whose `main` holds
+  `.github/workflows/claude-implement.yml`. Where this answers `Not
+  Found` (HTTP 404), no agent runs there and the rest of this bullet
+  does not apply:
+
+  ```shell
+  gh api repos/<owner>/<repo>/contents/.github/workflows/claude-implement.yml \
+    --jq .name
+  ```
+
+  Elsewhere, until its run on the issue has completed, no session takes
+  the issue. A run carries the issue's title, not its number, and this
+  prints the title of each run not completed:
+
+  ```shell
+  gh run list --repo <owner>/<repo> --workflow claude-implement.yml \
+    --limit 200 --json displayTitle,status \
+    --jq '.[] | select(.status != "completed") | .displayTitle'
+  ```
+
+  Its assessment is a comment by `claude`, and its pull request comes
+  from `claude/issue-<n>`, which the checks above find.
+
 - **Claim it before work starts.** The orchestrator comments on the
   issue or pull request that a session is taking it, in a comment
   starting `Claimed`; that comment is what the next session's check
@@ -933,7 +960,8 @@ The writer's section; the reviewer judges its result.
 
 - [ ] the tip is pushed, and `git ls-remote origin <branch>` matches
       `HEAD`, unless *Committing and rebasing* holds the push
-- [ ] `git log --format='%h %G? %GS' <base>..` shows no `N`
+- [ ] `git log --format='%h %G? %GS' <base>..` shows no `N` on the
+      session's own commits (*Signed and signed off*)
 - [ ] every commit of `<base>..` is signed off by its author, the
       `Sign-off` script exiting `0` (*Signed and signed off*)
 - [ ] every gate the tree names ran on this tip, committed, with exit
@@ -1313,7 +1341,18 @@ the orchestrator in the pull request.
   trailer naming its author's address. After a rebase, cherry-pick or
   amend, check the whole range. In
   `git log --format='%h %G? %GS' <base>..` any valid signer is fine and
-  `N` is the defect. The `Sign-off` job's script exits `0`:
+  `N` is the defect.
+
+  On a branch whose earlier commits are not the session's, an outside
+  contributor's or the agent's (`/btclib-pr`'s *Whose pull request it
+  is*), that check reads the session's own commits only:
+  `<theirs>..`, `<theirs>` being the pull request's head before the
+  session's first commit. Those before it stay as they are, signed or
+  not, and are added to and never rewritten, as `/btclib-pr`'s *Add,
+  never rewrite* says. The agent's commit reads `N`, since its workflow
+  does not sign it, and that is expected.
+
+  The `Sign-off` job's script exits `0`:
 
   ```shell
   gh api -H 'Accept: application/vnd.github.raw' \
@@ -1480,9 +1519,11 @@ branch, or a text to be posted.
 
 ### A pull request's rounds
 
-The fresh reviewer is what reads the branch whole before GitHub's
-review bot. Without it, each finding the bot makes costs a push, a CI
-run and another bot run.
+The fresh reviewer is what reads the branch whole before the reviewers
+on GitHub: the review bot of `claude-review.yml`, and CodeRabbit where
+it reviews (the standard's section 11, *Review*). They are a safety net
+under the local rounds: each finding they make costs a push, a CI run
+and another review.
 
 - **The fresh reviewer runs in the other client**, on a model of a
   vendor other than the writer's, because two models of one vendor
@@ -1681,7 +1722,8 @@ Say in the pull request which case it was.
 
 **"This branch has conflicts" on GitHub is real** even where a local
 rebase exits `0`: the forge does not apply a tree's `merge=union`.
-Rebase, run the gates, and push.
+Rebase, or merge `main` where `/btclib-pr`'s *Rebase and CI* says, run
+the gates, and push.
 
 **Where `main` has moved past the `origin/main` sha the verdict read the
 prose on**, the orchestrator re-reads the branch's added lines on the
