@@ -12,13 +12,13 @@ trap 'exit 1' INT TERM
 w="${d}/row.sh"
 cat > "${w}" <<'EOF_ROW'
 # call: a command's output, or "error: <its stderr>" and exit 1 where it
-# fails or prints anything on stderr
+# fails or prints anything on stderr, its "|" as "/" to keep the columns
 call() {
   e=$(mktemp "${d}/err.XXXXXX")
   o=$("$@" 2> "${e}")
   s=$?
   if [ "${s}" -ne 0 ] || [ -s "${e}" ]; then
-    printf 'error: %s' "$(tr '\n' ' ' < "${e}")"
+    printf 'error: %s' "$(tr '\n|' ' /' < "${e}")"
     rm -f "${e}"
     return 1
   fi
@@ -141,7 +141,7 @@ if bp:
             bl3 = b["badge_percentage_baseline_3"]
             gold = b["badge_percentage_2"]
     except Exception as e:
-        msg = " ".join(f"{type(e).__name__}: {e}".split())
+        msg = " ".join(f"{type(e).__name__}: {e}".split()).replace("|", "/")
         bl3 = gold = f"error: {msg}"
 print(f"{name} | pypi={pypi} | bl3={bl3} gold={gold} | deps: {deps}")' \
   "${r}" "${bp}")
@@ -177,7 +177,7 @@ urls = re.findall(r"!\[[^]]*\]\(([^)\s]+)", sys.stdin.read())
 urls = [u for u in urls if "/pypi/status/" not in u]
 with ThreadPoolExecutor(8) as pool:
     bad = [b for b in pool.map(check, urls) if b]
-print(" || ".join(bad))') || badges="error: the badge script failed"
+print(" || ".join(b.replace("|", "/") for b in bad))') || badges="error: the badge script failed"
 wait
 printf '%s\n' "${r} | $(cat "${d}/${r}.counts") | ${pkg}\
  | release.yml=$(cat "${d}/${r}.rel") | ci=$(cat "${d}/${r}.ci")\

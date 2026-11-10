@@ -60,8 +60,9 @@ where a 404 means no README. A badge script that fails puts `error: the
 badge script failed` in `badges`. A bestpractices fetch that fails, or
 whose answer is not JSON holding the fields read, puts `error:` and its
 message in `bl3` and `gold`, and the row keeps its name, `pypi` and
-`deps`. A row whose `iss` or `pr` holds an error is left out of the
-totals, and the last line says so.
+`deps`. Each such message, and each entry of `badges`, shows a `|` as
+`/`, so the row keeps its columns. A row whose `iss` or `pr` holds an
+error is left out of the totals, and the last line says so.
 
 The measure reads six repositories at once. Within one, it reads the
 counts, the CI, `release.yml` and the tags beside the README,
