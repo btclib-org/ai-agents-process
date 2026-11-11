@@ -633,11 +633,14 @@ The sixth exits `0` only where both files load to a mapping with no key
 twice, whose `repos` is a list of mappings, the two are equal once the
 `rev` of each `repos` entry is masked, and each entry other than `local`
 and `meta` has a string `rev` on both sides. Otherwise it prints why a
-file fails, each top-level key whose value differs, or that the keys are
-in another order:
+file fails, each top-level key whose value differs or that one side
+lacks, or that the keys are in another order. It runs in a directory of
+your own scratch, with both paths absolute: from a directory holding a
+`.venv`, uv runs that environment's `.pth` files, even under `-I`:
 
 ```shell
-uv run --no-config --no-project --python 3.15 --with pyyaml==6.0.3 \
+env -C <scratch dir> \
+  uv run --no-config --no-project --python 3.15 --with pyyaml==6.0.3 \
   python -I -c '
 import sys, yaml
 class L(yaml.SafeLoader):
@@ -664,9 +667,11 @@ def masked(path):
             r["rev"] = None
     return d
 b, h = masked(sys.argv[1]), masked(sys.argv[2])
-d = [k for k in list(b) + list(h) if repr(b.get(k)) != repr(h.get(k))]
+def value(m, k):
+    return repr(m[k]) if k in m else "absent"
+d = [k for k in list(b) + list(h) if value(b, k) != value(h, k)]
 for k in dict.fromkeys(d):
-    print(repr(k) + ": " + repr(b.get(k)) + " -> " + repr(h.get(k)))
+    print(repr(k) + ": " + value(b, k) + " -> " + value(h, k))
 if repr(b) != repr(h) and not d:
     print("the keys are in another order")
 sys.exit(repr(b) != repr(h))' <base yaml> <head yaml>
