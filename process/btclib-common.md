@@ -1177,6 +1177,12 @@ the orchestrator in the pull request.
   head, and says so.
 - **The whole suite, never a narrowed run**, for anything you write
   down. `-k` and single files relax the coverage floor.
+- **A suite that a required check runs in more than one lane is run in
+  each**, and a coverage floor on their union is a gate too, as the
+  tree's `CONTRIBUTING.md` gives them (btclib's *Reproducing what CI
+  runs*). A test that needs what one lane lacks skips itself there by
+  the tree's own means: an `import` of it at the top of the module fails
+  that lane's collection.
 - **Coverage at 100% and defensive branches.** Move the safety where a
   test can trip it (usually a fixture) and write the test. Before saying
   the floor required a test, delete it and run the whole suite.
