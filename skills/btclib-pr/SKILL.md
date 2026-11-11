@@ -589,10 +589,10 @@ or a workflow's `uses:` line naming its action at a 40-digit sha, with
 its `# vX.Y.Z` comment. Each pin is paired with its own: an action's by
 the line without its sha, a hook's by the `- repo:` line that owns it in
 the head's `.pre-commit-config.yaml`. That is the nearest `- repo:` line
-above it with no other `rev:` line between. A removed line stands where
-the next line of the new side stands. It prints an action or a
-repository whose pins do not pair, and a `rev:` line that no `- repo:`
-line owns.
+at or above it with no other `rev:` line between. A removed line takes
+the owner of the line before it on the new side. It prints an action or
+a repository whose pins do not pair, and a `rev:` line that no
+`- repo:` line owns.
 
 The fifth reads `<head file>` before the diff. Where the list holds
 `.pre-commit-config.yaml`, this writes the head's:
@@ -603,10 +603,10 @@ gh api -H 'Accept: application/vnd.github.raw' \
   > <head file>
 ```
 
-Where the list does not hold it, `: > <head file>` writes it empty.
-Where `gh` answers `Not Found`, the pull request removes the file, and
-`<head file>` holds the error. In both, no line is a `- repo:` line, so
-each `rev:` line the diff changes prints.
+Where the list does not hold it, `: > <head file>` writes it empty: the
+diff then changes no line of that file. Where `gh` answers `Not Found`,
+the pull request removes the file, and `<head file>` holds the error.
+It has no `- repo:` line, so each `rev:` line the diff removes prints.
 
 Then the fifth:
 
@@ -624,8 +624,8 @@ awk 'FILENAME == ARGV[1] {if (/^ *- repo: /) {r = $(0)
   h {next}
   /^( |$)/ {c++; next}
   !/^[-+]/ {next}
-  {k = substr($(0), 2); r = o[c]; d = -1}
-  /^[+]/ {d = 1; c++}
+  {k = substr($(0), 2); r = o[c - 1]; d = -1}
+  /^[+]/ {r = o[c]; d = 1; c++}
   f ~ /yaml$/ && r != "" && k ~ /^ *rev: *[^ #]+( *# frozen: [^ ]+)?$/ {
     n[f " " r] += d; next}
   f ~ /yml$/ && k ~ /^ *(- )?uses: *[^ @]+@[0-9a-f]{40} *# *v?[0-9][^ ]*$/ {
