@@ -1338,9 +1338,10 @@ the orchestrator in the pull request.
   git write is refused as a whole. Run each in its own call.
 - **Signed and signed off.** Commit with `-s`: `main` requires the
   `Sign-off` check, which refuses a commit without a `Signed-off-by:`
-  trailer naming its author's address, except a bot's, the agent's
-  included, whose addresses the script's `BOTS` holds. After a rebase,
-  cherry-pick or amend, check the whole range. In
+  trailer naming its author's address. It reads no merge commit, and no
+  commit of a bot, the agent included, whose addresses the script's
+  `BOTS` holds. After a rebase, cherry-pick or amend, check the whole
+  range. In
   `git log --format='%h %G? %GS' <base>..` any valid signer is fine and
   `N` is the defect.
 
@@ -1720,6 +1721,21 @@ at both ends.
 **A rebase that resolved a conflict goes to a fresh reviewer**, who
 reads the whole branch: the resolution is a change no reviewer has seen.
 Say in the pull request which case it was.
+
+**A merge of `main` into the branch keeps the `CLEARED` only where it
+resolved nothing**: its parents are the cleared sha and `<new base>`,
+and its tree is the one this command prints on its first line, exiting
+`0`:
+
+```shell
+git -C <wt> -c merge.union.driver=false \
+  merge-tree --write-tree <cleared sha> <new base>
+```
+
+`git -C <wt> rev-parse '<merge>^1' '<merge>^2' '<merge>^{tree}'` prints
+the three to compare. Otherwise a fresh reviewer reads the whole branch.
+The merge voids the gates and the check of *Signed and signed off*, as a
+rebase does.
 
 **"This branch has conflicts" on GitHub is real** even where a local
 rebase exits `0`: the forge does not apply a tree's `merge=union`.
