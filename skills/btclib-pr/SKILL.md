@@ -645,15 +645,15 @@ head=<head yaml>
 uv run --isolated --no-config --no-project --python 3.15 \
   --with pyyaml==6.0.3 python -I -c '
 import sys, yaml
+MERGE = object()
 class L(yaml.SafeLoader):
-    pass
-def mapping(ld, node, deep=False):
-    keys = [ld.construct_object(k, deep=True) for k, _ in node.value
-            if k.tag != "tag:yaml.org,2002:merge"]
-    if len(set(keys)) != len(keys):
-        raise yaml.MarkedYAMLError("a key is repeated", node.start_mark)
-    return ld.construct_mapping(node, deep)
-L.add_constructor("tag:yaml.org,2002:map", mapping)
+    def compose_mapping_node(self, anchor):
+        node = super().compose_mapping_node(anchor)
+        keys = [MERGE if k.tag == "tag:yaml.org,2002:merge" else
+                self.construct_object(k, deep=True) for k, _ in node.value]
+        if len(set(keys)) != len(keys):
+            raise yaml.MarkedYAMLError("a key is repeated", node.start_mark)
+        return node
 def masked(path):
     d = yaml.load(open(path), L)
     if not isinstance(d, dict):
