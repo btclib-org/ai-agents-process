@@ -640,16 +640,19 @@ puts the `.venv` of the working directory or of a parent, or the one
 files even under `-I`:
 
 ```shell
+base=<base yaml>
+head=<head yaml>
 uv run --isolated --no-config --no-project --python 3.15 \
   --with pyyaml==6.0.3 python -I -c '
 import sys, yaml
 class L(yaml.SafeLoader):
     pass
 def mapping(ld, node, deep=False):
-    m = ld.construct_mapping(node, deep)
-    if len(m) != len(node.value):
+    keys = [ld.construct_object(k, deep=True) for k, _ in node.value
+            if k.tag != "tag:yaml.org,2002:merge"]
+    if len(set(keys)) != len(keys):
         raise yaml.MarkedYAMLError("a key is repeated", node.start_mark)
-    return m
+    return ld.construct_mapping(node, deep)
 L.add_constructor("tag:yaml.org,2002:map", mapping)
 def masked(path):
     d = yaml.load(open(path), L)
@@ -675,7 +678,7 @@ for k in dict.fromkeys(d):
     print(k + ": " + kb.get(k, "absent") + " -> " + kh.get(k, "absent"))
 if repr(b) != repr(h) and not d:
     print("the keys are in another order")
-sys.exit(repr(b) != repr(h))' <base yaml> <head yaml>
+sys.exit(repr(b) != repr(h))' "${base:?}" "${head:?}"
 ```
 
 **The clone.** *The exported lock* and *The reproduced lock* run in one
