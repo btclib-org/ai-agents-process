@@ -584,12 +584,13 @@ grep -Ev '^(\.pre-commit-config\.yaml|\.github/workflows/[^/]+\.yml)$' \
 
 The fifth prints each line a pin file changes that does not read as a
 pin, and the header lines of a diff that adds, removes or renames a pin
-file, whichever of its two paths is the pin file. A pin is a `rev:` line
-of `.pre-commit-config.yaml`, with its `# frozen:` comment where it has
-one, or a workflow's `uses:` line naming its action at a 40-digit sha,
-with its `# vX.Y.Z` comment. A `rev:` line whose value starts with `&`,
-`*`, `|`, `>` or `!` is not a pin. An action's pins are paired by the
-line without its sha, and it prints an action whose pins do not pair:
+file, whichever of its two paths is the pin file. A line reads as a pin
+where it is a `rev:` line of `.pre-commit-config.yaml`, with its
+`# frozen:` comment where it has one, or a workflow's `uses:` line
+naming its action at a 40-digit sha, with its `# vX.Y.Z` comment. A
+`rev:` line whose value starts with `&`, `*`, `|`, `>` or `!` does not
+read as a pin. An action's pins are paired by the line without its sha,
+and it prints an action whose pins do not pair:
 
 ```shell
 awk '/^diff --git /{f = $(3); h = 1
@@ -608,8 +609,8 @@ awk '/^diff --git /{f = $(3); h = 1
   END {for (k in n) if (n[k]) print "unpaired: " k}' <diff file>
 ```
 
-A `rev:` line can sit where it is not a pin, as inside a hook's `entry:`.
-So where the list holds `.pre-commit-config.yaml`, the sixth parses the
+A line can read as a pin and be none, as a `rev:` line inside a hook's
+`entry:`. So where the list holds `.pre-commit-config.yaml`, the sixth parses the
 file at `<base>` and at `<sha>`. `<base>` is the merge base *The clone*,
 below, prints: the diff is taken against it, so a change `main` made
 since does not count as the pull request's. These write the two files,
@@ -629,13 +630,15 @@ gh api -H 'Accept: application/vnd.github.raw' \
 ```
 
 The sixth exits `0` only where both files load to a mapping with no key
-twice, the two are equal once the `rev` of each `repos` entry is
-masked, and each entry other than `local` and `meta` has a string `rev`
-on both sides. Otherwise it prints each top-level key whose value
-differs, or why a file fails:
+twice, whose `repos` is a list of mappings, the two are equal once the
+`rev` of each `repos` entry is masked, and each entry other than `local`
+and `meta` has a string `rev` on both sides. Otherwise it prints why a
+file fails, each top-level key whose value differs, or that the keys are
+in another order:
 
 ```shell
-uv run --no-project --python 3.15 --with pyyaml==6.0.3 python -c '
+uv run --no-config --no-project --python 3.15 --with pyyaml==6.0.3 \
+  python -I -c '
 import sys, yaml
 class L(yaml.SafeLoader):
     pass
@@ -649,9 +652,11 @@ def masked(path):
     d = yaml.load(open(path), L)
     if not isinstance(d, dict):
         sys.exit(path + ": not a mapping")
-    for r in d.get("repos") if isinstance(d.get("repos"), list) else []:
+    if not isinstance(d.get("repos"), list):
+        sys.exit(path + ": repos is not a list")
+    for r in d["repos"]:
         if not isinstance(r, dict):
-            continue
+            sys.exit(path + ": a repos entry is not a mapping")
         if r.get("repo") not in ("local", "meta") and not isinstance(
                 r.get("rev"), str):
             sys.exit(path + ": the rev of " + repr(r.get("repo")))
