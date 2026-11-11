@@ -634,22 +634,22 @@ twice, whose `repos` is a list of mappings, the two are equal once the
 `rev` of each `repos` entry is masked, and each entry other than `local`
 and `meta` has a string `rev` on both sides. Otherwise it prints why a
 file fails, each top-level key whose value differs or that one side
-lacks, or that the keys are in another order. It runs in a directory of
-your own scratch, with both paths absolute: from a directory holding a
-`.venv`, uv runs that environment's `.pth` files, even under `-I`:
+lacks, or that the keys are in another order. Without `--isolated`, uv
+puts the `.venv` of the working directory or of a parent, or the one
+`VIRTUAL_ENV` names, under the `--with` environment, and runs its `.pth`
+files even under `-I`:
 
 ```shell
-env -C <scratch dir> \
-  uv run --no-config --no-project --python 3.15 --with pyyaml==6.0.3 \
-  python -I -c '
+uv run --isolated --no-config --no-project --python 3.15 \
+  --with pyyaml==6.0.3 python -I -c '
 import sys, yaml
 class L(yaml.SafeLoader):
     pass
 def mapping(ld, node, deep=False):
-    keys = [repr(ld.construct_object(k, deep=True)) for k, _ in node.value]
-    if len(keys) != len(set(keys)):
+    m = ld.construct_mapping(node, deep)
+    if len(m) != len(node.value):
         raise yaml.MarkedYAMLError("a key is repeated", node.start_mark)
-    return ld.construct_mapping(node, deep)
+    return m
 L.add_constructor("tag:yaml.org,2002:map", mapping)
 def masked(path):
     d = yaml.load(open(path), L)
@@ -667,11 +667,12 @@ def masked(path):
             r["rev"] = None
     return d
 b, h = masked(sys.argv[1]), masked(sys.argv[2])
-def value(m, k):
-    return repr(m[k]) if k in m else "absent"
-d = [k for k in list(b) + list(h) if value(b, k) != value(h, k)]
+kb = {repr(k): repr(v) for k, v in b.items()}
+kh = {repr(k): repr(v) for k, v in h.items()}
+d = [k for k in list(kb) + list(kh) if kb.get(k, "absent") !=
+     kh.get(k, "absent")]
 for k in dict.fromkeys(d):
-    print(repr(k) + ": " + value(b, k) + " -> " + value(h, k))
+    print(k + ": " + kb.get(k, "absent") + " -> " + kh.get(k, "absent"))
 if repr(b) != repr(h) and not d:
     print("the keys are in another order")
 sys.exit(repr(b) != repr(h))' <base yaml> <head yaml>
