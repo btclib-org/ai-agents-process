@@ -1341,9 +1341,8 @@ the orchestrator in the pull request.
   trailer naming its author's address. It reads no merge commit, and no
   commit of a bot, the agent included, whose addresses the script's
   `BOTS` holds. After a rebase, cherry-pick or amend, check the whole
-  range. In
-  `git log --format='%h %G? %GS' <base>..` any valid signer is fine and
-  `N` is the defect.
+  range. In `git log --format='%h %G? %GS' <base>..` any valid signer
+  is fine and `N` is the defect.
 
   On a branch whose earlier commits are not the session's, an outside
   contributor's or the agent's (`/btclib-pr`'s *Whose pull request it
@@ -1723,19 +1722,21 @@ reads the whole branch: the resolution is a change no reviewer has seen.
 Say in the pull request which case it was.
 
 **A merge of `main` into the branch keeps the `CLEARED` only where it
-resolved nothing**: its parents are the cleared sha and `<new base>`,
-and its tree is the one this command prints on its first line, exiting
-`0`:
+resolved nothing**: its parents are the cleared sha and `<new base>`, a
+commit of `origin/main`, and its tree is the one this command prints on
+its first line, exiting `0`:
 
 ```shell
 git -C <wt> -c merge.union.driver=false \
   merge-tree --write-tree <cleared sha> <new base>
 ```
 
+Otherwise a fresh reviewer reads the whole branch.
 `git -C <wt> rev-parse '<merge>^1' '<merge>^2' '<merge>^{tree}'` prints
-the three to compare. Otherwise a fresh reviewer reads the whole branch.
-The merge voids the gates and the check of *Signed and signed off*, as a
-rebase does.
+the three to compare, and
+`git -C <wt> merge-base --is-ancestor '<merge>^2' origin/main` exits
+`0`. The merge voids the gates and the check of *Signed and signed
+off*, as a rebase does.
 
 **"This branch has conflicts" on GitHub is real** even where a local
 rebase exits `0`: the forge does not apply a tree's `merge=union`.
