@@ -520,7 +520,8 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
       writes from the base's lock and the versions the body names (*The
       reproduced lock*, below)
 - [ ] on a bot's pull request (*A bot's pins*, below), its pin files
-      only move pins: the fifth command below prints nothing
+      only move pins: the fifth command below prints nothing, and the
+      sixth, where it runs, exits `0`
 - [ ] a major move of a dependency, a hook or an action has the latest
       fresh reviewer's `CLEARED` name the release notes or changelog it
       read between the two versions, and say that nothing in them breaks
@@ -597,33 +598,108 @@ grep -Ev '^(\.pre-commit-config\.yaml|\.github/workflows/[^/]+\.yml)$' \
   <list file> > <rest file>
 ```
 
-The fifth prints each line a pin file changes that is not a pin, and
-the header lines of a diff that adds, removes or renames a pin file,
-whichever of its two paths is the pin file. A pin is a `rev:` line of
-`.pre-commit-config.yaml`, with its `# frozen:` comment where it has one,
-or a workflow's `uses:` line naming its action at a 40-digit sha, with
-its `# vX.Y.Z` comment. Each pin is paired with its own: an action's by
-the line without its sha, a hook's by the `- repo:` line its hunk shows
-above it. It prints an action or a repository whose pins do not pair,
-and a `rev:` line whose hunk shows no `- repo:` line:
+The fifth prints each line a pin file changes that does not read as a
+pin, and the header lines of a diff that adds, removes or renames a pin
+file, whichever of its two paths is the pin file. A line reads as a pin
+where it is a `rev:` line of `.pre-commit-config.yaml`, with its
+`# frozen:` comment where it has one, or a workflow's `uses:` line
+naming its action at a 40-digit sha, with its `# vX.Y.Z` comment. A
+`rev:` line whose value starts with `&`, `*`, `|`, `>` or `!` does not
+read as a pin. An action's pins are paired by the line without its sha,
+and it prints an action whose pins do not pair:
 
 ```shell
-awk '/^diff --git /{f = $(3); h = 1; r = ""
+awk '/^diff --git /{f = $(3); h = 1
     p = $(0) ~ / [ab]\/\.pre-commit-config\.yaml( |$)/ ||
       $(0) ~ / [ab]\/\.github\/workflows\/[^\/ ]+\.yml( |$)/; next}
   !p {next}
-  /^@@/{h = 0; r = ""; next}
+  /^@@/{h = 0; next}
   h && !/^(index |--- |[+][+][+] )/ {print f ": " $(0); next}
   h {next}
-  /^. *- repo: / {r = $(0); sub(/^. *- repo: */, "", r)}
   !/^[-+]/ {next}
   {k = substr($(0), 2); d = /^[+]/ ? 1 : -1}
-  f ~ /yaml$/ && r != "" && k ~ /^ *rev: *[^ #]+( *# frozen: [^ ]+)?$/ {
-    n[f " " r] += d; next}
+  f ~ /yaml$/ && k ~ /^ *rev: *[^ #&*|>!][^ #]*( *# frozen: [^ ]+)?$/ {next}
   f ~ /yml$/ && k ~ /^ *(- )?uses: *[^ @]+@[0-9a-f]{40} *# *v?[0-9][^ ]*$/ {
     sub(/@.*/, "", k); n[f k] += d; next}
   {print f ": " $(0)}
   END {for (k in n) if (n[k]) print "unpaired: " k}' <diff file>
+```
+
+A line can read as a pin and be none, as a `rev:` line inside a hook's
+`entry:`. So where the list holds `.pre-commit-config.yaml`, the sixth
+parses the file at `<base>` and at `<sha>`. `<base>` is the merge base
+*The clone*, below, prints: the diff is taken against it, so a change
+`main` made since does not count as the pull request's. These write the
+two files, and each must exit `0`. Where one answers `Not Found`, the
+pull request adds or removes the file, and the item fails:
+
+```shell
+gh api -H 'Accept: application/vnd.github.raw' \
+  "repos/<owner>/<repo>/contents/.pre-commit-config.yaml?ref=<base>" \
+  > <base yaml>
+```
+
+```shell
+gh api -H 'Accept: application/vnd.github.raw' \
+  "repos/<owner>/<repo>/contents/.pre-commit-config.yaml?ref=<sha>" \
+  > <head yaml>
+```
+
+The sixth exits `0` only where both files load to a mapping with no key
+twice and no value that contains itself, whose `repos` is a list of
+mappings, the two are equal once the `rev` of each `repos` entry is
+masked, and each entry other than `local` and `meta` has a string `rev`
+on both sides. Otherwise it prints why a file fails, each top-level key
+whose value differs or that one side lacks, or that the keys are in
+another order. Without `--isolated`, uv puts the `.venv` of the working
+directory or of a parent, or the one `VIRTUAL_ENV` names, under the
+`--with` environment, and runs its `.pth` files even under `-I`:
+
+```shell
+base=<base yaml>
+head=<head yaml>
+uv run --isolated --no-config --no-project --python 3.15 \
+  --with pyyaml==6.0.3 python -I -c '
+import sys, yaml
+MERGE = object()
+class L(yaml.SafeLoader):
+    def compose_mapping_node(self, anchor):
+        node = super().compose_mapping_node(anchor)
+        keys = [MERGE if k.tag == "tag:yaml.org,2002:merge" else
+                self.construct_object(k, deep=True) for k, _ in node.value]
+        if len(set(keys)) != len(keys):
+            raise yaml.MarkedYAMLError("a key is repeated", node.start_mark)
+        return node
+    def construct_document(self, node):
+        return self.construct_object(node, deep=True)
+def masked(path):
+    try:
+        d = yaml.load(open(path), L)
+    except yaml.YAMLError as e:
+        sys.exit(path + ": " + " ".join(str(e).split()))
+    if not isinstance(d, dict):
+        sys.exit(path + ": not a mapping")
+    if not isinstance(d.get("repos"), list):
+        sys.exit(path + ": repos is not a list")
+    for r in d["repos"]:
+        if not isinstance(r, dict):
+            sys.exit(path + ": a repos entry is not a mapping")
+        if r.get("repo") not in ("local", "meta") and not isinstance(
+                r.get("rev"), str):
+            sys.exit(path + ": the rev of " + repr(r.get("repo")))
+        if "rev" in r:
+            r["rev"] = None
+    return d
+b, h = masked(sys.argv[1]), masked(sys.argv[2])
+kb = {repr(k): repr(v) for k, v in b.items()}
+kh = {repr(k): repr(v) for k, v in h.items()}
+d = [k for k in list(kb) + list(kh) if kb.get(k, "absent") !=
+     kh.get(k, "absent")]
+for k in dict.fromkeys(d):
+    print(k + ": " + kb.get(k, "absent") + " -> " + kh.get(k, "absent"))
+if repr(b) != repr(h) and not d:
+    print("the keys are in another order")
+sys.exit(repr(b) != repr(h))' "${base:?}" "${head:?}"
 ```
 
 **The clone.** *The exported lock* and *The reproduced lock* run in one
