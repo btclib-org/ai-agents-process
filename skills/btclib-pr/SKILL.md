@@ -587,27 +587,51 @@ whichever of its two paths is the pin file. A pin is a `rev:` line of
 `.pre-commit-config.yaml`, with its `# frozen:` comment where it has one,
 or a workflow's `uses:` line naming its action at a 40-digit sha, with
 its `# vX.Y.Z` comment. Each pin is paired with its own: an action's by
-the line without its sha, a hook's by the `- repo:` line its hunk shows
-above it. It prints an action or a repository whose pins do not pair,
-and a `rev:` line whose hunk shows no `- repo:` line:
+the line without its sha, a hook's by the `- repo:` line that owns it in
+the head's `.pre-commit-config.yaml`. That is the nearest `- repo:` line
+above it with no other `rev:` line between. A removed line stands where
+the next line of the new side stands. It prints an action or a
+repository whose pins do not pair, and a `rev:` line that no `- repo:`
+line owns.
+
+The fifth reads `<head file>` before the diff. Where the list holds
+`.pre-commit-config.yaml`, this writes the head's:
 
 ```shell
-awk '/^diff --git /{f = $(3); h = 1; r = ""
+gh api -H 'Accept: application/vnd.github.raw' \
+  "repos/<owner>/<repo>/contents/.pre-commit-config.yaml?ref=<sha>" \
+  > <head file>
+```
+
+Where the list does not hold it, `: > <head file>` writes it empty.
+Where `gh` answers `Not Found`, the pull request removes the file, and
+`<head file>` holds the error. In both, no line is a `- repo:` line, so
+each `rev:` line the diff changes prints.
+
+Then the fifth:
+
+```shell
+awk 'FILENAME == ARGV[1] {if (/^ *- repo: /) {r = $(0)
+      sub(/^ *- repo: */, "", r)}
+    o[FNR] = r; if (/^ *rev: /) r = ""; next}
+  /^diff --git /{f = $(3); h = 1
     p = $(0) ~ / [ab]\/\.pre-commit-config\.yaml( |$)/ ||
       $(0) ~ / [ab]\/\.github\/workflows\/[^\/ ]+\.yml( |$)/; next}
   !p {next}
-  /^@@/{h = 0; r = ""; next}
+  /^@@/{h = 0; c = $(3); sub(/^[+]/, "", c); sub(/,.*/, "", c); c += 0
+    next}
   h && !/^(index |--- |[+][+][+] )/ {print f ": " $(0); next}
   h {next}
-  /^. *- repo: / {r = $(0); sub(/^. *- repo: */, "", r)}
+  /^( |$)/ {c++; next}
   !/^[-+]/ {next}
-  {k = substr($(0), 2); d = /^[+]/ ? 1 : -1}
+  {k = substr($(0), 2); r = o[c]; d = -1}
+  /^[+]/ {d = 1; c++}
   f ~ /yaml$/ && r != "" && k ~ /^ *rev: *[^ #]+( *# frozen: [^ ]+)?$/ {
     n[f " " r] += d; next}
   f ~ /yml$/ && k ~ /^ *(- )?uses: *[^ @]+@[0-9a-f]{40} *# *v?[0-9][^ ]*$/ {
     sub(/@.*/, "", k); n[f k] += d; next}
   {print f ": " $(0)}
-  END {for (k in n) if (n[k]) print "unpaired: " k}' <diff file>
+  END {for (k in n) if (n[k]) print "unpaired: " k}' <head file> <diff file>
 ```
 
 **The clone.** *The exported lock* and *The reproduced lock* run in one
