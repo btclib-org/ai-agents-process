@@ -484,7 +484,8 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
       "skipping")'` answers `true`; *Rebase and CI*'s command that
       writes `<red file>` exits `0`; and `test ! -s <red file>` exits
       `0`. A cancelled check (bucket `cancel`) fails this item until a
-      re-run passes.
+      re-run passes. For a landing through the bypass, a red that
+      *Landing*'s module-move rule covers does not fail it
 - [ ] the bot's latest review starts `ACK <sha>`: `gh pr view <n>
       --repo <owner>/<repo> --json reviews --jq '[.reviews[] |
       select(.author.login == "claude" and .body != "")] | last |
@@ -1385,6 +1386,20 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   and once *The human's own pull request* says. A check that only
   reports and is red on `main` too does not hold it, and is named in
   the report.
+
+  **On `btclib-org/btclib-node` and `btclib-org/btclib-wallet`, a pull
+  request whose checks are red from btclib 2026.11.10's module move
+  lands through the bypass all the same**, where and once *The human's
+  own pull request* says, when every red check is covered, the bot's
+  latest review starts `ACK <sha>`, and no review thread is unresolved.
+  A red check is covered where the session read its log with *Rebase
+  and CI*'s `--log-failed` command, and every failure in it names
+  `ecc.ecc`, `are_inputs_standard`, `btclib.ecc.bms` or
+  `btclib.base58`, the modules that release moved. A log showing any
+  other failure, or one the session did not read, holds the landing.
+  The rule ends once both repositories run on btclib 2026.11.10 and the
+  latest push runs of each `main` are green, as this section's first
+  bullet reads them.
 
 - **Where `main` has moved past the sha the verdict read the prose
   on**, the shared *A rebase and the clearance* says who re-reads the
