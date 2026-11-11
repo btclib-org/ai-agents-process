@@ -1243,7 +1243,9 @@ the orchestrator in the pull request.
     - `invert-any-all`: not `assert not any(x in t for x in xs)`, but
       `assert all(x not in t for x in xs)`;
     - `merge-assign-and-aug-assign`: not an assignment of a literal
-      followed by `+=` of another to the same name, but one assignment.
+      followed by `+=` of another to the same name, but one assignment;
+    - `simplify-empty-collection-comparison`: not `assert xs == []`, but
+      `assert not xs`.
 
   The session on whose pull request another rule fires proposes it for
   this list (*Wrap-up*).
