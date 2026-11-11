@@ -1209,6 +1209,16 @@ the orchestrator in the pull request.
 - **Build artefacts outside the worktree** (`uv build --out-dir
   <scratchpad>/…`): an untracked file inside it fails `check-sdist`
   while `git status` reads clean.
+- **Sourcery is not a local gate** (the standard's section 10, *The set,
+  and its cadence*). The writer avoids the shapes of the rules
+  `.sourcery.yaml` leaves on that have fired on a pull request:
+    - `invert-any-all`: not `assert not any(x in t for x in xs)`, but
+      `assert all(x not in t for x in xs)`;
+    - `merge-assign-and-aug-assign`: not an assignment of a literal
+      followed by `+=` of another to the same name, but one assignment.
+
+  The session on whose pull request another rule fires proposes it for
+  this list (*Wrap-up*).
 - **A workflow change is dispatched on the branch**: `gh workflow run
   <file>.yml --ref <branch>`. A workflow that has never landed on the
   default branch is exercised first by the pull request's own run, which
