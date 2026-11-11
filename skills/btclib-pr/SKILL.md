@@ -504,7 +504,8 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
       writes from the base's lock and the versions the body names (*The
       reproduced lock*, below)
 - [ ] on a bot's pull request (*A bot's pins*, below), its pin files
-      only move pins: the fifth command below prints nothing
+      only move pins: the fifth command below prints nothing, and the
+      sixth, where it runs, exits `0`
 - [ ] a major move of a dependency, a hook or an action has the latest
       fresh reviewer's `CLEARED` name the release notes or changelog it
       read between the two versions, and say that nothing in them breaks
@@ -581,60 +582,89 @@ grep -Ev '^(\.pre-commit-config\.yaml|\.github/workflows/[^/]+\.yml)$' \
   <list file> > <rest file>
 ```
 
-The fifth prints each line a pin file changes that is not a pin, and
-the header lines of a diff that adds, removes or renames a pin file,
-whichever of its two paths is the pin file. A pin is a `rev:` line of
-`.pre-commit-config.yaml`, with its `# frozen:` comment where it has one,
-or a workflow's `uses:` line naming its action at a 40-digit sha, with
-its `# vX.Y.Z` comment. Each pin is paired with its own: an action's by
-the line without its sha, a hook's by the `- repo:` line that owns it in
-the head's `.pre-commit-config.yaml`. A `- repo:` line whose value starts
-with a letter owns the `rev:` line that follows it, with only blank and
-comment lines between, where that line is indented to its `repo` key. A
-removed line stands right after the line before it on the new side. It
-prints an action or a repository whose pins do not pair, and a `rev:`
-line that no `- repo:` line owns.
+The fifth prints each line a pin file changes that does not read as a
+pin, and the header lines of a diff that adds, removes or renames a pin
+file, whichever of its two paths is the pin file. A pin is a `rev:` line
+of `.pre-commit-config.yaml`, with its `# frozen:` comment where it has
+one, or a workflow's `uses:` line naming its action at a 40-digit sha,
+with its `# vX.Y.Z` comment. A `rev:` line whose value starts with `&`,
+`*`, `|`, `>` or `!` is not a pin. An action's pins are paired by the
+line without its sha, and it prints an action whose pins do not pair:
 
-The fifth reads `<head file>` before the diff. Where the list holds
-`.pre-commit-config.yaml`, this writes the head's:
+```shell
+awk '/^diff --git /{f = $(3); h = 1
+    p = $(0) ~ / [ab]\/\.pre-commit-config\.yaml( |$)/ ||
+      $(0) ~ / [ab]\/\.github\/workflows\/[^\/ ]+\.yml( |$)/; next}
+  !p {next}
+  /^@@/{h = 0; next}
+  h && !/^(index |--- |[+][+][+] )/ {print f ": " $(0); next}
+  h {next}
+  !/^[-+]/ {next}
+  {k = substr($(0), 2); d = /^[+]/ ? 1 : -1}
+  f ~ /yaml$/ && k ~ /^ *rev: *[^ #&*|>!][^ #]*( *# frozen: [^ ]+)?$/ {next}
+  f ~ /yml$/ && k ~ /^ *(- )?uses: *[^ @]+@[0-9a-f]{40} *# *v?[0-9][^ ]*$/ {
+    sub(/@.*/, "", k); n[f k] += d; next}
+  {print f ": " $(0)}
+  END {for (k in n) if (n[k]) print "unpaired: " k}' <diff file>
+```
+
+A `rev:` line can sit where it is not a pin, as inside a hook's `entry:`.
+So where the list holds `.pre-commit-config.yaml`, the sixth parses the
+file at `<base>` and at `<sha>`. `<base>` is the merge base *The clone*,
+below, prints: the diff is taken against it, so a change `main` made
+since does not count as the pull request's. These write the two files,
+and each must exit `0`. Where one answers `Not Found`, the pull request
+adds or removes the file, and the item fails:
+
+```shell
+gh api -H 'Accept: application/vnd.github.raw' \
+  "repos/<owner>/<repo>/contents/.pre-commit-config.yaml?ref=<base>" \
+  > <base yaml>
+```
 
 ```shell
 gh api -H 'Accept: application/vnd.github.raw' \
   "repos/<owner>/<repo>/contents/.pre-commit-config.yaml?ref=<sha>" \
-  > <head file>
+  > <head yaml>
 ```
 
-Where the list does not hold it, `: > <head file>` writes it empty: the
-diff then changes no line of that file. Where `gh` answers `Not Found`,
-the pull request removes the file, and `<head file>` holds the error.
-It has no `- repo:` line, so each `rev:` line the diff removes prints.
-
-Then the fifth:
+The sixth exits `0` only where both files load to a mapping with no key
+twice, the two are equal once the `rev` of each `repos` entry is
+masked, and each entry other than `local` and `meta` has a string `rev`
+on both sides. Otherwise it prints each top-level key whose value
+differs, or why a file fails:
 
 ```shell
-awk 'FILENAME == ARGV[1] {if (/^ *- repo: +[A-Za-z][^ ]*( +#.*)?$/) {
-      r = $(0); sub(/^ *- repo: */, "", r); i = index($(0), "-") + 1}
-    else if (!/^ *(#|$)/) r = ""
-    o[FNR] = r; s[FNR] = i; next}
-  /^diff --git /{f = $(3); h = 1
-    p = $(0) ~ / [ab]\/\.pre-commit-config\.yaml( |$)/ ||
-      $(0) ~ / [ab]\/\.github\/workflows\/[^\/ ]+\.yml( |$)/; next}
-  !p {next}
-  /^@@/{h = 0; c = $(3); sub(/^[+]/, "", c); sub(/,.*/, "", c); c += 0
-    next}
-  h && !/^(index |--- |[+][+][+] )/ {print f ": " $(0); next}
-  h {next}
-  /^( |$)/ {c++; next}
-  !/^[-+]/ {next}
-  {k = substr($(0), 2); r = o[c - 1]; d = -1
-    if (match(k, /[^ ]/) - 1 != s[c - 1]) r = ""}
-  /^[+]/ {d = 1; c++}
-  f ~ /yaml$/ && r != "" && k ~ /^ *rev: *[^ #]+( *# frozen: [^ ]+)?$/ {
-    n[f " " r] += d; next}
-  f ~ /yml$/ && k ~ /^ *(- )?uses: *[^ @]+@[0-9a-f]{40} *# *v?[0-9][^ ]*$/ {
-    sub(/@.*/, "", k); n[f k] += d; next}
-  {print f ": " $(0)}
-  END {for (k in n) if (n[k]) print "unpaired: " k}' <head file> <diff file>
+uv run --no-project --python 3.15 --with pyyaml==6.0.3 python -c '
+import sys, yaml
+class L(yaml.SafeLoader):
+    pass
+def mapping(ld, node, deep=False):
+    keys = [repr(ld.construct_object(k, deep=True)) for k, _ in node.value]
+    if len(keys) != len(set(keys)):
+        raise yaml.MarkedYAMLError("a key is repeated", node.start_mark)
+    return ld.construct_mapping(node, deep)
+L.add_constructor("tag:yaml.org,2002:map", mapping)
+def masked(path):
+    d = yaml.load(open(path), L)
+    if not isinstance(d, dict):
+        sys.exit(path + ": not a mapping")
+    for r in d.get("repos") if isinstance(d.get("repos"), list) else []:
+        if not isinstance(r, dict):
+            continue
+        if r.get("repo") not in ("local", "meta") and not isinstance(
+                r.get("rev"), str):
+            sys.exit(path + ": the rev of " + repr(r.get("repo")))
+        if "rev" in r:
+            r["rev"] = None
+    return d
+b, h = masked(sys.argv[1]), masked(sys.argv[2])
+d = [k for k in list(b) + list(h) if repr(b.get(k)) != repr(h.get(k))]
+for k in dict.fromkeys(d):
+    print(repr(k) + ": " + repr(b.get(k)) + " -> " + repr(h.get(k)))
+if repr(b) != repr(h) and not d:
+    print("the keys are in another order")
+sys.exit(repr(b) != repr(h))' <base yaml> <head yaml>
 ```
 
 **The clone.** *The exported lock* and *The reproduced lock* run in one
