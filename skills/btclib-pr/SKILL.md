@@ -588,11 +588,12 @@ whichever of its two paths is the pin file. A pin is a `rev:` line of
 or a workflow's `uses:` line naming its action at a 40-digit sha, with
 its `# vX.Y.Z` comment. Each pin is paired with its own: an action's by
 the line without its sha, a hook's by the `- repo:` line that owns it in
-the head's `.pre-commit-config.yaml`. That is the nearest `- repo:` line
-at or above it with no other `rev:` line between. A removed line takes
-the owner of the line before it on the new side. It prints an action or
-a repository whose pins do not pair, and a `rev:` line that no
-`- repo:` line owns.
+the head's `.pre-commit-config.yaml`. A `- repo:` line whose value starts
+with a letter owns the `rev:` line that follows it, with only blank and
+comment lines between, where that line is indented to its `repo` key. A
+removed line stands right after the line before it on the new side. It
+prints an action or a repository whose pins do not pair, and a `rev:`
+line that no `- repo:` line owns.
 
 The fifth reads `<head file>` before the diff. Where the list holds
 `.pre-commit-config.yaml`, this writes the head's:
@@ -611,9 +612,10 @@ It has no `- repo:` line, so each `rev:` line the diff removes prints.
 Then the fifth:
 
 ```shell
-awk 'FILENAME == ARGV[1] {if (/^ *- repo: /) {r = $(0)
-      sub(/^ *- repo: */, "", r)}
-    o[FNR] = r; if (/^ *rev: /) r = ""; next}
+awk 'FILENAME == ARGV[1] {if (/^ *- repo: +[A-Za-z][^ ]*( +#.*)?$/) {
+      r = $(0); sub(/^ *- repo: */, "", r); i = index($(0), "-") + 1}
+    else if (!/^ *(#|$)/) r = ""
+    o[FNR] = r; s[FNR] = i; next}
   /^diff --git /{f = $(3); h = 1
     p = $(0) ~ / [ab]\/\.pre-commit-config\.yaml( |$)/ ||
       $(0) ~ / [ab]\/\.github\/workflows\/[^\/ ]+\.yml( |$)/; next}
@@ -624,8 +626,9 @@ awk 'FILENAME == ARGV[1] {if (/^ *- repo: /) {r = $(0)
   h {next}
   /^( |$)/ {c++; next}
   !/^[-+]/ {next}
-  {k = substr($(0), 2); r = o[c - 1]; d = -1}
-  /^[+]/ {r = o[c]; d = 1; c++}
+  {k = substr($(0), 2); r = o[c - 1]; d = -1
+    if (match(k, /[^ ]/) - 1 != s[c - 1]) r = ""}
+  /^[+]/ {d = 1; c++}
   f ~ /yaml$/ && r != "" && k ~ /^ *rev: *[^ #]+( *# frozen: [^ ]+)?$/ {
     n[f " " r] += d; next}
   f ~ /yml$/ && k ~ /^ *(- )?uses: *[^ @]+@[0-9a-f]{40} *# *v?[0-9][^ ]*$/ {
