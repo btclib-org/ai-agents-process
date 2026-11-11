@@ -610,12 +610,12 @@ awk '/^diff --git /{f = $(3); h = 1
 ```
 
 A line can read as a pin and be none, as a `rev:` line inside a hook's
-`entry:`. So where the list holds `.pre-commit-config.yaml`, the sixth parses the
-file at `<base>` and at `<sha>`. `<base>` is the merge base *The clone*,
-below, prints: the diff is taken against it, so a change `main` made
-since does not count as the pull request's. These write the two files,
-and each must exit `0`. Where one answers `Not Found`, the pull request
-adds or removes the file, and the item fails:
+`entry:`. So where the list holds `.pre-commit-config.yaml`, the sixth
+parses the file at `<base>` and at `<sha>`. `<base>` is the merge base
+*The clone*, below, prints: the diff is taken against it, so a change
+`main` made since does not count as the pull request's. These write the
+two files, and each must exit `0`. Where one answers `Not Found`, the
+pull request adds or removes the file, and the item fails:
 
 ```shell
 gh api -H 'Accept: application/vnd.github.raw' \
@@ -630,14 +630,14 @@ gh api -H 'Accept: application/vnd.github.raw' \
 ```
 
 The sixth exits `0` only where both files load to a mapping with no key
-twice, whose `repos` is a list of mappings, the two are equal once the
-`rev` of each `repos` entry is masked, and each entry other than `local`
-and `meta` has a string `rev` on both sides. Otherwise it prints why a
-file fails, each top-level key whose value differs or that one side
-lacks, or that the keys are in another order. Without `--isolated`, uv
-puts the `.venv` of the working directory or of a parent, or the one
-`VIRTUAL_ENV` names, under the `--with` environment, and runs its `.pth`
-files even under `-I`:
+twice and no value that contains itself, whose `repos` is a list of
+mappings, the two are equal once the `rev` of each `repos` entry is
+masked, and each entry other than `local` and `meta` has a string `rev`
+on both sides. Otherwise it prints why a file fails, each top-level key
+whose value differs or that one side lacks, or that the keys are in
+another order. Without `--isolated`, uv puts the `.venv` of the working
+directory or of a parent, or the one `VIRTUAL_ENV` names, under the
+`--with` environment, and runs its `.pth` files even under `-I`:
 
 ```shell
 base=<base yaml>
@@ -654,8 +654,13 @@ class L(yaml.SafeLoader):
         if len(set(keys)) != len(keys):
             raise yaml.MarkedYAMLError("a key is repeated", node.start_mark)
         return node
+    def construct_document(self, node):
+        return self.construct_object(node, deep=True)
 def masked(path):
-    d = yaml.load(open(path), L)
+    try:
+        d = yaml.load(open(path), L)
+    except yaml.YAMLError as e:
+        sys.exit(path + ": " + " ".join(str(e).split()))
     if not isinstance(d, dict):
         sys.exit(path + ": not a mapping")
     if not isinstance(d.get("repos"), list):
