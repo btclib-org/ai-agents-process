@@ -448,11 +448,11 @@ them.
 
       Each job cancelled this way takes up to four re-runs, by the id
       the first command prints, each started once the last attempt has
-      ended, and the checks are waited for again after each. A failed
-      job of the same run is not re-run with it: *not reproducing*
-      bounds that one. GitHub waits about 15 minutes for a runner before
-      it cancels the job, so the attempts are that far apart. The
-      command re-runs the job and the jobs that depend on it:
+      ended, and the checks are waited for again after each. GitHub
+      waits about 15 minutes for a runner before it cancels the job, so
+      the attempts are that far apart. The command re-runs the job and
+      the jobs that depend on it, and no other failed job of the run,
+      which *not reproducing* bounds:
 
       ```shell
       gh run rerun --repo <owner>/<repo> --job <job id>
