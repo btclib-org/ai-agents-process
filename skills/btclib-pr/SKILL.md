@@ -160,7 +160,30 @@ is:
   output: the hook passes on the head. Dependabot stops rebasing a pull
   request once extra commits are pushed to it ([GitHub's
   documentation][dependabot-rebase]). Where it then needs a rebase,
-  `@dependabot recreate` drops the commit, which is then made again.
+  `@dependabot recreate` drops the commit and puts back Dependabot's own
+  title and body, so the commit and the edit below are made again.
+
+  Where a file the `uv-export` hook writes, such as
+  `build-constraints.txt`, moves a package that Dependabot's `uv.lock`
+  does not move, that commit is the hook's output, which moves only what
+  the lock moves. Where the tree's `CONTRIBUTING.md` gives no owner that
+  commit, the pull request goes to the human. Once the commit narrows
+  the moves, the title and body are edited to name only the moves the
+  branch still makes. The body keeps Dependabot's form of each line,
+  which *The reproduced lock* reads.
+
+  The order is: the commit is made, the title and body are edited, and
+  then the commit is pushed. The review bot runs on a push but not on an
+  edit, so its review of the new head reads the edited text. *The
+  decision*'s checks and the fresh reviewer come last, on the new head:
+  every item there is measured on it, and the `CLEARED` and the bot's
+  `ACK` name it. This edits the title and body:
+
+  ```shell
+  gh pr edit <n> --repo <owner>/<repo> --title <title> \
+    --body-file <body file>
+  ```
+
 - **An outside contributor's**: *Outside contributors*.
 
 ## What was raised
