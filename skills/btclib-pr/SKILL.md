@@ -1440,26 +1440,28 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
 
   Once the wait has ended, each issue the pull request declared closed
   is closed. Where the merge fired no post-merge steps, the session
-  closes each one still open by hand, `<issue>` being its number:
+  closes each one still open by hand, `<issue repo>` being the
+  repository the reference names and `<issue>` its number:
 
   ```shell
   repo=<owner>/<repo>
   n=<n>
   sha=<sha>
+  irepo=<issue repo>
   issue=<issue>
   c="Closed by ${sha:?} (PR ${repo:?}#${n:?}), which fired no post-merge steps."
-  gh issue close "${issue:?}" --repo "${repo:?}" --reason completed \
+  gh issue close "${issue:?}" --repo "${irepo:?}" --reason completed \
     --comment "${c:?}"
   ```
 
-  It then dispatches on `main` each workflow that a push to `main` runs
-  and that takes a dispatch, and names in the report each that a push to
-  `main` runs and that takes none, which then never ran on `<sha>`. A
-  workflow a push to `main` does not run is left alone, as one that runs
-  only on a tag or a dispatch, a release's among them. This reads the
-  `on:` of each workflow on `origin/main`, after `git fetch origin` in
-  `<checkout>`, a checkout of the repository, and prints `dispatch` or
-  `name` before each file it keeps:
+  In that case only, it then dispatches on `main` each workflow that a
+  push to `main` runs and that takes a dispatch, and names in the report
+  each that a push to `main` runs and that takes none, which then never
+  ran on `<sha>`. A workflow a push to `main` does not run is left
+  alone, as one that runs only on a tag or a dispatch, a release's among
+  them. This reads the `on:` of each workflow on `origin/main`, after
+  `git fetch origin` in `<checkout>`, a checkout of the repository, and
+  prints `dispatch` or `name` before each file it keeps:
 
   ```shell
   checkout=<checkout>
@@ -1470,7 +1472,11 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
       return subprocess.run(["git", "-C", sys.argv[1], *a], check=True,
                             capture_output=True, text=True).stdout
   def main_in(bs):
-      return any(fnmatch.fnmatch("main", b) for b in bs)
+      r = False
+      for b in [bs] if isinstance(bs, str) else bs:
+          if fnmatch.fnmatch("main", b.lstrip("!")):
+              r = not b.startswith("!")
+      return r
   w = ".github/workflows/"
   for f in git("ls-tree", "--name-only", "origin/main:" + w).split():
       if not f.endswith((".yml", ".yaml")):
@@ -1492,6 +1498,10 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
       if runs:
           print(v + f)' "${checkout:?}"
   ```
+
+  Where no file was printed with `dispatch`, the time, the dispatch, the
+  wait and the listing below are skipped, and the report names the files
+  printed with `name`.
 
   Before the first dispatch the session notes the time, `<t>`:
 
