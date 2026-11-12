@@ -1403,10 +1403,8 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   `MERGED`, and `<sha>` is that oid. Where it is `OPEN` with no
   `autoMergeRequest`, the merge was cancelled: report it. Once it is
   `MERGED`, `gh api repos/<owner>/<repo>/commits/<sha> --jq
-  .commit.verification` is `verified: true`, and each issue the pull
-  request declared closed is closed, or is closed by hand where the
-  merge fired none of GitHub's post-merge steps (below). What follows
-  waits for this.
+  .commit.verification` is `verified: true`. What follows waits for
+  this.
   The pull requests the session armed in that repository are then
   re-read on the new `main`, as the shared *A rebase and the
   clearance* says.
@@ -1422,30 +1420,87 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
     --jq '.workflow_runs[].status' | sort -u)" = completed ]
   ```
 
-  **Where that query still lists no run after 10 minutes**, the merge
-  fired none of GitHub's post-merge steps, and the loop stops there
-  rather than at its 30 minutes. On btclib-org/bitcoin-core-rpc#797 the
-  merge call answered HTTP 502 and `gh pr view --json state` then read
-  `MERGED`, merge commit c777e11d; no `push` run started on it,
-  btclib-org/bitcoin-core-rpc#796, which the pull request declared
+  That test also fails while no run has started. This prints how many
+  `push` runs have started on `<sha>`:
+
+  ```shell
+  gh api "repos/<owner>/<repo>/actions/runs?head_sha=<sha>&event=push" \
+    --jq .total_count
+  ```
+
+  **Where it still prints `0` once 10 minutes have passed since the
+  merge**, the merge fired none of GitHub's post-merge steps, and the
+  loop stops. On PR btclib-org/bitcoin-core-rpc#797 the merge call
+  answered HTTP 502 and `gh pr view --json state` then read `MERGED`,
+  merge commit c777e11d. No `push` run started on it,
+  ISS btclib-org/bitcoin-core-rpc#796, which the pull request declared
   closed, stayed open, and the head branch stayed though
-  `delete_branch_on_merge` is `true`. The session then does by hand
-  what GitHub did not:
-    - closes each declared issue still open, with `gh issue close
-      <issue> --repo <owner>/<repo> --reason completed --comment
-      "Closed by <sha> (#<n>), whose merge fired no post-merge
-      steps."`;
-    - dispatches on `main` each workflow whose `on:` names
-      `workflow_dispatch`, read from `.github/workflows/` on
-      `origin/main`, with `gh workflow run <file>.yml --repo
-      <owner>/<repo> --ref main`, and names in the report the ones
-      that take no dispatch, which then never ran on `<sha>`. A
-      dispatched run runs on `main`'s tip `<tip>`, which may have
-      moved past `<sha>`, so the wait above takes
-      `head_sha=<tip>&event=workflow_dispatch` in place of its own
-      query, and the report names `<tip>` where it is not `<sha>`;
-    - leaves the head branch to the human, naming it in the report:
-      deleting a remote branch is hard to undo.
+  `delete_branch_on_merge` is `true`.
+
+  Once the wait has ended, each issue the pull request declared closed
+  is closed. Where the merge fired no post-merge steps, the session
+  closes each one still open by hand, `<issue>` being its number:
+
+  ```shell
+  repo=<owner>/<repo>
+  n=<n>
+  sha=<sha>
+  issue=<issue>
+  c="Closed by ${sha:?} (#${n:?}), whose merge fired no post-merge steps."
+  gh issue close "${issue:?}" --repo "${repo:?}" --reason completed \
+    --comment "${c:?}"
+  ```
+
+  It then dispatches on `main` each workflow whose `on:` names both
+  `push` and `workflow_dispatch`, read from `.github/workflows/` on
+  `origin/main`, and names in the report each whose `on:` names `push`
+  and no `workflow_dispatch`, which then never ran on `<sha>`. A
+  workflow whose `on:` names no `push` is left alone: a merge does not
+  run it. Before the first dispatch it notes the time, `<t>`:
+
+  ```shell
+  date -u +%Y-%m-%dT%H:%M:%SZ
+  ```
+
+  Each dispatch is its own call, `<file>` being the workflow's file
+  name:
+
+  ```shell
+  repo=<owner>/<repo>
+  file=<file>
+  gh workflow run "${file:?}" --repo "${repo:?}" --ref main
+  ```
+
+  Then *Rebase and CI*'s loop runs with this test in place of its own.
+  It passes once each of the `<k>` workflows dispatched has a run
+  created since `<t>`, and every run created since then has completed:
+
+  ```shell
+  repo=<owner>/<repo>
+  t=<t>
+  k=<k>
+  q="event=workflow_dispatch&created=>=${t:?}&per_page=100"
+  gh api --paginate "repos/${repo:?}/actions/runs?${q:?}" \
+    --jq '.workflow_runs[] | .path + " " + .status' |
+    awk -v k="${k:?}" '{p[$(1)]; if ($(2) != "completed") w = 1}
+      END {n = 0; for (x in p) n++; exit !(n >= k && !w)}'
+  ```
+
+  A dispatched run runs on `main`'s tip when it starts, which may have
+  moved past `<sha>`. This lists the runs, each with its conclusion and
+  the sha it ran on, and the report names each sha that is not
+  `<sha>`:
+
+  ```shell
+  repo=<owner>/<repo>
+  t=<t>
+  q="event=workflow_dispatch&created=>=${t:?}&per_page=100"
+  gh api --paginate "repos/${repo:?}/actions/runs?${q:?}" \
+    --jq '.workflow_runs[] | [.path, .conclusion, .head_sha] | @tsv'
+  ```
+
+  The head branch is left to the human and named in the report:
+  deleting a remote branch is hard to undo.
 
   Then run this section's first bullet again: where the merge turned
   `main` red, its repair comes first.
