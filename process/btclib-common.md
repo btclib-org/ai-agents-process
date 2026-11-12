@@ -962,8 +962,9 @@ The writer's section; the reviewer judges its result.
       `HEAD`, unless *Committing and rebasing* holds the push
 - [ ] `git log --format='%h %G? %GS' <base>..` shows no `N` on the
       session's own commits (*Signed and signed off*)
-- [ ] the `Sign-off` script exits `0` on `<base>..` (*Signed and signed
-      off*)
+- [ ] the `Sign-off` script exits `0` on `<base>..`, or after a merge of
+      `main` on the ranges that leave out `main`'s commits (*Signed and
+      signed off*)
 - [ ] every gate the tree names ran on this tip, committed, with exit
       code `0`, under the gate lock (*The gates*)
 - [ ] `git status --porcelain` is empty in the worktree, checked after
@@ -1371,7 +1372,16 @@ the orchestrator in the pull request.
   never rewrite* says. The agent's commit reads `N`, since its workflow
   does not sign it, and that is expected.
 
-  The `Sign-off` job's script exits `0`:
+  A merge of `main` into the branch brings `main`'s squashes into
+  `<base>..` and `<theirs>..`. The `Sign-off` job reads the pull
+  request's commits, which leave those out, and the script can refuse
+  one whose `Signed-off-by:` is not its author's noreply. After such a
+  merge `<merge>`, `<base>..` is `<merge>^2..` on the session's own
+  branch, and `<theirs>..` is split at the merge into
+  `<theirs>..<merge>^1` and `<merge>..`, each checked on its own, one
+  range per stretch between merges where there are several.
+
+  The `Sign-off` job's script exits `0` on each range:
 
   ```shell
   gh api -H 'Accept: application/vnd.github.raw' \
