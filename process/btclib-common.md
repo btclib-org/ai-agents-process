@@ -1173,18 +1173,19 @@ the orchestrator in the pull request.
     uv sync --locked
   ```
 
-  A branch's lock can be an older `main`'s, as on PR btclib-org/btclib#3079,
-  whose head locked a build backend `main` had since bumped: the offline
-  `uv sync --locked` then wants a version that fetch did not bring and
-  the branch did not add. So the fetch runs a second time, into the same
-  `<sbx>`, from a new detached worktree at the branch's merge base with
-  `origin/main`, which this prints, wherever that is not `origin/main`
-  itself. The merge base is a commit of `main`, so nothing it locks is
-  the contributor's; where the branch has merged `main`, it is that
-  `main`:
+  A branch's lock can be an older `main`'s, as on PR
+  btclib-org/btclib#3079, whose head locked a build backend `main` had
+  since bumped: the offline `uv sync --locked` then wants a version that
+  fetch did not bring and the branch did not add. So the fetch runs a
+  second time, into the same `<sbx>`, from a new detached worktree at
+  the branch's merge base with `origin/main`, which this prints,
+  wherever that is not `origin/main` itself. The merge base is a commit
+  of `main`, so nothing it locks is the contributor's; where the branch
+  has merged `main`, it is that `main`:
 
   ```shell
-  git -C <wt> merge-base origin/main HEAD
+  wt=<wt>
+  git -C "${wt:?}" merge-base origin/main HEAD
   ```
 
   `scripts/gate-sandbox.sb` says what the sandbox allows, and why the
@@ -1203,37 +1204,38 @@ the orchestrator in the pull request.
   the sandbox does not keep the network and the credentials from the
   branch's code.
 
-  Nothing in `<wt>` or `<sbx>` runs outside the sandbox, except the Codex
-  reviewer's inputs, which run from `<wt>`'s `.venv` in its own sandbox
-  (*Clients*). That one has the network off too, though it reads
+  Nothing in `<wt>` or `<sbx>` runs outside the sandbox, except the
+  Codex reviewer's inputs, which run from `<wt>`'s `.venv` in its own
+  sandbox (*Clients*). That one has the network off too, though it reads
   `~/.codex/auth.json` and `~/.gnupg`. `<sbx>` is new for each head's
-  fetches. The
-  Sign-off check runs as *Signed and signed off* says. A commit or a
-  merge in that tree runs with `git -c core.hooksPath=/dev/null`, which
-  runs no hook, where `git commit --no-verify` still lets
-  `prepare-commit-msg` and `post-commit` run, and with no path under
-  `<wt>` or `<sbx>` on `PATH`. `<sbx>` and the worktrees at `origin/main`
-  and at the merge base go once the branch's gates are done (*Debris goes
-  when its work ends*).
+  fetches. The Sign-off check runs as *Signed and signed off* says. A
+  commit or a merge in that tree runs with `git -c
+  core.hooksPath=/dev/null`, which runs no hook, where `git commit
+  --no-verify` still lets `prepare-commit-msg` and `post-commit` run,
+  and with no path under `<wt>` or `<sbx>` on `PATH`. `<sbx>` and the
+  worktrees at `origin/main` and at the merge base go once the branch's
+  gates, and the dedicated reviewer's inputs the session runs there, are
+  done (*Debris goes when its work ends*).
 
   The dedicated reviewer runs none of the branch's code. It runs in the
   writer's client, whose commands have the session's network and
   credentials, and a brief cannot make each command it writes take the
-  sandbox's form; the session already runs that form for the gates.
-  Its brief says the branch is an outside contributor's, and carries the
+  sandbox's form; the session already runs that form for the gates. Its
+  brief says the branch is an outside contributor's, and carries the
   session's sync and gate runs of this sandbox on the record. The
   reviewer writes its inputs in its own directory, runs none, and names
   each in its verdict as not run. The session reads each, copies it into
-  `<sbx>`, and runs it as a gate, with `uv run` in place of
-  `uv sync --locked`, then resumes the reviewer with the results on the
-  record. Only a `CLEARED` that came after those results is the
-  dedicated reviewer's `CLEARED` for *The rounds*.
+  `<sbx>`, and runs it as a gate, with `uv run` in place of `uv sync
+  --locked`, then resumes the reviewer with the results on the record.
+  An input a resumed verdict names as not run is run the same way. Only
+  a `CLEARED` that came after the results of every input, and names none
+  as not run, is the dedicated reviewer's `CLEARED` for *The rounds*.
 
   A gate or an input that fails in the sandbox for want of the network,
-  or of a package or a hook that the branch adds and neither fetch
-  holds, is not run locally. For a gate, the session relies on CI's run
-  of it on the head, and says so; an input goes to the human as
-  *Clients* says.
+  or of a package, a version of one or a hook that the branch adds or
+  changes and neither fetch holds, is not run locally. For a gate, the
+  session relies on CI's run of it on the head, and says so; an input
+  goes to the human as *Clients* says.
 - **The whole suite, never a narrowed run**, for anything you write
   down. `-k` and single files relax the coverage floor.
 - **A suite that a required check runs in more than one lane is run in
