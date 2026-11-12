@@ -1375,9 +1375,9 @@ the orchestrator in the pull request.
   A merge of `main` into the branch brings `main`'s squashes into
   `<base>..` and `<theirs>..`. The `Sign-off` job reads the pull
   request's commits, which leave those out, and the script can refuse
-  one whose `Signed-off-by:` is not its author's noreply. After such a
-  merge `<merge>`, `<base>..` is `<merge>^2..` on the session's own
-  branch, and `<theirs>..` is split at the merge into
+  one whose `Signed-off-by:` does not name its author's address. After
+  such a merge `<merge>`, `<base>..` is `<merge>^2..` on the session's
+  own branch, and `<theirs>..` is split at the merge into
   `<theirs>..<merge>^1` and `<merge>..`, each checked on its own, one
   range per stretch between merges where there are several.
 
