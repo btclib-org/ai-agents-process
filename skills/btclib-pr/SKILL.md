@@ -438,12 +438,12 @@ them.
 
       ```shell
       gh api --jq '.jobs[] | select(.conclusion == "cancelled") | .id' \
-        repos/<owner>/<repo>/actions/runs/<run id>/jobs
+        --paginate repos/<owner>/<repo>/actions/runs/<run id>/jobs
       ```
 
       ```shell
       gh api --jq '.[].message' \
-        repos/<owner>/<repo>/check-runs/<job id>/annotations
+        --paginate repos/<owner>/<repo>/check-runs/<job id>/annotations
       ```
 
       It takes up to four re-runs of the whole run, each started at
