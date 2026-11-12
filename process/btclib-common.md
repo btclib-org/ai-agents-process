@@ -1372,14 +1372,16 @@ the orchestrator in the pull request.
   never rewrite* says. The agent's commit reads `N`, since its workflow
   does not sign it, and that is expected.
 
-  A merge of `main` into the branch brings `main`'s squashes into
-  `<base>..` and `<theirs>..`. The `Sign-off` job reads the pull
-  request's commits, which leave those out, and the script can refuse
-  one whose `Signed-off-by:` does not name its author's address. After
-  such a merge `<merge>`, `<base>..` is `<merge>^2..` on the session's
-  own branch, and `<theirs>..` is split at the merge into
-  `<theirs>..<merge>^1` and `<merge>..`, each checked on its own, one
-  range per stretch between merges where there are several.
+  A merge of `main` into the branch after `<base>` or `<theirs>` brings
+  `main`'s squashes into `<base>..` or `<theirs>..`. The `Sign-off` job
+  reads the pull request's commits, which leave those out, and the
+  script can refuse one whose `Signed-off-by:` does not name its
+  author's address. After such merges, `<base>..` is `<merge>^2..` on
+  the session's own branch, `<merge>` being the last of them. A merge
+  before `<theirs>` leaves `<theirs>..` as it is. One after it splits
+  `<theirs>..` into `<theirs>..<merge>^1` and `<merge>..`, and each
+  further one splits the last range the same way. Each range is checked
+  on its own.
 
   The `Sign-off` job's script exits `0` on each range:
 
