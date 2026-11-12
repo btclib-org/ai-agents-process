@@ -1429,8 +1429,9 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   ```
 
   **Where it still prints `0` once 10 minutes have passed since the
-  merge**, the merge fired none of GitHub's post-merge steps, and the
-  loop stops. On PR btclib-org/bitcoin-core-rpc#797 the merge call
+  merge**, the `mergedAt` that `gh pr view <n> --json mergedAt` prints,
+  the merge fired none of GitHub's post-merge steps, and the session
+  stops the loop. On PR btclib-org/bitcoin-core-rpc#797 the merge call
   answered HTTP 502 and `gh pr view --json state` then read `MERGED`,
   merge commit c777e11d. No `push` run started on it,
   ISS btclib-org/bitcoin-core-rpc#796, which the pull request declared
@@ -1446,24 +1447,60 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   n=<n>
   sha=<sha>
   issue=<issue>
-  c="Closed by ${sha:?} (#${n:?}), whose merge fired no post-merge steps."
+  c="Closed by ${sha:?} (PR ${repo:?}#${n:?}), which fired no post-merge steps."
   gh issue close "${issue:?}" --repo "${repo:?}" --reason completed \
     --comment "${c:?}"
   ```
 
-  It then dispatches on `main` each workflow whose `on:` names both
-  `push` and `workflow_dispatch`, read from `.github/workflows/` on
-  `origin/main`, and names in the report each whose `on:` names `push`
-  and no `workflow_dispatch`, which then never ran on `<sha>`. A
-  workflow whose `on:` names no `push` is left alone: a merge does not
-  run it. Before the first dispatch it notes the time, `<t>`:
+  It then dispatches on `main` each workflow that a push to `main` runs
+  and that takes a dispatch, and names in the report each that a push to
+  `main` runs and that takes none, which then never ran on `<sha>`. A
+  workflow a push to `main` does not run is left alone, as one that runs
+  only on a tag or a dispatch, a release's among them. This reads the
+  `on:` of each workflow on `origin/main`, after `git fetch origin` in
+  `<checkout>`, a checkout of the repository, and prints `dispatch` or
+  `name` before each file it keeps:
+
+  ```shell
+  checkout=<checkout>
+  uv run --isolated --no-config --no-project --python 3.15 \
+    --with pyyaml==6.0.3 python -I -c '
+  import fnmatch, subprocess, sys, yaml
+  def git(*a):
+      return subprocess.run(["git", "-C", sys.argv[1], *a], check=True,
+                            capture_output=True, text=True).stdout
+  def main_in(bs):
+      return any(fnmatch.fnmatch("main", b) for b in bs)
+  w = ".github/workflows/"
+  for f in git("ls-tree", "--name-only", "origin/main:" + w).split():
+      if not f.endswith((".yml", ".yaml")):
+          continue
+      d = yaml.safe_load(git("show", "origin/main:" + w + f))
+      on = d.get("on", d.get(True)) or {}
+      on = {on: None} if isinstance(on, str) else on
+      on = dict.fromkeys(on) if isinstance(on, list) else on
+      if "push" not in on:
+          continue
+      p = on["push"] or {}
+      if "branches" in p:
+          runs = main_in(p["branches"])
+      elif "branches-ignore" in p:
+          runs = not main_in(p["branches-ignore"])
+      else:
+          runs = not ("tags" in p or "tags-ignore" in p)
+      v = "dispatch " if "workflow_dispatch" in on else "name "
+      if runs:
+          print(v + f)' "${checkout:?}"
+  ```
+
+  Before the first dispatch the session notes the time, `<t>`:
 
   ```shell
   date -u +%Y-%m-%dT%H:%M:%SZ
   ```
 
-  Each dispatch is its own call, `<file>` being the workflow's file
-  name:
+  Each dispatch is its own call, `<file>` being a file printed with
+  `dispatch`:
 
   ```shell
   repo=<owner>/<repo>
@@ -1471,32 +1508,39 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   gh workflow run "${file:?}" --repo "${repo:?}" --ref main
   ```
 
-  Then *Rebase and CI*'s loop runs with this test in place of its own.
-  It passes once each of the `<k>` workflows dispatched has a run
-  created since `<t>`, and every run created since then has completed:
+  Then *Rebase and CI*'s loop runs with this test in place of its own,
+  `<files>` being the files dispatched, separated by spaces. It passes
+  once each of them has a run created since `<t>`, and each such run has
+  completed. Runs of other workflows are not read:
 
   ```shell
   repo=<owner>/<repo>
   t=<t>
-  k=<k>
+  files=<files>
   q="event=workflow_dispatch&created=>=${t:?}&per_page=100"
   gh api --paginate "repos/${repo:?}/actions/runs?${q:?}" \
     --jq '.workflow_runs[] | .path + " " + .status' |
-    awk -v k="${k:?}" '{p[$(1)]; if ($(2) != "completed") w = 1}
-      END {n = 0; for (x in p) n++; exit !(n >= k && !w)}'
+    awk -v f="${files:?}" 'BEGIN {k = split(f, a, " ")
+        for (i = 1; i <= k; i++) want[".github/workflows/" a[i]]}
+      ($(1) in want) {seen[$(1)]; if ($(2) != "completed") w = 1}
+      END {n = 0; for (x in seen) n++; exit !(n == k && !w)}'
   ```
 
   A dispatched run runs on `main`'s tip when it starts, which may have
-  moved past `<sha>`. This lists the runs, each with its conclusion and
-  the sha it ran on, and the report names each sha that is not
-  `<sha>`:
+  moved past `<sha>`. This lists the runs of the files dispatched, each
+  with its conclusion and the sha it ran on, and the report names each
+  sha that is not `<sha>`:
 
   ```shell
   repo=<owner>/<repo>
   t=<t>
+  files=<files>
   q="event=workflow_dispatch&created=>=${t:?}&per_page=100"
   gh api --paginate "repos/${repo:?}/actions/runs?${q:?}" \
-    --jq '.workflow_runs[] | [.path, .conclusion, .head_sha] | @tsv'
+    --jq '.workflow_runs[] | [.path, .conclusion, .head_sha] | @tsv' |
+    awk -v f="${files:?}" 'BEGIN {k = split(f, a, " ")
+        for (i = 1; i <= k; i++) want[".github/workflows/" a[i]]}
+      ($(1) in want)'
   ```
 
   The head branch is left to the human and named in the report:
