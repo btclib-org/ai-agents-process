@@ -768,16 +768,17 @@ env -C "${clone:?}" uv run --locked --only-group lint \
 ```
 
 This adds to `<export file>` each of the two that `<sha>` holds and the
-hook wrote back byte for byte the same:
+hook wrote back byte for byte the same, and exits `0` whichever it adds:
 
 ```shell
 clone=<clone dir>
 sha=<sha>
 exported=<export file>
 for f in .clusterfuzzlite/requirements.txt build-constraints.txt; do
-  git -C "${clone:?}" cat-file -e "${sha:?}:${f:?}" &&
-    git -C "${clone:?}" diff --quiet -- "${f:?}" &&
+  if git -C "${clone:?}" cat-file -e "${sha:?}:${f:?}" 2>/dev/null &&
+    git -C "${clone:?}" diff --quiet -- "${f:?}"; then
     echo "${f:?}" >> "${exported:?}"
+  fi
 done
 ```
 
