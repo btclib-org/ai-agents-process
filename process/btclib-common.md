@@ -1214,8 +1214,8 @@ the orchestrator in the pull request.
   --no-verify` still lets `prepare-commit-msg` and `post-commit` run,
   and with no path under `<wt>` or `<sbx>` on `PATH`. `<sbx>` and the
   worktrees at `origin/main` and at the merge base go once the branch's
-  gates, and the dedicated reviewer's inputs the session runs there, are
-  done (*Debris goes when its work ends*).
+  gates, and every reviewer's inputs the session runs there, are done
+  (*Debris goes when its work ends*).
 
   The dedicated reviewer runs none of the branch's code. It runs in the
   writer's client, whose commands have the session's network and
@@ -1223,13 +1223,14 @@ the orchestrator in the pull request.
   sandbox's form; the session already runs that form for the gates. Its
   brief says the branch is an outside contributor's, and carries the
   session's sync and gate runs of this sandbox on the record. The
-  reviewer writes its inputs in its own directory, runs none, and names
-  each in its verdict as not run. The session reads each, copies it into
-  `<sbx>`, and runs it as a gate, with `uv run` in place of `uv sync
-  --locked`, then resumes the reviewer with the results on the record.
-  An input a resumed verdict names as not run is run the same way. Only
-  a `CLEARED` that came after the results of every input, and names none
-  as not run, is the dedicated reviewer's `CLEARED` for *The rounds*.
+  reviewer writes its inputs in its own directory and runs none (*Every
+  reviewer tries to break the change*). The session reads each, copies
+  it into `<sbx>`, and runs it as a gate, with `uv run` in place of `uv
+  sync --locked`, then resumes the reviewer with the results on the
+  record. An input a resumed verdict names as not run is run the same
+  way. Only a `CLEARED` that came after the results of every input, and
+  names none as not run, is the dedicated reviewer's `CLEARED` for *The
+  rounds*.
 
   A gate or an input that fails in the sandbox for want of the network,
   or of a package, a version of one or a hook that the branch adds or
@@ -1526,18 +1527,21 @@ branch, or a text to be posted.
   text to be posted — and builds inputs meant to falsify each. They
   cover the shapes `btclib-org/.github`'s `REVIEWING.md` lists in *What
   a diff decides with is run, not read*, the ends of each range, and
-  what the tests do not reach. It runs them. A rule in prose is tried
-  the same way, on the cases it has to decide. Where the change makes
-  more claims than a handful of runs can try, the claims the tests reach
-  least go first, after the classes *The classes of defect found carry
-  forward* puts first. An input that breaks a claim is a finding. It
-  blocks where the claim is in the tree, or in a text to be posted that
-  the rounds review on its own, within the limit a differential *Done
-  when* sets (below); a claim of a branch's commit message, pull request
-  body or reply is weighed as *Which prose is worth a round* says. The
-  fix of a blocking one adds the input as a test where the tree tests
-  that code. The verdict lists each claim tried, with the inputs run
-  against it and what they printed, and names the claims left untried.
+  what the tests do not reach. It runs them, except the dedicated
+  reviewer of an outside contributor's branch, which runs none and names
+  each in its verdict as not run, for the session to run in the sandbox
+  of *The gates*. A rule in prose is tried the same way, on the cases it
+  has to decide. Where the change makes more claims than a handful of
+  runs can try, the claims the tests reach least go first, after the
+  classes *The classes of defect found carry forward* puts first. An
+  input that breaks a claim is a finding. It blocks where the claim is
+  in the tree, or in a text to be posted that the rounds review on its
+  own, within the limit a differential *Done when* sets (below); a claim
+  of a branch's commit message, pull request body or reply is weighed as
+  *Which prose is worth a round* says. The fix of a blocking one adds
+  the input as a test where the tree tests that code. The verdict lists
+  each claim tried, with the inputs run against it and what they
+  printed, and names the claims left untried.
 - **Where an oracle is at hand, the inputs run through it**, rather than
   being read against a specification: a built reference implementation,
   such as Bitcoin Core or libsecp256k1, a second independent
@@ -1624,13 +1628,12 @@ and another review.
   the fresh reviewer's re-review is missing, where it would say the
   fresh review is, and that the dedicated reviewer took it over.
 
-  A fork's pull request body is the outside contributor's, and the
-  session does not edit it. What this bullet, or *Clients*, has the body
-  record goes in a comment of the session's own on the pull request
-  instead, posted before the approval is asked for and naming the head
-  it holds for. A comment, unlike an approval review, is there whoever
-  approves, and on a fork the approval goes to the human (`/btclib-pr`'s
-  *Outside contributors*).
+  A fork's pull request body is the outside contributor's. What this
+  bullet, or *Clients*, has the body record goes in a comment of the
+  session's own on the pull request instead, posted before the approval
+  is asked for and naming the head it holds for. A comment, unlike an
+  approval review, is there whoever approves, and on a fork the approval
+  goes to the human (`/btclib-pr`'s *Outside contributors*).
 - The fresh reviewer reads the branch's whole diff from its parent,
   briefed with *Local review* and with the bot's prompt: the `prompt:`
   block of `btclib-org/.github`'s `reusable-claude-review.yml` at the ref
