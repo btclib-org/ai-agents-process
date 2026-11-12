@@ -446,16 +446,18 @@ them.
         --paginate repos/<owner>/<repo>/check-runs/<job id>/annotations
       ```
 
-      It takes up to four re-runs of the whole run, each started at
-      least 15 minutes after the last attempt ended, and the checks are
-      waited for again after each:
+      It takes up to four re-runs of the run's failed jobs, which
+      include its cancelled ones, each started once the last attempt
+      has ended, and the checks are waited for again after each. GitHub
+      waits about 15 minutes for a runner before it cancels the job, so
+      the attempts are that far apart:
 
       ```shell
-      gh run rerun --repo <owner>/<repo> <run id>
+      gh run rerun --repo <owner>/<repo> --failed <run id>
       ```
 
-      On PR btclib-org/btclib-secp256k1#1360 the macOS jobs of the `test`
-      run were cancelled this way on four attempts, and ran on the fifth.
+      On PR btclib-org/btclib-secp256k1#1360 a macOS job of the `test`
+      run was cancelled this way on four attempts, and ran on the fifth.
       Where the fourth re-run is cancelled the same way, the wait is
       GitHub's: label the pull request `waits-github`, comment on it
       with the run and the message (the shared *A hold is recorded on
