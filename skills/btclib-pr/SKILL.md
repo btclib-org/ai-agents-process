@@ -429,6 +429,38 @@ them.
       is measured*. One re-run measures it (`gh run rerun <run id>
       --repo <owner>/<repo> --failed`); two different answers are an
       issue, not a green;
+    - **never given a runner**: a job cancelled with the annotation `The
+      job was not acquired by Runner of type hosted even after multiple
+      attempts` never ran, so it is neither a failure nor *not
+      reproducing*'s measure. A job's id is its check run's, so the first
+      command writes the ids of the run's cancelled jobs, and the second
+      prints one job's annotations:
+
+      ```shell
+      gh api --jq '.jobs[] | select(.conclusion == "cancelled") | .id' \
+        repos/<owner>/<repo>/actions/runs/<run id>/jobs
+      ```
+
+      ```shell
+      gh api --jq '.[].message' \
+        repos/<owner>/<repo>/check-runs/<job id>/annotations
+      ```
+
+      It takes up to four re-runs of the whole run, each started at
+      least 15 minutes after the last attempt ended, and the checks are
+      waited for again after each:
+
+      ```shell
+      gh run rerun --repo <owner>/<repo> <run id>
+      ```
+
+      On PR btclib-org/btclib-secp256k1#1360 the macOS jobs of the `test`
+      run were cancelled this way on four attempts, and ran on the fifth.
+      Where the fourth re-run is cancelled the same way, the wait is
+      GitHub's: label the pull request `waits-github`, comment on it
+      with the run and the message (the shared *A hold is recorded on
+      the issue or pull request*), and report it. The human decides
+      what follows;
     - **review quota exhausted**: the log of `Claude review` holds the
       line `api_error_status 429` (match with that, not with
       `api_error_status` alone: the log also echoes the workflow's own
@@ -484,7 +516,8 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
       "skipping")'` answers `true`; *Rebase and CI*'s command that
       writes `<red file>` exits `0`; and `test ! -s <red file>` exits
       `0`. A cancelled check (bucket `cancel`) fails this item until a
-      re-run passes.
+      re-run passes; *Rebase and CI*'s *never given a runner* bounds the
+      re-runs of a job GitHub never gave a runner.
 - [ ] the bot's latest review starts `ACK <sha>`: `gh pr view <n>
       --repo <owner>/<repo> --json reviews --jq '[.reviews[] |
       select(.author.login == "claude" and .body != "")] | last |
