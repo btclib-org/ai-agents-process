@@ -177,11 +177,16 @@ is:
   edit, so its review of the new head reads the edited text. *The
   decision*'s checks and the fresh reviewer come last, on the new head:
   every item there is measured on it, and the `CLEARED` and the bot's
-  `ACK` name it. This edits the title and body:
+  `ACK` name it. This edits them, from a file holding the new title and
+  one holding the new body:
 
   ```shell
-  gh pr edit <n> --repo <owner>/<repo> --title <title> \
-    --body-file <body file>
+  n=<n>
+  repo=<owner>/<repo>
+  title=<title file>
+  body=<body file>
+  gh pr edit "${n:?}" --repo "${repo:?}" --title "$(cat "${title:?}")" \
+    --body-file "${body:?}"
   ```
 
 - **An outside contributor's**: *Outside contributors*.
