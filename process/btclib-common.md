@@ -1139,8 +1139,9 @@ the orchestrator in the pull request.
   run code nobody in btclib-org wrote: `uv sync` builds the branch's
   project with the backend its `[build-system]` names, and the suite and
   the hooks run its code. Outside the sandbox the session fetches only
-  what `origin/main` locks and installs, from a new detached worktree at
-  `origin/main`, into a new directory `<sbx>` in the scratch directory.
+  what `main` locks and installs, from a new detached worktree at
+  `origin/main` and one at the branch's merge base (below), into a new
+  directory `<sbx>` in the scratch directory.
   The fetch and every gate take the same variables, so that pre-commit
   picks the same hook environments outside and inside:
 
@@ -1172,6 +1173,20 @@ the orchestrator in the pull request.
     uv sync --locked
   ```
 
+  A branch's lock can be an older `main`'s, as on PR btclib-org/btclib#3079,
+  whose head locked a build backend `main` had since bumped: the offline
+  `uv sync --locked` then wants a version that fetch did not bring and
+  the branch did not add. So the fetch runs a second time, into the same
+  `<sbx>`, from a new detached worktree at the branch's merge base with
+  `origin/main`, which this prints, wherever that is not `origin/main`
+  itself. The merge base is a commit of `main`, so nothing it locks is
+  the contributor's; where the branch has merged `main`, it is that
+  `main`:
+
+  ```shell
+  git -C <wt> merge-base origin/main HEAD
+  ```
+
   `scripts/gate-sandbox.sb` says what the sandbox allows, and why the
   paths go through `realpath`. It reads no file under `$HOME` but uv's
   interpreters, `<wt>`, `<sbx>` and the worktree's git directories, so
@@ -1191,18 +1206,34 @@ the orchestrator in the pull request.
   Nothing in `<wt>` or `<sbx>` runs outside the sandbox, except the Codex
   reviewer's inputs, which run from `<wt>`'s `.venv` in its own sandbox
   (*Clients*). That one has the network off too, though it reads
-  `~/.codex/auth.json` and `~/.gnupg`. `<sbx>` is new for each fetch. The
+  `~/.codex/auth.json` and `~/.gnupg`. `<sbx>` is new for each head's
+  fetches. The
   Sign-off check runs as *Signed and signed off* says. A commit or a
   merge in that tree runs with `git -c core.hooksPath=/dev/null`, which
   runs no hook, where `git commit --no-verify` still lets
   `prepare-commit-msg` and `post-commit` run, and with no path under
-  `<wt>` or `<sbx>` on `PATH`. `<sbx>` and the worktree at `origin/main`
-  go once the branch's gates are done (*Debris goes when its work ends*).
+  `<wt>` or `<sbx>` on `PATH`. `<sbx>` and the worktrees at `origin/main`
+  and at the merge base go once the branch's gates are done (*Debris goes
+  when its work ends*).
 
-  A gate that fails in the sandbox for want of the network, or of a
-  package or a hook that the branch adds and `origin/main` does not hold,
-  is not run locally. The session relies on CI's run of that gate on the
-  head, and says so.
+  The dedicated reviewer runs none of the branch's code. It runs in the
+  writer's client, whose commands have the session's network and
+  credentials, and a brief cannot make each command it writes take the
+  sandbox's form; the session already runs that form for the gates.
+  Its brief says the branch is an outside contributor's, and carries the
+  session's sync and gate runs of this sandbox on the record. The
+  reviewer writes its inputs in its own directory, runs none, and names
+  each in its verdict as not run. The session reads each, copies it into
+  `<sbx>`, and runs it as a gate, with `uv run` in place of
+  `uv sync --locked`, then resumes the reviewer with the results on the
+  record. Only a `CLEARED` that came after those results is the
+  dedicated reviewer's `CLEARED` for *The rounds*.
+
+  A gate or an input that fails in the sandbox for want of the network,
+  or of a package or a hook that the branch adds and neither fetch
+  holds, is not run locally. For a gate, the session relies on CI's run
+  of it on the head, and says so; an input goes to the human as
+  *Clients* says.
 - **The whole suite, never a narrowed run**, for anything you write
   down. `-k` and single files relax the coverage floor.
 - **A suite that a required check runs in more than one lane is run in
@@ -1590,6 +1621,14 @@ and another review.
   the hold on later branches included. The pull request body says that
   the fresh reviewer's re-review is missing, where it would say the
   fresh review is, and that the dedicated reviewer took it over.
+
+  A fork's pull request body is the outside contributor's, and the
+  session does not edit it. What this bullet, or *Clients*, has the body
+  record goes in a comment of the session's own on the pull request
+  instead, posted before the approval is asked for and naming the head
+  it holds for. A comment, unlike an approval review, is there whoever
+  approves, and on a fork the approval goes to the human (`/btclib-pr`'s
+  *Outside contributors*).
 - The fresh reviewer reads the branch's whole diff from its parent,
   briefed with *Local review* and with the bot's prompt: the `prompt:`
   block of `btclib-org/.github`'s `reusable-claude-review.yml` at the ref
