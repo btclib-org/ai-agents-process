@@ -512,7 +512,8 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
       first command below prints nothing, and the second, where it
       runs, exits `0`
 - [ ] every other file in the list is a doc, a test, `pyproject.toml`
-      or `uv.lock`, or the exported lock (*The exported lock*, below):
+      or `uv.lock`, or an exported lock, `.clusterfuzzlite/requirements.txt`
+      or `build-constraints.txt` (*The exported lock*, below):
       the third command below prints nothing and exits `1`
 - [ ] `pyproject.toml` only moves requirements it already holds to a
       new version, read from the fourth command below
@@ -737,23 +738,27 @@ git -C "${clone:?}" checkout --quiet --detach "${sha:?}"
 
 **The exported lock.** On a pull request whose `.author.login` is
 `app/dependabot`, and whose list holds
-`.clusterfuzzlite/requirements.txt`, that file passes the third command
-where the commands below regenerate it on `<sha>` and find it byte for
-byte the same
+`.clusterfuzzlite/requirements.txt` or `build-constraints.txt`, each of
+the two the list holds passes the third command where the commands below
+regenerate it on `<sha>` and find it byte for byte the same
 ([ISS 249](https://github.com/btclib-org/ai-agents-process/issues/249)).
 They run the `uv-export` hook, which runs `uv export` with the tree's
-arguments, by the command the tree's `CONTRIBUTING.md` gives an owner
-(*A bot's*, under *Whose pull request it is*), in the clone.
+arguments for each of the two the tree holds, by the command the tree's
+`CONTRIBUTING.md` gives an owner (*A bot's*, under *Whose pull request
+it is*), in the clone.
 
-The file is removed first, so that a hook that does not run leaves it
-missing, which the last command reads as a difference:
+Both files are removed first, so that a hook that does not write one
+leaves it missing, which the last command reads as a difference. A tree
+may hold only one of them:
 
 ```shell
 clone=<clone dir>
-rm "${clone:?}/.clusterfuzzlite/requirements.txt"
+for f in .clusterfuzzlite/requirements.txt build-constraints.txt; do
+  rm -f "${clone:?}/${f:?}"
+done
 ```
 
-The hook exits `1` when it writes the file, so its exit code is not
+The hook exits `1` when it writes a file, so its exit code is not
 read:
 
 ```shell
@@ -762,13 +767,18 @@ env -C "${clone:?}" uv run --locked --only-group lint \
   pre-commit run uv-export --all-files
 ```
 
+This adds to `<export file>` each of the two that `<sha>` holds and the
+hook wrote back byte for byte the same:
+
 ```shell
 clone=<clone dir>
 sha=<sha>
 exported=<export file>
-git -C "${clone:?}" cat-file -e "${sha:?}:.clusterfuzzlite/requirements.txt" &&
-  git -C "${clone:?}" diff --quiet -- .clusterfuzzlite/requirements.txt &&
-  echo .clusterfuzzlite/requirements.txt > "${exported:?}"
+for f in .clusterfuzzlite/requirements.txt build-constraints.txt; do
+  git -C "${clone:?}" cat-file -e "${sha:?}:${f:?}" &&
+    git -C "${clone:?}" diff --quiet -- "${f:?}" &&
+    echo "${f:?}" >> "${exported:?}"
+done
 ```
 
 **The reproduced lock.** Where the list holds `uv.lock`, the commands
