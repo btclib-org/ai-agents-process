@@ -1441,7 +1441,8 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   Once the wait has ended, each issue the pull request declared closed
   is closed. Where the merge fired no post-merge steps, the session
   closes each one still open by hand, `<issue repo>` being the
-  repository the reference names and `<issue>` its number:
+  repository the reference names, `<owner>/<repo>` for a bare `#N`, and
+  `<issue>` its number:
 
   ```shell
   repo=<owner>/<repo>
@@ -1461,7 +1462,9 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   alone, as one that runs only on a tag or a dispatch, a release's among
   them. This reads the `on:` of each workflow on `origin/main`, after
   `git fetch origin` in `<checkout>`, a checkout of the repository, and
-  prints `dispatch` or `name` before each file it keeps:
+  prints `dispatch` or `name` before each file it keeps. A workflow whose
+  dispatch has a required input with no default is named, since a
+  dispatch with no inputs cannot start it:
 
   ```shell
   checkout=<checkout>
@@ -1494,7 +1497,10 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
           runs = not main_in(p["branches-ignore"])
       else:
           runs = not ("tags" in p or "tags-ignore" in p)
-      v = "dispatch " if "workflow_dispatch" in on else "name "
+      i = (on.get("workflow_dispatch") or {}).get("inputs") or {}
+      need = any((x or {}).get("required") and "default" not in (x or {})
+                 for x in i.values())
+      v = "dispatch " if "workflow_dispatch" in on and not need else "name "
       if runs:
           print(v + f)' "${checkout:?}"
   ```
