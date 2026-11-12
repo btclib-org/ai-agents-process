@@ -1404,7 +1404,9 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   `autoMergeRequest`, the merge was cancelled: report it. Once it is
   `MERGED`, `gh api repos/<owner>/<repo>/commits/<sha> --jq
   .commit.verification` is `verified: true`, and each issue the pull
-  request declared closed is closed. What follows waits for this.
+  request declared closed is closed, or is closed by hand where the
+  merge fired none of GitHub's post-merge steps (below). What follows
+  waits for this.
   The pull requests the session armed in that repository are then
   re-read on the new `main`, as the shared *A rebase and the
   clearance* says.
@@ -1419,6 +1421,31 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
     "repos/<owner>/<repo>/actions/runs?head_sha=<sha>&event=push&per_page=100" \
     --jq '.workflow_runs[].status' | sort -u)" = completed ]
   ```
+
+  **Where that query still lists no run after 10 minutes**, the merge
+  fired none of GitHub's post-merge steps, and the loop stops there
+  rather than at its 30 minutes. On btclib-org/bitcoin-core-rpc#797 the
+  merge call answered HTTP 502 and `gh pr view --json state` then read
+  `MERGED`, merge commit c777e11d; no `push` run started on it,
+  btclib-org/bitcoin-core-rpc#796, which the pull request declared
+  closed, stayed open, and the head branch stayed though
+  `delete_branch_on_merge` is `true`. The session then does by hand
+  what GitHub did not:
+    - closes each declared issue still open, with `gh issue close
+      <issue> --repo <owner>/<repo> --reason completed --comment
+      "Closed by <sha> (#<n>), whose merge fired no post-merge
+      steps."`;
+    - dispatches on `main` each workflow whose `on:` names
+      `workflow_dispatch`, read from `.github/workflows/` on
+      `origin/main`, with `gh workflow run <file>.yml --repo
+      <owner>/<repo> --ref main`, and names in the report the ones
+      that take no dispatch, which then never ran on `<sha>`. A
+      dispatched run runs on `main`'s tip `<tip>`, which may have
+      moved past `<sha>`, so the wait above takes
+      `head_sha=<tip>&event=workflow_dispatch` in place of its own
+      query, and the report names `<tip>` where it is not `<sha>`;
+    - leaves the head branch to the human, naming it in the report:
+      deleting a remote branch is hard to undo.
 
   Then run this section's first bullet again: where the merge turned
   `main` red, its repair comes first.
