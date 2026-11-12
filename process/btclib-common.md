@@ -1381,7 +1381,13 @@ the orchestrator in the pull request.
   before `<theirs>` leaves `<theirs>..` as it is. One after it splits
   `<theirs>..` into `<theirs>..<merge>^1` and `<merge>..`, and each
   further one splits the last range the same way. Each range is checked
-  on its own.
+  on its own. This lists those merges, oldest first, with `<base>` in
+  place of `<theirs>` on the session's own branch:
+
+  ```shell
+  git -C <wt> log --merges --first-parent --reverse --format=%H \
+    '<theirs>..'
+  ```
 
   The `Sign-off` job's script exits `0` on each range:
 
