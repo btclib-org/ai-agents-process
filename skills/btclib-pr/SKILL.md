@@ -1424,8 +1424,8 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   `MERGED`, and `<sha>` is that oid. Where it is `OPEN` with no
   `autoMergeRequest`, the merge was cancelled: report it. Once it is
   `MERGED`, `gh api repos/<owner>/<repo>/commits/<sha> --jq
-  .commit.verification` is `verified: true`, and each issue the pull
-  request declared closed is closed. What follows waits for this.
+  .commit.verification` is `verified: true`. What follows waits for
+  this.
   The pull requests the session armed in that repository are then
   re-read on the new `main`, as the shared *A rebase and the
   clearance* says.
@@ -1440,6 +1440,148 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
     "repos/<owner>/<repo>/actions/runs?head_sha=<sha>&event=push&per_page=100" \
     --jq '.workflow_runs[].status' | sort -u)" = completed ]
   ```
+
+  That test also fails while no run has started. This prints how many
+  `push` runs have started on `<sha>`:
+
+  ```shell
+  gh api "repos/<owner>/<repo>/actions/runs?head_sha=<sha>&event=push" \
+    --jq .total_count
+  ```
+
+  **Where it still prints `0` once 10 minutes have passed since the
+  merge**, the `mergedAt` that `gh pr view <n> --json mergedAt` prints,
+  the merge fired none of GitHub's post-merge steps, and the session
+  stops the loop. On PR btclib-org/bitcoin-core-rpc#797 the merge call
+  answered HTTP 502 and `gh pr view --json state` then read `MERGED`,
+  merge commit c777e11d. No `push` run started on it,
+  ISS btclib-org/bitcoin-core-rpc#796, which the pull request declared
+  closed, stayed open, and the head branch stayed though
+  `delete_branch_on_merge` is `true`.
+
+  Once the wait has ended, each issue the pull request declared closed
+  is closed. Where the merge fired no post-merge steps, the session
+  closes each one still open by hand, `<issue repo>` being the
+  repository the reference names, `<owner>/<repo>` for a bare `#N`, and
+  `<issue>` its number:
+
+  ```shell
+  repo=<owner>/<repo>
+  n=<n>
+  sha=<sha>
+  irepo=<issue repo>
+  issue=<issue>
+  c="Closed by ${sha:?} (PR ${repo:?}#${n:?}), which fired no post-merge steps."
+  gh issue close "${issue:?}" --repo "${irepo:?}" --reason completed \
+    --comment "${c:?}"
+  ```
+
+  In that case only, it then dispatches on `main` each workflow that a
+  push to `main` runs and that takes a dispatch, and names in the report
+  each that a push to `main` runs and that takes none, which then never
+  ran on `<sha>`. A workflow a push to `main` does not run is left
+  alone, as one that runs only on a tag or a dispatch, a release's among
+  them. This reads the `on:` of each workflow on `origin/main`, after
+  `git fetch origin` in `<checkout>`, a checkout of the repository, and
+  prints `dispatch` or `name` before each file it keeps. A workflow whose
+  dispatch has a required input with no default is named, since a
+  dispatch with no inputs cannot start it:
+
+  ```shell
+  checkout=<checkout>
+  uv run --isolated --no-config --no-project --python 3.15 \
+    --with pyyaml==6.0.3 python -I -c '
+  import fnmatch, subprocess, sys, yaml
+  def git(*a):
+      return subprocess.run(["git", "-C", sys.argv[1], *a], check=True,
+                            capture_output=True, text=True).stdout
+  def main_in(bs):
+      r = False
+      for b in [bs] if isinstance(bs, str) else bs:
+          if fnmatch.fnmatch("main", b.lstrip("!")):
+              r = not b.startswith("!")
+      return r
+  w = ".github/workflows/"
+  for f in git("ls-tree", "--name-only", "origin/main:" + w).split():
+      if not f.endswith((".yml", ".yaml")):
+          continue
+      d = yaml.safe_load(git("show", "origin/main:" + w + f))
+      on = d.get("on", d.get(True)) or {}
+      on = {on: None} if isinstance(on, str) else on
+      on = dict.fromkeys(on) if isinstance(on, list) else on
+      if "push" not in on:
+          continue
+      p = on["push"] or {}
+      if "branches" in p:
+          runs = main_in(p["branches"])
+      elif "branches-ignore" in p:
+          runs = not main_in(p["branches-ignore"])
+      else:
+          runs = not ("tags" in p or "tags-ignore" in p)
+      i = (on.get("workflow_dispatch") or {}).get("inputs") or {}
+      need = any((x or {}).get("required") and "default" not in (x or {})
+                 for x in i.values())
+      v = "dispatch " if "workflow_dispatch" in on and not need else "name "
+      if runs:
+          print(v + f)' "${checkout:?}"
+  ```
+
+  Where no file was printed with `dispatch`, the time, the dispatch, the
+  wait and the listing below are skipped, and the report names the files
+  printed with `name`.
+
+  Before the first dispatch the session notes the time, `<t>`:
+
+  ```shell
+  date -u +%Y-%m-%dT%H:%M:%SZ
+  ```
+
+  Each dispatch is its own call, `<file>` being a file printed with
+  `dispatch`:
+
+  ```shell
+  repo=<owner>/<repo>
+  file=<file>
+  gh workflow run "${file:?}" --repo "${repo:?}" --ref main
+  ```
+
+  Then *Rebase and CI*'s loop runs with this test in place of its own,
+  `<files>` being the files dispatched, separated by spaces. It passes
+  once each of them has a run created since `<t>`, and each such run has
+  completed. Runs of other workflows are not read:
+
+  ```shell
+  repo=<owner>/<repo>
+  t=<t>
+  files=<files>
+  q="event=workflow_dispatch&created=>=${t:?}&per_page=100"
+  gh api --paginate "repos/${repo:?}/actions/runs?${q:?}" \
+    --jq '.workflow_runs[] | .path + " " + .status' |
+    awk -v f="${files:?}" 'BEGIN {k = split(f, a, " ")
+        for (i = 1; i <= k; i++) want[".github/workflows/" a[i]]}
+      ($(1) in want) {seen[$(1)]; if ($(2) != "completed") w = 1}
+      END {n = 0; for (x in seen) n++; exit !(n == k && !w)}'
+  ```
+
+  A dispatched run runs on `main`'s tip when it starts, which may have
+  moved past `<sha>`. This lists the runs of the files dispatched, each
+  with its conclusion and the sha it ran on, and the report names each
+  sha that is not `<sha>`:
+
+  ```shell
+  repo=<owner>/<repo>
+  t=<t>
+  files=<files>
+  q="event=workflow_dispatch&created=>=${t:?}&per_page=100"
+  gh api --paginate "repos/${repo:?}/actions/runs?${q:?}" \
+    --jq '.workflow_runs[] | [.path, .conclusion, .head_sha] | @tsv' |
+    awk -v f="${files:?}" 'BEGIN {k = split(f, a, " ")
+        for (i = 1; i <= k; i++) want[".github/workflows/" a[i]]}
+      ($(1) in want)'
+  ```
+
+  The head branch is left to the human and named in the report:
+  deleting a remote branch is hard to undo.
 
   Then run this section's first bullet again: where the merge turned
   `main` red, its repair comes first.
