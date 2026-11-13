@@ -457,9 +457,10 @@ the process names its own files by their path under it. Claude Code's
   `command -v timeout` first.** Where that prints nothing, the command
   runs without a time limit, and the report says so. On macOS,
   Homebrew's coreutils provides it, and it exits `124` when time runs
-  out. Coreutils installs its GNU versions of the commands macOS already
-  ships, such as `date` and `stat`, under a `g` prefix (`gdate`,
-  `gstat`); the unprefixed ones stay BSD.
+  out, or `137` where its `-k` had to send KILL. Coreutils installs its
+  GNU versions of the commands macOS already ships, such as `date` and
+  `stat`, under a `g` prefix (`gdate`, `gstat`); the unprefixed ones
+  stay BSD.
 - **`grep` and `find` in the tool's shell may be functions** (`type
   grep`). `grep` over `ugrep -G --ignore-files` skips what `.gitignore`
   covers under the search root and reads a `$` mid-pattern as an anchor,
@@ -1331,11 +1332,26 @@ the orchestrator in the pull request.
   ```shell
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take <worktree> && {
-    gate_wait; # … a gate …
-    gate_wait; # … the next gate …
+    gate_wait; rc=0; timeout -k 60 <seconds> … a gate … || rc=$?
+    echo "EXIT_<gate>=$rc"
+    gate_wait; rc=0; timeout -k 60 <seconds> … the next gate … || rc=$?
+    echo "EXIT_<next gate>=$rc"
     gate_release
   }
   ```
+
+  The timeout goes around each gate inside the block, never around the
+  whole call: `gate_take` waits in the queue with no bound, so a timeout
+  around it also counts the time queued for a slot. Inside the block, a
+  gate that fails or runs out of time leaves `gate_release` to run:
+  `|| rc=$?` keeps its exit code, and keeps a shell under `set -e` from
+  ending there. `timeout` cannot wrap `gate_wait`, a shell function, and
+  where `command -v timeout` prints nothing the gates run without it
+  (*Shell, checkouts and prose*).
+
+  `-k 60` sends KILL where the gate's command still runs a minute after
+  TERM. Without it, a command that ignores TERM keeps `timeout` waiting
+  until it ends, and its slot held.
 
   `gate_release` runs in the same shell as `gate_take`, not after
   `$(gate_take …)` or `gate_take | …`, whose shell has exited. No
