@@ -100,20 +100,19 @@ comes first (*Landing*'s first bullet). Outside contributors' pull
 requests come next, oldest first: their author waits on us, and a reply
 that comes days late can lose a contributor.
 
-**At night, no decision is put: every pull request that is not a draft
-is worked** up to the approval, in the recommended order, a red `main`'s
-repair first and outside contributors' pull requests next: review
-rounds, rebase and CI, every item of *What was raised* answered. Where
-the human answered this decision before the night started
-(`$PROCESS/process/night-mode.md`'s activation), that answer stands
-instead. Each
-is worked as *Whose pull request it is* says for its case, and goes
+**At night, no decision is put.** Where the human answered this decision
+before the night started (`$PROCESS/process/night-mode.md`'s
+activation), that answer stands; otherwise every pull request that is
+not a draft is worked up to the approval, in the recommended order, a
+red `main`'s repair first and outside contributors' pull requests next:
+review rounds, rebase and CI, every item of *What was raised* answered.
+Each is worked as *Whose pull request it is* says for its case, and goes
 on to *The decision*, or to *The human's own pull request*. One whose
 approval is not obvious ends as a deferred item (*Where it is not
 obvious*), never as "not worked". Where the session cannot push to
 another person's branch, its findings are posted as *Another person's
-branch* says, and the deferred item names the author
-as what it waits on.
+branch* says, and the deferred item names the author as what it waits
+on.
 
 ## Whose pull request it is
 

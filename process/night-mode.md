@@ -11,14 +11,17 @@ one and the session has not settled it, and, for `/btclib-iss` with no
 issue named, the issues. Where they leave before answering, the night
 does not start.
 
-**Then offer the questions that can be asked now**: those the session
-can already put whose answer would let work go on overnight. Ask once
-whether to put them. Where the human accepts, put them one per message,
-as *When the human has to decide* says, and the night starts after the
-last answer. Where they leave before it, the night does not start.
-Where the human declines, the night starts at once, and each question
-becomes a deferred item. An answer given here is not deferred, and the
-night acts on it.
+**Then offer the questions that can be asked now**: those whose answer
+would let work go on overnight, and that the session can put now or once
+a measurement their shape needs returns, the table of `/btclib-pr`'s
+*The sweep* among them. Take those measurements before the offer. Where
+there are none, the night starts; otherwise ask once whether to put
+them. Where the human accepts, put them one per message, as *When the
+human has to decide* says, and the night starts after the last answer.
+Where they leave before it, the night does not start. Where the human
+declines, the night starts at once, and each question becomes a deferred
+item. A question answered here is not deferred; the night acts on its
+answer.
 
 **Turning it off** ends the night at once. The work in flight goes on
 under the ordinary rules. The morning report is the next message, unless
@@ -46,8 +49,8 @@ design question a branch's issue did not reserve stops that branch.
   request, which they read, go in the report only.
 - **Never resolve a deferred item by default**, nor by taking your own
   recommendation. The recommendation goes in the report. The one
-  exception is `/btclib-pr`'s *The sweep*, which at night works every
-  pull request that is not a draft, as that section says.
+  exception is `/btclib-pr`'s *The sweep*, which at night works pull
+  requests without asking, as that section says.
 - **Everything that does not depend on it goes on**: other issues, other
   pull requests, review rounds, collateral, the approvals and landings
   `/btclib-pr` calls obvious, and the landings `--land` instructs, given
