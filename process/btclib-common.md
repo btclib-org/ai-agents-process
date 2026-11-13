@@ -201,10 +201,13 @@ the process names its own files by their path under it. Claude Code's
   `git credential fill`.
 
   The session creates the reviewer's directory, syncs the worktree where
-  it holds a `uv.lock`, and starts the reviewer. The `-u` keeps the sync
-  in the worktree's `.venv`, where the reviewer's `uv run` looks for it.
-  On an outside contributor's branch the sync is the sandboxed one of
-  *The gates* instead of the second command:
+  it holds a `uv.lock`, removes the verdict file, and starts the
+  reviewer. `-o` does not empty that file when a run starts. So a
+  resumed run's brief takes the last verdict from the file first, and a
+  verdict found there is the latest run's (*The rounds*). The `-u` keeps
+  the sync in the worktree's `.venv`, where the reviewer's `uv run`
+  looks for it. On an outside contributor's branch the sync is the
+  sandboxed one of *The gates* instead of the second command:
 
   ```shell
   mkdir -p <scratch>/<name>/tmp
@@ -213,6 +216,10 @@ the process names its own files by their path under it. Claude Code's
   ```shell
   env -C <wt> -u UV_PROJECT_ENVIRONMENT \
     UV_CACHE_DIR=<scratch>/<name>/uv-cache uv sync --locked
+  ```
+
+  ```shell
+  rm -f <scratch>/<name>.last.md
   ```
 
   ```shell
@@ -1522,20 +1529,21 @@ branch, or a text to be posted.
 - **The writer is the same worker throughout.** One per pull request or
   text, it writes the first version and every fix, for every reviewer.
 - **The dedicated reviewer reads it first.** One per pull request or
-  text, it reads the first version and each fix answering a review on
-  GitHub.
+  text except after a session restart (below), it reads the first
+  version and each fix answering a review on GitHub.
 - **A reviewer stays until it clears.** This holds for the dedicated
   reviewer and for every fresh one. Its `CHANGES REQUESTED` goes back to
   the writer, and the fix goes back to the same reviewer (resumed as
   *Clients* says), which reads the delta from what it last read. No new
-  reviewer starts before the one in charge has answered `CLEARED`. *A
-  pull request's rounds* says when the dedicated reviewer takes over a
-  fresh reviewer's findings. Where a finding is declined and its
-  reviewer still holds it, both positions go to the human as one
-  decision (*When the human has to decide*, `REVIEWING.md`'s
-  *Re-review*), and the rounds wait for the answer. Where the human
-  upholds the finding, the fix goes back to that reviewer. Where they
-  decline it, their answer stands in for that reviewer's `CLEARED`.
+  reviewer starts before the one in charge has answered `CLEARED`,
+  except after a session restart (below). *A pull request's rounds* says
+  when the dedicated reviewer takes over a fresh reviewer's findings.
+  Where a finding is declined and its reviewer still holds it, both
+  positions go to the human as one decision (*When the human has to
+  decide*, `REVIEWING.md`'s *Re-review*), and the rounds wait for the
+  answer. Where the human upholds the finding, the fix goes back to that
+  reviewer. Where they decline it, their answer stands in for that
+  reviewer's `CLEARED`.
 - **Then a fresh reviewer reads the whole of it.** It is a new worker,
   started once the reviewer before it has cleared. Where its first
   verdict is `CHANGES REQUESTED`, it stays until it clears, as above.
@@ -1577,6 +1585,18 @@ branch, or a text to be posted.
   human as one decision (*When the human has to decide*): another round,
   the branch as it stands, or a cut-back, with the writer's and the
   reviewer's positions. The rounds wait for the answer.
+- **A session restart replaces each reviewer it lost.** A restart can
+  lose the reviewers the session started, and the rounds keep no record
+  of one in flight. So after a restart, the verdict file of a reviewer
+  in the other client, `<name>.last.md` of a Codex one and `<name>.log`
+  of a Claude Code one (*Clients*), is read first, and a whole verdict
+  there (*The verdict*) is received. Each review whose verdict was not
+  received runs again on the latest version, with a new reviewer. A
+  reviewer that has a fix to read and can no longer be resumed
+  (*Clients*) is replaced by a new one whose brief carries its last
+  verdict and the sha that verdict named. Each new reviewer takes the
+  lost one's place: for *The rounds* it is the same reviewer, in the
+  count of the convergence check above too.
 - A non-blocking finding waits for the next change; *Which prose is
   worth a round* says which prose blocks.
 - **Every reviewer tries to break the change.** It lists each claim the
