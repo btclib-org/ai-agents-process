@@ -1296,6 +1296,8 @@ the orchestrator in the pull request.
 - **Sourcery is not a local gate** (the standard's section 10, *The set,
   and its cadence*). The writer avoids the shapes of the rules
   `.sourcery.yaml` leaves on that have fired on a pull request:
+    - `de-morgan`: not `not a and not b`, but `not (a or b)`, and not
+      `not a or not b`, but `not (a and b)`;
     - `invert-any-all`: not `assert not any(x in t for x in xs)`, but
       `assert all(x not in t for x in xs)`;
     - `merge-assign-and-aug-assign`: not an assignment of a literal
