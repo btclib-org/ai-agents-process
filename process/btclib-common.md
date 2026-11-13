@@ -1258,15 +1258,34 @@ the orchestrator in the pull request.
   or of a package, a version of one or a hook that the branch adds or
   changes and neither fetch holds, is not run locally. For a gate, the
   session relies on CI's run of it on the head, and says so; an input
-  goes to the human as *Clients* says. A test refused a bind or a
-  connection, loopback included, fails for want of the network where its
-  `PermissionError` reads `[Errno 1] Operation not permitted`: that is
-  how the sandbox refuses both. A suite with such a failure is then not
-  run locally, however few tests failed: it is not read as passing apart
-  from them, nor rerun with them deselected (`REVIEWING.md`'s *Whole,
-  whoever runs it*), and CI's run of it on the head stands, as the
-  report says. `[Errno 13] Permission denied`, as on a Unix socket's
-  path, is not the sandbox's refusal.
+  goes to the human as *Clients* says. A test whose bind or connection
+  is refused, loopback included, fails for want of the network. A suite
+  with such a failure is then not run locally, however few tests failed:
+  it is not read as passing apart from them, nor rerun with them
+  deselected (`REVIEWING.md`'s *Whole, whoever runs it*).
+
+  The sandbox refuses with an error that carries `[Errno 1]`, as
+  `PermissionError: [Errno 1] Operation not permitted`.
+  `[Errno 13] Permission denied`, as on a Unix socket's path, is not the
+  sandbox's refusal. A test that catches the refusal can fail with no
+  errno: btclib-org/btclib-node's `PortPool.draw`, in
+  `tests/__init__.py`, raises an `OSError` saying every port is held.
+  What shows the refusal is the kernel's line for it,
+  `deny(1) network-bind` or `deny(1) network-outbound`, naming a process
+  of the gate, which `grep -F 'deny(1) network-'` finds. `log show` can
+  lose those lines within a minute, so `log stream` records them while
+  the gate runs, into a file of the scratch directory outside `<sbx>`,
+  where the gate cannot write. The session starts it in the gate's shell
+  before the gate, and runs `kill "${stream:?}"` after it:
+
+  ```shell
+  /usr/bin/log stream --style compact \
+    --predicate 'sender == "Sandbox" AND eventMessage CONTAINS "network"' \
+    > <scratch>/<name>-sandbox.log & stream=$!
+  ```
+
+  The kernel does not log every refusal, so a missing line proves
+  nothing. In `zsh`, `log` is a builtin, hence `/usr/bin/log`.
 - **The whole suite, never a narrowed run**, for anything you write
   down. `-k` and single files relax the coverage floor.
 - **A suite that a required check runs in more than one lane is run in
