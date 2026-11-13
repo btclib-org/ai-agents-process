@@ -6,10 +6,19 @@ no file is one of `btclib-common.md`'s.
 **Night mode has no ceiling and no duration**: it lasts until the human
 turns it off.
 
-**At activation, ask only for the repository**, where the skill needs
+**At activation, ask first for the repository**, where the skill needs
 one and the session has not settled it, and, for `/btclib-iss` with no
 issue named, the issues. Where they leave before answering, the night
 does not start.
+
+**Then offer the questions that can be asked now**: those the session
+can already put whose answer would let work go on overnight. Ask once
+whether to put them. Where the human accepts, put them one per message,
+as *When the human has to decide* says, and the night starts after the
+last answer. Where they leave before it, the night does not start.
+Where the human declines, the night starts at once, and each question
+becomes a deferred item. An answer given here is not deferred, and the
+night acts on it.
 
 **Turning it off** ends the night at once. The work in flight goes on
 under the ordinary rules. The morning report is the next message, unless

@@ -103,7 +103,10 @@ that comes days late can lose a contributor.
 **At night, no decision is put: every pull request that is not a draft
 is worked** up to the approval, in the recommended order, a red `main`'s
 repair first and outside contributors' pull requests next: review
-rounds, rebase and CI, every item of *What was raised* answered. Each
+rounds, rebase and CI, every item of *What was raised* answered. Where
+the human answered this decision before the night started
+(`$PROCESS/process/night-mode.md`'s activation), that answer stands
+instead. Each
 is worked as *Whose pull request it is* says for its case, and goes
 on to *The decision*, or to *The human's own pull request*. One whose
 approval is not obvious ends as a deferred item (*Where it is not
