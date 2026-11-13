@@ -40,7 +40,8 @@ repository's own file that has drifted from the standard in
 `btclib-org/.github` is a defect, tracked there, and the standard wins
 until it is brought in line. The process, a repository's own files
 included, wins over the generic `writer` and `reviewer` agents, except
-that on the model the agent definition is the more specific text
+that on the model and its effort the agent definition is the more
+specific text
 (*Models*), and each agent's *What holds whatever the process* holds as
 its heading says. A brief never overrides the process. Any other
 contradiction is still a defect, and it is fixed in the more general
@@ -179,7 +180,9 @@ the process names its own files by their path under it. Claude Code's
   Claude Code starts a Codex reviewer with `codex exec`. That spawns no
   custom agent by name, so the brief's first sentence says to read
   `~/.codex/agents/reviewer.toml` and follow it. `-o` writes its last
-  message, the verdict, to a file. The `-c` settings replace any
+  message, the verdict, to a file. `-m` and `model_reasoning_effort` set
+  the model and the effort *Models* names. The other `-c` settings
+  replace any
   `writable_roots` of `config.toml` with the reviewer's directory, turn
   off the network, which `config.toml` may turn on, and drop `/tmp` and
   `$TMPDIR`, which `workspace-write` otherwise makes writable, a
@@ -217,7 +220,7 @@ the process names its own files by their path under it. Claude Code's
     UV_CACHE_DIR=<scratch>/<name>/uv-cache UV_OFFLINE=1 \
     TMPDIR=<scratch>/<name>/tmp \
     timeout 900 codex exec -s workspace-write --skip-git-repo-check \
-    --ignore-rules \
+    --ignore-rules -m gpt-6.1-sol -c model_reasoning_effort=high \
     -c 'sandbox_workspace_write.writable_roots=["<scratch>/<name>"]' \
     -c sandbox_workspace_write.network_access=false \
     -c sandbox_workspace_write.exclude_slash_tmp=true \
@@ -303,7 +306,8 @@ the process names its own files by their path under it. Claude Code's
     CLAUDE_CODE_TMPDIR=<tmp> UV_CACHE_DIR=<scratch>/<name>/uv-cache \
     UV_OFFLINE=1 ZDOTDIR=/var/empty \
     sh -c 'test -d "${CLAUDE_CODE_TMPDIR:?}" && exec "$@"' sh timeout 1800 \
-    claude -p --agent reviewer --max-turns 80 --output-format text \
+    claude -p --agent reviewer --effort high --max-turns 80 \
+    --output-format text \
     --setting-sources project --permission-mode dontAsk \
     --settings "${sbx:?}" --allowedTools Bash,Read,Grep,Glob \
     < <scratch>/<name>-brief.txt > <scratch>/<name>.log 2>&1
@@ -1958,14 +1962,18 @@ A pull request found with a false sentence is disarmed at once
   the dedicated reviewer comes back only for its pull request's
   collateral. *Clients* says how a worker is resumed, and that starting
   one always makes a new one.
-- **Models**: in Claude Code the writer and the reviewer run on Opus,
-  which their agent definitions set: the exception *Which file wins*
-  makes to the general model advice in `AGENTS.md`. The orchestrator may
-  run on Opus. In Codex the agent files set no model: an agent runs on
-  the one its spawn request names, else on the `[agents]` default of
-  `config.toml`, else on the orchestrator's. A reviewer `codex exec`
-  starts runs on the model `-m` names, else on the `model` of
-  `config.toml`.
+- **Models**: in Claude Code the writer and the reviewer run on Opus at
+  effort `high`, which their agent definitions set, so neither follows
+  the effort of the session that starts it: the exception *Which file
+  wins* makes to the general model advice in `AGENTS.md`. A reviewer
+  Codex starts with `claude -p --agent` takes the definition's model but
+  not its effort, so its command in *Clients* names `--effort high`. The
+  orchestrator may run on Opus. In Codex the agent files set no model:
+  an agent runs on the one its spawn request names, else on the
+  `[agents]` default of `config.toml`, else on the orchestrator's. A
+  reviewer `codex exec` starts runs on `gpt-6.1-sol` at effort `high`,
+  which its command in *Clients* names, rather than on `config.toml`'s
+  `model` and `model_reasoning_effort`.
 - **A worker that exceeds the time you set is interrupted**, not waited
   for.
 - **Writing runs in parallel; gating runs under the gate lock** (*The

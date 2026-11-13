@@ -4,7 +4,8 @@
 The Markdown file is the source. Its frontmatter gives `name` and
 `description`, and its body after the frontmatter becomes
 `developer_instructions`, unchanged. The other frontmatter keys,
-`tools` and `model`, are Claude Code's, and mean something else to Codex.
+`tools`, `model` and `effort`, are Claude Code's; Codex reads none of
+them from here.
 
     scripts/agents-toml.py            write every .toml
     scripts/agents-toml.py --check    exit 1, naming each .toml that is
