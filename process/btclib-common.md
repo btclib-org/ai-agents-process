@@ -405,8 +405,8 @@ the process names its own files by their path under it. Claude Code's
   Where it is not on its default branch or not clean, stop and say so.
 - **Write plainly.** Everything written — code comments, docs, these
   process files, commit messages, pull request and issue bodies,
-  comments, reports — is clear, simple and no longer than it needs to
-  be: the point first, plain words, one fact per sentence. A clause whose
+  comments, reports — must be clear, simple and no longer than it needs
+  to be: the point first, plain words, one fact per sentence. A clause whose
   removal loses nothing a reader needs is cut. **Say a thing once;
   elsewhere, point to it** (the standard's section 9, *One fact in one
   place*): a summary names the section that holds a rule and does not
@@ -438,8 +438,7 @@ the process names its own files by their path under it. Claude Code's
       then at most three paragraphs. In a review they are the
       measurement, the technical findings, and what the change leaves
       unfixed (next bullet). A review that reports measurements says in
-      one sentence how they were measured, and offers or links the
-      detail.
+      one sentence how they were measured, and links the detail.
     - **What the reviewed change leaves unfixed gets one paragraph of its
       own**, apart from the measurement. Where the review neither asks
       for a fix in the same pull request nor gives it, the paragraph
@@ -447,8 +446,30 @@ the process names its own files by their path under it. Claude Code's
       posted once that pull request is open.
     - **A pull request or issue body is at most two short paragraphs**
       before any code block or required template section.
+    - **"ACK" appears only in an ACK**: for any other text,
+      `grep -nw ACK <file>` prints nothing. **Every ACK is a review on
+      the head sha it names.**
     - **A text over a limit is not posted but returned cut**, unless a
       maintainer asked for exactly that detail.
+
+  **Beyond these limits, the reviewer of every posted text**, in
+  btclib-org and upstream alike, gets every bot's report on the thread
+  with the draft, and checks as blocking items:
+    - every number and sha against the evidence, and that a cited gist
+      revision exists;
+    - the ACK grep above;
+    - the pronoun grep,
+      `grep -nwiE 'he|him|his|himself|she|her|hers|herself' <file>`: a
+      gendered pronoun for a person stands only as that person states
+      it, and this holds in our own files too;
+    - the non-ASCII list of *Citations and closing keywords*' sweep;
+    - every phrase of three words or more already used in our texts
+      posted in the last 7 days, reworded where it reads as a formula;
+    - nothing repeated from the description or a bot: a point any bot
+      already made blocks;
+    - how the maintainer will receive the text.
+
+  Length and one point stay as each file states them.
 - **Parallelize as much as you can.** Reads, remote work, writers and
   reviewers run side by side, within the machine's CPU load, memory
   pressure and free disk (*The gates*, *Before starting*).
@@ -818,7 +839,10 @@ rule, and report the outcome in one line.
 
 **Each decision comes in one shape**, and is not asked until it has it:
 
-- a brief context: what is at stake, why work stops here, and its link;
+- the context, given in full every time, even for an item discussed
+  before: the linked repository and number, the title, the author, the
+  state (reviews, ACKs, open questions), what we did and found, why work
+  stops here, and the full texts at stake;
 - the recommendation first, with its reason;
 - the other alternatives, each with what it costs;
 - where an alternative changes a pull request's diff, the delta it
@@ -878,8 +902,12 @@ code defect, where the branch adds it, falsifies it or makes it
 materially worse (*Collateral*).** The tree's own files are every
 tracked file, docstrings and comments included. Only wording that could
 be better does not block. A wording finding on what the branch adds is
-still made, with the shorter text, and is fixed with the next change to
-the branch.
+still made, and is fixed with the next change to the branch.
+
+**The reviewer may propose replacement text.** A proposal that changes
+substance, tone or one of the human's own sentences goes to the human
+as a decision (*When the human has to decide*) before the writer applies
+it. A mechanical fix goes straight to the writer.
 
 **A false or misleading sentence outside the tree does not send a
 cleared branch back**:
@@ -1116,14 +1144,18 @@ the orchestrator in the pull request.
   the verb.
 - **One keyword closes one issue, and does not cross a newline.** "Closes
   #1, #2" closes `#1`. Write the closing block one keyword per line.
+- **No `@` mention in a pull request body or a commit message**, in any
+  repository. A mention goes in a comment, so a hold's comment that
+  mentions the maintainer stays (*When the human has to decide*).
 - **Sweep before handing over**: grep the commit body (and later the pull
   request body) for every form of the three words next to a reference.
   The same sweep finds bare references with `perl -ne 'print if
   /(?<![\/A-Za-z0-9.\-])#[0-9]+/'`, whose `0-9` keeps
   `btclib-org/btclib-secp256k1#N` from reading as bare. It lists the
-  non-ASCII codepoints of both texts (Python, `ord(c) > 127`) other than
-  the em dash and the ellipsis this file uses: a CJK character mid-word
-  is a generation artefact no gate reads.
+  non-ASCII codepoints (Python, `ord(c) > 127`) of both texts, and of
+  every other text posted on a forge, upstream included, other than the
+  em dash and the ellipsis this file uses: a CJK character mid-word is a
+  generation artefact no gate reads.
 
 ### The gates
 
@@ -1922,6 +1954,10 @@ A pull request found with a false sentence is disarmed at once
   say it was not run. A small, self-contained one that no red gate,
   security or packaging defect waits on is filed with the `good first
   issue` label, a *Done when* and the file to look at.
+- **Before a change is proposed, closed issues and pull requests are
+  searched for it too**, under broad words, and the maintainers'
+  comments there are read, review threads included. `gh issue list` and
+  `gh pr list` take `--state closed --search "<word> <word>"`.
 - **Code outside btclib-org** is reported first in the btclib-org
   repository where it was found, not in its own tracker: `gh issue create
   --repo btclib-org/<repo> --label upstream-report`. Section 11 of
@@ -1943,7 +1979,7 @@ A pull request found with a false sentence is disarmed at once
 - **Read back the number before reporting it**:
   `gh issue view <n> --repo <owner>/<repo>`. In a report, collateral
   appears as `ISS <repo>#123`, as *How an issue and a pull request are
-  named* says, never as a description.
+  named* says, followed by a very short description.
 - **The reviewer files with the body inline**; where it cannot file,
   the body goes verbatim in its report.
 - **Collateral is closed within the same session**, whoever filed it —
@@ -2131,13 +2167,16 @@ the files they name on your own:
 
 - **What the session learned that could improve `AGENTS.md`**: a
   stable fact needed to work in this tree, what it says, and where it
-  belongs. Nothing found is said in one line.
+  belongs.
 - **Where the process fell short of what the session needed**: a rule
   unclear when it mattered, a case it had no answer for. Say what and
   roughly where — this file or a skill.
 - **Each class of defect the local rounds missed**, and where the next
   session will read it, as *The classes of defect found carry forward*
   says.
+
+**A nil answer is one line in the report**, for each item above and in
+every other report, upstream work included.
 
 These are proposals. Closing them is the human's call, and for the
 process files the maintainer's, since they are shared. Each one that
