@@ -1089,6 +1089,9 @@ how to resolve it. Completing it:
   was added and why, in terms they can learn from, and the open issues
   they might take next.
 
+Both thanks, the findings' first line and the comment of its own, bind
+btclib-org only.
+
 Where the bot's review does not run — a fork's pull request, and any
 other where `gh pr checks` shows no review — the ACK is not an item of
 *The decision*, and the approval is never obvious: it goes to the
