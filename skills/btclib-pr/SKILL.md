@@ -453,6 +453,17 @@ theirs to give.
 human's own pull request the session never approves: *The human's own
 pull request* says what it does instead.
 
+**Where `main` is not protected yet, the pull request is held.** In a
+repository whose branch protection and rulesets are not applied yet,
+*Arming auto-merge*'s command that writes `<required file>` answers
+`Branch not protected` (HTTP 404) and exits `1`. Nothing then requires
+an approval or a check, so an armed `--auto` lands the head at once.
+The session neither approves nor arms any pull request there, the
+human's own included. It records a hold with `needs-maintainer` (the
+shared *When the human has to decide*), protection being a repository
+setting. The hold lasts until that command exits `0`, and the pull
+request is then decided on its head as this section says.
+
 **The approval is obvious where every item holds**, each measured on the
 head `<sha>`. The diff is read once, by two commands that must each
 exit `0`:
@@ -1195,6 +1206,10 @@ second writes each check that passed or was skipped on the head:
 gh api repos/<owner>/<repo>/branches/main/protection/required_status_checks \
   --jq '.contexts[]' > <required file>
 ```
+
+Where it answers `Branch not protected` (HTTP 404) and exits `1`,
+`main` has no protection yet: that is not an empty list, and the pull
+request is not armed but held, as *The decision* says.
 
 ```shell
 gh pr checks <n> --repo <owner>/<repo> --json name,bucket --jq '.[]
