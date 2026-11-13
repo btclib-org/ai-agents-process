@@ -1276,21 +1276,24 @@ the orchestrator in the pull request.
   of the gate, which `grep -F 'deny(1) network-'` finds. `log show` can
   lose those lines within a minute, so `log stream` records them while
   the gate runs, into a file of the scratch directory outside `<sbx>`,
-  where the gate cannot write. The session starts it in the gate's shell
-  before the gate and stops it after, as below. Under `set -e`, the two
-  `||` keep the shell from ending at a failing gate or at the `kill` of
-  a collector that has already ended, so the gate's exit code is
-  printed:
+  where the gate cannot write. The session starts it in the gate's
+  shell, after the gate's `gate_wait`:
 
   ```shell
   /usr/bin/log stream --style compact \
     --predicate 'sender == "Sandbox" AND eventMessage CONTAINS "network"' \
     > <scratch>/<name>-sandbox.log & stream=$!
-  rc=0
-  <gate> || rc=$?
-  kill "${stream:?}" || echo "log stream had ended"
-  echo "EXIT_<gate>=$rc"
   ```
+
+  The gate then runs as *The gate lock*'s block says, and the session
+  stops the collector before the gate's `echo`:
+
+  ```shell
+  kill "${stream:?}" || echo "log stream had ended"
+  ```
+
+  Where `log stream` had already exited, the `||` keeps a shell under
+  `set -e` from ending at the `kill`, before the gate's code is printed.
 
   The kernel does not log every refusal, so a missing line proves
   nothing. In `zsh`, `log` is a builtin, hence `/usr/bin/log`.
