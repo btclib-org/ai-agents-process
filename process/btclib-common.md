@@ -201,10 +201,13 @@ the process names its own files by their path under it. Claude Code's
   `git credential fill`.
 
   The session creates the reviewer's directory, syncs the worktree where
-  it holds a `uv.lock`, and starts the reviewer. The `-u` keeps the sync
-  in the worktree's `.venv`, where the reviewer's `uv run` looks for it.
-  On an outside contributor's branch the sync is the sandboxed one of
-  *The gates* instead of the second command:
+  it holds a `uv.lock`, removes the verdict file, and starts the
+  reviewer. `-o` does not empty that file when a run starts. So a
+  resumed run's brief takes the last verdict from the file first, and a
+  verdict found there is the latest run's (*The rounds*). The `-u` keeps
+  the sync in the worktree's `.venv`, where the reviewer's `uv run`
+  looks for it. On an outside contributor's branch the sync is the
+  sandboxed one of *The gates* instead of the second command:
 
   ```shell
   mkdir -p <scratch>/<name>/tmp
@@ -213,6 +216,10 @@ the process names its own files by their path under it. Claude Code's
   ```shell
   env -C <wt> -u UV_PROJECT_ENVIRONMENT \
     UV_CACHE_DIR=<scratch>/<name>/uv-cache uv sync --locked
+  ```
+
+  ```shell
+  rm -f <scratch>/<name>.last.md
   ```
 
   ```shell
@@ -1561,11 +1568,13 @@ branch, or a text to be posted.
   reviewer's positions. The rounds wait for the answer.
 - **A session restart re-runs every review not yet answered.** A restart
   can lose the reviewers the session started, and the rounds keep no
-  record of one in flight. So after a restart, a verdict that a reviewer
-  in the other client wrote to its file (*Clients*) is read first, and
-  is received once read. Each review whose verdict was not received runs
-  again on the latest version, with a new reviewer. It takes the lost
-  reviewer's place, in the count of the convergence check above too.
+  record of one in flight. So after a restart, the verdict file of a
+  reviewer in the other client, `<name>.last.md` of a Codex one and
+  `<name>.log` of a Claude Code one (*Clients*), is read first, and a
+  whole verdict there (*The verdict*) is received. Each review whose
+  verdict was not received runs again on the latest version, with a new
+  reviewer. It takes the lost reviewer's place, in the count of the
+  convergence check above too.
 - A non-blocking finding waits for the next change; *Which prose is
   worth a round* says which prose blocks.
 - **Every reviewer tries to break the change.** It lists each claim the
