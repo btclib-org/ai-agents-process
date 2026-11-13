@@ -46,8 +46,8 @@
 # load, which on macOS counts threads that use no CPU, is only a ceiling
 # that catches a runaway. These waits have no
 # bound, nor has the wait for gate.generator: holders that never finish keep
-# every waiter waiting, and a timeout on the call that runs the gates covers
-# the gates, not gate_take. This names them:
+# every waiter waiting, and a timeout around the whole call also counts the
+# time gate_take waits, so it goes around each gate instead. This names them:
 #
 #   cat "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.lock*/owner
 #   cat "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.generator/owner

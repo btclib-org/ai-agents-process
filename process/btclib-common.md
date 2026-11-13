@@ -1328,11 +1328,19 @@ the orchestrator in the pull request.
   ```shell
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take <worktree> && {
-    gate_wait; # … a gate …
-    gate_wait; # … the next gate …
+    gate_wait; timeout <seconds> … a gate …
+    gate_wait; timeout <seconds> … the next gate …
     gate_release
   }
   ```
+
+  The timeout goes around each gate inside the block, never around the
+  whole call: `gate_take` waits in the queue with no bound, so a timeout
+  around it also counts the time queued for a slot. Inside the block, a
+  gate that runs out of time leaves `gate_release` to run. `timeout`
+  cannot wrap `gate_wait`, a shell function, and where `command -v
+  timeout` prints nothing the gates run without it (*Shell, checkouts
+  and prose*).
 
   `gate_release` runs in the same shell as `gate_take`, not after
   `$(gate_take …)` or `gate_take | …`, whose shell has exited. No
