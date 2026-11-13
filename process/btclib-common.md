@@ -1274,10 +1274,10 @@ the orchestrator in the pull request.
   What shows the refusal is the kernel's line for it,
   `deny(1) network-bind` or `deny(1) network-outbound`, naming a process
   of the gate, which `grep -F 'deny(1) network-'` finds. `log show` can
-  lose those lines within a minute, so `log stream` records them while
-  the gate runs, into a file of the scratch directory outside `<sbx>`,
-  where the gate cannot write. The session starts it in the gate's
-  shell, after the gate's `gate_wait`:
+  lose those lines, so `log stream` records them while the gate runs,
+  into a file of the scratch directory outside `<sbx>`, where the gate
+  cannot write. The session starts it in the gate's shell, after the
+  gate's `gate_wait`:
 
   ```shell
   /usr/bin/log stream --style compact \
@@ -1295,8 +1295,9 @@ the orchestrator in the pull request.
   Where `log stream` had already exited, the `||` keeps a shell under
   `set -e` from ending at the `kill`, before the gate's code is printed.
 
-  The kernel does not log every refusal, so a missing line proves
-  nothing. In `zsh`, `log` is a builtin, hence `/usr/bin/log`.
+  The kernel does not log every refusal. Where neither `[Errno 1]` nor a
+  kernel line shows one, the test failed. In `zsh`, `log` is a builtin,
+  hence `/usr/bin/log`.
 - **The whole suite, never a narrowed run**, for anything you write
   down. `-k` and single files relax the coverage floor.
 - **A suite that a required check runs in more than one lane is run in
