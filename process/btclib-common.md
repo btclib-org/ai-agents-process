@@ -1964,16 +1964,18 @@ A pull request found with a false sentence is disarmed at once
   one always makes a new one.
 - **Models**: in Claude Code the writer and the reviewer run on Opus at
   effort `high`, which their agent definitions set, so neither follows
-  the effort of the session that starts it: the exception *Which file
-  wins* makes to the general model advice in `AGENTS.md`. A reviewer
-  Codex starts with `claude -p --agent` takes the definition's model but
-  not its effort, so its command in *Clients* names `--effort high`. The
-  orchestrator may run on Opus. In Codex the agent files set no model:
-  an agent runs on the one its spawn request names, else on the
-  `[agents]` default of `config.toml`, else on the orchestrator's. A
-  reviewer `codex exec` starts runs on `gpt-6.1-sol` at effort `high`,
-  which its command in *Clients* names, rather than on `config.toml`'s
-  `model` and `model_reasoning_effort`.
+  the effort of the session that starts it, unless that session's
+  environment sets `CLAUDE_CODE_EFFORT_LEVEL`, which wins over the
+  definition: the exception *Which file wins* makes to the general model
+  advice in `AGENTS.md`. A reviewer Codex starts with `claude -p
+  --agent` takes the definition's model but not its effort, so its
+  command in *Clients* names `--effort high`. The orchestrator may run
+  on Opus. In Codex the agent files set no model: an agent runs on the
+  one its spawn request names, else on the `[agents]` default of
+  `config.toml`, else on the orchestrator's. A reviewer `codex exec`
+  starts runs on `gpt-6.1-sol` at effort `high`, which its command in
+  *Clients* names, rather than on `config.toml`'s `model` and
+  `model_reasoning_effort`.
 - **A worker that exceeds the time you set is interrupted**, not waited
   for.
 - **Writing runs in parallel; gating runs under the gate lock** (*The
