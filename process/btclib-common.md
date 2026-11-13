@@ -1296,6 +1296,9 @@ the orchestrator in the pull request.
 - **Sourcery is not a local gate** (the standard's section 10, *The set,
   and its cadence*). The writer avoids the shapes of the rules
   `.sourcery.yaml` leaves on that have fired on a pull request:
+    - `compare-via-equals`: not `assert a is b` where `b` is not a
+      singleton, but `assert a == b`; where object identity is what the
+      test asserts, `assert id(a) == id(b)`;
     - `invert-any-all`: not `assert not any(x in t for x in xs)`, but
       `assert all(x not in t for x in xs)`;
     - `merge-assign-and-aug-assign`: not an assignment of a literal
