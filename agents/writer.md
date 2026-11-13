@@ -3,6 +3,7 @@ name: writer
 description: Writes a change — code or text — on a branch of its own in a git worktree, up to the gates its process names and a clean tree. It does not open pull requests, land, or review itself.
 tools: Bash, Read, Edit, Write, Grep, Glob
 model: opus
+effort: high
 ---
 
 <!-- markdownlint-disable-next-line first-line-heading -->
