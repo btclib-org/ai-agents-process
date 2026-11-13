@@ -962,8 +962,9 @@ The writer's section; the reviewer judges its result.
       `HEAD`, unless *Committing and rebasing* holds the push
 - [ ] `git log --format='%h %G? %GS' <base>..` shows no `N` on the
       session's own commits (*Signed and signed off*)
-- [ ] the `Sign-off` script exits `0` on `<base>..` (*Signed and signed
-      off*)
+- [ ] the `Sign-off` script exits `0` on `<base>..`, or after a merge of
+      `main` on the ranges that leave out `main`'s commits (*Signed and
+      signed off*)
 - [ ] every gate the tree names ran on this tip, committed, with exit
       code `0`, under the gate lock (*The gates*)
 - [ ] `git status --porcelain` is empty in the worktree, checked after
@@ -1371,7 +1372,24 @@ the orchestrator in the pull request.
   never rewrite* says. The agent's commit reads `N`, since its workflow
   does not sign it, and that is expected.
 
-  The `Sign-off` job's script exits `0`:
+  A merge of `main` into the branch after `<base>` or `<theirs>` brings
+  `main`'s squashes into `<base>..` or `<theirs>..`. The `Sign-off` job
+  reads the pull request's commits, which leave those out, and the
+  script can refuse one whose `Signed-off-by:` does not name its
+  author's address. After such merges, `<base>..` is `<merge>^2..` on
+  the session's own branch, `<merge>` being the last of them. A merge
+  before `<theirs>` leaves `<theirs>..` as it is. One after it splits
+  `<theirs>..` into `<theirs>..<merge>^1` and `<merge>..`, and each
+  further one splits the last range the same way. Each range is checked
+  on its own. This lists those merges, oldest first, with `<base>` in
+  place of `<theirs>` on the session's own branch:
+
+  ```shell
+  git -C <wt> log --merges --first-parent --reverse --format=%H \
+    '<theirs>..'
+  ```
+
+  The `Sign-off` job's script exits `0` on each range:
 
   ```shell
   gh api -H 'Accept: application/vnd.github.raw' \
