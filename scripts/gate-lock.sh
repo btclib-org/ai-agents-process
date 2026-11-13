@@ -4,10 +4,11 @@
 # that many workers gate at once. POSIX sh, sourced in the same shell call
 # that runs the gates, by sh, bash or zsh, in the main shell or in a
 # `( ... ) &` subshell. btclib-common.md's "The gates" (the gate lock) says
-# in which shell gate_release runs. GATE_LOCK_WORKERS, the `-n` of a suite
-# run in a slot, is by default the cores divided by the slots (3 on 10
-# cores), and GATE_LOCK_LOAD, a ceiling, 3 times the cores (30 on 10).
-# Sourcing sets each of them that is not already set:
+# in which shell gate_release runs, and where a timeout goes.
+# GATE_LOCK_WORKERS, the `-n` of a suite run in a slot, is by default the
+# cores divided by the slots (3 on 10 cores), and GATE_LOCK_LOAD, a
+# ceiling, 3 times the cores (30 on 10). Sourcing sets each of them that
+# is not already set:
 #
 #   . "${PROCESS:?}/scripts/gate-lock.sh"
 #   gate_take [<worktree>] && { gate_wait; <a gate>; gate_wait; <a gate>; gate_release; }
@@ -46,8 +47,7 @@
 # load, which on macOS counts threads that use no CPU, is only a ceiling
 # that catches a runaway. These waits have no
 # bound, nor has the wait for gate.generator: holders that never finish keep
-# every waiter waiting, and a timeout around the whole call also counts the
-# time gate_take waits, so it goes around each gate instead. This names them:
+# every waiter waiting. This names them:
 #
 #   cat "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.lock*/owner
 #   cat "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.generator/owner

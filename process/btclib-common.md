@@ -1343,8 +1343,9 @@ the orchestrator in the pull request.
   timeout` prints nothing the gates run without it (*Shell, checkouts
   and prose*).
 
-  `-k 60` sends KILL a minute after TERM. Without it, a gate that ignores
-  TERM keeps `timeout` waiting until the gate ends, and its slot held.
+  `-k 60` sends KILL where the gate's command still runs a minute after
+  TERM. Without it, a command that ignores TERM keeps `timeout` waiting
+  until it ends, and its slot held.
 
   `gate_release` runs in the same shell as `gate_take`, not after
   `$(gate_take …)` or `gate_take | …`, whose shell has exited. No
