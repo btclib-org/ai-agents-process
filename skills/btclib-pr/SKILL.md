@@ -1458,14 +1458,17 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   **Where `--auto` is refused because the pull request is already
   mergeable**, land it by the same command without `--auto`, still
   pinned by `--match-head-commit`, once *Arming auto-merge* holds,
-  then *Check what landed*. GitHub's refusal reads
-  `Pull request is in clean status`, which gh prints as
+  then *Check what landed*. gh prints that refusal as
   `GraphQL: Pull request Pull request is in clean status
   (enablePullRequestAutoMerge)`
-  ([a report quoting it](https://github.com/peter-evans/enable-pull-request-automerge/issues/1118)).
-  gh 2.103.2 merges at once, without arming, where the
-  `mergeStateStatus` it reads is `CLEAN`, `HAS_HOOKS` or `UNSTABLE`
-  (`isImmediatelyMergeable` in its `pkg/cmd/pr/merge/merge.go`).
+  ([a report quoting it](https://github.com/peter-evans/enable-pull-request-automerge/issues/1118))
+  or as `GraphQL: Pull request Pull request is in unstable status
+  (enablePullRequestAutoMerge)`. Without a merge queue, gh asks GitHub
+  to arm only where the `mergeStateStatus` it reads first is not
+  `CLEAN`, `HAS_HOOKS` or `UNSTABLE`, and merges at once otherwise
+  ([`isImmediatelyMergeable`](https://github.com/cli/cli/blob/v2.103.3/pkg/cmd/pr/merge/merge.go#L826-L833)),
+  so a refusal there means GitHub found the pull request clean or
+  unstable after gh read another status.
 
   Never land through the bypass (`--admin`, or any other route to it)
   except where *The human's own pull request* says. It merges with no
