@@ -1503,27 +1503,21 @@ branch, or a text to be posted.
 - **The writer is the same worker throughout.** One per pull request or
   text, it writes the first version and every fix, for every reviewer.
 - **The dedicated reviewer reads it first.** One per pull request or
-  text, it reads the first version and each fix answering a review on
-  GitHub.
+  text except after a session restart (below), it reads the first
+  version and each fix answering a review on GitHub.
 - **A reviewer stays until it clears.** This holds for the dedicated
   reviewer and for every fresh one. Its `CHANGES REQUESTED` goes back to
   the writer, and the fix goes back to the same reviewer (resumed as
   *Clients* says), which reads the delta from what it last read. No new
-  reviewer starts before the one in charge has answered `CLEARED`. *A
-  pull request's rounds* says when the dedicated reviewer takes over a
-  fresh reviewer's findings. Where a finding is declined and its
-  reviewer still holds it, both positions go to the human as one
-  decision (*When the human has to decide*, `REVIEWING.md`'s
-  *Re-review*), and the rounds wait for the answer. Where the human
-  upholds the finding, the fix goes back to that reviewer. Where they
-  decline it, their answer stands in for that reviewer's `CLEARED`.
-- **A session restart re-runs every review not yet answered.** A
-  reviewer's verdict exists only in the session that started it, and
-  nothing records a reviewer in flight. So after a restart, each review
-  whose verdict was not received runs again on the latest version, with
-  a new reviewer of the same role, which is then the one in charge. That
-  new reviewer does not count as one of the three fresh reviewers in the
-  convergence check below.
+  reviewer starts before the one in charge has answered `CLEARED`,
+  except after a session restart (below). *A pull request's rounds* says
+  when the dedicated reviewer takes over a fresh reviewer's findings.
+  Where a finding is declined and its reviewer still holds it, both
+  positions go to the human as one decision (*When the human has to
+  decide*, `REVIEWING.md`'s *Re-review*), and the rounds wait for the
+  answer. Where the human upholds the finding, the fix goes back to that
+  reviewer. Where they decline it, their answer stands in for that
+  reviewer's `CLEARED`.
 - **Then a fresh reviewer reads the whole of it.** It is a new worker,
   started once the reviewer before it has cleared. Where its first
   verdict is `CHANGES REQUESTED`, it stays until it clears, as above.
@@ -1565,6 +1559,13 @@ branch, or a text to be posted.
   human as one decision (*When the human has to decide*): another round,
   the branch as it stands, or a cut-back, with the writer's and the
   reviewer's positions. The rounds wait for the answer.
+- **A session restart re-runs every review not yet answered.** A restart
+  can lose the reviewers the session started, and the rounds keep no
+  record of one in flight. So after a restart, a verdict that a reviewer
+  in the other client wrote to its file (*Clients*) is read first, and
+  is received once read. Each review whose verdict was not received runs
+  again on the latest version, with a new reviewer. It takes the lost
+  reviewer's place, in the count of the convergence check above too.
 - A non-blocking finding waits for the next change; *Which prose is
   worth a round* says which prose blocks.
 - **Every reviewer tries to break the change.** It lists each claim the
