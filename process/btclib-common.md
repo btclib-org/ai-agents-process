@@ -1266,7 +1266,45 @@ the orchestrator in the pull request.
   or of a package, a version of one or a hook that the branch adds or
   changes and neither fetch holds, is not run locally. For a gate, the
   session relies on CI's run of it on the head, and says so; an input
-  goes to the human as *Clients* says.
+  goes to the human as *Clients* says. A test whose bind or connection
+  is refused, loopback included, fails for want of the network. A suite
+  with such a failure is then not run locally, however few tests failed:
+  it is not read as passing apart from them, nor rerun with them
+  deselected (`REVIEWING.md`'s *Whole, whoever runs it*).
+
+  The sandbox refuses with an error that carries `[Errno 1]`, as
+  `PermissionError: [Errno 1] Operation not permitted`.
+  `[Errno 13] Permission denied`, as on a Unix socket's path, is not the
+  sandbox's refusal. A test that catches the refusal can fail with no
+  errno: btclib-org/btclib-node's `PortPool.draw`, in
+  `tests/__init__.py`, raises an `OSError` saying every port is held.
+  What shows the refusal is the kernel's line for it,
+  `deny(1) network-bind` or `deny(1) network-outbound`, naming a process
+  of the gate, which `grep -F 'deny(1) network-'` finds. `log show` can
+  lose those lines, so `log stream` records them while the gate runs,
+  into a file of the scratch directory outside `<sbx>`, where the gate
+  cannot write. The session starts it in the gate's shell, after the
+  gate's `gate_wait`:
+
+  ```shell
+  /usr/bin/log stream --style compact \
+    --predicate 'sender == "Sandbox" AND eventMessage CONTAINS "network"' \
+    > <scratch>/<name>-sandbox.log & stream=$!
+  ```
+
+  The gate then runs as *The gate lock*'s block says, and the session
+  stops the collector before the gate's `echo`:
+
+  ```shell
+  kill "${stream:?}" || echo "log stream had ended"
+  ```
+
+  Where `log stream` had already exited, the `||` keeps a shell under
+  `set -e` from ending at the `kill`, before the gate's code is printed.
+
+  The kernel does not log every refusal. Where neither `[Errno 1]` nor a
+  kernel line shows one, the test failed. In `zsh`, `log` is a builtin,
+  hence `/usr/bin/log`.
 - **The whole suite, never a narrowed run**, for anything you write
   down. `-k` and single files relax the coverage floor.
 - **A suite that a required check runs in more than one lane is run in
