@@ -71,7 +71,9 @@ gh pr list --repo <owner>/<repo> --state open --limit 200 \
 pull request of an outside contributor (*Whose pull request it is*)
 whose head has runs waiting as `action_required`, the session reads
 the diff and approves those runs where *Outside contributors* allows
-it. A pull request whose diff fails *Outside contributors*' check is
+it. Runs started by `pull_request_review_comment` are left out, as
+*Outside contributors*' listing says, and never reported as waiting.
+A pull request whose diff fails *Outside contributors*' check is
 listed with that as what it waits on: its runs are the human's to
 approve. The human then reads the table with that CI running or done,
 and a session that works the pull request finds its checks already
@@ -1127,11 +1129,15 @@ gh pr list --repo <owner>/<repo> --state open --limit 200 \
 ```
 
 This lists the runs waiting on `<head>`, and the second command approves
-one:
+one. It leaves out runs started by `pull_request_review_comment`, as a
+review bot's comment starts `claude-review` on a fork's pull request:
+GitHub refuses to approve them with HTTP 403, and the review skips a
+fork's pull request anyway (*Arming auto-merge*):
 
 ```shell
 gh run list --repo <owner>/<repo> --commit <head> -L 100 \
-  --status action_required --json databaseId,name
+  --status action_required --json databaseId,name,event \
+  --jq '[.[] | select(.event != "pull_request_review_comment")]'
 ```
 
 ```shell
