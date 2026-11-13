@@ -1258,7 +1258,13 @@ the orchestrator in the pull request.
   or of a package, a version of one or a hook that the branch adds or
   changes and neither fetch holds, is not run locally. For a gate, the
   session relies on CI's run of it on the head, and says so; an input
-  goes to the human as *Clients* says.
+  goes to the human as *Clients* says. A test refused a bind or a
+  connection, loopback included (a `PermissionError` on a socket), fails
+  for want of the network. A suite with such a failure is then not run
+  locally, however few tests failed: it is not read as passing apart
+  from them, nor rerun with them deselected (`REVIEWING.md`'s *Whole,
+  whoever runs it*), and CI's run of it on the head stands, as the
+  report says.
 - **The whole suite, never a narrowed run**, for anything you write
   down. `-k` and single files relax the coverage floor.
 - **A suite that a required check runs in more than one lane is run in
