@@ -1342,6 +1342,9 @@ the orchestrator in the pull request.
 - **Sourcery is not a local gate** (the standard's section 10, *The set,
   and its cadence*). The writer avoids the shapes of the rules
   `.sourcery.yaml` leaves on that have fired on a pull request:
+    - `compare-via-equals`: not `assert a is b` where `b` is not a
+      singleton, but `assert a == b`; where object identity is what the
+      test asserts, `assert id(a) == id(b)`;
     - `de-morgan`: not `not (x == y and z in t)`, but
       `x != y or z not in t`, and not `not (x == y or z in t)`, but
       `x != y and z not in t`;
