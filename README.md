@@ -227,7 +227,7 @@ as their author.
 answers what the reviewers raised, gets CI green, and takes them to the
 decision to approve and to `main`. With no argument it sweeps the
 organization's open pull requests: by day it proposes which to work, at
-night it works every one that is not a draft.
+night it works them without asking, as its *The sweep* says.
 
 ```text
 /btclib-table
