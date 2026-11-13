@@ -1566,15 +1566,18 @@ branch, or a text to be posted.
   human as one decision (*When the human has to decide*): another round,
   the branch as it stands, or a cut-back, with the writer's and the
   reviewer's positions. The rounds wait for the answer.
-- **A session restart re-runs every review not yet answered.** A restart
-  can lose the reviewers the session started, and the rounds keep no
-  record of one in flight. So after a restart, the verdict file of a
-  reviewer in the other client, `<name>.last.md` of a Codex one and
-  `<name>.log` of a Claude Code one (*Clients*), is read first, and a
-  whole verdict there (*The verdict*) is received. Each review whose
-  verdict was not received runs again on the latest version, with a new
-  reviewer. It takes the lost reviewer's place, in the count of the
-  convergence check above too.
+- **A session restart replaces each reviewer it lost.** A restart can
+  lose the reviewers the session started, and the rounds keep no record
+  of one in flight. So after a restart, the verdict file of a reviewer
+  in the other client, `<name>.last.md` of a Codex one and `<name>.log`
+  of a Claude Code one (*Clients*), is read first, and a whole verdict
+  there (*The verdict*) is received. Each review whose verdict was not
+  received runs again on the latest version, with a new reviewer. A
+  reviewer that has a fix to read and can no longer be resumed
+  (*Clients*) is replaced by a new one whose brief carries its last
+  verdict and the sha that verdict named. Each new reviewer takes the
+  lost one's place: for *The rounds* it is the same reviewer, in the
+  count of the convergence check above too.
 - A non-blocking finding waits for the next change; *Which prose is
   worth a round* says which prose blocks.
 - **Every reviewer tries to break the change.** It lists each claim the
