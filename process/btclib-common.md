@@ -184,8 +184,8 @@ the process names its own files by their path under it. Claude Code's
   off the network, which `config.toml` may turn on, and drop `/tmp` and
   `$TMPDIR`, which `workspace-write` otherwise makes writable, a
   worktree under `/tmp` included. `--ignore-rules` keeps out the user's
-  `.rules` files: a command a rule allows, such as `git`, runs outside
-  the sandbox. `env -i` passes it only `HOME`, where Codex finds its
+  `.rules` files, whose allowed commands run outside the sandbox (*Git
+  writes under Codex*). `env -i` passes it only `HOME`, where Codex finds its
   login, `PATH`, `UV_CACHE_DIR`, `UV_OFFLINE` and a `TMPDIR` inside the
   reviewer's directory, where `mktemp` writes, so the variables of the
   session that starts it, its tokens included, do not reach what the
@@ -319,8 +319,9 @@ the process names its own files by their path under it. Claude Code's
   writable root's `.git`, and the git directory it points to, read-only,
   and `~/.gnupg` outside the workspace. Each
   git write — `worktree add` and `remove`, a commit, an amend, a rebase,
-  a push — runs outside the sandbox, through an escalation request, and
-  never with signing turned off (*Signed and signed off*).
+  a push — runs outside the sandbox, through an escalation request or a
+  `.rules` entry that allows it (below), and never with signing turned
+  off (*Signed and signed off*).
 
   Under the approval policy `never`, which `~/.codex/config.toml` may
   set, Codex makes no escalation request: its instructions then read
@@ -335,9 +336,25 @@ the process names its own files by their path under it. Claude Code's
   in `config.toml` or in a `-c`. With `approvals_reviewer` left at
   `user`, it ran under `never`, `-c approval_policy="on-request"`
   included. An `-a` before `exec` did not reach it. These are the
-  settings measured, not every one. Which policy an interactive session
-  needs is not measured
+  settings measured, not every one.
+
+  Interactive sessions in Codex 0.167.2 were measured with a `touch`
+  outside every writable root, which the sandbox refused, each started
+  with `-C` on a scratch directory, so the target was outside the
+  session's own directory, which is a writable root
   ([ISS ai-agents-process#278](https://github.com/btclib-org/ai-agents-process/issues/278)).
+  Under `never` it made no request; the model said the session forbids
+  them.
+  Started with `-a on-request` it asked, and ran the command once the
+  human approved. Started with `--approve-for-me` it asked, and the
+  automatic reviewer approved. So an interactive session that has to
+  escalate starts with `-a on-request` or `--approve-for-me`.
+
+  A command a `.rules` entry allows runs outside the sandbox with no
+  request in an interactive session under `never` and `on-request`, and
+  in `codex exec` under `never`. A rule allowing `git` makes every git write
+  above run that way, and an interactive session has no
+  `--ignore-rules` to set it aside.
 
   Each run records its policy in its rollout, with credits or without,
   so this re-checks a setting before an escalation is relied on. It runs
