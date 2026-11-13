@@ -1520,9 +1520,9 @@ branch, or a text to be posted.
 - **A session restart re-runs every review not yet answered.** A
   reviewer's verdict exists only in the session that started it, and
   nothing records a reviewer in flight. So after a restart, each review
-  whose verdict was not received runs again on the head, with a new
-  reviewer of the same role, which is then the one in charge. That new
-  reviewer does not count as one of the three fresh reviewers in the
+  whose verdict was not received runs again on the latest version, with
+  a new reviewer of the same role, which is then the one in charge. That
+  new reviewer does not count as one of the three fresh reviewers in the
   convergence check below.
 - **Then a fresh reviewer reads the whole of it.** It is a new worker,
   started once the reviewer before it has cleared. Where its first
