@@ -11,7 +11,11 @@
 # is not already set:
 #
 #   . "${PROCESS:?}/scripts/gate-lock.sh"
-#   gate_take [<worktree>] && { gate_wait; <a gate>; gate_wait; <a gate>; gate_release; }
+#   gate_take [<worktree>] && {
+#     gate_wait; rc=0; <a gate> || rc=$?; echo "EXIT_<gate>=$rc"
+#     gate_wait; rc=0; <a gate> || rc=$?; echo "EXIT_<gate>=$rc"
+#     gate_release
+#   }
 #
 # A load generator takes every slot with gate_take_all and releases them with
 # gate_release_all. One runs at a time.

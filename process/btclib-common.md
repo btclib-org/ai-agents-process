@@ -1329,8 +1329,10 @@ the orchestrator in the pull request.
   ```shell
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take <worktree> && {
-    gate_wait; timeout -k 60 <seconds> … a gate …
-    gate_wait; timeout -k 60 <seconds> … the next gate …
+    gate_wait; rc=0; timeout -k 60 <seconds> … a gate … || rc=$?
+    echo "EXIT_<gate>=$rc"
+    gate_wait; rc=0; timeout -k 60 <seconds> … the next gate … || rc=$?
+    echo "EXIT_<next gate>=$rc"
     gate_release
   }
   ```
@@ -1338,10 +1340,11 @@ the orchestrator in the pull request.
   The timeout goes around each gate inside the block, never around the
   whole call: `gate_take` waits in the queue with no bound, so a timeout
   around it also counts the time queued for a slot. Inside the block, a
-  gate that runs out of time leaves `gate_release` to run. `timeout`
-  cannot wrap `gate_wait`, a shell function, and where `command -v
-  timeout` prints nothing the gates run without it (*Shell, checkouts
-  and prose*).
+  gate that fails or runs out of time leaves `gate_release` to run:
+  `|| rc=$?` keeps its exit code, and keeps a shell under `set -e` from
+  ending there. `timeout` cannot wrap `gate_wait`, a shell function, and
+  where `command -v timeout` prints nothing the gates run without it
+  (*Shell, checkouts and prose*).
 
   `-k 60` sends KILL where the gate's command still runs a minute after
   TERM. Without it, a command that ignores TERM keeps `timeout` waiting
