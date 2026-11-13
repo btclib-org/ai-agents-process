@@ -1008,7 +1008,10 @@ has, is put to the human before it lands through the bypass.
 
 Its issue stays theirs, and no competing branch is opened. The reviewer
 reviews it against `REVIEWING.md`. Its gates run in the sandbox of the
-shared *The gates*, whoever runs them.
+shared *The gates*, whoever runs them, and so do the dedicated
+reviewer's inputs, which the session runs there for it. Where the shared
+*A pull request's rounds* has the body record something, the comment
+that section names records it instead.
 
 **It is completed in place where `maintainerCanModify` is `true`**, with
 every fix the approval needs, blocking findings and nits alike, as the
