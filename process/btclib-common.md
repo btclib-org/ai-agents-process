@@ -1276,12 +1276,18 @@ the orchestrator in the pull request.
   lose those lines within a minute, so `log stream` records them while
   the gate runs, into a file of the scratch directory outside `<sbx>`,
   where the gate cannot write. The session starts it in the gate's shell
-  before the gate, and runs `kill "${stream:?}"` after it:
+  before the gate and stops it after, as below. The `|| rc=$?` keeps a
+  failing gate from ending a shell under `set -e` before the `kill`, and
+  keeps the gate's exit code:
 
   ```shell
   /usr/bin/log stream --style compact \
     --predicate 'sender == "Sandbox" AND eventMessage CONTAINS "network"' \
     > <scratch>/<name>-sandbox.log & stream=$!
+  rc=0
+  <gate> || rc=$?
+  kill "${stream:?}"
+  echo "EXIT_<gate>=$rc"
   ```
 
   The kernel does not log every refusal, so a missing line proves
