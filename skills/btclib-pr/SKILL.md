@@ -1220,20 +1220,23 @@ gh pr list --repo <owner>/<repo> --state open --limit 200 \
   --jq '[.[] | select(.headRefOid == "<head>")] | length'
 ```
 
-This lists the runs waiting on `<head>`, and the second command approves
-one. It leaves out runs started by `pull_request_review_comment`, as a
-review bot's comment starts `claude-review` on a fork's pull request:
-GitHub refuses to approve them with HTTP 403, and the review skips a
-fork's pull request anyway (*Arming auto-merge*):
+This lists the runs waiting on `<head>`, every page read, and the second
+command approves one. It leaves out runs started by
+`pull_request_review_comment`, as a review bot's comment starts
+`claude-review` on a fork's pull request: GitHub refuses to approve them
+with HTTP 403, and the review skips a fork's pull request anyway
+(*Arming auto-merge*). `head_sha` matches only the full sha the first
+step prints; an abbreviated one lists nothing:
 
 ```shell
-gh run list --repo <owner>/<repo> --commit <head> -L 100 \
-  --status action_required --json databaseId,name,event \
-  --jq '[.[] | select(.event != "pull_request_review_comment")]'
+gh api --paginate -X GET repos/<owner>/<repo>/actions/runs \
+  -f head_sha=<head> -f status=action_required -F per_page=100 \
+  --jq '.workflow_runs[] | select(.event != "pull_request_review_comment")
+    | {id, name, event}'
 ```
 
 ```shell
-gh api -X POST repos/<owner>/<repo>/actions/runs/<databaseId>/approve
+gh api -X POST repos/<owner>/<repo>/actions/runs/<id>/approve
 ```
 
 ## Arming auto-merge
