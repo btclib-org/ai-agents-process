@@ -144,7 +144,7 @@ error. BL3 is the badge project's baseline percentage. 🥇% is its gold
 percentage, `🥇` where that is 100. Both are `-` where the repository has
 no badge project. CI and 📛 are `✅` where the measure's `ci` and `badges`
 say `ok`, and `❌` otherwise. An ISS, PR, BL3, 🥇% or last 🚀 cell whose
-value is an error shows `err`.
+value is an error shows `err`, and so does new 🚀? beside such a last 🚀.
 
 last 🚀 is the latest tag without its leading `v`, `never` where
 there is none. A cell holds its value and nothing else.

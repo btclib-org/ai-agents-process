@@ -101,9 +101,10 @@ EOF_WFS
     --jq '.[].name' 2>/dev/null) || tag=error
   tag=$(printf '%s\n' "${tag}" | sort -V | tail -n 1)
   since=""
-  # one page of 250 commits after the tag: --paginate repeats base_commit
+  # no per_page, so that the one page read holds the newest commits, HEAD
+  # among them: with per_page it holds the oldest
   [ "${tag:-error}" != error ] && since=$(gh api \
-    "repos/btclib-org/${r}/compare/${tag}...HEAD?per_page=250" --jq '
+    "repos/btclib-org/${r}/compare/${tag}...HEAD" --jq '
       .base_commit.commit.committer.date[:10] + " | since: "
       + ([.commits[].commit.message | split("\n")[0]] | join(" || "))' \
     2>/dev/null)
