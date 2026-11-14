@@ -1207,15 +1207,15 @@ gh pr view <n> --repo <owner>/<repo> --json headRefOid,reviewDecision,reviews |
 
 It answers `<sha>`, `APPROVED` and `<sha>`: the last is the commit of
 the human's own latest approval, since another reviewer's, CodeRabbit's
-or another owner's, can be the last one given. Where the head moved,
-decide again on the new head. Where the decision is not `APPROVED`, the
-ruleset asks for another approval. Request it from an owner who is
-neither the human nor the author and pushed no commit to the branch, and
-report whom it waits on. Where `main` requires a code owner's review and
-the author is the only code owner, no other approval meets it, and it
-lands only through a bypass of the rule that imposes it. `main` requires
-that review where either command prints `true` (a 404 from the second is
-no classic protection):
+or another owner's, can be the last one given. Where the head moved, or
+the decision is `CHANGES_REQUESTED`, decide again on the head. Where it
+is otherwise not `APPROVED`, the ruleset asks for another approval.
+Request it from an owner who is neither the human nor the author and
+pushed no commit to the branch, and report whom it waits on. Where
+`main` requires a code owner's review and the author is the only code
+owner, no other approval meets it, and it lands only through a bypass of
+the rule that imposes it. `main` requires that review where either
+command prints `true` (a 404 from the second is no classic protection):
 
 ```shell
 gh api --paginate repos/<owner>/<repo>/rules/branches/main \
