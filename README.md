@@ -44,6 +44,9 @@ process, and its *Clients* says what differs between the two agents.
   requests' fresh reviewer in the other (`process/btclib-common.md`'s
   *A pull request's rounds*).
 - `gh`, logged in (`gh auth login`).
+- CodeRabbit's CLI, logged in by the maintainer
+  (`coderabbit auth login`), which reads a branch before its first push
+  (`process/btclib-common.md`'s *A pull request's rounds*).
 - `uv`.
 - `python3` on the `PATH`, which runs `scripts/git-c-allow.py`.
 - git signing your commits: `commit.gpgsign = true` and a key registered

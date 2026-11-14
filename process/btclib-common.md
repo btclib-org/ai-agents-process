@@ -996,6 +996,10 @@ The writer's section; the reviewer judges its result.
       signed off*)
 - [ ] every gate the tree names ran on this tip, committed, with exit
       code `0`, under the gate lock (*The gates*)
+- [ ] in a tree that runs the `sourcery` check, Sourcery read this tip,
+      and where `coderabbit usage` showed an included review left,
+      CodeRabbit read the branch's first commit, each before it was
+      pushed (*A pull request's rounds*)
 - [ ] `git status --porcelain` is empty in the worktree, checked after
       the last gate
 - [ ] the subject that lands carries the right citation, and the body
@@ -1339,21 +1343,6 @@ the orchestrator in the pull request.
 - **Build artefacts outside the worktree** (`uv build --out-dir
   <scratchpad>/…`): an untracked file inside it fails `check-sdist`
   while `git status` reads clean.
-- **Sourcery is not a local gate** (the standard's section 10, *The set,
-  and its cadence*). The writer avoids the shapes of the rules
-  `.sourcery.yaml` leaves on that have fired on a pull request:
-    - `de-morgan`: not `not (x == y and z in t)`, but
-      `x != y or z not in t`, and not `not (x == y or z in t)`, but
-      `x != y and z not in t`;
-    - `invert-any-all`: not `assert not any(x in t for x in xs)`, but
-      `assert all(x not in t for x in xs)`;
-    - `merge-assign-and-aug-assign`: not an assignment of a literal
-      followed by `+=` of another to the same name, but one assignment;
-    - `simplify-empty-collection-comparison`: not `assert xs == []`, but
-      `assert not xs`.
-
-  The session on whose pull request another rule fires proposes it for
-  this list (*Wrap-up*).
 - **A workflow change is dispatched on the branch**: `gh workflow run
   <file>.yml --ref <branch>`. A workflow that has never landed on the
   default branch is exercised first by the pull request's own run, which
@@ -1695,8 +1684,35 @@ The fresh reviewer is what reads the branch whole before the reviewers
 on GitHub: the review bot of `claude-review.yml`, and CodeRabbit where
 it reviews (the standard's section 11, *Review*). They are a safety net
 under the local rounds: each finding they make costs a push, a CI run
-and another review.
+and another review. Sourcery, whose check reads the pull request, and
+CodeRabbit also read the branch locally, before it is pushed, as the
+two bullets below say. Their findings are answered as a reviewer's are
+(*Orchestration*), and the writer's report lists each with its answer.
 
+- **Sourcery reads each commit before it is pushed**, in a tree that runs
+  the `sourcery` check, from a clone of the worktree in the scratch
+  directory, as the standard's section 10, *The set, and its cadence*,
+  says. The writer runs it on each commit it hands over, after the
+  gates, so that the reviewers of *The rounds* read the fixes it calls
+  for; the orchestrator runs it on a commit it made itself (*A branch
+  has one author at a time*). A finding that does not hold is answered
+  at its own site, as section 10 says. The clone goes once the run ends
+  (*Debris goes when its work ends*).
+- **CodeRabbit reads the branch once, before its first push.** The
+  writer runs its CLI from the branch's worktree on the first commit it
+  hands over, after the gates. A review takes minutes, so it runs in the
+  background (*Long jobs run in the background with a timeout*):
+
+  ```shell
+  env -C <wt> coderabbit review --agent --committed --base origin/main \
+    > <scratch>/<name>-coderabbit.log 2>&1
+  ```
+
+  It runs under the login `README.md`'s *Prerequisites* asks for, never
+  with `--use-credits`, and only where `coderabbit usage` shows an
+  included review left. Otherwise it is skipped, and the pull request
+  body's `## Evidence` says so. It stands in for no reviewer of *The
+  rounds*.
 - **The fresh reviewer runs in the other client**, on a model of a
   vendor other than the writer's, because two models of one vendor
   share blind spots. Where the writer runs in Claude Code, the fresh
