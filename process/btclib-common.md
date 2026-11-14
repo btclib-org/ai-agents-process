@@ -460,6 +460,12 @@ the process names its own files by their path under it. Claude Code's
   pytest-xdist, with `-n "$GATE_LOCK_WORKERS"` (*The gate lock*), which
   overrides an `-n auto` in its `addopts`. Other sessions' processes are
   not yours to kill.
+- **Every `bitcoind` and `bitcoin-cli` call carries an explicit
+  `-datadir=<scratch>`**, `-version` included, `<scratch>` being a
+  directory inside your scratch directory. This is a hard rule: a bare
+  call writes into the default data directory, which on the machine is
+  the real node's
+  ([ISS ai-agents-process#428](https://github.com/btclib-org/ai-agents-process/issues/428)).
 - **`timeout` may not be installed, so a command that uses it checks
   `command -v timeout` first.** Where that prints nothing, the command
   runs without a time limit, and the report says so. On macOS,
@@ -637,6 +643,27 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
   relies on an authorization only where its brief quotes it. A number
   among the arguments, or inside a range, is not an authorization: the
   orchestrator skips it and tells the human.
+
+### What goes in a session's memory
+
+A session's persistent memory is read only by Claude Code sessions on
+the maintainer's machine. The reviewer in the other client, the agent
+of `claude-implement.yml` and a contributor's agent never read it. So each kind
+of fact has one place:
+
+- **How work is done, and every technical lesson, goes in the
+  process**: in the file that holds the rule or the skill where it
+  fires, as this file's opening says. A rule kept only in memory binds
+  part of the setup.
+- **A decision about one issue or pull request goes on that issue or
+  pull request**, where every role reads it. Memory does not repeat it.
+- **The maintainer's standing permissions and preferences go in
+  memory**, and so do the permissions they give for a limited time.
+
+**A time-limited permission in memory carries its end**: a date and
+time, or the event that ends it, such as the end of a night. It is
+deleted once it has ended, so that it does not outlive the time it was
+given for.
 
 ### How you establish a fact
 

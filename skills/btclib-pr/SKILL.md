@@ -519,16 +519,18 @@ theirs to give.
 human's own pull request the session never approves: *The human's own
 pull request* says what it does instead.
 
-**Where `main` is not protected yet, the pull request is held.** In a
-repository whose branch protection and rulesets are not applied yet,
-*Arming auto-merge*'s command that writes `<required file>` answers
-`Branch not protected` (HTTP 404) and exits `1`. Nothing then requires
-an approval or a check, so an armed `--auto` lands the head at once.
-The session neither approves nor arms any pull request there, the
-human's own included. It records a hold with `needs-maintainer` (the
-shared *When the human has to decide*), protection being a repository
-setting. The hold lasts until that command exits `0`, and the pull
-request is then decided on its head as this section says.
+**Where the pull request's base is not protected, the pull request is
+held**: *Arming auto-merge*'s command that writes `<required file>`
+answers `Branch not protected` (HTTP 404) and exits `1`, and *Arming
+auto-merge* says why it is not armed. The session arms no such pull
+request, the human's own included. Where the base is `main`, the
+repository's branch protection and rulesets are not applied yet: the
+session does not approve either, and records a hold with
+`needs-maintainer` (the shared *When the human has to decide*),
+protection being a repository setting. Where the base is another
+branch, the pull request is stacked, and *Landing* says when it lands.
+The hold lasts until that command exits `0`, and the pull request is
+then decided on its head as this section says.
 
 **The approval is obvious where every item holds**, each measured on the
 head `<sha>`. The diff is read once, by two commands that must each
@@ -1238,8 +1240,15 @@ gh api -X POST repos/<owner>/<repo>/actions/runs/<databaseId>/approve
 
 ## Arming auto-merge
 
-**The session arms squash auto-merge on a pull request only once all
-three hold on its head**:
+**Auto-merge is armed only on a pull request whose base is a protected
+branch.** Where the base is unprotected, nothing requires an approval
+or a check, so arming `--auto` merges the head at once
+([ISS 428](https://github.com/btclib-org/ai-agents-process/issues/428)).
+The command below that writes `<required file>` reads the base's
+protection, and *The decision* says how such a pull request is held.
+
+**The session arms squash auto-merge on a pull request only once its
+base is protected and all three hold on its head**:
 
 - every required check passed or was skipped;
 - the review bot's latest review starts `ACK <head>`;
@@ -1279,17 +1288,18 @@ It is armed pinned to the head, with squash, the only merge method
 `gh pr merge --squash --auto --match-head-commit <head>`. *Landing*
 gives the whole command.
 
-**The required checks are the branch protection's contexts.** The
-first command writes them, and `<required file>` must not be empty. The
+**The required checks are the base's branch protection's contexts.**
+The first command writes them, `<base>` being `baseRefName` (*Whose
+pull request it is*), and `<required file>` must not be empty. The
 second writes each check that passed or was skipped on the head:
 
 ```shell
-gh api repos/<owner>/<repo>/branches/main/protection/required_status_checks \
+gh api repos/<owner>/<repo>/branches/<base>/protection/required_status_checks \
   --jq '.contexts[]' > <required file>
 ```
 
-Where it answers `Branch not protected` (HTTP 404) and exits `1`,
-`main` has no protection yet: that is not an empty list, and the pull
+Where it answers `Branch not protected` (HTTP 404) and exits `1`, the
+base has no protection: that is not an empty list, and the pull
 request is not armed but held, as *The decision* says.
 
 ```shell
