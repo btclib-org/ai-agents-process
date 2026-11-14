@@ -273,7 +273,8 @@ shows the worktree commands.
 Development is LLM-based: humans are welcome, as long as they are
 comfortable with agentic development ;-). A contribution must have been
 read and understood by the person who submits it.
-[`CONTRIBUTING.md`](./CONTRIBUTING.md#working-with-an-llm) has the rules.
+[`CONTRIBUTING.md`](https://github.com/btclib-org/ai-agents-process/blob/main/CONTRIBUTING.md#working-with-an-llm)
+has the rules.
 
 ## Status
 
