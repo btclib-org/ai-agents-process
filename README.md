@@ -44,7 +44,11 @@ process, and its *Clients* says what differs between the two agents.
   requests' fresh reviewer in the other (`process/btclib-common.md`'s
   *A pull request's rounds*).
 - `gh`, logged in (`gh auth login`).
+- CodeRabbit's CLI, logged in by the maintainer
+  (`coderabbit auth login`), which `process/btclib-common.md`'s
+  *Sourcery and CodeRabbit before a push* runs.
 - `uv`.
+- `jq` on the `PATH`, which commands of `process/btclib-common.md` run.
 - `python3` on the `PATH`, which runs `scripts/git-c-allow.py`.
 - git signing your commits: `commit.gpgsign = true` and a key registered
   on GitHub. The process signs every commit it writes
@@ -261,14 +265,16 @@ again in `/hooks`.
 The links then point at the new text. Do not edit the clone the links
 point at: change the process through a pull request from a worktree,
 reviewed by another person, like any other btclib-org repository.
-[CONTRIBUTING.md](./CONTRIBUTING.md) says how.
+[AGENTS.md](https://github.com/btclib-org/ai-agents-process/blob/main/AGENTS.md)
+shows the worktree commands.
 
 ## Contributing
 
 Development is LLM-based: humans are welcome, as long as they are
 comfortable with agentic development ;-). A contribution must have been
 read and understood by the person who submits it.
-[`CONTRIBUTING.md`](./CONTRIBUTING.md#working-with-an-llm) has the rules.
+[`CONTRIBUTING.md`](https://github.com/btclib-org/ai-agents-process/blob/main/CONTRIBUTING.md#working-with-an-llm)
+has the rules.
 
 ## Status
 

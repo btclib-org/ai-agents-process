@@ -460,6 +460,20 @@ the process names its own files by their path under it. Claude Code's
   pytest-xdist, with `-n "$GATE_LOCK_WORKERS"` (*The gate lock*), which
   overrides an `-n auto` in its `addopts`. Other sessions' processes are
   not yours to kill.
+- **The forge's quota is shared.** Every session and agent on this
+  machine calls the forge through the same `gh` login, and so draws on
+  the same hourly quotas: `core` for REST, `graphql` for what `gh pr
+  checks` asks. A wait on checks or runs asks every 120 seconds or more:
+  a loop sleeps `120`, and a `--watch` or a `gh run watch` takes
+  `--interval 120`, never `gh`'s default. One wait at a time per pull
+  request, not one per agent. Where either quota has under 500 left,
+  waits stop until the reset it prints, and the report says so:
+
+  ```shell
+  gh api rate_limit --jq '.resources | {core, graphql} | to_entries[]
+    | "\(.key) \(.value.remaining) reset \(.value.reset | todate)"'
+  ```
+
 - **A Bitcoin Core program runs on a data directory of the scratch
   directory.** Every call of one that takes `-datadir`, as `bitcoind`
   and `bitcoin-cli` do, carries an explicit `-datadir=<scratch>`,
@@ -477,6 +491,10 @@ the process names its own files by their path under it. Claude Code's
   GNU versions of the commands macOS already ships, such as `date` and
   `stat`, under a `g` prefix (`gdate`, `gstat`); the unprefixed ones
   stay BSD.
+- **A filter that prints `false` exits `0`**, in `gh`'s `--jq` as in
+  `jq`, so what a command prints is tested by its value, as
+  `[ "$(…)" = true ]`, never by its exit code. `jq -e` exits `1` on
+  `false` or `null`; `gh` has no such flag.
 - **`grep` and `find` in the tool's shell may be functions** (`type
   grep`). `grep` over `ugrep -G --ignore-files` skips what `.gitignore`
   covers under the search root and reads a `$` mid-pattern as an anchor,
@@ -1033,6 +1051,7 @@ The writer's section; the reviewer judges its result.
       signed off*)
 - [ ] every gate the tree names ran on this tip, committed, with exit
       code `0`, under the gate lock (*The gates*)
+- [ ] *Sourcery and CodeRabbit before a push* holds
 - [ ] `git status --porcelain` is empty in the worktree, checked after
       the last gate
 - [ ] the subject that lands carries the right citation, and the body
@@ -1376,26 +1395,6 @@ the orchestrator in the pull request.
 - **Build artefacts outside the worktree** (`uv build --out-dir
   <scratchpad>/…`): an untracked file inside it fails `check-sdist`
   while `git status` reads clean.
-- **Sourcery is not a local gate** (the standard's section 10, *The set,
-  and its cadence*). The writer avoids the shapes of the rules
-  `.sourcery.yaml` leaves on that have fired on a pull request:
-    - `compare-via-equals`: not `assert a is b` where `b` is not a
-      singleton, but `assert a == b`; where object identity is what the
-      test asserts, `assert id(a) == id(b)` with `a` and `b` bound to
-      names first, since a temporary freed before the second `id()` can
-      hand its address on;
-    - `de-morgan`: not `not (x == y and z in t)`, but
-      `x != y or z not in t`, and not `not (x == y or z in t)`, but
-      `x != y and z not in t`;
-    - `invert-any-all`: not `assert not any(x in t for x in xs)`, but
-      `assert all(x not in t for x in xs)`;
-    - `merge-assign-and-aug-assign`: not an assignment of a literal
-      followed by `+=` of another to the same name, but one assignment;
-    - `simplify-empty-collection-comparison`: not `assert xs == []`, but
-      `assert not xs`.
-
-  The session on whose pull request another rule fires proposes it for
-  this list (*Wrap-up*).
 - **A workflow change is dispatched on the branch**: `gh workflow run
   <file>.yml --ref <branch>`. A workflow that has never landed on the
   default branch is exercised first by the pull request's own run, which
@@ -1453,6 +1452,71 @@ the orchestrator in the pull request.
   Before running a load generator, read
   `$PROCESS/process/load-generator.md`.
 
+### Sourcery and CodeRabbit before a push
+
+The findings of these local runs are answered as a reviewer's are
+(*Orchestration*), and the writer's report lists each with its answer.
+
+- **Sourcery reads each commit before it is pushed**, in a tree that runs
+  the `sourcery` check, from a clone of the worktree in the scratch
+  directory, as the standard's section 10, *The set, and its cadence*,
+  says. The writer runs it on each commit it hands over, after the
+  gates, so that the reviewers of *The rounds* read the fixes it calls
+  for; the orchestrator runs it on a commit it made itself (*A branch
+  has one author at a time*). A finding that does not hold is answered
+  at its own site, as section 10 says. The clone goes once the run ends
+  (*Debris goes when its work ends*).
+- **CodeRabbit reads the branch once, before its first push.** The
+  writer runs its CLI from the branch's worktree on the first commit it
+  hands over, after the gates. A review takes minutes, so the writer
+  starts this as a background call (*Long jobs run in the background
+  with a timeout*). The CLI reads the branch from its merge base with
+  `<target>`, the branch the pull request will target: `main`, or the
+  parent of a stacked branch. The timeout is longer than the
+  `expectedDuration` of the CLI's `review_context` event, since a review
+  stopped early is discarded. The timeout follows *Shell, checkouts and
+  prose*:
+
+  ```shell
+  wt=<wt>
+  target=<target>
+  base=$(git -C "${wt:?}" merge-base "origin/${target:?}" HEAD)
+  ```
+
+  ```shell
+  env -C "${wt:?}" sh -c 'rc=0 t=
+    command -v timeout > /dev/null && t="timeout -k 60 1200"
+    $t coderabbit review --agent --committed --fresh \
+      --base-commit "$1" || rc=$?
+    echo "EXIT_coderabbit=$rc"' sh "${base:?}" \
+    > <scratch>/<name>-coderabbit.log 2>&1
+  ```
+
+  The CLI read the branch only where this command exits `0`: the log
+  ends `EXIT_coderabbit=0`, holds no `error` event, and holds one
+  `complete` event outside sign-in that reports a whole, fresh review:
+
+  ```shell
+  jq -enR '[inputs] as $l | ($l | last) == "EXIT_coderabbit=0" and (
+    [$l[] | fromjson? | objects] as $a
+    | [$a[] | select(.type == "complete" and .phase != "auth")] as $c
+    | ($c | length) == 1 and $c[0].status == "review_completed"
+    and $c[0].findings == ([$a[] | select(.type == "finding")] | length)
+    and ($c[0].outcome // "") != "failed"
+    and ($c[0].unreviewedFileCount // 0) == 0
+    and ($c[0].reused // false | not)
+    and ([$a[] | select(.type == "error")] | length) == 0
+    and (($c[0].message // "")
+      | startswith("No fresh detailed file review") | not))' \
+    <scratch>/<name>-coderabbit.log
+  ```
+
+  It runs under the login `README.md`'s *Prerequisites* asks for, never
+  with `--use-credits`, and only where `coderabbit usage` shows an
+  included review left. Otherwise it is skipped. Where it is skipped or
+  shows no read, the pull request body's `## Evidence` says so. It
+  stands in for no reviewer of *The rounds*.
+
 ### Committing and rebasing
 
 - **A branch's first push waits for the gates.** Push a commit or an
@@ -1462,7 +1526,7 @@ the orchestrator in the pull request.
   after every push. On an open pull request, a fix is pushed only once
   the rounds of *Local review* have ended, and the orchestrator then has
   the writer push it. An armed pull request is disarmed before any push
-  to it (`/btclib-pr`'s *Arming auto-merge*).
+  to it (`/btclib-pr`'s *Merging*).
 - **An embargoed fix is the exception: it is pushed to `origin` only
   once its release commit is ready on top of it.** It is gated locally.
   The standard's section 12, *A security advisory is worked in this
@@ -1734,10 +1798,12 @@ branch, or a text to be posted.
 ### A pull request's rounds
 
 The fresh reviewer is what reads the branch whole before the reviewers
-on GitHub: the review bot of `claude-review.yml`, and CodeRabbit where
-it reviews (the standard's section 11, *Review*). They are a safety net
-under the local rounds: each finding they make costs a push, a CI run
-and another review.
+on GitHub that `/btclib-pr`'s *The reviews on GitHub* names: the review
+bot of `claude-review.yml`, Codex and CodeRabbit, where each reviews.
+They are a safety net under the local rounds: each finding they make
+costs a push, a CI run and another review. Sourcery and CodeRabbit also
+read the branch locally, as *Sourcery and CodeRabbit before a push*
+says.
 
 - **The fresh reviewer runs in the other client**, on a model of a
   vendor other than the writer's, because two models of one vendor
@@ -1761,13 +1827,12 @@ and another review.
   which stands wherever the process asks for the latest fresh
   reviewer's. Where the dedicated reviewer's last `CLEARED` names an
   earlier sha, it is resumed on the head first. The branch is opened,
-  and lands once everything else `/btclib-pr` asks of it holds, the
-  bot's `ACK <head>` included where it asks for one. The pull request
-  body, a later branch's included, says that the fresh review in the
-  other client is missing, and quotes the refusal that holds for it: the
-  error the client printed, and the time it came. Where the bot's ACK is
-  missing too, the body says so and why. No review in the other client
-  is owed after it lands.
+  and lands once everything else `/btclib-pr` asks of it holds, its *The
+  reviews on GitHub* included, which says how an absent one is recorded.
+  The pull request body, a later branch's included, says that the fresh
+  review in the other client is missing, and quotes the refusal that
+  holds for it: the error the client printed, and the time it came. No
+  review in the other client is owed after it lands.
 
   A fresh reviewer is owed a resumed run where it answered
   `CHANGES REQUESTED` and has not cleared, or where its verdict names an
@@ -1969,16 +2034,8 @@ merge with the new `origin/main`, by the commands of *A pull request's
 rounds*, at the rebase or at `/btclib-pr`'s *Landing*. The `CLEARED`
 stands. A sentence the re-read finds false there is fixed in a new
 commit, or by amend before the pull request is open (*Committing and
-rebasing*). A fresh reviewer reviews that fix, and the branch is armed
-or landed only after its `CLEARED`, which ends the rounds (*The
-rounds*).
-
-`main` also moves under a pull request already armed. After each
-landing the orchestrator observes in a repository, its own merge or an
-auto-merge it sees complete, it re-reads the same way each pull request
-it armed there that has not landed, and again before the session ends.
-A pull request found with a false sentence is disarmed at once
-(`/btclib-pr`'s *Arming auto-merge*).
+rebasing*). A fresh reviewer reviews that fix, and the branch is merged
+only after its `CLEARED`, which ends the rounds (*The rounds*).
 
 ## Collateral
 
@@ -2185,9 +2242,6 @@ on.
 ## Wrap-up
 
 Before the wrap-up, *Collateral*'s last bullet holds.
-
-**Re-read each pull request the session armed that has not landed** (*A
-rebase and the clearance*).
 
 **Release every pull request the session claimed** (*A claim holds a
 pull request's branch*).
