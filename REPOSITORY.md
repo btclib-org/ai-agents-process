@@ -119,12 +119,13 @@ gh api repos/btclib-org/ai-agents-process --jq '.default_branch'
 ```
 
 ```shell
+(set -o pipefail
 gh api --paginate repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
   | xargs -I{} gh api \
     repos/btclib-org/ai-agents-process/rulesets/{} \
     --jq '{name, target, enforcement, refs: .conditions.ref_name.include,
            rules: [.rules[].type],
-           bypass: [.bypass_actors[]?.bypass_mode]}'
+           bypass: [.bypass_actors[]?.bypass_mode]}')
 # {"bypass":[],"enforcement":"active","name":"main-integrity",
 #  "refs":["refs/heads/main"],
 #  "rules":["required_linear_history","non_fast_forward","deletion"],
@@ -152,10 +153,11 @@ gh api --paginate repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
   `refs/tags/v*` rather than over a branch, with **no bypass actor**.
 
 ```shell
+(set -o pipefail
 gh api --paginate repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
   | xargs -I{} gh api \
     repos/btclib-org/ai-agents-process/rulesets/{} \
-    --jq '.rules[] | select(.type=="pull_request") | .parameters'
+    --jq '.rules[] | select(.type=="pull_request") | .parameters')
 # {"allowed_merge_methods":["squash"],
 #  "dismiss_stale_reviews_on_push":true,
 #  "dismissal_restriction":{"allowed_actors":[],"enabled":false},

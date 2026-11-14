@@ -98,10 +98,12 @@ EOF_WFS
 } > "${d}/${r}.rel" &
 {
   tag=$(gh api --paginate "repos/btclib-org/${r}/tags?per_page=100" \
-    --jq '.[].name' 2>/dev/null | sort -V | tail -n 1)
+    --jq '.[].name' 2>/dev/null) || tag=error
+  tag=$(printf '%s\n' "${tag}" | sort -V | tail -n 1)
   since=""
-  [ -n "${tag}" ] && since=$(gh api \
-    "repos/btclib-org/${r}/compare/${tag}...HEAD" --jq '
+  # one page of 250 commits after the tag: --paginate repeats base_commit
+  [ "${tag:-error}" != error ] && since=$(gh api \
+    "repos/btclib-org/${r}/compare/${tag}...HEAD?per_page=250" --jq '
       .base_commit.commit.committer.date[:10] + " | since: "
       + ([.commits[].commit.message | split("\n")[0]] | join(" || "))' \
     2>/dev/null)
