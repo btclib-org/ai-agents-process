@@ -881,7 +881,7 @@ context does not exist, and another session will take the work.
 
 **`RELEASING.md`'s *Release to PyPI* says when a release pull request
 carries `release-hold`** and what the label holds, and `/btclib-pr`'s
-*Landing* how a session reads it before a merge.
+*Landing* how a session reads it.
 
 ### What a session's memory holds
 

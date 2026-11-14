@@ -92,9 +92,9 @@ Show the human one table, grouped:
 - the rest: by day, listed and not worked.
 
 Each row is a `PR` link with its diff balance (the shared *How an issue
-and a pull request are named*) and what it waits on. A pull request in a
-repository where a pull request carries `release-hold` waits on that one
-(*Landing*), and this lists those that carry it:
+and a pull request are named*) and what it waits on. A pull request may
+wait on one that carries `release-hold`, as *Landing* says, and this
+lists those that carry it:
 
 ```shell
 gh search prs --owner btclib-org --label release-hold --limit 200 \
@@ -1379,7 +1379,7 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   still approved and armed
   (`CONTRIBUTING.md`'s *Landing it*).
 - **`release-hold` holds merges as `RELEASING.md`'s *Release to PyPI*
-  says.** Before the session merges a pull request, it reads:
+  says.** Before the session arms or merges a pull request, it reads:
 
   ```shell
   gh pr list --repo <owner>/<repo> --label release-hold --state all \
@@ -1391,6 +1391,12 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   that step gives. A label left behind on a release already published or
   abandoned is handled as that step says. The label records the wait,
   and the waiting pull request takes no comment of its own.
+
+  An armed pull request lands at a time no session chooses. So where
+  this or *The sweep*'s list finds the label, the session disarms each
+  armed pull request of that repository that waits (*Arming
+  auto-merge*), and tells the human. Only the human's word arms it
+  again.
 - **What gates a merge on GitHub** is the repository's own
   `REPOSITORY.md`, read from `origin/main`: typically an approval from
   somebody other than the author, every review thread resolved, and the
