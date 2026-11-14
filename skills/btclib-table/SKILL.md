@@ -87,15 +87,20 @@ with no section heading (the human knows them):
    only;
 1. packages that depend on third-party packages only, none of the
    organization's;
-1. packages that depend on other packages of the organization, each
-   below every one it depends on;
+1. packages that depend on other packages of the organization and that
+   another package of the organization lists in `dependencies`, one
+   section per level: a package's level is one more than the highest
+   level among the packages of these sections it lists in
+   `dependencies`, 1 where it lists none of them;
+1. applications: the packages that depend on other packages of the
+   organization and that no other package of the organization lists in
+   `dependencies`;
 1. bbt, benchmarks and functional-tests: they depend on
    the organization's packages, and have no tag and no `release.yml`;
 1. portanode: it uses no package of the organization;
 1. btclib-org.github.io: it has a folder for each other repository.
 
-Within a section, alphabetical, unless the dependency order says
-otherwise.
+Within a section, alphabetical.
 
 A repository with a `release.yml` workflow sits in its package section
 even before its first release, with `never`. One the list does not name,
