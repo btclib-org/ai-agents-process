@@ -1029,10 +1029,7 @@ The writer's section; the reviewer judges its result.
       signed off*)
 - [ ] every gate the tree names ran on this tip, committed, with exit
       code `0`, under the gate lock (*The gates*)
-- [ ] in a tree that runs the `sourcery` check, Sourcery read this tip,
-      and where `coderabbit usage` showed an included review left,
-      CodeRabbit read the branch's first commit, each before it was
-      pushed (*A pull request's rounds*)
+- [ ] Sourcery and CodeRabbit ran as *A pull request's rounds* says
 - [ ] `git status --porcelain` is empty in the worktree, checked after
       the last gate
 - [ ] the subject that lands carries the right citation, and the body
@@ -1717,10 +1714,10 @@ The fresh reviewer is what reads the branch whole before the reviewers
 on GitHub: the review bot of `claude-review.yml`, and CodeRabbit where
 it reviews (the standard's section 11, *Review*). They are a safety net
 under the local rounds: each finding they make costs a push, a CI run
-and another review. Sourcery, whose check reads the pull request, and
-CodeRabbit also read the branch locally, before it is pushed, as the
-two bullets below say. Their findings are answered as a reviewer's are
-(*Orchestration*), and the writer's report lists each with its answer.
+and another review. The bullets below say when Sourcery and CodeRabbit
+read the branch locally. Their findings are answered as a reviewer's
+are (*Orchestration*), and the writer's report lists each with its
+answer.
 
 - **Sourcery reads each commit before it is pushed**, in a tree that runs
   the `sourcery` check, from a clone of the worktree in the scratch
@@ -1736,10 +1733,10 @@ two bullets below say. Their findings are answered as a reviewer's are
   hands over, after the gates. A review takes minutes, so the writer
   starts this as a background call (*Long jobs run in the background
   with a timeout*). The CLI reads the branch from its merge base with
-  `<target>`, the branch the pull request targets: `main`, or the parent
-  of a stacked branch. The timeout is longer than the `expectedDuration`
-  of the CLI's `review_context` event, since a review stopped early is
-  discarded:
+  `<target>`, the branch the pull request will target: `main`, or the
+  parent of a stacked branch. The timeout is longer than the
+  `expectedDuration` of the CLI's `review_context` event, since a review
+  stopped early is discarded:
 
   ```shell
   wt=<wt>
