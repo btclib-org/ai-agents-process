@@ -1666,6 +1666,41 @@ branch, or a text to be posted.
   be built or installed is named in the verdict as not run. *Another
   project's source is read from a checkout* says where a reference
   implementation is found.
+- **A command the change hands a reader is run on hostile names.** For
+  each command a diff adds to prose or a script, ask what it does with
+  the names and text it reads from the tree or a forge: a file name, a
+  branch name, an issue body. Run it in a scratch repository, its path
+  in `d`, holding these files, each with a line of its own, added with
+  `git add -A`:
+
+  ```shell
+  for n in 'x|touch MARKER' 'touch MARKER|' -i; do
+    printf 'line of %s\n' "$n" > "${d:?}/$n"
+  done
+  ```
+
+  It reads them as names where its output shows each file read, by its
+  line or its name, `MARKER` is absent, `git -C "${d:?}" diff --quiet`
+  exits `0`, and `ls -i "${d:?}"` prints what it printed before the run.
+  The last two each catch a rewrite the other misses. A write into the
+  file keeps its inode, and `git diff` sees it. Perl's `-i` replaces the
+  file with a new one, a new inode, and `git diff` misses it where the
+  content comes back the same. Substituted into `sh -c` by `xargs -I{}`,
+  the first name runs as shell. Perl's `<>` opens its arguments with
+  two-argument `open`, which runs the second. Perl reads a leading `-i`
+  as its in-place switch, and rewrites the files it reads. Perl's
+  `<<>>`, with `--` before the names, reads all three as names.
+- **What a lock pins or installs is measured where it runs.** `uv.lock`
+  can list one name at several versions, each under its own
+  `resolution-markers`, and list with no marker of its own a package
+  that only another platform's dependency reaches, as `sphinx` reaches
+  `colorama` under `sys_platform == 'win32'`. A claim about what a lock
+  pins or installs is measured on the running interpreter and platform,
+  after `uv sync --locked`, with `importlib.metadata`, not read from the
+  lock. Where the lock holds such entries, they are the measurement's
+  controls: it finds only the version whose markers the interpreter
+  matches, and no package that only another platform's dependency
+  reaches, as `colorama` on macOS.
 - **A *Done when* that is a differential over generated inputs** (against
   Bitcoin Core or another implementation) has its input set fixed before
   the writer starts: a generator with its seed, or a corpus, named in the
