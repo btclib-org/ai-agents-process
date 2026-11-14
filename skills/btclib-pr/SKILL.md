@@ -346,11 +346,12 @@ them.
   mergeable` is a cached value.
 - **Wait for the checks on the head just pushed**, in the background,
   by asking until none is pending: `gh pr checks --watch` can return
-  while runs are still queued. It asks at the interval the shared *The
-  forge's quota is shared* gives. The list covers check runs and commit
-  statuses, pre-commit.ci's among them. It must not be empty: right
-  after a push nothing has reported yet. The loop gives up after 30
-  minutes; say so where it does.
+  while runs are still queued. It asks at the interval, and stops at the
+  quota, that the shared *The forge's quota is shared* gives. The list
+  covers check runs and commit statuses, pre-commit.ci's among them. It
+  must not be empty: right after a push nothing has reported yet. The
+  loop gives up after 30 minutes, or once the quota stops it; say so
+  where it does.
 
   Before the loop, read `gh pr view <n> --repo <owner>/<repo> --json
   mergeable,mergeStateStatus`, and read it again where it answers
@@ -363,18 +364,27 @@ them.
 
   ```shell
   for i in $(seq 15); do
+    low=$(gh api rate_limit --jq '.resources | {core, graphql}
+      | to_entries[] | select(.value.remaining < 500)
+      | "\(.key) \(.value.remaining) reset \(.value.reset | todate)"')
+    [ -z "$low" ] || break
     [ "$(gh pr checks <n> --repo <owner>/<repo> --json bucket \
       --jq 'length > 0 and all(.[]; .bucket != "pending")')" = true ] &&
       break
     sleep 120
   done
-  gh pr checks <n> --repo <owner>/<repo>
+  if [ -n "$low" ]; then
+    echo "$low"; (exit 3)
+  else
+    gh pr checks <n> --repo <owner>/<repo>
+  fi
   ```
 
-  The last command's exit code says how the loop ended: `0` all passed,
-  `1` a failure or no checks at all, `8` still pending with none failed.
-  The loop gave up wherever that output still lists a pending check or
-  says `no checks reported`.
+  The block's exit code says how the loop ended: `0` all passed, `1` a
+  failure or no checks at all, `8` still pending with none failed, `3`
+  stopped at the quota, whose lines it prints, with no read of the
+  checks. The loop gave up wherever the output still lists a pending
+  check or says `no checks reported`.
 
   **After a close and reopen, a check `gh pr checks` shows as skipped may
   have failed**
