@@ -477,6 +477,10 @@ the process names its own files by their path under it. Claude Code's
   GNU versions of the commands macOS already ships, such as `date` and
   `stat`, under a `g` prefix (`gdate`, `gstat`); the unprefixed ones
   stay BSD.
+- **A filter that prints `false` exits `0`**, in `gh`'s `--jq` as in
+  `jq`, so what a command prints is tested by its value, as
+  `[ "$(…)" = true ]`, never by its exit code. `jq -e` exits `1` on
+  `false` or `null`; `gh` has no such flag.
 - **`grep` and `find` in the tool's shell may be functions** (`type
   grep`). `grep` over `ugrep -G --ignore-files` skips what `.gitignore`
   covers under the search root and reads a `$` mid-pattern as an anchor,
@@ -1457,8 +1461,7 @@ the orchestrator in the pull request.
   not yet pushed. Check `git ls-remote origin <branch>` against `HEAD`
   after every push. On an open pull request, a fix is pushed only once
   the rounds of *Local review* have ended, and the orchestrator then has
-  the writer push it. An armed pull request is disarmed before any push
-  to it (`/btclib-pr`'s *Arming auto-merge*).
+  the writer push it.
 - **An embargoed fix is the exception: it is pushed to `origin` only
   once its release commit is ready on top of it.** It is gated locally.
   The standard's section 12, *A security advisory is worked in this
@@ -1730,10 +1733,10 @@ branch, or a text to be posted.
 ### A pull request's rounds
 
 The fresh reviewer is what reads the branch whole before the reviewers
-on GitHub: the review bot of `claude-review.yml`, and CodeRabbit where
-it reviews (the standard's section 11, *Review*). They are a safety net
-under the local rounds: each finding they make costs a push, a CI run
-and another review.
+on GitHub that `/btclib-pr`'s *The reviews on GitHub* names: the review
+bot of `claude-review.yml`, Codex and CodeRabbit, where each reviews.
+They are a safety net under the local rounds: each finding they make
+costs a push, a CI run and another review.
 
 - **The fresh reviewer runs in the other client**, on a model of a
   vendor other than the writer's, because two models of one vendor
@@ -1757,13 +1760,12 @@ and another review.
   which stands wherever the process asks for the latest fresh
   reviewer's. Where the dedicated reviewer's last `CLEARED` names an
   earlier sha, it is resumed on the head first. The branch is opened,
-  and lands once everything else `/btclib-pr` asks of it holds, the
-  bot's `ACK <head>` included where it asks for one. The pull request
-  body, a later branch's included, says that the fresh review in the
-  other client is missing, and quotes the refusal that holds for it: the
-  error the client printed, and the time it came. Where the bot's ACK is
-  missing too, the body says so and why. No review in the other client
-  is owed after it lands.
+  and lands once everything else `/btclib-pr` asks of it holds, its *The
+  reviews on GitHub* included, which says how an absent one is recorded.
+  The pull request body, a later branch's included, says that the fresh
+  review in the other client is missing, and quotes the refusal that
+  holds for it: the error the client printed, and the time it came. No
+  review in the other client is owed after it lands.
 
   A fresh reviewer is owed a resumed run where it answered
   `CHANGES REQUESTED` and has not cleared, or where its verdict names an
@@ -1965,16 +1967,8 @@ merge with the new `origin/main`, by the commands of *A pull request's
 rounds*, at the rebase or at `/btclib-pr`'s *Landing*. The `CLEARED`
 stands. A sentence the re-read finds false there is fixed in a new
 commit, or by amend before the pull request is open (*Committing and
-rebasing*). A fresh reviewer reviews that fix, and the branch is armed
-or landed only after its `CLEARED`, which ends the rounds (*The
-rounds*).
-
-`main` also moves under a pull request already armed. After each
-landing the orchestrator observes in a repository, its own merge or an
-auto-merge it sees complete, it re-reads the same way each pull request
-it armed there that has not landed, and again before the session ends.
-A pull request found with a false sentence is disarmed at once
-(`/btclib-pr`'s *Arming auto-merge*).
+rebasing*). A fresh reviewer reviews that fix, and the branch is merged
+only after its `CLEARED`, which ends the rounds (*The rounds*).
 
 ## Collateral
 
@@ -2181,9 +2175,6 @@ on.
 ## Wrap-up
 
 Before the wrap-up, *Collateral*'s last bullet holds.
-
-**Re-read each pull request the session armed that has not landed** (*A
-rebase and the clearance*).
 
 **Release every pull request the session claimed** (*A claim holds a
 pull request's branch*).

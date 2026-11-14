@@ -199,10 +199,10 @@ gh api repos/btclib-org/ai-agents-process \
 
 Squash is the only method GitHub can be asked for. `COMMIT_OR_PR_TITLE`
 with `COMMIT_MESSAGES` is the pair the standard asks for, and which of
-the two titles lands is its *Merge method* rule. `allow_auto_merge` is
-`true`, which is what presses the one enabled button once the checks and
-the review are in, and `delete_branch_on_merge` removes the branch of a
-merged pull request.
+the two titles lands is its *Merge method* rule. `allow_auto_merge`
+reads `true`; `/btclib-pr`'s *Merging* says what is done with
+auto-merge. `delete_branch_on_merge` removes the branch of a merged pull
+request.
 
 ## Features
 
