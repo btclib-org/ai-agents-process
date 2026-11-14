@@ -70,12 +70,10 @@ the comments on the issues. It holds:
 - what was opened, approved and landed, with links, and each landing's
   verification;
 - what is open and ready, and what it waits on;
-- the deferred items, one line each with the link to the hold that
-  records its shape; an item that goes in the report only is given in
-  the shape *When the human has to decide* gives, the report being its
-  record. The report asks none of them: once the night is off, as
-  *Turning it off* says, the first is put at the close of the next
-  message, and the rest one per message after it;
+- the deferred items, listed as *When the human has to decide* says a
+  report lists what waits on the human, each line with the link to its
+  hold; an item that goes in the report only is given in that section's
+  shape instead, the report being its record;
 - the collateral filed, by number, each with its pull request, in review,
   or excepted with its reason;
 - *Wrap-up*'s report, where the session ends with the night.
