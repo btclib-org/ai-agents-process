@@ -1686,13 +1686,14 @@ branch, or a text to be posted.
 
   Run it again on a new `d` holding `-i` alone, since perl reads `-i` as
   its switch only where it comes first. It catches only what follows,
-  and proves no command safe. A name run as shell, as `xargs -I{} sh -c`
-  runs the first, or opened as a pipe, as perl's `<>` opens the second,
-  creates `MARKER` in `d`. A name read as an option leaves its file
-  unread, which shows where the command prints what it reads. A file
-  replaced in place, as perl's `-i` replaces it, gets a new inode in
-  `ls -i` of the fixtures, before and after. Perl's `<<>>`, with `--`
-  before the names, passes.
+  and proves no command safe. The fixtures are names in the tree, so
+  text read from a forge is not tried. A name run as shell, as
+  `xargs -I{} sh -c` runs the first, or opened as a pipe, as perl's `<>`
+  opens the second, creates `MARKER` in `d`. A name read as an option
+  leaves its file unread, which shows where the command prints what it
+  reads. A file replaced in place, as perl's `-i` replaces it, gets a
+  new inode in `ls -i` of the fixtures, before and after. Perl's `<<>>`,
+  with `--` before the names, passes.
 - **What a lock pins or installs is measured where it runs.** `uv.lock`
   can list one name at several versions, each under its own
   `resolution-markers`, and list with no marker of its own a package
@@ -1700,10 +1701,11 @@ branch, or a text to be posted.
   `colorama` under `sys_platform == 'win32'`. A claim about what a lock
   pins or installs is measured on the running interpreter and platform,
   as *Every reviewer tries to break the change* runs its inputs, not
-  read from the lock: `uv sync --locked`, into a `.venv` it creates,
-  with the `--package`, `--extra` and `--group` the claim is about, then
-  `importlib.metadata` in that environment (`uv run --no-sync python`).
-  A bare `uv sync` installs no extra and no group outside the defaults,
+  read from the lock: `uv sync --locked`, with `UV_PROJECT_ENVIRONMENT`
+  set to a new directory and the `--package`, `--extra`, `--group` and
+  `--no-dev` the claim is about, then `importlib.metadata` in that
+  environment (`uv run --no-sync python`, with the same variable). A
+  bare `uv sync` installs no extra and no group outside the defaults,
   and in a workspace it may leave out another member's dependencies. A
   `python` from the `PATH` may read another environment. Where the lock
   holds such entries, they are the measurement's controls: it finds only
