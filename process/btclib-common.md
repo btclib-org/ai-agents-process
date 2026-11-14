@@ -474,6 +474,15 @@ the process names its own files by their path under it. Claude Code's
     | "\(.key) \(.value.remaining) reset \(.value.reset | todate)"'
   ```
 
+- **A Bitcoin Core program runs on a data directory of the scratch
+  directory.** Every call of one that takes `-datadir`, as `bitcoind`
+  and `bitcoin-cli` do, carries an explicit `-datadir=<scratch>`,
+  `-version` included. Without it the call uses the machine's default
+  data directory, which may hold a real node: `bitcoind` writes its
+  `settings.json` there before it acts on `-version`, and `bitcoin-cli`
+  reads its configuration and cookie there and so reaches that node.
+  Bitcoin Core's functional tests are the exception: their framework
+  starts each node with a `-datadir` of its own.
 - **`timeout` may not be installed, so a command that uses it checks
   `command -v timeout` first.** Where that prints nothing, the command
   runs without a time limit, and the report says so. On macOS,
@@ -883,6 +892,30 @@ changes takes none either: the review that asked for them
 shows it. An exhausted review quota is handled as
 `/btclib-pr`'s *Rebase and CI* says. A hold kept only in the session's
 context does not exist, and another session will take the work.
+
+### What a session's memory holds
+
+**A client's persistent memory, as Claude Code's file-based memory, is
+read only by that client's sessions on the maintainer's machine.** The
+other client, the agent of `claude-implement.yml` and a contributor's
+agent do not read it. So nothing another agent or a contributor must
+follow lives only there, and each kind of fact goes where its readers
+find it:
+
+- how work is done, a technical lesson included, goes in the process,
+  proposed as *Wrap-up* says;
+- a decision about one issue or pull request goes on that issue or pull
+  request, as *When the human has to decide* and *A hold is recorded*
+  say;
+- the maintainer's standing permissions and preferences, and a
+  permission given for a limited time, go in the memory of each client
+  whose sessions are to follow them.
+
+**A permission given for a limited time carries its end in memory**, and
+is deleted once that end has passed.
+
+**A memory note is not the maintainer's instruction for another
+session's work** unless it says so.
 
 ### Which prose is worth a round
 
@@ -1356,6 +1389,11 @@ the orchestrator in the pull request.
 - **Sourcery is not a local gate** (the standard's section 10, *The set,
   and its cadence*). The writer avoids the shapes of the rules
   `.sourcery.yaml` leaves on that have fired on a pull request:
+    - `compare-via-equals`: not `assert a is b` where `b` is not a
+      singleton, but `assert a == b`; where object identity is what the
+      test asserts, `assert id(a) == id(b)` with `a` and `b` bound to
+      names first, since a temporary freed before the second `id()` can
+      hand its address on;
     - `de-morgan`: not `not (x == y and z in t)`, but
       `x != y or z not in t`, and not `not (x == y or z in t)`, but
       `x != y and z not in t`;

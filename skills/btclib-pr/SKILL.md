@@ -585,10 +585,10 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
       the human's own pull request, *The human's own pull request* says
       who does. The missing ACK does not stop the approval. On a bot's
       pull request (*A bot's pins*) whose pins change
-      `.github/workflows/claude-review.yml`, the ACK may be missing, and
-      the bot's `Claude review` check may fail while every other check
-      passed or was skipped, as *Arming auto-merge*'s second case
-      allows
+      `.github/workflows/claude-review.yml`, or a reusable workflow that
+      file calls by a local path, the ACK may be missing, and the bot's
+      `Claude review` check may fail while every other check passed or
+      was skipped, as *Arming auto-merge*'s second case allows
 - [ ] no review thread is unresolved, every page read (*What was
       raised*). It binds every approval, the human's decision included;
       *Arming auto-merge* has it for arming
@@ -1044,10 +1044,11 @@ never attempted. Once the same items hold, except the two a 429 fails:
 
 After a push, request the review again on the new head (*Landing*).
 
-On a pull request that changes `claude-review.yml`, which the bot does
-not review (*Arming auto-merge*), `--land` does not apply. It lands
-through the bypass only where the human is the maintainer and a bypass
-actor, as above, and is otherwise armed.
+On a pull request that changes `claude-review.yml`, or a reusable
+workflow that file calls by a local path, which the bot does not review
+(*Arming auto-merge*), `--land` does not apply. It lands through the
+bypass only where the human is the maintainer and a bypass actor, as
+above, and is otherwise armed.
 
 A pull request whose description says it breaks the live setup, in a
 *Breaks* section as
@@ -1231,20 +1232,23 @@ gh pr list --repo <owner>/<repo> --state open --limit 200 \
   --jq '[.[] | select(.headRefOid == "<head>")] | length'
 ```
 
-This lists the runs waiting on `<head>`, and the second command approves
-one. It leaves out runs started by `pull_request_review_comment`, as a
-review bot's comment starts `claude-review` on a fork's pull request:
-GitHub refuses to approve them with HTTP 403, and the review skips a
-fork's pull request anyway (*Arming auto-merge*):
+This lists the runs waiting on `<head>`, every page read, and the second
+command approves one. It leaves out runs started by
+`pull_request_review_comment`, as a review bot's comment starts
+`claude-review` on a fork's pull request: GitHub refuses to approve them
+with HTTP 403, and the review skips a fork's pull request anyway
+(*Arming auto-merge*). `head_sha` matches only the full sha the first
+step prints; an abbreviated one lists nothing:
 
 ```shell
-gh run list --repo <owner>/<repo> --commit <head> -L 100 \
-  --status action_required --json databaseId,name,event \
-  --jq '[.[] | select(.event != "pull_request_review_comment")]'
+gh api --paginate -X GET repos/<owner>/<repo>/actions/runs \
+  -f head_sha=<head> -f status=action_required -F per_page=100 \
+  --jq '.workflow_runs[] | select(.event != "pull_request_review_comment")
+    | {id, name, event}'
 ```
 
 ```shell
-gh api -X POST repos/<owner>/<repo>/actions/runs/<databaseId>/approve
+gh api -X POST repos/<owner>/<repo>/actions/runs/<id>/approve
 ```
 
 ## Arming auto-merge
@@ -1271,9 +1275,14 @@ shared *A pull request's rounds*):
 
 - the bot's run failed with a 429, its quota exhausted, matched as
   *Rebase and CI* says;
-- the pull request changes `claude-review.yml`, which the bot does not
-  review: the action refuses to run where its workflow differs from the
-  default branch's, and its check fails;
+- the pull request changes `claude-review.yml`, or a reusable workflow
+  that `claude-review.yml` calls by a local path, as btclib-org/.github's
+  calls `reusable-claude-review.yml`. The bot reviews neither: the action
+  refuses to run where either differs from the default branch's copy,
+  and its check fails. Run
+  [42404355279](https://github.com/btclib-org/.github/actions/runs/42404355279),
+  on PR btclib-org/.github#2116, logs that refusal as `Skipping action
+  due to workflow validation`;
 - the pull request comes from a fork, `isCrossRepository` being `true`
   in *Whose pull request it is*
   ([ISS 248](https://github.com/btclib-org/ai-agents-process/issues/248)).
@@ -1284,6 +1293,23 @@ shared *A pull request's rounds*):
 Where such a pull request lands through the bypass (*The human's own
 pull request*), every check but the bot's `Claude review` is green as
 well.
+
+The second case's reusable workflows are the ones this lists: each job's
+`uses:` in the default branch's `claude-review.yml` that names a local
+path, read as YAML, so that a quoted path counts and a comment or a
+step's local action does not. It lists nothing where that file calls
+none:
+
+```shell
+gh api -H 'Accept: application/vnd.github.raw' \
+  repos/<owner>/<repo>/contents/.github/workflows/claude-review.yml \
+  | uv run --isolated --no-config --no-project --python 3.15 \
+    --with pyyaml==6.0.3 python -I -c '
+import sys, yaml
+for job in yaml.safe_load(sys.stdin)["jobs"].values():
+    if str(job.get("uses", "")).startswith("./"):
+        print(job["uses"])'
+```
 
 It is armed pinned to the head, with squash, the only merge method
 (`CONTRIBUTING.md`'s *Landing it*):
