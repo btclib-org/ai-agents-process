@@ -1667,40 +1667,44 @@ branch, or a text to be posted.
   project's source is read from a checkout* says where a reference
   implementation is found.
 - **A command the change hands a reader is run on hostile names.** For
-  each command a diff adds to prose or a script, ask what it does with
-  the names and text it reads from the tree or a forge: a file name, a
-  branch name, an issue body. Run it in a scratch repository, its path
-  in `d`, holding these files, each with a line of its own, added with
-  `git add -A`:
+  each command a diff adds to prose or a script that reads names or text
+  from the tree or a forge (a file name, a branch name, an issue body),
+  ask what it does with them, and run it as *Every reviewer tries to
+  break the change* runs its inputs, with `d`, a new scratch directory,
+  as its working directory (`env -C "${d:?}"`), after:
 
   ```shell
+  git init -q "${d:?}"
   for n in 'x|touch MARKER' 'touch MARKER|' -i; do
     printf 'line of %s\n' "$n" > "${d:?}/$n"
   done
+  git -C "${d:?}" add -A
   ```
 
-  It reads them as names where its output shows each file read, by its
-  line or its name, `MARKER` is absent, `git -C "${d:?}" diff --quiet`
-  exits `0`, and `ls -i "${d:?}"` prints what it printed before the run.
-  The last two each catch a rewrite the other misses. A write into the
-  file keeps its inode, and `git diff` sees it. Perl's `-i` replaces the
-  file with a new one, a new inode, and `git diff` misses it where the
-  content comes back the same. Substituted into `sh -c` by `xargs -I{}`,
-  the first name runs as shell. Perl's `<>` opens its arguments with
-  two-argument `open`, which runs the second. Perl reads a leading `-i`
-  as its in-place switch, and rewrites the files it reads. Perl's
-  `<<>>`, with `--` before the names, reads all three as names.
+  Run it again on a new `d` holding `-i` alone, since perl reads `-i` as
+  its switch only where it comes first. It catches only what follows,
+  and proves no command safe. A name run as shell, as `xargs -I{} sh -c`
+  runs the first, or opened as a pipe, as perl's `<>` opens the second,
+  creates `MARKER` in `d`. A name read as an option leaves its file
+  unread, which shows where the command prints what it reads. A file
+  replaced in place, as perl's `-i` replaces it, gets a new inode in
+  `ls -i` of the fixtures, before and after. Perl's `<<>>`, with `--`
+  before the names, passes.
 - **What a lock pins or installs is measured where it runs.** `uv.lock`
   can list one name at several versions, each under its own
   `resolution-markers`, and list with no marker of its own a package
   that only another platform's dependency reaches, as `sphinx` reaches
   `colorama` under `sys_platform == 'win32'`. A claim about what a lock
   pins or installs is measured on the running interpreter and platform,
-  after `uv sync --locked`, with `importlib.metadata`, not read from the
-  lock. Where the lock holds such entries, they are the measurement's
-  controls: it finds only the version whose markers the interpreter
-  matches, and no package that only another platform's dependency
-  reaches, as `colorama` on macOS.
+  as *Every reviewer tries to break the change* runs its inputs, not
+  read from the lock: `uv sync --locked`, with the `--extra` and
+  `--group` the claim is about, then `importlib.metadata` in that
+  environment (`uv run --no-sync python`). A bare `uv sync` installs no
+  extra and no group outside the defaults, and a `python` from the
+  `PATH` may read another environment. Where the lock holds such
+  entries, they are the measurement's controls: it finds only the
+  version whose markers the interpreter matches, and no package that
+  only another platform's dependency reaches, as `colorama` on macOS.
 - **A *Done when* that is a differential over generated inputs** (against
   Bitcoin Core or another implementation) has its input set fixed before
   the writer starts: a generator with its seed, or a corpus, named in the
