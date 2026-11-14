@@ -1003,8 +1003,8 @@ it. `main` requires that review where either command prints `true` (a
 
 ```shell
 gh api --paginate repos/<owner>/<repo>/rules/branches/main \
-  --jq '[.[] | select(.type == "pull_request")
-    | .parameters.require_code_owner_review] | any'
+  --jq '.[] | select(.type == "pull_request")
+    | .parameters.require_code_owner_review | select(.)'
 gh api repos/<owner>/<repo>/branches/main/protection \
   --jq '.required_pull_request_reviews.require_code_owner_reviews'
 ```
@@ -1072,11 +1072,12 @@ The human is a bypass actor where it prints the id
 `gh api user --jq .id` prints:
 
 ```shell
-gh api repos/<owner>/<repo>/rulesets --jq '.[].id' \
+(set -o pipefail
+gh api --paginate repos/<owner>/<repo>/rulesets --jq '.[].id' \
   | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{} \
     --jq 'select(.enforcement == "active") | .bypass_actors[]?
       | select(.actor_type == "User" and .bypass_mode == "pull_request")
-      | .actor_id'
+      | .actor_id')
 ```
 
 Otherwise, `--land` included, another owner decides and `--admin` is
@@ -1084,8 +1085,8 @@ never attempted. Once the same items hold, except the two a 429 fails:
 
 - request the review of every owner but the human who has not approved
   `<sha>`. `btclib-org/.github`'s `GOVERNANCE.md` names the owners, and
-  `gh api "orgs/btclib-org/members?role=admin" --jq '.[].login'` lists
-  them:
+  `gh api --paginate "orgs/btclib-org/members?role=admin" --jq
+  '.[].login'` lists them:
 
   ```shell
   gh pr edit <n> --repo <owner>/<repo> --add-reviewer <login>
