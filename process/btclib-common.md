@@ -1702,7 +1702,8 @@ branch, or a text to be posted.
   `resolution-markers`, and list with no marker of its own a package
   that only another platform's dependency reaches, as `sphinx` reaches
   `colorama` under `sys_platform == 'win32'`. A claim about what a lock
-  pins or installs is measured on the running interpreter and platform,
+  pins or installs is measured on its target, the running interpreter's
+  Python on the platform `--python-platform` names or else on the host,
   as *Every reviewer tries to break the change* runs its inputs, not
   read from the lock: `uv sync --locked`, with `UV_PROJECT_ENVIRONMENT`
   set to a new directory and every flag and `UV_` variable of the
@@ -1717,9 +1718,9 @@ branch, or a text to be posted.
   defaults, and in a workspace it may leave out another member's
   dependencies. A `python` from the `PATH` may read another environment.
   Where the lock holds such entries, they are the measurement's
-  controls: it finds only the version whose markers the interpreter
-  matches, and no package that only another platform's dependency
-  reaches, as `colorama` on macOS.
+  controls: it finds only the version whose markers the target matches,
+  and no package that only another platform's dependency reaches, as
+  `colorama` for a macOS target.
 - **A *Done when* that is a differential over generated inputs** (against
   Bitcoin Core or another implementation) has its input set fixed before
   the writer starts: a generator with its seed, or a corpus, named in the
