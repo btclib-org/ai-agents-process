@@ -92,13 +92,21 @@ Show the human one table, grouped:
 - the rest: by day, listed and not worked.
 
 Each row is a `PR` link with its diff balance (the shared *How an issue
-and a pull request are named*) and what it waits on. A draft is listed
-and not worked. Then put one decision (the shared *When the human has
-to decide*): which to work, and in what order, the recommended order
-first with its reason. In a repository whose `main` is red, its repair
-comes first (*Landing*'s first bullet). Outside contributors' pull
-requests come next, oldest first: their author waits on us, and a reply
-that comes days late can lose a contributor.
+and a pull request are named*) and what it waits on. A pull request in a
+repository where a pull request carries `release-hold` waits on that one
+(*Landing*), and this lists those that carry it:
+
+```shell
+gh search prs --owner btclib-org --label release-hold --limit 200 \
+  --json repository,number,url,state
+```
+
+A draft is listed and not worked. Then put one decision (the shared
+*When the human has to decide*): which to work, and in what order, the
+recommended order first with its reason. In a repository whose `main` is
+red, its repair comes first (*Landing*'s first bullet). Outside
+contributors' pull requests come next, oldest first: their author waits
+on us, and a reply that comes days late can lose a contributor.
 
 **At night, no decision is put.** Where the human answered this decision
 before the night started (`$PROCESS/process/night-mode.md`'s
@@ -1370,6 +1378,19 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   is red, its repair is the first work, and other pull requests are
   still approved and armed
   (`CONTRIBUTING.md`'s *Landing it*).
+- **`release-hold` holds merges as `RELEASING.md`'s *Release to PyPI*
+  says.** Before the session merges a pull request, it reads:
+
+  ```shell
+  gh pr list --repo <owner>/<repo> --label release-hold --state all \
+    --json number --jq '.[].number'
+  ```
+
+  Where that prints a number other than the pull request's own, the pull
+  request waits until it prints no other number, but for the exceptions
+  that step gives. A label left behind on a release already published or
+  abandoned is handled as that step says. The label records the wait,
+  and the waiting pull request takes no comment of its own.
 - **What gates a merge on GitHub** is the repository's own
   `REPOSITORY.md`, read from `origin/main`: typically an approval from
   somebody other than the author, every review thread resolved, and the
