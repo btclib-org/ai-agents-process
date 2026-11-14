@@ -1059,7 +1059,9 @@ def broken_rules(text: str) -> list[str]:
 def main() -> None:
     try:
         event = json.load(sys.stdin)
-    except ValueError:
+    except (ValueError, RecursionError):
+        # input it cannot parse, nested deeper than the interpreter's
+        # recursion limit lets json read, passes
         return
     if not isinstance(event, dict) or event.get("tool_name") != "Bash":
         return
