@@ -1669,12 +1669,12 @@ branch, or a text to be posted.
 - **A command the change hands a reader is run on hostile names.** For
   each command a diff adds to prose or a script that reads names or text
   from the tree or a forge (a file name, a branch name, an issue body),
-  ask what it does with them, and run it as *Every reviewer tries to
-  break the change* runs its inputs, with `d`, a new scratch directory,
-  as the working directory of the whole pipeline (`env -C "${d:?}"`,
-  then the shell the command is written for, with `-c` and the pipeline
-  as its argument: `env -C` before a pipeline moves only its first
-  command), after:
+  ask what it does with them, and where it reads file names, run it as
+  *Every reviewer tries to break the change* runs its inputs, with `d`,
+  a new scratch directory, as the working directory of the whole
+  pipeline (`env -C "${d:?}"`, then the shell the command is written
+  for, with `-c` and the pipeline as its argument: `env -C` before a
+  pipeline moves only its first command), after:
 
   ```shell
   git init -q "${d:?}"
@@ -1690,13 +1690,13 @@ branch, or a text to be posted.
   after `git add -A`. Run it again on a new `d` holding `-i` alone,
   since perl reads `-i` as its switch only where it comes first. It
   catches only what follows, and proves no command safe. The fixtures
-  are names in the tree, so text read from a forge is not tried. A name
-  run as shell, as `xargs -I{} sh -c` runs the first, or opened as a
-  pipe, as perl's `<>` opens the second, creates `MARKER` in `d`. A name
-  read as an option leaves its file unread, which shows where the
-  command prints what it reads. A file replaced in place, as perl's `-i`
-  replaces it, gets a new inode in `ls -i` of the fixtures, before and
-  after. Perl's `<<>>`, with `--` before the names, passes.
+  are file names, so a branch name or text read from a forge is not
+  tried. A name run as shell, as `xargs -I{} sh -c` runs the first, or
+  opened as a pipe, as perl's `<>` opens the second, creates `MARKER` in
+  `d`. A name read as an option leaves its file unread, which shows
+  where the command prints what it reads. A file replaced in place, as
+  perl's `-i` replaces it, gets a new inode in `ls -i` of the fixtures,
+  before and after. Perl's `<<>>`, with `--` before the names, passes.
 - **What a lock pins or installs is measured where it runs.** `uv.lock`
   can list one name at several versions, each under its own
   `resolution-markers`, and list with no marker of its own a package
