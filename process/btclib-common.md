@@ -465,9 +465,9 @@ the process names its own files by their path under it. Claude Code's
   the same hourly quotas: `core` for REST, `graphql` for what `gh pr
   checks` asks. A wait on checks or runs asks every 120 seconds or more:
   a loop sleeps `120`, and a `--watch` or a `gh run watch` takes
-  `--interval 120`, never `gh`'s default. One wait per pull request, not
-  one per agent. Where either quota has under 500 left, waits stop until
-  the reset it prints, and the report says so:
+  `--interval 120`, never `gh`'s default. One wait at a time per pull
+  request, not one per agent. Where either quota has under 500 left,
+  waits stop until the reset it prints, and the report says so:
 
   ```shell
   gh api rate_limit --jq '.resources | {core, graphql} | to_entries[]

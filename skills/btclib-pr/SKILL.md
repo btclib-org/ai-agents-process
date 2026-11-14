@@ -384,9 +384,14 @@ them.
   The block's exit code says how the loop ended: `0` all passed, `1` a
   failure or no checks at all, `8` still pending with none failed, `3`
   stopped at the quota, whose lines it prints, `5` stopped where
-  `gh api rate_limit` failed; neither `3` nor `5` reads the checks. The
-  loop gave up wherever the output still lists a pending check or says
-  `no checks reported`.
+  `gh api rate_limit` failed; neither `3` nor `5` runs the final
+  `gh pr checks`. The loop gave up wherever the output still lists a
+  pending check or says `no checks reported`.
+
+  A section that runs this block with a test of its own puts that test
+  in place of both the loop's test of the checks and the final `gh pr
+  checks`. Unless the quota stops the block, its exit code is the final
+  test's.
 
   **After a close and reopen, a check `gh pr checks` shows as skipped may
   have failed**
@@ -1554,7 +1559,7 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   clearance* says.
 
   Then wait for `main`'s workflow runs on `<sha>`, with *Rebase and
-  CI*'s loop and this test in place of its own. A workflow run is
+  CI*'s block and this test in place of its own. A workflow run is
   completed only once all its jobs are, including the jobs that wait on
   others and have no check run before they start:
 
@@ -1668,7 +1673,7 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   gh workflow run "${file:?}" --repo "${repo:?}" --ref main
   ```
 
-  Then *Rebase and CI*'s loop runs with this test in place of its own,
+  Then *Rebase and CI*'s block runs with this test in place of its own,
   `<files>` being the files dispatched, separated by spaces. It passes
   once each of them has a run created since `<t>`, and each such run has
   completed. Runs of other workflows are not read:
