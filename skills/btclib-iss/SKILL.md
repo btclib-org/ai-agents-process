@@ -11,9 +11,14 @@ and take each to an open pull request, written, gated and cleared by a
 local review (*Opening the pull request*). Then follow each as its
 author (*Following it*).
 
-**First note where the process stands**, before reading it: the
-session keeps `$PROCESS`'s `HEAD` in a directory of its scratchpad, for
-the shared *The process is re-read when `main` changes it*.
+**First read `$PROCESS/process/every-session.md`, whole, before any
+command.** It is two directories above this skill's own, so finding it
+takes no command; a change to `main` that lands between this read and
+the note below goes unnoticed, a window the session accepts.
+
+**Then note where the process stands**, before reading the rest of it:
+the session keeps `$PROCESS`'s `HEAD` in a directory of its scratchpad,
+for the shared *The process is re-read when `main` changes it*.
 `echo "$PROCESS"` prints the clone's path.
 
 ```shell
@@ -29,10 +34,9 @@ git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.sha
 The client loaded this file before that note, so the session reads it
 again, whole and once, from `$PROCESS/skills/btclib-iss/SKILL.md`.
 
-**Then read `$PROCESS/process/every-session.md` and
-`$PROCESS/process/btclib-common.md`, whole.** The second's opening says
-what each holds and what this file holds. What the session writes, and
-this file, follow `every-session.md`'s *Write plainly*.
+**Then read `$PROCESS/process/btclib-common.md`, whole.** Its opening
+says what it holds and what this file holds. What the session writes,
+and this file, follow `every-session.md`'s *Write plainly*.
 
 **Where $ARGUMENTS names no issue, ask the human which, before reading
 anything**: no tracker, no checkout, and no earlier context stands in for
