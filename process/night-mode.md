@@ -79,4 +79,6 @@ the comments on the issues. It holds:
 Its deferred items are put one per message, the first in the report
 itself, and each message that takes an answer puts the next until none
 is left; a worker report, a refused permission or any other interruption
-that arrives meanwhile goes below the question, never in its place.
+that arrives meanwhile goes below the question, never in its place. A
+report given while the night is still on puts none; the first then goes
+in the reply to the message that turns the night off.
