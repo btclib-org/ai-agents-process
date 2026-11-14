@@ -1009,13 +1009,14 @@ This prints each ruleset over `main` that imposes the review, with each
 of its bypass actors, or with `none`:
 
 ```shell
+(set -o pipefail
 gh api --paginate repos/<owner>/<repo>/rules/branches/main \
   --jq '.[] | select(.type == "pull_request"
     and .parameters.require_code_owner_review) | .ruleset_id' \
   | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{} \
     --jq '.id as $r | (.bypass_actors[]?
       | "\($r) \(.actor_type) \(.actor_id) \(.bypass_mode)")
-      // "\($r) none"'
+      // "\($r) none"')
 ```
 
 It waits on a `User` that every ruleset printed names: the author where
