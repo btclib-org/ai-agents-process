@@ -350,8 +350,8 @@ them.
   quota, that the shared *The forge's quota is shared* gives. The list
   covers check runs and commit statuses, pre-commit.ci's among them. It
   must not be empty: right after a push nothing has reported yet. The
-  loop gives up after 30 minutes, or once the quota stops it; say so
-  where it does.
+  loop gives up after 30 minutes, or once the quota stops it or cannot
+  be read; say so where it does.
 
   Before the loop, read `gh pr view <n> --repo <owner>/<repo> --json
   mergeable,mergeStateStatus`, and read it again where it answers
@@ -363,28 +363,30 @@ them.
   *One subject, opened as soon as it is written* says.
 
   ```shell
-  for i in $(seq 15); do
+  for i in $(seq 16); do
     low=$(gh api rate_limit --jq '.resources | {core, graphql}
       | to_entries[] | select(.value.remaining < 500)
-      | "\(.key) \(.value.remaining) reset \(.value.reset | todate)"')
+      | "\(.key) \(.value.remaining) reset \(.value.reset | todate)"') ||
+      low=unread
     [ -z "$low" ] || break
     [ "$(gh pr checks <n> --repo <owner>/<repo> --json bucket \
       --jq 'length > 0 and all(.[]; .bucket != "pending")')" = true ] &&
       break
-    sleep 120
+    [ "$i" = 16 ] || sleep 120
   done
-  if [ -n "$low" ]; then
-    echo "$low"; (exit 3)
-  else
-    gh pr checks <n> --repo <owner>/<repo>
-  fi
+  case $low in
+    '') gh pr checks <n> --repo <owner>/<repo> ;;
+    unread) (exit 5) ;;
+    *) echo "$low"; (exit 3) ;;
+  esac
   ```
 
   The block's exit code says how the loop ended: `0` all passed, `1` a
   failure or no checks at all, `8` still pending with none failed, `3`
-  stopped at the quota, whose lines it prints, with no read of the
-  checks. The loop gave up wherever the output still lists a pending
-  check or says `no checks reported`.
+  stopped at the quota, whose lines it prints, `5` stopped where
+  `gh api rate_limit` failed; neither `3` nor `5` reads the checks. The
+  loop gave up wherever the output still lists a pending check or says
+  `no checks reported`.
 
   **After a close and reopen, a check `gh pr checks` shows as skipped may
   have failed**
