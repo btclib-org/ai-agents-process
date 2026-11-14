@@ -977,7 +977,52 @@ It answers `<sha>`, `APPROVED`, the human's login, and `<sha>`. Where
 the head moved, decide again on the new head. Where the decision is not
 `APPROVED`, the ruleset asks for another approval. Request it from an
 owner who is neither the human nor the author and pushed no commit to
-the branch, and report whom it waits on.
+the branch, and report whom it waits on. Where `main` requires a code
+owner's review and the author is the only code owner, no other approval
+meets it, and it lands only through a bypass of the rule that imposes
+it. `main` requires that review where either command answers `true` (a
+404 from the second is no classic protection):
+
+```shell
+gh api repos/<owner>/<repo>/rules/branches/main \
+  --jq '[.[] | select(.type == "pull_request")
+    | .parameters.require_code_owner_review] | any'
+gh api repos/<owner>/<repo>/branches/main/protection \
+  --jq '.required_pull_request_reviews.require_code_owner_reviews'
+```
+
+GitHub reads the owners from the first of `.github/CODEOWNERS`,
+`CODEOWNERS` and `docs/CODEOWNERS` it finds; this prints that file on
+`main`, nothing where there is none, and the error, exiting `1`, where a
+read fails other than with a 404:
+
+```shell
+(for p in .github/CODEOWNERS CODEOWNERS docs/CODEOWNERS; do
+  u="repos/<owner>/<repo>/contents/$p?ref=main"
+  e=$(gh api --silent "$u" 2>&1) &&
+    { gh api -H 'Accept: application/vnd.github.raw' "$u"; exit; }
+  case $e in *'(HTTP 404)'*) ;; *) echo "$e" >&2; exit 1 ;; esac
+done)
+```
+
+This prints each ruleset over `main` that imposes the review, with each
+of its bypass actors, or with `none`:
+
+```shell
+gh api repos/<owner>/<repo>/rules/branches/main \
+  --jq '.[] | select(.type == "pull_request"
+    and .parameters.require_code_owner_review) | .ruleset_id' \
+  | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{} \
+    --jq '.id as $r | (.bypass_actors[]?
+      | "\($r) \(.actor_type) \(.actor_id) \(.bypass_mode)")
+      // "\($r) none"'
+```
+
+It waits on a `User` that every ruleset printed names: the author where
+the author's id (`gh api users/<login> --jq .id`) is one, another
+otherwise. Where classic protection imposes the review, no `User` is
+named by every ruleset printed, or a read fails other than with those
+404s, hold and ask the human (*Where it is not obvious*).
 
 **Where it is not obvious, the human decides**, as one decision (the
 shared *When the human has to decide*). Its context is the `PR` link,

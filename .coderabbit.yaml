@@ -2,7 +2,8 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 # CodeRabbit's configuration. Section 14 of the organization's standard
 # owes this file, the same, of every repository, so nothing here may be
-# true of one tree only. Section 11's *Review* says what CodeRabbit's
+# true of one tree only, but for the pilot under `auto_approvals`
+# below. Section 11's *Review* says what CodeRabbit's
 # review is, and what it is not. A key this file leaves out takes the
 # default the schema above gives it.
 reviews:
@@ -14,13 +15,18 @@ reviews:
   # request says it is* to what the pull request closes. By default
   # CodeRabbit writes its summary there, so it goes in its own comment
   high_level_summary_in_walkthrough: true
-  # never an approval, for the reason section 11's *Review* gives. The
-  # first key is the default, written so that the test reading this
-  # file has it to read. The second matters only where a pull request
-  # turns the first back on in its own copy, and section 11's *Review*
-  # says when one can; no branch can turn this one back on
+  # a pilot in this repository only (btclib-org/ai-agents-process#432),
+  # and the one key where this copy departs from the organization's,
+  # which keeps it false for the reason section 11's *Review* gives.
+  # CodeRabbit requests changes while a finding of its review is open,
+  # and approves once the required review threads are resolved, it has
+  # reviewed the latest commit and no pre-merge check fails. The
+  # schema's legacy name for this key, `request_changes_workflow`, is
+  # not written beside it: where the two disagree, CodeRabbit turns
+  # approvals off. The second key refuses an author's `@coderabbitai
+  # approve`, and no branch can turn it back on
   auto_approvals:
-    enabled: false
+    enabled: true
     allow_author_approval: false
   path_instructions:
     - path: "tests/**"
@@ -41,7 +47,7 @@ reviews:
         https://github.com/btclib-org/.github#what-a-pull-request-says-it-is
   # a linter a required check runs in any tree is off here, in every
   # tree: where that check runs it, a second report repeats a finding
-  # that already holds the merge, and this file is the same in every
+  # that already holds the merge, and these keys are the same in every
   # tree
   tools:
     actionlint:
