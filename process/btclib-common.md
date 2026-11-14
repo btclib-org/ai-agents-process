@@ -460,6 +460,20 @@ the process names its own files by their path under it. Claude Code's
   pytest-xdist, with `-n "$GATE_LOCK_WORKERS"` (*The gate lock*), which
   overrides an `-n auto` in its `addopts`. Other sessions' processes are
   not yours to kill.
+- **The forge's quota is shared.** Every session and agent on this
+  machine calls the forge through the same `gh` login, and so draws on
+  the same hourly quotas: `core` for REST, `graphql` for what `gh pr
+  checks` asks. A wait on checks or runs asks every 120 seconds or more:
+  a loop sleeps `120`, and a `--watch` or a `gh run watch` takes
+  `--interval 120`, never `gh`'s default. One wait per pull request, not
+  one per agent. Where either quota has under 500 left, waits stop until
+  the reset it prints, and the report says so:
+
+  ```shell
+  gh api rate_limit --jq '.resources | {core, graphql} | to_entries[]
+    | "\(.key) \(.value.remaining) reset \(.value.reset | todate)"'
+  ```
+
 - **A Bitcoin Core program runs on a data directory of the scratch
   directory.** Every call of one that takes `-datadir`, as `bitcoind`
   and `bitcoin-cli` do, carries an explicit `-datadir=<scratch>`,
