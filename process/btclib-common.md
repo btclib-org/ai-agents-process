@@ -1708,13 +1708,16 @@ branch, or a text to be posted.
   set to a new directory and every flag and `UV_` variable of the
   claim's own command that selects what is installed or the interpreter,
   as `--no-default-groups` or `--python`, then `importlib.metadata` in
-  that environment (`uv run --no-sync python`, with the same variable).
-  A bare `uv sync` installs no extra and no group outside the defaults,
-  and in a workspace it may leave out another member's dependencies. A
-  `python` from the `PATH` may read another environment. Where the lock
-  holds such entries, they are the measurement's controls: it finds only
-  the version whose markers the interpreter matches, and no package that
-  only another platform's dependency reaches, as `colorama` on macOS.
+  that environment (`uv run --no-sync python -I`, with the same
+  variable, since `-I` drops `PYTHONPATH` and `PYTHONHOME`). It reports
+  what that interpreter sees, which may hold more than the lock
+  installed. A bare `uv sync` installs no extra and no group outside the
+  defaults, and in a workspace it may leave out another member's
+  dependencies. A `python` from the `PATH` may read another environment.
+  Where the lock holds such entries, they are the measurement's
+  controls: it finds only the version whose markers the interpreter
+  matches, and no package that only another platform's dependency
+  reaches, as `colorama` on macOS.
 - **A *Done when* that is a differential over generated inputs** (against
   Bitcoin Core or another implementation) has its input set fixed before
   the writer starts: a generator with its seed, or a corpus, named in the
