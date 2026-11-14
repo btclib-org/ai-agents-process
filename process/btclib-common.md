@@ -1029,7 +1029,7 @@ The writer's section; the reviewer judges its result.
       signed off*)
 - [ ] every gate the tree names ran on this tip, committed, with exit
       code `0`, under the gate lock (*The gates*)
-- [ ] Sourcery and CodeRabbit ran as *A pull request's rounds* says
+- [ ] *Sourcery and CodeRabbit before a push* holds
 - [ ] `git status --porcelain` is empty in the worktree, checked after
       the last gate
 - [ ] the subject that lands carries the right citation, and the body
@@ -1430,6 +1430,70 @@ the orchestrator in the pull request.
   Before running a load generator, read
   `$PROCESS/process/load-generator.md`.
 
+### Sourcery and CodeRabbit before a push
+
+The findings of these local runs are answered as a reviewer's are
+(*Orchestration*), and the writer's report lists each with its answer.
+
+- **Sourcery reads each commit before it is pushed**, in a tree that runs
+  the `sourcery` check, from a clone of the worktree in the scratch
+  directory, as the standard's section 10, *The set, and its cadence*,
+  says. The writer runs it on each commit it hands over, after the
+  gates, so that the reviewers of *The rounds* read the fixes it calls
+  for; the orchestrator runs it on a commit it made itself (*A branch
+  has one author at a time*). A finding that does not hold is answered
+  at its own site, as section 10 says. The clone goes once the run ends
+  (*Debris goes when its work ends*).
+- **CodeRabbit reads the branch once, before its first push.** The
+  writer runs its CLI from the branch's worktree on the first commit it
+  hands over, after the gates. A review takes minutes, so the writer
+  starts this as a background call (*Long jobs run in the background
+  with a timeout*). The CLI reads the branch from its merge base with
+  `<target>`, the branch the pull request will target: `main`, or the
+  parent of a stacked branch. The timeout is longer than the
+  `expectedDuration` of the CLI's `review_context` event, since a review
+  stopped early is discarded. The timeout follows *Shell, checkouts and
+  prose*:
+
+  ```shell
+  wt=<wt>
+  target=<target>
+  base=$(git -C "${wt:?}" merge-base "origin/${target:?}" HEAD)
+  ```
+
+  ```shell
+  env -C "${wt:?}" sh -c 'rc=0 t=
+    command -v timeout > /dev/null && t="timeout -k 60 1200"
+    $t coderabbit review --agent --committed --base-commit "$1" || rc=$?
+    echo "EXIT_coderabbit=$rc"' sh "${base:?}" \
+    > <scratch>/<name>-coderabbit.log 2>&1
+  ```
+
+  The CLI read the branch only where this command exits `0`: the log
+  ends `EXIT_coderabbit=0`, holds no `error` event, and holds one
+  `complete` event outside sign-in that reports a whole, fresh review:
+
+  ```shell
+  jq -enR '[inputs] as $l | ($l | last) == "EXIT_coderabbit=0" and (
+    [$l[] | fromjson? | objects] as $a
+    | [$a[] | select(.type == "complete" and .phase != "auth")] as $c
+    | ($c | length) == 1 and $c[0].status == "review_completed"
+    and $c[0].findings == ([$a[] | select(.type == "finding")] | length)
+    and ($c[0].outcome // "") != "failed"
+    and ($c[0].unreviewedFileCount // 0) == 0
+    and ($c[0].reused // false | not)
+    and ([$a[] | select(.type == "error")] | length) == 0
+    and (($c[0].message // "")
+      | startswith("No fresh detailed file review") | not))' \
+    <scratch>/<name>-coderabbit.log
+  ```
+
+  It runs under the login `README.md`'s *Prerequisites* asks for, never
+  with `--use-credits`, and only where `coderabbit usage` shows an
+  included review left. Otherwise it is skipped. Where it is skipped or
+  shows no read, the pull request body's `## Evidence` says so. It
+  stands in for no reviewer of *The rounds*.
+
 ### Committing and rebasing
 
 - **A branch's first push waits for the gates.** Push a commit or an
@@ -1714,64 +1778,9 @@ The fresh reviewer is what reads the branch whole before the reviewers
 on GitHub: the review bot of `claude-review.yml`, and CodeRabbit where
 it reviews (the standard's section 11, *Review*). They are a safety net
 under the local rounds: each finding they make costs a push, a CI run
-and another review. The bullets below say when Sourcery and CodeRabbit
-read the branch locally. Their findings are answered as a reviewer's
-are (*Orchestration*), and the writer's report lists each with its
-answer.
+and another review. Sourcery and CodeRabbit also read the branch
+locally, as *Sourcery and CodeRabbit before a push* says.
 
-- **Sourcery reads each commit before it is pushed**, in a tree that runs
-  the `sourcery` check, from a clone of the worktree in the scratch
-  directory, as the standard's section 10, *The set, and its cadence*,
-  says. The writer runs it on each commit it hands over, after the
-  gates, so that the reviewers of *The rounds* read the fixes it calls
-  for; the orchestrator runs it on a commit it made itself (*A branch
-  has one author at a time*). A finding that does not hold is answered
-  at its own site, as section 10 says. The clone goes once the run ends
-  (*Debris goes when its work ends*).
-- **CodeRabbit reads the branch once, before its first push.** The
-  writer runs its CLI from the branch's worktree on the first commit it
-  hands over, after the gates. A review takes minutes, so the writer
-  starts this as a background call (*Long jobs run in the background
-  with a timeout*). The CLI reads the branch from its merge base with
-  `<target>`, the branch the pull request will target: `main`, or the
-  parent of a stacked branch. The timeout is longer than the
-  `expectedDuration` of the CLI's `review_context` event, since a review
-  stopped early is discarded:
-
-  ```shell
-  wt=<wt>
-  target=<target>
-  base=$(git -C "${wt:?}" merge-base "origin/${target:?}" HEAD)
-  env -C "${wt:?}" sh -c 'rc=0
-    timeout -k 60 1200 coderabbit review --agent --committed \
-      --base-commit "$1" || rc=$?
-    echo "EXIT_coderabbit=$rc"' sh "${base:?}" \
-    > <scratch>/<name>-coderabbit.log 2>&1
-  ```
-
-  The CLI read the branch only where this command exits `0`, which it
-  does where the log ends `EXIT_coderabbit=0`, holds no `error` event,
-  and holds one `complete` event outside sign-in, whose `status` is
-  `review_completed`, whose `findings` counts the `finding` events, and
-  whose `message` does not say that no fresh review was made:
-
-  ```shell
-  jq -enR '[inputs] as $l | ($l | last) == "EXIT_coderabbit=0" and (
-    [$l[] | fromjson? | objects] as $a
-    | [$a[] | select(.type == "complete" and .phase != "auth")] as $c
-    | ($c | length) == 1 and $c[0].status == "review_completed"
-    and $c[0].findings == ([$a[] | select(.type == "finding")] | length)
-    and ([$a[] | select(.type == "error")] | length) == 0
-    and (($c[0].message // "")
-      | startswith("No fresh detailed file review") | not))' \
-    <scratch>/<name>-coderabbit.log
-  ```
-
-  It runs under the login `README.md`'s *Prerequisites* asks for, never
-  with `--use-credits`, and only where `coderabbit usage` shows an
-  included review left. Otherwise it is skipped. Where it is skipped or
-  shows no read, the pull request body's `## Evidence` says so. It
-  stands in for no reviewer of *The rounds*.
 - **The fresh reviewer runs in the other client**, on a model of a
   vendor other than the writer's, because two models of one vendor
   share blind spots. Where the writer runs in Claude Code, the fresh
