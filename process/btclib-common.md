@@ -1671,9 +1671,10 @@ branch, or a text to be posted.
   from the tree or a forge (a file name, a branch name, an issue body),
   ask what it does with them, and run it as *Every reviewer tries to
   break the change* runs its inputs, with `d`, a new scratch directory,
-  as the working directory of the whole pipeline
-  (`env -C "${d:?}" sh -c` with the pipeline as its argument: `env -C`
-  before a pipeline moves only its first command), after:
+  as the working directory of the whole pipeline (`env -C "${d:?}"`,
+  then the shell the command is written for, with `-c` and the pipeline
+  as its argument: `env -C` before a pipeline moves only its first
+  command), after:
 
   ```shell
   git init -q "${d:?}"
@@ -1699,14 +1700,14 @@ branch, or a text to be posted.
   `colorama` under `sys_platform == 'win32'`. A claim about what a lock
   pins or installs is measured on the running interpreter and platform,
   as *Every reviewer tries to break the change* runs its inputs, not
-  read from the lock: `uv sync --locked`, with the `--package`,
-  `--extra` and `--group` the claim is about, then `importlib.metadata`
-  in that environment (`uv run --no-sync python`). A bare `uv sync`
-  installs no extra and no group outside the defaults, and in a
-  workspace it may leave out another member's dependencies. A `python`
-  from the `PATH` may read another environment. Where the lock holds
-  such entries, they are the measurement's controls: it finds only the
-  version whose markers the interpreter matches, and no package that
+  read from the lock: `uv sync --locked`, into a `.venv` it creates,
+  with the `--package`, `--extra` and `--group` the claim is about, then
+  `importlib.metadata` in that environment (`uv run --no-sync python`).
+  A bare `uv sync` installs no extra and no group outside the defaults,
+  and in a workspace it may leave out another member's dependencies. A
+  `python` from the `PATH` may read another environment. Where the lock
+  holds such entries, they are the measurement's controls: it finds only
+  the version whose markers the interpreter matches, and no package that
   only another platform's dependency reaches, as `colorama` on macOS.
 - **A *Done when* that is a differential over generated inputs** (against
   Bitcoin Core or another implementation) has its input set fixed before
