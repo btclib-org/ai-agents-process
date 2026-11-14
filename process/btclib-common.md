@@ -1464,7 +1464,8 @@ The findings of these local runs are answered as a reviewer's are
   ```shell
   env -C "${wt:?}" sh -c 'rc=0 t=
     command -v timeout > /dev/null && t="timeout -k 60 1200"
-    $t coderabbit review --agent --committed --base-commit "$1" || rc=$?
+    $t coderabbit review --agent --committed --fresh \
+      --base-commit "$1" || rc=$?
     echo "EXIT_coderabbit=$rc"' sh "${base:?}" \
     > <scratch>/<name>-coderabbit.log 2>&1
   ```
