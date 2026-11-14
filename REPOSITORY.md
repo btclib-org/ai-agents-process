@@ -201,7 +201,7 @@ gh api repos/btclib-org/ai-agents-process \
          delete_on_merge: .delete_branch_on_merge,
          title: .squash_merge_commit_title,
          message: .squash_merge_commit_message}'
-# {"auto":true,"delete_on_merge":true,"merge":false,
+# {"auto":false,"delete_on_merge":true,"merge":false,
 #  "message":"COMMIT_MESSAGES","rebase":false,"squash":true,
 #  "title":"COMMIT_OR_PR_TITLE"}
 ```
@@ -209,9 +209,8 @@ gh api repos/btclib-org/ai-agents-process \
 Squash is the only method GitHub can be asked for. `COMMIT_OR_PR_TITLE`
 with `COMMIT_MESSAGES` is the pair the standard asks for, and which of
 the two titles lands is its *Merge method* rule. `allow_auto_merge` is
-`true`, which is what presses the one enabled button once the checks and
-the review are in, and `delete_branch_on_merge` removes the branch of a
-merged pull request.
+`false`, so no pull request can be armed and the merge is explicit.
+`delete_branch_on_merge` removes the branch of a merged pull request.
 
 ## Features
 
