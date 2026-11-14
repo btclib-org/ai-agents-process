@@ -12,8 +12,8 @@ earlier run.
 The skill only reads. It writes nothing, comments nowhere and takes no
 decision, so it needs no worktree and none of the roles of
 `$PROCESS/process/btclib-common.md` (`echo "$PROCESS"` prints the
-clone's path). What it writes after the table follows that file's
-*Write plainly*.
+clone's path). What it writes after the table follows
+`$PROCESS/process/every-session.md`'s *Write plainly*.
 
 ## Measure
 

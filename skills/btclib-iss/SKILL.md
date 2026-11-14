@@ -29,9 +29,10 @@ git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.sha
 The client loaded this file before that note, so the session reads it
 again, whole and once, from `$PROCESS/skills/btclib-iss/SKILL.md`.
 
-**Then read `$PROCESS/process/btclib-common.md`, whole.** Its opening
-says what it holds and what this file holds. What the session writes,
-and this file, follow its *Write plainly*.
+**Then read `$PROCESS/process/every-session.md` and
+`$PROCESS/process/btclib-common.md`, whole.** The second's opening says
+what each holds and what this file holds. What the session writes, and
+this file, follow `every-session.md`'s *Write plainly*.
 
 **Where $ARGUMENTS names no issue, ask the human which, before reading
 anything**: no tracker, no checkout, and no earlier context stands in for
@@ -97,9 +98,9 @@ release or draft. Read its state there.
 gh issue edit <n> --repo <owner>/<repo> --remove-label upstream-dependent
 ```
 
-An issue with a reason label (the shared *When the human has to decide*,
-*A hold is recorded*) is taken only once the wait its label names is
-over, and taking it removes that label the same way.
+An issue with a reason label (`every-session.md`'s *When the human has
+to decide*, *A hold is recorded*) is taken only once the wait its label
+names is over, and taking it removes that label the same way.
 
 ## Opening the pull request
 
@@ -127,9 +128,9 @@ open:**
   (`/btclib-pr`'s *The reviews on GitHub*).
 - **The body is the paragraphs, then sections, then the closing block
   (the shared *Citations and closing keywords*).** The paragraphs keep
-  the body limit of the shared *What is posted on a forge* and say what
-  the change does and why. The sections do not count against that limit,
-  and each stays short.
+  the body limit of `every-session.md`'s *What is posted on a forge* and
+  say what the change does and why. The sections do not count against
+  that limit, and each stays short.
 - **`## Evidence` is a short table or list**: the gates that ran on the
   head, with their exit codes; the rebase case the clearance is in; the
   review; and, once they have answered, each review on GitHub that is

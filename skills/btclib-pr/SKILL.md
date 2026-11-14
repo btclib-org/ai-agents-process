@@ -29,9 +29,10 @@ git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.sha
 The client loaded this file before that note, so the session reads it
 again, whole and once, from `$PROCESS/skills/btclib-pr/SKILL.md`.
 
-**Then read `$PROCESS/process/btclib-common.md`, whole.** Its opening
-says what it holds and what this file holds. What the session writes,
-and this file, follow its *Write plainly*.
+**Then read `$PROCESS/process/every-session.md` and
+`$PROCESS/process/btclib-common.md`, whole.** The second's opening says
+what each holds and what this file holds. What the session writes, and
+this file, follow `every-session.md`'s *Write plainly*.
 
 The shared *Where you work* says how the repository is named.
 
@@ -93,12 +94,12 @@ Show the human one table, grouped:
 
 Each row is a `PR` link with its diff balance (the shared *How an issue
 and a pull request are named*) and what it waits on. A draft is listed
-and not worked. Then put one decision (the shared *When the human has
-to decide*): which to work, and in what order, the recommended order
-first with its reason. In a repository whose `main` is red, its repair
-comes first (*Landing*'s first bullet). Outside contributors' pull
-requests come next, oldest first: their author waits on us, and a reply
-that comes days late can lose a contributor.
+and not worked. Then put one decision (`every-session.md`'s *When the
+human has to decide*): which to work, and in what order, the recommended
+order first with its reason. In a repository whose `main` is red, its
+repair comes first (*Landing*'s first bullet). Outside contributors'
+pull requests come next, oldest first: their author waits on us, and a
+reply that comes days late can lose a contributor.
 
 **At night, no decision is put.** Where the human answered this decision
 before the night started (`$PROCESS/process/night-mode.md`'s
@@ -248,8 +249,8 @@ answered one of three ways:
   *Committing and rebasing*).
 - **decline**: with the measurement that refutes it.
 - **decision**: a choice the tree does not settle — design, scope, a
-  reserved decision. It goes to the human or the maintainer, as the
-  shared *When the human has to decide* says.
+  reserved decision. It goes to the human or the maintainer, as
+  `every-session.md`'s *When the human has to decide* says.
 
 **A bot's finding, the review bot's, Codex's or CodeRabbit's, takes the
 first of these routes that fits**, measured on the head, unless it needs
@@ -291,8 +292,8 @@ gates run on it.
 **Every thread gets a reply, and is then resolved.** An accepted one
 names the commit that fixes it; a declined one carries its measurement.
 A thread waiting on a decision or on the author is replied to and
-resolved once that arrives. The reply meets the shared *What is posted
-on a forge*. Write the reply to a file of your own, then:
+resolved once that arrives. The reply meets `every-session.md`'s *What
+is posted on a forge*. Write the reply to a file of your own, then:
 
 ```shell
 gh api graphql -F t=<thread id> -F b=@<reply file> -f query='
@@ -310,7 +311,8 @@ gh api graphql -F t=<thread id> -f query='
 ```
 
 A review or comment outside a thread is answered in one comment on the
-pull request, which meets the shared *What is posted on a forge*.
+pull request, which meets `every-session.md`'s *What is posted on a
+forge*.
 
 **Codex's state on the head changes only when Codex reads it again**: a
 reply and a resolved thread leave it in findings. A push can start that
@@ -351,14 +353,14 @@ them.
   `git -C <wt> -c merge.union.driver=false merge-tree origin/main
   <branch>` exits `1` where GitHub will refuse. `gh pr view --json
   mergeable` is a cached value.
-- **Wait for the checks on the head just pushed**, in the background,
-  by asking until none is pending: `gh pr checks --watch` can return
-  while runs are still queued. It asks at the interval, and stops at the
-  quota, that the shared *The forge's quota is shared* gives. The list
-  covers check runs and commit statuses, pre-commit.ci's among them. It
-  must not be empty: right after a push nothing has reported yet. The
-  loop gives up after 30 minutes, or once the quota stops it or cannot
-  be read; say so where it does.
+- **Wait for the checks on the head just pushed**, in the background, by
+  asking until none is pending: `gh pr checks --watch` can return while
+  runs are still queued. It asks at the interval, and stops at the
+  quota, that `every-session.md`'s *The forge's quota is shared* gives.
+  The list covers check runs and commit statuses, pre-commit.ci's among
+  them. It must not be empty: right after a push nothing has reported
+  yet. The loop gives up after 30 minutes, or once the quota stops it or
+  cannot be read; say so where it does.
 
   Before the loop, read `gh pr view <n> --repo <owner>/<repo> --json
   mergeable,mergeStateStatus`, and read it again where it answers
@@ -517,9 +519,9 @@ them.
       run was cancelled this way on four attempts, and ran on the fifth.
       Where the fourth re-run is cancelled the same way, the wait is
       GitHub's: label the pull request `waits-github`, comment on it
-      with the run and the message (the shared *A hold is recorded on
-      the issue or pull request*), and report it. The human decides
-      what follows;
+      with the run and the message (`every-session.md`'s *A hold is
+      recorded on the issue or pull request*), and report it. The human
+      decides what follows;
     - **review quota exhausted**: the log of `Claude review` holds the
       line `api_error_status 429` (match with that, not with
       `api_error_status` alone: the log also echoes the workflow's own
@@ -550,8 +552,8 @@ each absence is recorded before the approval or the landing: in the pull
 request's `## Evidence` where its body is the session's, otherwise in a
 comment of the session's own naming the head.
 
-What each command below prints is tested by its value (the shared
-*Shell, checkouts and prose*).
+What each command below prints is tested by its value
+(`every-session.md`'s *Shell, checkouts and prose*).
 
 **The review bot**, `claude` in `gh pr view`. It is running while a run
 of its check on the head has not completed. Every run is read, since
@@ -757,10 +759,10 @@ repository whose branch protection and rulesets are not applied yet,
 protected` (HTTP 404) and exits `1`. Nothing then requires an approval
 or a check, so a merge lands whatever head it is given. The session
 neither approves nor merges any pull request there, the human's own
-included. It records a hold with `needs-maintainer` (the shared *When
-the human has to decide*), protection being a repository setting. The
-hold lasts until that command exits `0`, and the pull request is then
-decided on its head as this section says.
+included. It records a hold with `needs-maintainer`
+(`every-session.md`'s *When the human has to decide*), protection being
+a repository setting. The hold lasts until that command exits `0`, and
+the pull request is then decided on its head as this section says.
 
 **The approval is obvious where every item holds**, each measured on the
 head `<sha>`. The diff is read once, by two commands that must each
@@ -1259,17 +1261,17 @@ otherwise. Where classic protection imposes the review, no `User` is
 named by every ruleset printed, or a read fails other than with those
 404s, hold and ask the human (*Where it is not obvious*).
 
-**Where it is not obvious, the human decides**, as one decision (the
-shared *When the human has to decide*). Its context is the `PR` link,
-the head sha, and each failed item with its measurement. The
-alternatives are: approve, once the thread item holds; ask the author
-for changes, naming them, where the session cannot push to the branch;
-wait, naming on what or whom; close, where that is an option. Where
-only the bot's quota fails the items, the human may run a Claude review
-locally.
-Record it as a hold (the shared *When the human has to decide*). On
-"approve", approve as above, with a body saying it follows the human's
-decision. At night it is a deferred item (the shared *Night mode*).
+**Where it is not obvious, the human decides**, as one decision
+(`every-session.md`'s *When the human has to decide*). Its context is
+the `PR` link, the head sha, and each failed item with its measurement.
+The alternatives are: approve, once the thread item holds; ask the
+author for changes, naming them, where the session cannot push to the
+branch; wait, naming on what or whom; close, where that is an option.
+Where only the bot's quota fails the items, the human may run a Claude
+review locally. Record it as a hold (`every-session.md`'s *When the
+human has to decide*). On "approve", approve as above, with a body
+saying it follows the human's decision. At night it is a deferred item
+(the shared *Night mode*).
 
 ### The human's own pull request
 
@@ -1337,13 +1339,13 @@ that section names records it instead.
 **It is completed in place where `maintainerCanModify` is `true`**, with
 every fix the approval needs, blocking findings and nits alike, as the
 bullets below say. Otherwise the orchestrator delivers the findings on
-the pull request, warmly and as the shared *What is posted on a forge*
-says: the first line thanks them and names what holds the pull request,
-what is right comes before what is missing, and a fix of a few lines is
-a one-click suggestion. The session then waits. Where a branch of ours
-must land first and touches their lines, the maintainer decides the
-order, and the contributor is told on their pull request what moved and
-how to resolve it. Completing it:
+the pull request, warmly and as `every-session.md`'s *What is posted on
+a forge* says: the first line thanks them and names what holds the pull
+request, what is right comes before what is missing, and a fix of a few
+lines is a one-click suggestion. The session then waits. Where a branch
+of ours must land first and touches their lines, the maintainer decides
+the order, and the contributor is told on their pull request what moved
+and how to resolve it. Completing it:
 
 - **Add, never rewrite.** Their commits stay byte for byte. `main`
   comes in by a signed merge, not a rebase, run with hooks off as the
