@@ -1709,8 +1709,10 @@ branch, or a text to be posted.
   claim's own command that selects what is installed or the interpreter,
   as `--no-default-groups` or `--python`, then `importlib.metadata` in
   that environment (`uv run --no-sync python -I`, with the same
-  variable, since `-I` drops `PYTHONPATH` and `PYTHONHOME`). It reports
-  what that interpreter sees, which may hold more than the lock
+  variable, since `-I` drops `PYTHONPATH` and `PYTHONHOME`). Where the
+  command takes `--active`, the sync fills `VIRTUAL_ENV` instead, so
+  that is the new directory and the query takes `--active` too. It
+  reports what that interpreter sees, which may hold more than the lock
   installed. A bare `uv sync` installs no extra and no group outside the
   defaults, and in a workspace it may leave out another member's
   dependencies. A `python` from the `PATH` may read another environment.
