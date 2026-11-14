@@ -352,11 +352,11 @@ them.
   `CONTRIBUTING.md`'s *Landing it* says, or for a retarget.** An outside
   contributor's branch, or the agent's, is never rebased: *Outside
   contributors* brings `main` in by a merge.
-- **After a rebase or a merge of `main`, run the gates and push.** Ask
-  the merge the forge will compute, locally:
-  `git -C <wt> -c merge.union.driver=false merge-tree origin/main
-  <branch>` exits `1` where GitHub will refuse. `gh pr view --json
-  mergeable` is a cached value.
+- **After a rebase or a merge of `main`, run the gates the shared *The
+  gates* asks, and push.** Ask the merge the forge will compute,
+  locally: `git -C <wt> -c merge.union.driver=false merge-tree
+  origin/main <branch>` exits `1` where GitHub will refuse. `gh pr view
+  --json mergeable` is a cached value.
 - **Wait for the checks on the head just pushed**, in the background, by
   asking until none is pending: `gh pr checks --watch` can return while
   runs are still queued. It asks at the interval, and stops at the
@@ -1681,9 +1681,10 @@ has not reported yet.
   With several heads `git merge` ignores `merge=union`, so it needs no
   `merge.union.driver`, and `core.hooksPath` keeps hooks from running on
   what the heads hold. Exit `0` leaves the merge staged and uncommitted.
-  The tree's gates run on it as the shared *The gates* says, the gate lock
-  and `gate_wait` included, and in its sandbox where any head is an
-  outside contributor's. A push to one of the pull requests voids the run.
+  The tree's gates run on it whole, as `CONTRIBUTING.md`'s last section
+  gives them, under the gate lock with `gate_wait`, and in the sandbox
+  of the shared *The gates* where any head is an outside contributor's.
+  A push to one of the pull requests voids the run.
 
   **Where the merge exits non-zero, `merge-tree` says why.** This
   exits `1` where `<a>` and `<b>` conflict. It runs on `<main sha>` with

@@ -854,8 +854,8 @@ The writer's section; the reviewer judges its result.
 - [ ] the `Sign-off` script exits `0` on `<base>..`, or after a merge of
       `main` on the ranges that leave out `main`'s commits (*Signed and
       signed off*)
-- [ ] every gate the tree names ran on this tip, committed, with exit
-      code `0`, under the gate lock (*The gates*)
+- [ ] every gate *The gates* asks of this tip ran on it, committed,
+      with exit code `0`, as it says
 - [ ] *Sourcery and CodeRabbit before a push* holds
 - [ ] `git status --porcelain` is empty in the worktree, checked after
       the last gate
@@ -990,20 +990,104 @@ the orchestrator in the pull request.
 
 - **The gates are the tree's**: `CONTRIBUTING.md`'s last section. Where
   it is silent, what CI runs — typically the suite with its coverage
-  floor, `pre-commit run --all-files`, and the docs
-  build with `-W`, which pre-commit rarely covers. **Run all of them**
-  unless that section scales them by what the diff touches. "This gate
-  does not read the changed files" is a claim like any other and is
-  measured first: a docs build may include `CHANGELOG.md`, a test may
-  read every tracked file.
-- **Every commit you hand over is gated, after it is committed.** Commits
-  kept only to preserve work in progress are exempt, and are amended away
-  before anything is offered. A run before the commit does not count,
-  even where the content looks identical: a hook at commit time can
-  change what is committed. Where a gate's fixer changes files, commit
-  the change and run that gate again. `pre-commit run --all-files` walks
-  `git ls-files`, so a file the branch adds is gated only once staged:
-  the report says the gate saw the new files.
+  floor, `pre-commit run --all-files`, and the docs build with `-W`,
+  which pre-commit rarely covers. **Run all of them** unless that
+  section, or else the bullets from here to *Every commit you hand over
+  is gated*, scale them by what the diff touches. "This gate does not
+  read the changed files" is a claim like any other and is measured
+  first: a docs build may include `CHANGELOG.md`, a test may read every
+  tracked file. `<base>` below is the pinned `origin/main`
+  (*`refs/remotes/origin/main` is shared by every worktree*). The report
+  and the pull request's `## Evidence` give a gate those bullets leave
+  to CI as `left to CI`, with the command that decided it and its exit
+  code.
+- **The hooks run on the changed files**: the tree's own `pre-commit
+  run`, here `uvx pre-commit run`, takes `--from-ref` and `--to-ref` in
+  place of `--all-files`. pre-commit then reads the changed files from
+  `git diff <base>...HEAD`, and exits non-zero where that diff fails. A
+  hook with `pass_filenames: false` or `always_run: true` still reads
+  what its own command reads, as btclib-node's `core-citation-pin` reads
+  what `git ls-files` lists. Where the suite is left to CI and the diff
+  changes only Markdown, the hooks run outside the gate lock:
+
+  ```shell
+  base=<base>
+  env -C <wt> uvx pre-commit run --from-ref "${base:?}" --to-ref HEAD
+  ```
+
+- **The suite is left to CI where no test of the tree reads a file of
+  the diff.** This prints each place where a pytest suite may read one,
+  a renamed file under both its names, and prints nothing and exits `0`
+  where none does. Any line, or another exit, runs the suite, and so
+  does a suite that is not pytest's. The script's header says what it
+  misses, which CI's run reads. It runs outside the gate lock:
+
+  ```shell
+  env -C <scratch> uv run --no-project --python 3.15 \
+    python -I "${PROCESS:?}/scripts/suite-reads.py" <wt> <base>
+  ```
+
+- **The docs build runs only where the diff touches what it builds**: a
+  file under the directory it builds, the package whose docstrings it
+  renders, `pyproject.toml` or `uv.lock`, or a file a page names. This
+  lists the pages that name a changed file, a renamed one under each of
+  its names, and exits `1` with no output where none does. Where HEAD
+  holds no source directory, or git cannot read one of its objects, it
+  exits `2` with a message. Any other exit runs the build. Elsewhere it
+  is left to CI:
+
+  ```shell
+  name=<name>
+  src=<docs source>
+  if git -C <wt> cat-file -e "HEAD:${src:?}"; then
+    rc=0
+    out=$(git -C <wt> grep -l -F -e "${name:?}" HEAD -- "${src:?}" 2>&1) ||
+      rc=$?
+    [ -z "$out" ] || printf '%s\n' "$out"
+    [ "$rc" -ne 1 ] || [ -z "$out" ] || rc=2
+  else
+    echo "HEAD holds no ${src}" >&2
+    rc=2
+  fi
+  (exit "$rc")
+  ```
+
+- **A merge of `main` asks for no new local gate** where it resolved
+  nothing (*A rebase and the clearance*), brings in no file the branch
+  changes, and `main` is green: the latest completed push run of each of
+  its workflows succeeded, read when the session looks, with no wait for
+  a run in progress. CI gates the merged head. Each command below holds
+  only where it prints nothing and exits `0`. The first prints each file
+  both sides change, and `pipefail` makes a stage that fails fail it.
+  The second prints each workflow whose latest completed run did not
+  succeed, or `no runs` where none has completed. It reads the newest
+  200 completed push runs, so a workflow whose last run is older than
+  those is not read:
+
+  ```shell
+  m=<merge>
+  a=$(git -C <wt> diff --name-only --no-renames "${m:?}^2...${m:?}^1") &&
+    b=$(git -C <wt> diff --name-only --no-renames "${m:?}^1" "${m:?}") &&
+    (set -o pipefail; printf '%s\n' "$a" "$b" | grep . | sort | uniq -d)
+  ```
+
+  ```shell
+  gh run list --repo <owner>/<repo> --branch main --event push \
+    --status completed --limit 200 --json workflowName,conclusion \
+    --jq 'if length == 0 then "no runs" else reduce .[] as $r ({};
+    .[$r.workflowName] //= $r.conclusion) | to_entries[]
+    | select(.value != "success") | .key end'
+  ```
+
+- **Every commit you hand over is gated, after it is committed.** The
+  merge of `main` above is exempt, and so is a commit kept only to
+  preserve work in progress, amended away before anything is offered. A
+  run before the commit does not count, even where the content looks
+  identical: a hook at commit time can change what is committed. Where a
+  gate's fixer changes files, commit the change and run that gate again.
+  `pre-commit run --all-files` walks `git ls-files`, so a file the
+  branch adds is gated only once staged: the report says the gate saw
+  the new files.
 - **Read exit codes, not output.** `… > log 2>&1; echo $?`. A
   multi-batch hook's tail can show a clean batch after a failed one.
 - **A local gate run that fails because the network is down has not
@@ -1185,12 +1269,12 @@ the orchestrator in the pull request.
   the memory pressure level, the percentage of memory free and the disk
   free at each run** (what `gate_wait` prints, naming the readings it
   could not make), a reviewer running the gates itself included.
-- **Call `gate_wait` before each heavy gate**: the suite, the hooks and
-  the docs build, inside the lock (*The gate lock*). `gate_take` waits
-  once, at the start, and the load, the memory and the disk move while a
-  worker holds a slot. `gate_wait` returns once the idle CPU, the load,
-  the memory and the disk admit a gate, as the header comment of
-  `$PROCESS/scripts/gate-lock.sh` says, and prints the readings the
+- **Call `gate_wait` before each heavy gate** inside the lock (*The gate
+  lock*): the suite, the hooks there, and the docs build. `gate_take`
+  waits once, at the start, and the load, the memory and the disk move
+  while a worker holds a slot. `gate_wait` returns once the idle CPU,
+  the load, the memory and the disk admit a gate, as the header comment
+  of `$PROCESS/scripts/gate-lock.sh` says, and prints the readings the
   report copies.
 - **`--basetemp=<scratchpad>/pytest-<repo>-<branch>`**, outside the
   worktree, the same name on every run of that branch, removed once the branch's
@@ -1213,12 +1297,13 @@ the orchestrator in the pull request.
   and what its pull requests already cover, is read from
   `.github/workflows/` on `origin/main`.
 - **The gate lock.** Up to three workers gate at once, each holding one
-  of the lock's slots while it runs the suite, the hooks or the docs
-  build. Sourcing the script sets `GATE_LOCK_WORKERS`, the `-n` of a
-  suite. Release the slot the moment the gates finish. A slot is taken
-  and released only through `$PROCESS/scripts/gate-lock.sh`, sourced in
-  the same background shell call as the gates (*Long jobs run in the
-  background*), never by a hand-written `mkdir` or `rmdir`:
+  of the lock's slots while it runs a heavy gate (`every-session.md`'s
+  *The machine is shared*). Sourcing the script sets
+  `GATE_LOCK_WORKERS`, the `-n` of a suite. Release the slot the moment
+  the gates finish. A slot is taken and released only through
+  `$PROCESS/scripts/gate-lock.sh`, sourced in the same background shell
+  call as the gates (*Long jobs run in the background*), never by a
+  hand-written `mkdir` or `rmdir`:
 
   ```shell
   . "${PROCESS:?}/scripts/gate-lock.sh"
@@ -1326,12 +1411,13 @@ The findings of these local runs are answered as a reviewer's are
 
 - **A branch's first push waits for the gates.** Push a commit or an
   amend only once a gate run on that very commit exited 0, never after a
-  failed one. A fix the gates find before the first push amends a commit
-  not yet pushed. Check `git ls-remote origin <branch>` against `HEAD`
-  after every push. On an open pull request, a fix is pushed only once
-  the rounds of *Local review* have ended, and the orchestrator then has
-  the writer push it. An armed pull request is disarmed before any push
-  to it (`/btclib-pr`'s *Merging*).
+  failed one, unless *The gates* asks no gate of it. A fix the gates
+  find before the first push amends a commit not yet pushed. Check `git
+  ls-remote origin <branch>` against `HEAD` after every push. On an open
+  pull request, a fix is pushed only once the rounds of *Local review*
+  have ended, and the orchestrator then has the writer push it. An armed
+  pull request is disarmed before any push to it (`/btclib-pr`'s
+  *Merging*).
 - **An embargoed fix is the exception: it is pushed to `origin` only
   once its release commit is ready on top of it.** It is gated locally.
   The standard's section 12, *A security advisory is worked in this
@@ -1804,12 +1890,12 @@ says.
 - [ ] collateral filed, with the body inline
 
 - **The gates are the writer's.** A run on this sha, reported with
-  commands and exit codes, is relied on and attributed — `REVIEWING.md`'s
-  *The gates are the evidence*. Where no run on this sha is on the
-  record, you run them yourself, as *The gates* says, lock included, and
-  say so. A rebase or amend since the run voids it. A branch that fails
-  differently on every run is not cleared (*A failure that does not
-  reproduce is measured*).
+  commands and exit codes, is relied on and attributed —
+  `REVIEWING.md`'s *The gates are the evidence*. Where no run on this
+  sha is on the record, you run them yourself, as *The gates* says,
+  under the lock where it asks for it, and say so. A rebase or amend
+  since the run voids it. A branch that fails differently on every run
+  is not cleared (*A failure that does not reproduce is measured*).
 - **A branch with a commit the `Sign-off` script refuses is not
   cleared**, measured as *Signed and signed off* says.
 - **Look for the finding in the fix itself**, not only in what it
@@ -1881,8 +1967,8 @@ Otherwise a fresh reviewer reads the whole branch.
 `git -C <wt> rev-parse '<merge>^1' '<merge>^2' '<merge>^{tree}'` prints
 the three to compare, and
 `git -C <wt> merge-base --is-ancestor '<merge>^2' origin/main` exits
-`0`. The merge voids the gates and the check of *Signed and signed
-off*, as a rebase does.
+`0`. The merge voids the check of *Signed and signed off*, as a rebase
+does, and the gates, unless *The gates* asks none of it.
 
 **"This branch has conflicts" on GitHub is real** even where a local
 rebase exits `0`: the forge does not apply a tree's `merge=union`.
@@ -1977,9 +2063,9 @@ only after its `CLEARED`, which ends the rounds (*The rounds*).
   the human. What a brief omits misleads as much as what it gets
   wrong.
 - **Do not hand the reviewer your hypothesis as a premise.**
-- **After a rebase or a new commit, the gates run again on the new sha
-  before any reviewer is asked**, and the report you hand it names that
-  sha.
+- **After a rebase or a new commit, the gates *The gates* asks of the
+  new sha run before any reviewer is asked**, and the report you hand it
+  names that sha.
 - **Do not retract part of a brief mid-round.** Let the round finish and
   discard the finding. Where it cannot wait, say why the brief was wrong,
   and that a reviewer reading it as a contradiction should say so rather
@@ -2033,7 +2119,7 @@ only after its `CLEARED`, which ends the rounds (*The rounds*).
   `model_reasoning_effort`.
 - **A worker that exceeds the time you set is interrupted**, not waited
   for.
-- **Writing runs in parallel; gating runs under the gate lock**
+- **Writing runs in parallel; heavy gating runs under the gate lock**
   (`every-session.md`'s *The machine is shared*). A reviewer that runs
   the gates itself is briefed with *The gates*.
 - **A writer that has reported is sent nothing further until its

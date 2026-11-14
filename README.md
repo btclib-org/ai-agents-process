@@ -35,7 +35,11 @@ The process the btclib-org maintainers follow with the coding agents
   sessions taking that lock's slots, and waiting while every slot is
   held;
 - `scripts/test-git-c-allow.py` — the commands `git-c-allow.py` must
-  approve and must refuse, run by the `test-git-c-allow` hook.
+  approve and must refuse, run by the `test-git-c-allow` hook;
+- `scripts/suite-reads.py` — where a tree's tests may read the files of
+  a diff, which *The gates* asks before it leaves the suite to CI;
+- `scripts/test-suite-reads.py` — the reads `suite-reads.py` must find
+  and must not, run by the `test-suite-reads` hook.
 
 `process/btclib-common.md`'s opening says how these files divide the
 process, and its *Clients* says what differs between the two agents.
