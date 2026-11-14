@@ -70,8 +70,10 @@ the comments on the issues. It holds:
 - what was opened, approved and landed, with links, and each landing's
   verification;
 - what is open and ready, and what it waits on;
-- the deferred items, each in the shape *When the human has to decide*
-  gives, with the link where it is also recorded;
+- the deferred items, listed as *When the human has to decide* says a
+  report lists what waits on the human, each line with the link to its
+  hold; an item that goes in the report only has no hold, so the report
+  also gives it in that section's shape, as its record;
 - the collateral filed, by number, each with its pull request, in review,
   or excepted with its reason;
 - *Wrap-up*'s report, where the session ends with the night.
