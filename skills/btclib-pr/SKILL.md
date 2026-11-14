@@ -980,11 +980,11 @@ owner who is neither the human nor the author and pushed no commit to
 the branch, and report whom it waits on. Where `main` requires a code
 owner's review and the author is the only code owner, no other approval
 meets it, and it lands only through a bypass of the rule that imposes
-it. `main` requires that review where either command answers `true` (a
+it. `main` requires that review where either command prints `true` (a
 404 from the second is no classic protection):
 
 ```shell
-gh api repos/<owner>/<repo>/rules/branches/main \
+gh api --paginate repos/<owner>/<repo>/rules/branches/main \
   --jq '[.[] | select(.type == "pull_request")
     | .parameters.require_code_owner_review] | any'
 gh api repos/<owner>/<repo>/branches/main/protection \
@@ -1009,7 +1009,7 @@ This prints each ruleset over `main` that imposes the review, with each
 of its bypass actors, or with `none`:
 
 ```shell
-gh api repos/<owner>/<repo>/rules/branches/main \
+gh api --paginate repos/<owner>/<repo>/rules/branches/main \
   --jq '.[] | select(.type == "pull_request"
     and .parameters.require_code_owner_review) | .ruleset_id' \
   | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{} \
