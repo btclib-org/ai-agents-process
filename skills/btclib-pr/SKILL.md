@@ -180,9 +180,9 @@ is:
   then the commit is pushed. The review bot runs on a push but not on an
   edit, so its review of the new head reads the edited text. *The
   decision*'s checks and the fresh reviewer come last, on the new head:
-  every item there is measured on it, and the `CLEARED` and the bot's
-  `ACK` name it. This edits them, from a file holding the new title and
-  one holding the new body:
+  every item there is measured on it, and the `CLEARED` and each ACK of
+  *The reviews on GitHub* name it. This edits them, from a file holding
+  the new title and one holding the new body:
 
   ```shell
   n=<n>
@@ -251,9 +251,9 @@ answered one of three ways:
   reserved decision. It goes to the human or the maintainer, as the
   shared *When the human has to decide* says.
 
-**A bot's finding, the review bot's or CodeRabbit's, takes the first of
-these routes that fits**, measured on the head, unless it needs a
-decision:
+**A bot's finding, the review bot's, Codex's or CodeRabbit's, takes the
+first of these routes that fits**, measured on the head, unless it needs
+a decision:
 
 - **declined** where it does not hold: it needs a condition the text
   already rules out, the sentence it calls false is true where the text
@@ -338,9 +338,8 @@ them.
   `CONTRIBUTING.md`'s *Landing it* says, or for a retarget.** An outside
   contributor's branch, or the agent's, is never rebased: *Outside
   contributors* brings `main` in by a merge.
-- **After a rebase or a merge of `main`, run the gates and push**; an
-  armed pull request is disarmed first (*Arming auto-merge*). Ask the
-  merge the forge will compute, locally:
+- **After a rebase or a merge of `main`, run the gates and push.** Ask
+  the merge the forge will compute, locally:
   `git -C <wt> -c merge.union.driver=false merge-tree origin/main
   <branch>` exits `1` where GitHub will refuse. `gh pr view --json
   mergeable` is a cached value.
@@ -453,10 +452,8 @@ them.
       Where it answers anything else, the merge lacks the repair: close
       and reopen again, and read the new runs.
 
-      *The decision* reads the bot's review of the reopen. Closing
-      disarms auto-merge (`Pull request was closed`, on
-      PR btclib-org/btclib#2754), so arm it again as *Landing* says.
-      A check that only reports is named in the decision;
+      *The decision* reads the bot's review of the reopen. A check that
+      only reports is named in the decision;
     - **not reproducing**: the shared *A failure that does not reproduce
       is measured*. One re-run measures it (`gh run rerun <run id>
       --repo <owner>/<repo> --failed`); two different answers are an
@@ -505,8 +502,202 @@ them.
       `$PROCESS/skills/btclib-pr/review-quota.md` says how the reset is
       read and what follows, and is read where such a run fails.
 
-- **The bot's review is answered like any other**, iterating to an ACK
-  that names the current head.
+- **The reviews on GitHub are answered like any other**, iterating until
+  none is in findings on the current head (*The reviews on GitHub*).
+
+## The reviews on GitHub
+
+Three reviewers read a pull request on GitHub, where the repository has
+them: the review bot of `claude-review.yml`, Codex and CodeRabbit. On
+the head, each is in one of three states: **ACK**, **findings** or
+**absent**. A review still running on the head is in none of them,
+whatever an earlier answer on that head says: it is waited for, never
+read as absent, and each reviewer's running test is read first.
+
+**A pull request is approved or landed only where none of the three is
+in findings, and each that is not absent gave its ACK on the head.** An
+absence does not hold the landing; *The decision* says where the bot's
+makes the approval not obvious. None of the three is a check the
+rulesets require. The reason of each absence is recorded before the
+approval or the landing: in the pull request's `## Evidence` where its
+body is the session's, otherwise in a comment of the session's own
+naming the head.
+
+What each command below prints is tested by its value (the shared
+*Shell, checkouts and prose*).
+
+**The review bot**, `claude` in `gh pr view`. It is running while a run
+of its check on the head has not completed. Every run is read, since
+`gh pr checks` shows one of each check, which can be a skipped run a
+comment started, and the endpoint's default `filter=latest` hides an
+older run behind a newer one. This prints `running`, `done`, or `error`
+where the read failed:
+
+```shell
+repo=<owner>/<repo>
+head=<head>
+: "${repo:?}" "${head:?}"
+{ gh api --paginate -X GET -F per_page=100 -f filter=all \
+    "repos/${repo:?}/commits/${head:?}/check-runs" \
+    --jq '.check_runs[] | select(.name == "claude-review / Claude review")
+      | .status' || echo read-failed
+} | jq -Rrs 'if test("read-failed") then "error"
+  elif split("\n") | any(. != "" and . != "completed") then "running"
+  else "done" end'
+```
+
+Once it prints `done`, of the bot's reviews whose verdict line names the
+head, the latest counts. This prints `ack` where that one is
+`ACK <head>`, `findings` where it is another verdict, and `none`, which
+is absent, where no verdict line names the head:
+
+```shell
+gh pr view <n> --repo <owner>/<repo> --json headRefOid,reviews \
+  --jq '.headRefOid as $h
+  | [.reviews[] | select(.author.login == "claude")
+    | ((.body // "") + "\n" | split("\n")[0])
+    | select(test("^(ACK|CHANGES REQUESTED|NACK|NO VERDICT) "
+        + $h + "(:|\\s|$)"))]
+  | if length == 0 then "none"
+    elif last | startswith("ACK ") then "ack" else "findings" end'
+```
+
+It may be absent only in these cases, and in each the pull request is
+merged only once the latest fresh reviewer's `CLEARED` also names the
+head, or the dedicated reviewer's where the other client is unavailable
+(the shared *A pull request's rounds*):
+
+- the bot's run failed with a 429, its quota exhausted, matched as
+  *Rebase and CI* says;
+- the pull request changes `claude-review.yml`, or a reusable workflow
+  that `claude-review.yml` calls by a local path, as
+  btclib-org/.github's calls `reusable-claude-review.yml`. The bot
+  reviews neither: the action refuses to run where either differs from
+  the default branch's copy, and its check fails. Run
+  [42404355279](https://github.com/btclib-org/.github/actions/runs/42404355279),
+  on PR btclib-org/.github#2116, logs that refusal as `Skipping action
+  due to workflow validation`;
+- the pull request comes from a fork, `isCrossRepository` being `true`
+  in *Whose pull request it is*
+  ([ISS 248](https://github.com/btclib-org/ai-agents-process/issues/248)).
+  `btclib-org/.github`'s `reusable-claude-review.yml` skips the review
+  where `head.repo.full_name` is not the calling repository. The human
+  approves it, and the merge follows as *Merging* says (*Outside
+  contributors*).
+
+Where such a pull request lands through the bypass (*The human's own
+pull request*), every check but the bot's `Claude review` is green as
+well.
+
+The second case's reusable workflows are the ones this lists: each job's
+`uses:` in the default branch's `claude-review.yml` that names a local
+path, read as YAML, so that a quoted path counts and a comment or a
+step's local action does not. It lists nothing where that file calls
+none:
+
+```shell
+gh api -H 'Accept: application/vnd.github.raw' \
+  repos/<owner>/<repo>/contents/.github/workflows/claude-review.yml \
+  | uv run --isolated --no-config --no-project --python 3.15 \
+    --with pyyaml==6.0.3 python -I -c '
+import sys, yaml
+for job in yaml.safe_load(sys.stdin)["jobs"].values():
+    if str(job.get("uses", "")).startswith("./"):
+        print(job["uses"])'
+```
+
+**Codex**, `chatgpt-codex-connector`. It keeps one summary comment on
+the pull request, whose body carries its state as
+`codex-review-state:v1`, and its comment says it reacts with `eyes`
+while a review runs. Its findings come as a review with inline threads.
+The state's format is the vendor's and undocumented, so a state that is
+missing, names another commit or does not parse reads as absent, never
+as an ACK. This prints `ack` where the code review on the head completed
+with no unresolved finding, `findings` where it completed with one,
+`running` while the `eyes` reaction stands or the state on the head has
+a status other than `completed` and `failed`, `error` where a read
+failed, and `absent` otherwise, as on a `failed` review, which Codex's
+usage limit gives. `<head>` is the full `headRefOid`:
+
+```shell
+repo=<owner>/<repo>
+n=<n>
+head=<head>
+: "${repo:?}" "${head:?}"
+{ gh api --paginate "repos/${repo:?}/issues/${n:?}/comments?per_page=100" \
+    --jq '.[] | select(.user.login == "chatgpt-codex-connector[bot]")
+      | .body' || echo codex-read-failed
+  gh api --paginate "repos/${repo:?}/issues/${n:?}/reactions?per_page=100" \
+    --jq '.[] | select(.user.login == "chatgpt-codex-connector[bot]"
+      and .content == "eyes") | "codex-eyes"' || echo codex-read-failed
+} | jq -Rrs --arg h "${head:?}" '
+  ([scan("codex-review-state:v1 (\\{.*\\}) -->") | .[0]] | last
+    | try (fromjson | .code_review) catch null) as $c
+  | if test("codex-read-failed") then "error"
+    elif test("codex-eyes") then "running"
+    elif ($c | type) != "object" or $c.commit_sha != $h then "absent"
+    elif $c.status == "completed" and $c.has_unresolved_findings == false
+      then "ack"
+    elif $c.status == "completed" and $c.has_unresolved_findings == true
+      then "findings"
+    elif $c.status == "completed" or $c.status == "failed" then "absent"
+    else "running" end'
+```
+
+A review of a push can start minutes after it. So `absent`, read before
+the checks on the head have completed (*Rebase and CI*'s wait), is read
+again once they have, and that read stands.
+
+**CodeRabbit**, `coderabbitai`, posts no verdict of its own: its
+`CodeRabbit` check passes once it has read the head, findings or not.
+A pilot
+([ISS 432](https://github.com/btclib-org/ai-agents-process/issues/432))
+measures one. Until it reports, its states are these. Findings is one of
+its threads open, read as *What was raised* reads them. Its ACK on the
+head is its check on the head passed, not skipped, with none of its
+threads open. It is running while a run of that check has not completed,
+and absent where the check was skipped, its comment saying why (`Review
+skipped`, `Reviews paused`), or where no such check reports on the head.
+This prints `ack`, `findings`, `running`, `absent`, or `error` where a
+read failed:
+
+```shell
+repo=<owner>/<repo>
+n=<n>
+head=<head>
+: "${repo:?}" "${head:?}"
+{ gh api --paginate -X GET -f check_name=CodeRabbit -f filter=all \
+    -F per_page=100 \
+    "repos/${repo:?}/commits/${head:?}/check-runs" \
+    --jq '.check_runs[] | select(.app.slug == "coderabbitai")
+      | "check \(.id) \(.status) \(.conclusion)"' || echo read-failed
+  gh api graphql --paginate -F owner="${repo%%/*}" -F repo="${repo#*/}" \
+    -F n="${n:?}" -f query='
+    query($owner: String!, $repo: String!, $n: Int!, $endCursor: String) {
+      repository(owner: $owner, name: $repo) {
+        pullRequest(number: $n) {
+          reviewThreads(first: 100, after: $endCursor) {
+            pageInfo { hasNextPage endCursor }
+            nodes {
+              isResolved
+              comments(first: 1) { nodes { author { login } } }
+            }
+          }
+        }
+      }
+    }' --jq '.data.repository.pullRequest.reviewThreads.nodes[]
+      | select((.isResolved | not)
+        and .comments.nodes[0].author.login == "coderabbitai") | "open"' ||
+    echo read-failed
+} | jq -Rrs '
+  (split("\n") | map(select(startswith("check ")) | split(" "))
+    | sort_by(.[1] | tonumber)) as $c
+  | if test("read-failed") then "error"
+    elif any($c[]; .[2] != "completed") then "running"
+    elif test("(^|\n)open(\n|$)") then "findings"
+    elif ($c | length) > 0 and $c[-1][3] == "success" then "ack"
+    else "absent" end'
+```
 
 ## The decision
 
@@ -521,14 +712,14 @@ pull request* says what it does instead.
 
 **Where `main` is not protected yet, the pull request is held.** In a
 repository whose branch protection and rulesets are not applied yet,
-*Arming auto-merge*'s command that writes `<required file>` answers
-`Branch not protected` (HTTP 404) and exits `1`. Nothing then requires
-an approval or a check, so an armed `--auto` lands the head at once.
-The session neither approves nor arms any pull request there, the
-human's own included. It records a hold with `needs-maintainer` (the
-shared *When the human has to decide*), protection being a repository
-setting. The hold lasts until that command exits `0`, and the pull
-request is then decided on its head as this section says.
+*Merging*'s command that writes `<required file>` answers `Branch not
+protected` (HTTP 404) and exits `1`. Nothing then requires an approval
+or a check, so a merge lands whatever head it is given. The session
+neither approves nor merges any pull request there, the human's own
+included. It records a hold with `needs-maintainer` (the shared *When
+the human has to decide*), protection being a repository setting. The
+hold lasts until that command exits `0`, and the pull request is then
+decided on its head as this section says.
 
 **The approval is obvious where every item holds**, each measured on the
 head `<sha>`. The diff is read once, by two commands that must each
@@ -565,22 +756,21 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
       `0`. A cancelled check (bucket `cancel`) fails this item until a
       re-run passes; *Rebase and CI*'s *never given a runner* bounds the
       re-runs of a job GitHub never gave a runner.
-- [ ] the bot's latest review starts `ACK <sha>`: `gh pr view <n>
-      --repo <owner>/<repo> --json reviews --jq '[.reviews[] |
-      select(.author.login == "claude" and .body != "")] | last |
-      .body'`. While the bot is out of quota (a 429 with its reset
-      ahead, read as *Rebase and CI* says), this item and the checks
-      item fail, and the human decides (*Where it is not obvious*); on
-      the human's own pull request, *The human's own pull request* says
-      who does. The missing ACK does not stop the approval. On a bot's
-      pull request (*A bot's pins*) whose pins change
+- [ ] the rule of *The reviews on GitHub* holds on `<sha>`. While the
+      bot is out of quota (a 429 with its reset ahead, read as *Rebase
+      and CI* says), its review is absent, the checks item fails, and
+      the human decides (*Where it is not obvious*); on the human's own
+      pull request, *The human's own pull request* says who does. The
+      bot's absent review does not stop the approval. On a bot's pull
+      request (*A bot's pins*) whose pins change
       `.github/workflows/claude-review.yml`, or a reusable workflow that
-      file calls by a local path, the ACK may be missing, and the bot's
-      `Claude review` check may fail while every other check passed or
-      was skipped, as *Arming auto-merge*'s second case allows
+      file calls by a local path, the bot's review may be absent, and
+      its `Claude review` check may fail while every other check passed
+      or was skipped, as the second case *The reviews on GitHub* lists
+      allows
 - [ ] no review thread is unresolved, every page read (*What was
       raised*). It binds every approval, the human's decision included;
-      *Arming auto-merge* has it for arming
+      *Merging* has it for the merge
 - [ ] every item of *What was raised* is answered
 - [ ] no other reviewer's changes requested stand: `latestReviews`
       holds no `CHANGES_REQUESTED`
@@ -955,29 +1145,32 @@ gh api repos/<owner>/<repo>/pulls/<n>/reviews -f event=APPROVE \
 ```
 
 The body is a one-line summary naming the head it approves, `<sha>`,
-then one paragraph: the `CLEARED` it relies on and the rebase case; the
-bot's ACK as a link, or during a 429 the 429 run as a link; that every
-check passed or was skipped, the 429 run apart; each package *The
-reproduced lock* finds the head's lock adds; for a major move, the
-dependency, hook or action and the notes its `CLEARED` names; and what
-was not checked.
+then one paragraph: the `CLEARED` it relies on and the rebase case; each
+review on GitHub, its ACK as a link, or its absence with its reason,
+during a 429 the 429 run as a link; that every check passed or was
+skipped, the 429 run apart; each package *The reproduced lock* finds the
+head's lock adds; for a major move, the dependency, hook or action and
+the notes its `CLEARED` names; and what was not checked.
 
 Then land it, pinned to the same `<sha>` (*Landing*).
 
 **Read the approval back**:
 
 ```shell
-gh pr view <n> --repo <owner>/<repo> \
-  --json headRefOid,reviewDecision,reviews --jq '.headRefOid,
-  .reviewDecision, ([.reviews[] | select(.state == "APPROVED")] | last
-  | .author.login, .commit.oid)'
+login=$(gh api user --jq .login)
+gh pr view <n> --repo <owner>/<repo> --json headRefOid,reviewDecision,reviews |
+  jq -r --arg l "${login:?}" '.headRefOid, .reviewDecision,
+  ([.reviews[] | select(.state == "APPROVED" and .author.login == $l)]
+  | last | .commit.oid // "none")'
 ```
 
-It answers `<sha>`, `APPROVED`, the human's login, and `<sha>`. Where
-the head moved, decide again on the new head. Where the decision is not
-`APPROVED`, the ruleset asks for another approval. Request it from an
-owner who is neither the human nor the author and pushed no commit to
-the branch, and report whom it waits on.
+It answers `<sha>`, `APPROVED` and `<sha>`: the last is the commit of
+the human's own latest approval, since another reviewer's, CodeRabbit's
+or another owner's, can be the last one given. Where the head moved,
+decide again on the new head. Where the decision is not `APPROVED`, the
+ruleset asks for another approval. Request it from an owner who is
+neither the human nor the author and pushed no commit to the branch, and
+report whom it waits on.
 
 **Where it is not obvious, the human decides**, as one decision (the
 shared *When the human has to decide*). Its context is the `PR` link,
@@ -999,8 +1192,8 @@ maintainer (the shared *Three roles this file names*) or runs `--land`
 owner's review.** It lands once every item above holds but those on the
 author, the repository, the files in the list, `pyproject.toml` and
 `uv.lock`, a bot's pins and a major move, as *Landing* qualifies them,
-the bot's ACK and its check included or missing as *Arming auto-merge*
-allows. *Landing* gives the command. `btclib-org/.github`'s
+the bot's review and its check included or absent as *The reviews on
+GitHub* allows. *Landing* gives the command. `btclib-org/.github`'s
 `GOVERNANCE.md`, under *How a decision is made*, decides which
 repositories give the maintainer the bypass. This command prints the id
 of each user an active ruleset gives the bypass in `pull_request` mode.
@@ -1016,7 +1209,7 @@ gh api repos/<owner>/<repo>/rulesets --jq '.[].id' \
 ```
 
 Otherwise, `--land` included, another owner decides and `--admin` is
-never attempted. Once the same items hold, except the two a 429 fails:
+never attempted. Once the same items hold, except the one a 429 fails:
 
 - request the review of every owner but the human who has not approved
   `<sha>`. `btclib-org/.github`'s `GOVERNANCE.md` names the owners, and
@@ -1027,17 +1220,17 @@ never attempted. Once the same items hold, except the two a 429 fails:
   gh pr edit <n> --repo <owner>/<repo> --add-reviewer <login>
   ```
 
-- arm the landing once *Arming auto-merge* allows it, so that their
-  approval lands it (*Landing*);
+- once an owner has approved `<sha>`, the approver merges it, or the
+  session does on the human's word (*Merging*);
 - report whom it waits on.
 
 After a push, request the review again on the new head (*Landing*).
 
 On a pull request that changes `claude-review.yml`, or a reusable
 workflow that file calls by a local path, which the bot does not review
-(*Arming auto-merge*), `--land` does not apply. It lands through the
+(*The reviews on GitHub*), `--land` does not apply. It lands through the
 bypass only where the human is the maintainer and a bypass actor, as
-above, and is otherwise armed.
+above, and is otherwise merged as *Merging* says.
 
 A pull request whose description says it breaks the live setup, in a
 *Breaks* section as
@@ -1093,9 +1286,9 @@ how to resolve it. Completing it:
   they might take next.
 
 Where the bot's review does not run — a fork's pull request, and any
-other where `gh pr checks` shows no review — the ACK is not an item of
-*The decision*, and the approval is never obvious: it goes to the
-human. A fork's pull request is armed as *Arming auto-merge* says.
+other where `gh pr checks` shows no review — that review is absent (*The
+reviews on GitHub*), and the approval is never obvious: it goes to the
+human. A fork's pull request is merged as *Merging* says.
 
 **A fork's workflow runs can wait for approval as `action_required`**,
 as on PR btclib-org/btclib#2823. This prints the organization's
@@ -1225,9 +1418,9 @@ This lists the runs waiting on `<head>`, every page read, and the second
 command approves one. It leaves out runs started by
 `pull_request_review_comment`, as a review bot's comment starts
 `claude-review` on a fork's pull request: GitHub refuses to approve them
-with HTTP 403, and the review skips a fork's pull request anyway
-(*Arming auto-merge*). `head_sha` matches only the full sha the first
-step prints; an abbreviated one lists nothing:
+with HTTP 403, and the review skips a fork's pull request anyway (*The
+reviews on GitHub*). `head_sha` matches only the full sha the first step
+prints; an abbreviated one lists nothing:
 
 ```shell
 gh api --paginate -X GET repos/<owner>/<repo>/actions/runs \
@@ -1240,70 +1433,74 @@ gh api --paginate -X GET repos/<owner>/<repo>/actions/runs \
 gh api -X POST repos/<owner>/<repo>/actions/runs/<id>/approve
 ```
 
-## Arming auto-merge
+## Merging
 
-**The session arms squash auto-merge on a pull request only once all
-three hold on its head**:
+**No session and no workflow arms auto-merge.** An armed pull request
+merges at a moment nobody reads: a push makes its ACKs stale, a review
+with findings can arrive after it was armed, one whose base is not
+protected merges at once, and an approving bot could fill the count of
+approvals. A pull request found armed is disarmed at once, and the human
+is told. This lists the armed ones, and the second command disarms one:
 
+```shell
+gh pr list --repo <owner>/<repo> --json number,autoMergeRequest \
+  --jq '.[] | select(.autoMergeRequest) | .number'
+```
+
+```shell
+gh pr merge <n> --repo <owner>/<repo> --disable-auto
+```
+
+**The merge is an explicit act after the approval**: the approver's own,
+or a session's on the human's word, which is his approval or *Landing*'s
+`--land`. Whoever merges reads these at that moment, on the head, and
+merges pinned to it:
+
+- an approval that counts names the head: the command below prints
+  `approved`, the head and the approvers;
 - every required check passed or was skipped;
-- the review bot's latest review starts `ACK <head>`;
+- the rule of *The reviews on GitHub* holds on the head;
 - no review thread is unresolved, read as *What was raised* says
   ([ISS 152](https://github.com/btclib-org/ai-agents-process/issues/152)).
 
-Each pull request is armed on its own measurement: never by default, in
-bulk or by a workflow. Several may be armed at once, once *Landing* has
-tested their merge. The bot's check is not a required check: a pull
-request armed earlier lands on an approval given before the bot
-answered, or after it asked for changes.
-
-**The ACK may be missing only in these cases**, and in each the pull
-request is armed once every required check is green, no review thread
-is unresolved, and the latest fresh reviewer's `CLEARED` names the head,
-or the dedicated reviewer's where the other client is unavailable (the
-shared *A pull request's rounds*):
-
-- the bot's run failed with a 429, its quota exhausted, matched as
-  *Rebase and CI* says;
-- the pull request changes `claude-review.yml`, or a reusable workflow
-  that `claude-review.yml` calls by a local path, as btclib-org/.github's
-  calls `reusable-claude-review.yml`. The bot reviews neither: the action
-  refuses to run where either differs from the default branch's copy,
-  and its check fails. Run
-  [42404355279](https://github.com/btclib-org/.github/actions/runs/42404355279),
-  on PR btclib-org/.github#2116, logs that refusal as `Skipping action
-  due to workflow validation`;
-- the pull request comes from a fork, `isCrossRepository` being `true`
-  in *Whose pull request it is*
-  ([ISS 248](https://github.com/btclib-org/ai-agents-process/issues/248)).
-  `btclib-org/.github`'s `reusable-claude-review.yml` skips the review
-  where `head.repo.full_name` is not the calling repository. The human's
-  approval then lands it (*Outside contributors*).
-
-Where such a pull request lands through the bypass (*The human's own
-pull request*), every check but the bot's `Claude review` is green as
-well.
-
-The second case's reusable workflows are the ones this lists: each job's
-`uses:` in the default branch's `claude-review.yml` that names a local
-path, read as YAML, so that a quoted path counts and a comment or a
-step's local action does not. It lists nothing where that file calls
-none:
+An approval counts where it is the latest review of a person, not a bot,
+who is not the author, and names the head, and where GitHub's
+`reviewDecision` reads `APPROVED`, which holds a code owner's review
+where the tree requires one. *The decision*'s read-back reads only an
+approval the session gave; this reads whoever approved. It prints
+`approved <head> <logins>`, `not-approved <head> <decision>`, or `error`
+where a read failed:
 
 ```shell
-gh api -H 'Accept: application/vnd.github.raw' \
-  repos/<owner>/<repo>/contents/.github/workflows/claude-review.yml \
-  | uv run --isolated --no-config --no-project --python 3.15 \
-    --with pyyaml==6.0.3 python -I -c '
-import sys, yaml
-for job in yaml.safe_load(sys.stdin)["jobs"].values():
-    if str(job.get("uses", "")).startswith("./"):
-        print(job["uses"])'
+repo=<owner>/<repo>
+n=<n>
+: "${repo:?}" "${n:?}"
+{ gh pr view "${n:?}" --repo "${repo:?}" \
+    --json headRefOid,reviewDecision,author \
+    --jq '"pr \(.headRefOid) \(.reviewDecision) \(.author.login)"' ||
+    echo read-failed
+  gh api --paginate "repos/${repo:?}/pulls/${n:?}/reviews?per_page=100" \
+    --jq '.[] | "review \(.state) \(.commit_id) \(.user.type)"
+      + " \(.user.login)"' || echo read-failed
+} | jq -Rrs '
+  . as $in | (split("\n") | map(split(" "))) as $l
+  | ([$l[] | select(.[0] == "pr")] | first) as $p
+  | [$l[] | select(.[0] == "review")
+    | select(.[1] | IN("COMMENTED", "PENDING") | not)]
+  | group_by(.[4]) | map(last)
+  | [.[] | select(.[1] == "APPROVED" and .[2] == $p[1] and .[3] == "User"
+      and .[4] != $p[3]) | .[4]] as $a
+  | if ($in | test("read-failed")) or $p == null then "error"
+    elif $p[2] == "APPROVED" and ($a | length) > 0
+      then "approved \($p[1]) \($a | join(","))"
+    else "not-approved \($p[1]) \($p[2])" end'
 ```
 
-It is armed pinned to the head, with squash, the only merge method
-(`CONTRIBUTING.md`'s *Landing it*):
-`gh pr merge --squash --auto --match-head-commit <head>`. *Landing*
-gives the whole command.
+A landing through the bypass (*The human's own pull request*) reads the
+same, but for the approval. *The reviews on GitHub* says that none of
+them is a required check, so this read is what keeps a merge from one in
+findings. *Landing* gives the command, with squash, the only merge
+method (`CONTRIBUTING.md`'s *Landing it*).
 
 **The required checks are the branch protection's contexts.** The
 first command writes them, and `<required file>` must not be empty. The
@@ -1314,9 +1511,9 @@ gh api repos/<owner>/<repo>/branches/main/protection/required_status_checks \
   --jq '.contexts[]' > <required file>
 ```
 
-Where it answers `Branch not protected` (HTTP 404) and exits `1`,
-`main` has no protection yet: that is not an empty list, and the pull
-request is not armed but held, as *The decision* says.
+Where it answers `Branch not protected` (HTTP 404) and exits `1`, `main`
+has no protection yet: that is not an empty list, and the pull request
+is not merged but held, as *The decision* says.
 
 ```shell
 gh pr checks <n> --repo <owner>/<repo> --json name,bucket --jq '.[]
@@ -1336,40 +1533,15 @@ grep -xFf <red file> <required file>
 `gh pr checks --required` is not enough: it omits a required check that
 has not reported yet.
 
-**The bot's review is read as *The decision* reads it.**
-This answers `true` where it starts `ACK <head>`:
-
-```shell
-gh pr view <n> --repo <owner>/<repo> --json headRefOid,reviews \
-  --jq '.headRefOid as $h
-  | [.reviews[] | select(.author.login == "claude" and .body != "")]
-  | last | (.body // "") | startswith("ACK " + $h)'
-```
-
-**A pull request armed otherwise is disarmed.** One that is armed is
-disarmed before a push, and armed again once this section allows it on
-the new head.
-This lists the armed ones, and the second command disarms one:
-
-```shell
-gh pr list --repo <owner>/<repo> --json number,autoMergeRequest \
-  --jq '.[] | select(.autoMergeRequest) | .number'
-```
-
-```shell
-gh pr merge <n> --repo <owner>/<repo> --disable-auto
-```
-
 ## Landing
 
 - **Read `main`'s latest push runs** when choosing which pull requests
   to work, and after each landing: `gh run list --repo <owner>/<repo>
   --branch main --event push`. `main` is red where a required check
   failed in the latest run of its workflow. A cancelled check is not a
-  failure, and a check that only reports does not count. While `main`
-  is red, its repair is the first work, and other pull requests are
-  still approved and armed
-  (`CONTRIBUTING.md`'s *Landing it*).
+  failure, and a check that only reports does not count. While `main` is
+  red, its repair is the first work, and other pull requests are still
+  approved and merged (`CONTRIBUTING.md`'s *Landing it*).
 - **What gates a merge on GitHub** is the repository's own
   `REPOSITORY.md`, read from `origin/main`: typically an approval from
   somebody other than the author, every review thread resolved, and the
@@ -1384,10 +1556,8 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   merge.** CI tested each against the `main` of its own run, and `main`
   does not ask a head to be up to date with it (`CONTRIBUTING.md`'s
   *Landing it*), so two green pull requests can turn `main` red. The set
-  is the pull requests about to be armed or landed and those already
-  armed, which *Arming auto-merge* lists. The test comes before any more
-  of them is armed, because auto-merge lands at a time the session does
-  not choose.
+  is the pull requests about to be merged, and the test comes before the
+  first of them is.
 
   Every run of the test starts here, each repeat below included, because
   fetching a pull request's ref leaves `origin/main` where it was:
@@ -1444,10 +1614,9 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   the path its `ERROR:` line names, the last in that order leaves the
   set, and is tested again once the others have landed.
 
-  A head that leaves the set is disarmed (*Arming auto-merge*), and the
-  test runs again on what remains. With one head left `git merge`
-  applies `merge=union`, so the `merge-tree` of `<main sha>` with that
-  head runs as well.
+  A head that leaves the set is not merged, and the test runs again on
+  what remains. With one head left `git merge` applies `merge=union`, so
+  the `merge-tree` of `<main sha>` with that head runs as well.
 
   **A gate red on the merge and green on `main`** is a clash no merge
   shows. The pull request it names gets the fix, in a new commit through
@@ -1462,16 +1631,14 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   too, and the worktree goes with `--force`.
 
   The test covers those heads on that `main`, and nothing that lands
-  from outside the set afterwards. The re-read of armed pull requests in
-  the shared *A rebase and the clearance* reads their prose and runs no
-  gate.
+  from outside the set afterwards.
 
-- **Squash, by auto-merge, armed as *Arming auto-merge* says.** The
-  branch carries several commits once review has added any, so the
-  subject and the message are written, not inherited:
+- **Squash, pinned to the head, once *Merging* holds.** The branch
+  carries several commits once review has added any, so the subject and
+  the message are written, not inherited:
 
   ```shell
-  gh pr merge <n> --repo <owner>/<repo> --squash --auto \
+  gh pr merge <n> --repo <owner>/<repo> --squash \
     --match-head-commit <the head that lands> \
     --subject "<title> (closes #<issue>) (#<n>)" --body-file <message>
   ```
@@ -1482,21 +1649,6 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   does, and keeps every `Signed-off-by:` and `Co-authored-by:` line of
   the commits it squashes. A finding that lives only in the commit
   message is fixed here, with no new round.
-
-  **Where `--auto` is refused because the pull request is already
-  mergeable**, land it by the same command without `--auto`, still
-  pinned by `--match-head-commit`, once *Arming auto-merge* holds,
-  then *Check what landed*. gh prints that refusal as
-  `GraphQL: Pull request Pull request is in clean status
-  (enablePullRequestAutoMerge)`
-  ([a report quoting it](https://github.com/peter-evans/enable-pull-request-automerge/issues/1118))
-  or as `GraphQL: Pull request Pull request is in unstable status
-  (enablePullRequestAutoMerge)`. Without a merge queue, gh asks GitHub
-  to arm only where the `mergeStateStatus` it reads first is not
-  `CLEAN`, `HAS_HOOKS` or `UNSTABLE`, and merges at once otherwise
-  ([`isImmediatelyMergeable`](https://github.com/cli/cli/blob/v2.103.3/pkg/cmd/pr/merge/merge.go#L826-L833)),
-  so a refusal there means GitHub found the pull request clean or
-  unstable after gh read another status.
 
   Never land through the bypass (`--admin`, or any other route to it)
   except where *The human's own pull request* says. It merges with no
@@ -1517,28 +1669,22 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   reports and is red on `main` too does not hold it, and is named in
   the report.
 
-- **Where `main` has moved past the sha the verdict read the prose
-  on**, the shared *A rebase and the clearance* says who re-reads the
-  prose before the branch is armed or lands, and what review a sentence
-  found false there needs.
+- **Where `main` has moved past the sha the verdict read the prose on**,
+  the shared *A rebase and the clearance* says who re-reads the prose
+  before the branch lands, and what review a sentence found false there
+  needs.
 - **The pin is the head as last pushed**, not the sha a verdict named.
 - **A stacked pull request lands like any other**: once its base has
   landed, it is rebased onto `main` as `CONTRIBUTING.md`'s *One subject,
   opened as soon as it is written* says, gated, decided again on the new
-  head (*The decision*), and armed.
-- **Check what landed, once it has.** Where `--auto` armed the pull
-  request, it returned before the merge; where gh merged at once, it
-  returned after. Either way, repeat `gh pr view <n> --repo
-  <owner>/<repo> --json state,mergeCommit,autoMergeRequest --jq
-  '.state, .mergeCommit.oid, .autoMergeRequest'` until it answers
-  `MERGED`, and `<sha>` is that oid. Where it is `OPEN` with no
-  `autoMergeRequest`, the merge was cancelled: report it. Once it is
+  head (*The decision*), and merged as *Merging* says.
+- **Check what landed, once it has.** Repeat `gh pr view <n> --repo
+  <owner>/<repo> --json state,mergeCommit --jq '.state,
+  .mergeCommit.oid'` until it answers `MERGED`, and `<sha>` is that oid.
+  Where it stays `OPEN`, the merge did not happen: report it. Once it is
   `MERGED`, `gh api repos/<owner>/<repo>/commits/<sha> --jq
   .commit.verification` is `verified: true`. What follows waits for
   this.
-  The pull requests the session armed in that repository are then
-  re-read on the new `main`, as the shared *A rebase and the
-  clearance* says.
 
   Then wait for `main`'s workflow runs on `<sha>`, with *Rebase and
   CI*'s loop and this test in place of its own. A workflow run is

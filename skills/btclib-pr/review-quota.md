@@ -33,5 +33,5 @@ gh run rerun --repo <owner>/<repo> --failed <run id>
 ```
 
 Where it prints `ahead`, a pull request whose only red check is this one
-takes no reason label. `/btclib-pr`'s *The decision*, in its ACK item,
-says what the missing ACK means.
+takes no reason label. `/btclib-pr`'s *The decision*, in its item on the
+reviews on GitHub, says what the bot's absent review means.
