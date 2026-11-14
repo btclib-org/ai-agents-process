@@ -346,10 +346,12 @@ them.
   mergeable` is a cached value.
 - **Wait for the checks on the head just pushed**, in the background,
   by asking until none is pending: `gh pr checks --watch` can return
-  while runs are still queued. The list covers check runs and commit
-  statuses, pre-commit.ci's among them. It must not be empty: right
-  after a push nothing has reported yet. The loop gives up after 30
-  minutes; say so where it does.
+  while runs are still queued. It asks at the interval, and stops at the
+  quota, that the shared *The forge's quota is shared* gives. The list
+  covers check runs and commit statuses, pre-commit.ci's among them. It
+  must not be empty: right after a push nothing has reported yet. The
+  loop gives up after 30 minutes, or once the quota stops it or cannot
+  be read; say so where it does.
 
   Before the loop, read `gh pr view <n> --repo <owner>/<repo> --json
   mergeable,mergeStateStatus`, and read it again where it answers
@@ -361,19 +363,35 @@ them.
   *One subject, opened as soon as it is written* says.
 
   ```shell
-  for i in $(seq 60); do
+  for i in $(seq 16); do
+    low=$(gh api rate_limit --jq '.resources | {core, graphql}
+      | to_entries[] | select(.value.remaining < 500)
+      | "\(.key) \(.value.remaining) reset \(.value.reset | todate)"') ||
+      low=unread
+    [ -z "$low" ] || break
     [ "$(gh pr checks <n> --repo <owner>/<repo> --json bucket \
       --jq 'length > 0 and all(.[]; .bucket != "pending")')" = true ] &&
       break
-    sleep 30
+    [ "$i" = 16 ] || sleep 120
   done
-  gh pr checks <n> --repo <owner>/<repo>
+  case $low in
+    '') gh pr checks <n> --repo <owner>/<repo> ;;
+    unread) (exit 5) ;;
+    *) echo "$low"; (exit 3) ;;
+  esac
   ```
 
-  The last command's exit code says how the loop ended: `0` all passed,
-  `1` a failure or no checks at all, `8` still pending with none failed.
-  The loop gave up wherever that output still lists a pending check or
-  says `no checks reported`.
+  The block's exit code says how the loop ended: `0` all passed, `1` a
+  failure or no checks at all, `8` still pending with none failed, `3`
+  stopped at the quota, whose lines it prints, `5` stopped where
+  `gh api rate_limit` failed; neither `3` nor `5` runs the final
+  `gh pr checks`. The loop gave up wherever the output still lists a
+  pending check or says `no checks reported`.
+
+  A section that runs this block with a test of its own puts that test
+  in place of both the loop's test of the checks and the final `gh pr
+  checks`. Unless the quota stops the block, its exit code is the final
+  test's.
 
   **After a close and reopen, a check `gh pr checks` shows as skipped may
   have failed**
@@ -1541,7 +1559,7 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   clearance* says.
 
   Then wait for `main`'s workflow runs on `<sha>`, with *Rebase and
-  CI*'s loop and this test in place of its own. A workflow run is
+  CI*'s block and this test in place of its own. A workflow run is
   completed only once all its jobs are, including the jobs that wait on
   others and have no check run before they start:
 
@@ -1655,7 +1673,7 @@ gh pr merge <n> --repo <owner>/<repo> --disable-auto
   gh workflow run "${file:?}" --repo "${repo:?}" --ref main
   ```
 
-  Then *Rebase and CI*'s loop runs with this test in place of its own,
+  Then *Rebase and CI*'s block runs with this test in place of its own,
   `<files>` being the files dispatched, separated by spaces. It passes
   once each of them has a run created since `<t>`, and each such run has
   completed. Runs of other workflows are not read:
