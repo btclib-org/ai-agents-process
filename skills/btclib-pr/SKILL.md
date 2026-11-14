@@ -353,10 +353,12 @@ them.
   mergeable` is a cached value.
 - **Wait for the checks on the head just pushed**, in the background,
   by asking until none is pending: `gh pr checks --watch` can return
-  while runs are still queued. The list covers check runs and commit
-  statuses, pre-commit.ci's among them. It must not be empty: right
-  after a push nothing has reported yet. The loop gives up after 30
-  minutes; say so where it does.
+  while runs are still queued. It asks at the interval, and stops at the
+  quota, that the shared *The forge's quota is shared* gives. The list
+  covers check runs and commit statuses, pre-commit.ci's among them. It
+  must not be empty: right after a push nothing has reported yet. The
+  loop gives up after 30 minutes, or once the quota stops it or cannot
+  be read; say so where it does.
 
   Before the loop, read `gh pr view <n> --repo <owner>/<repo> --json
   mergeable,mergeStateStatus`, and read it again where it answers
@@ -368,19 +370,35 @@ them.
   *One subject, opened as soon as it is written* says.
 
   ```shell
-  for i in $(seq 60); do
+  for i in $(seq 16); do
+    low=$(gh api rate_limit --jq '.resources | {core, graphql}
+      | to_entries[] | select(.value.remaining < 500)
+      | "\(.key) \(.value.remaining) reset \(.value.reset | todate)"') ||
+      low=unread
+    [ -z "$low" ] || break
     [ "$(gh pr checks <n> --repo <owner>/<repo> --json bucket \
       --jq 'length > 0 and all(.[]; .bucket != "pending")')" = true ] &&
       break
-    sleep 30
+    [ "$i" = 16 ] || sleep 120
   done
-  gh pr checks <n> --repo <owner>/<repo>
+  case $low in
+    '') gh pr checks <n> --repo <owner>/<repo> ;;
+    unread) (exit 5) ;;
+    *) echo "$low"; (exit 3) ;;
+  esac
   ```
 
-  The last command's exit code says how the loop ended: `0` all passed,
-  `1` a failure or no checks at all, `8` still pending with none failed.
-  The loop gave up wherever that output still lists a pending check or
-  says `no checks reported`.
+  The block's exit code says how the loop ended: `0` all passed, `1` a
+  failure or no checks at all, `8` still pending with none failed, `3`
+  stopped at the quota, whose lines it prints, `5` stopped where
+  `gh api rate_limit` failed; neither `3` nor `5` runs the final
+  `gh pr checks`. The loop gave up wherever the output still lists a
+  pending check or says `no checks reported`.
+
+  A section that runs this block with a test of its own puts that test
+  in place of both the loop's test of the checks and the final `gh pr
+  checks`. Unless the quota stops the block, its exit code is the final
+  test's.
 
   **After a close and reopen, a check `gh pr checks` shows as skipped may
   have failed**
@@ -667,11 +685,12 @@ A review of a push can start minutes after it. So `absent`, read before
 the checks on the head have completed (*Rebase and CI*'s wait), is read
 again once they have, and that read stands.
 
-**CodeRabbit**, `coderabbitai`, posts no verdict of its own: its
-`CodeRabbit` check passes once it has read the head, findings or not.
-A pilot
+**CodeRabbit**, `coderabbitai`, posts no verdict of its own outside a
+pilot
 ([ISS 432](https://github.com/btclib-org/ai-agents-process/issues/432))
-measures one. Until it reports, its states are these. Findings is one of
+that turns its approvals on in btclib-org/ai-agents-process: its
+`CodeRabbit` check passes once it has read the head, findings or not.
+Until the pilot reports, its states are these, there too. Findings is one of
 its threads open, read as *What was raised* reads them. Its ACK on the
 head is a pass of the latest run of its check whose `details_url` names
 this pull request, since another can share the head, with none of its
@@ -1192,7 +1211,53 @@ or another owner's, can be the last one given. Where the head moved,
 decide again on the new head. Where the decision is not `APPROVED`, the
 ruleset asks for another approval. Request it from an owner who is
 neither the human nor the author and pushed no commit to the branch, and
-report whom it waits on.
+report whom it waits on. Where `main` requires a code owner's review and
+the author is the only code owner, no other approval meets it, and it
+lands only through a bypass of the rule that imposes it. `main` requires
+that review where either command prints `true` (a 404 from the second is
+no classic protection):
+
+```shell
+gh api --paginate repos/<owner>/<repo>/rules/branches/main \
+  --jq '[.[] | select(.type == "pull_request")
+    | .parameters.require_code_owner_review] | any'
+gh api repos/<owner>/<repo>/branches/main/protection \
+  --jq '.required_pull_request_reviews.require_code_owner_reviews'
+```
+
+GitHub reads the owners from the first of `.github/CODEOWNERS`,
+`CODEOWNERS` and `docs/CODEOWNERS` it finds; this prints that file on
+`main`, nothing where there is none, and the error, exiting `1`, where a
+read fails other than with a 404:
+
+```shell
+(for p in .github/CODEOWNERS CODEOWNERS docs/CODEOWNERS; do
+  u="repos/<owner>/<repo>/contents/$p?ref=main"
+  e=$(gh api --silent "$u" 2>&1) &&
+    { gh api -H 'Accept: application/vnd.github.raw' "$u"; exit; }
+  case $e in *'(HTTP 404)'*) ;; *) echo "$e" >&2; exit 1 ;; esac
+done)
+```
+
+This prints each ruleset over `main` that imposes the review, with each
+of its bypass actors, or with `none`:
+
+```shell
+(set -o pipefail
+gh api --paginate repos/<owner>/<repo>/rules/branches/main \
+  --jq '.[] | select(.type == "pull_request"
+    and .parameters.require_code_owner_review) | .ruleset_id' \
+  | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{} \
+    --jq '.id as $r | (.bypass_actors[]?
+      | "\($r) \(.actor_type) \(.actor_id) \(.bypass_mode)")
+      // "\($r) none"')
+```
+
+It waits on a `User` that every ruleset printed names: the author where
+the author's id (`gh api users/<login> --jq .id`) is one, another
+otherwise. Where classic protection imposes the review, no `User` is
+named by every ruleset printed, or a read fails other than with those
+404s, hold and ask the human (*Where it is not obvious*).
 
 **Where it is not obvious, the human decides**, as one decision (the
 shared *When the human has to decide*). Its context is the `PR` link,
@@ -1710,7 +1775,7 @@ has not reported yet.
   this.
 
   Then wait for `main`'s workflow runs on `<sha>`, with *Rebase and
-  CI*'s loop and this test in place of its own. A workflow run is
+  CI*'s block and this test in place of its own. A workflow run is
   completed only once all its jobs are, including the jobs that wait on
   others and have no check run before they start:
 
@@ -1824,7 +1889,7 @@ has not reported yet.
   gh workflow run "${file:?}" --repo "${repo:?}" --ref main
   ```
 
-  Then *Rebase and CI*'s loop runs with this test in place of its own,
+  Then *Rebase and CI*'s block runs with this test in place of its own,
   `<files>` being the files dispatched, separated by spaces. It passes
   once each of them has a run created since `<t>`, and each such run has
   completed. Runs of other workflows are not read:
