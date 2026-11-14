@@ -1280,14 +1280,21 @@ Where such a pull request lands through the bypass (*The human's own
 pull request*), every check but the bot's `Claude review` is green as
 well.
 
-The second case's reusable workflows are the ones this lists, read from
-the default branch's `claude-review.yml`. It lists nothing where that
-file calls none by a local path:
+The second case's reusable workflows are the ones this lists: each job's
+`uses:` in the default branch's `claude-review.yml` that names a local
+path, read as YAML, so that a quoted path counts and a comment or a
+step's local action does not. It lists nothing where that file calls
+none:
 
 ```shell
 gh api -H 'Accept: application/vnd.github.raw' \
   repos/<owner>/<repo>/contents/.github/workflows/claude-review.yml \
-  | grep -oE 'uses: *\./[^ #]+'
+  | uv run --isolated --no-config --no-project --python 3.15 \
+    --with pyyaml==6.0.3 python -I -c '
+import sys, yaml
+for job in yaml.safe_load(sys.stdin)["jobs"].values():
+    if str(job.get("uses", "")).startswith("./"):
+        print(job["uses"])'
 ```
 
 It is armed pinned to the head, with squash, the only merge method
