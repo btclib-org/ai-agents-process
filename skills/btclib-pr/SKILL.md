@@ -977,7 +977,10 @@ It answers `<sha>`, `APPROVED`, the human's login, and `<sha>`. Where
 the head moved, decide again on the new head. Where the decision is not
 `APPROVED`, the ruleset asks for another approval. Request it from an
 owner who is neither the human nor the author and pushed no commit to
-the branch, and report whom it waits on.
+the branch, and report whom it waits on. Where `main` requires a code
+owner's review and the author is the only code owner, no other approval
+meets it: report that it waits on the author, who lands it through the
+bypass (*The human's own pull request*).
 
 **Where it is not obvious, the human decides**, as one decision (the
 shared *When the human has to decide*). Its context is the `PR` link,

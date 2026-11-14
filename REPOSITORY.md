@@ -77,22 +77,27 @@ gh api repos/btclib-org/ai-agents-process/rules/branches/main \
 
 The protection is the same object `.github`, `portanode` and
 `btclib-org.github.io` carry. Its other fields repeat the rulesets, except
-`enforce_admins`, which is off. Classic's own `required_signatures` is off, as it
-is in every ruleset over `main`. [Section 11][s11-branch] gives the reason for both.
+`enforce_admins`, which is off, and `require_code_owner_reviews`, off while
+ruleset `main-self-merge` requires a code owner's review for the pilot of
+btclib-org/ai-agents-process#432. Classic's own `required_signatures` is off,
+as it is in every ruleset over `main`. [Section 11][s11-branch] gives the
+reason for `enforce_admins` and `required_signatures`.
 
 ```shell
 gh api repos/btclib-org/ai-agents-process/branches/main/protection \
   --jq '{reviews: .required_pull_request_reviews
            | {n: .required_approving_review_count,
-              dismiss: .dismiss_stale_reviews},
+              dismiss: .dismiss_stale_reviews,
+              owners: .require_code_owner_reviews},
          admins: .enforce_admins.enabled,
          linear: .required_linear_history.enabled,
          threads: .required_conversation_resolution.enabled,
          force: .allow_force_pushes.enabled,
          delete: .allow_deletions.enabled,
          signatures: .required_signatures.enabled}'
-# {"admins":false,"delete":false,"dismiss":true,"force":false,
-#  "linear":true,"n":1,"signatures":false,"threads":true}
+# {"admins":false,"delete":false,"force":false,"linear":true,
+#  "reviews":{"dismiss":true,"n":1,"owners":false},
+#  "signatures":false,"threads":true}
 ```
 
 The `PUT` sets every field it is given and clears the rest, so it carries
@@ -134,11 +139,15 @@ gh api repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
 - `main-integrity` — required linear history, no
   force pushes, no deletions — with **no bypass actor at all**, which is
   what makes every one of those true of an administrator too.
-- `main-self-merge` — a pull request, an approving review, stale reviews
-  dismissed on push, conversations resolved, and `squash` as the only
-  merge method it accepts — bypassed by the maintainer in
-  **`pull_request` mode**, which excuses its holder while merging a pull
-  request and at no other time.
+- `main-self-merge` — a pull request, an approving review from a code
+  owner, stale reviews dismissed on push, conversations resolved, and
+  `squash` as the only merge method it accepts — bypassed by the
+  maintainer in **`pull_request` mode**, which excuses its holder while
+  merging a pull request and at no other time. `.github/CODEOWNERS` makes
+  the maintainer the one owner, for the pilot of
+  btclib-org/ai-agents-process#432, so a pull request he opens himself
+  cannot receive a code owner's approval and lands through his bypass,
+  as it already does.
 - `tag-integrity` — required signatures and nothing else, over
   `refs/tags/v*` rather than over a branch, with **no bypass actor**.
 
@@ -150,7 +159,7 @@ gh api repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
 # {"allowed_merge_methods":["squash"],
 #  "dismiss_stale_reviews_on_push":true,
 #  "dismissal_restriction":{"allowed_actors":[],"enabled":false},
-#  "require_code_owner_review":false,
+#  "require_code_owner_review":true,
 #  "require_extra_approval_for_unattributed_changes":true,
 #  "require_last_push_approval":false,"required_approving_review_count":1,
 #  "required_review_thread_resolution":true,"required_reviewers":[]}

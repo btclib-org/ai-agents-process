@@ -380,6 +380,10 @@ checks on `main`, and
 `REPOSITORY.md`'s *Required checks on main* records the protection that
 makes them so.
 
+**The approval *Landing it* asks for is a code owner's**, for the pilot
+of btclib-org/ai-agents-process#432: `.github/CODEOWNERS` names the
+maintainer alone, so a pull request he opens lands through his bypass.
+
 `links.yml` and `claude-review.yml` only report, and must go on doing
 so. The first is weekly and reads every link in the markdown, where a
 third party returning 502 would be a red merge with nothing to fix; the
