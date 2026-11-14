@@ -346,7 +346,8 @@ them.
   mergeable` is a cached value.
 - **Wait for the checks on the head just pushed**, in the background,
   by asking until none is pending: `gh pr checks --watch` can return
-  while runs are still queued. The list covers check runs and commit
+  while runs are still queued. It asks at the interval the shared *The
+  forge's quota is shared* gives. The list covers check runs and commit
   statuses, pre-commit.ci's among them. It must not be empty: right
   after a push nothing has reported yet. The loop gives up after 30
   minutes; say so where it does.
@@ -361,11 +362,11 @@ them.
   *One subject, opened as soon as it is written* says.
 
   ```shell
-  for i in $(seq 60); do
+  for i in $(seq 15); do
     [ "$(gh pr checks <n> --repo <owner>/<repo> --json bucket \
       --jq 'length > 0 and all(.[]; .bucket != "pending")')" = true ] &&
       break
-    sleep 30
+    sleep 120
   done
   gh pr checks <n> --repo <owner>/<repo>
   ```
