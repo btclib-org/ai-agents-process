@@ -1684,16 +1684,19 @@ branch, or a text to be posted.
   git -C "${d:?}" add -A
   ```
 
-  Run it again on a new `d` holding `-i` alone, since perl reads `-i` as
-  its switch only where it comes first. It catches only what follows,
-  and proves no command safe. The fixtures are names in the tree, so
-  text read from a forge is not tried. A name run as shell, as
-  `xargs -I{} sh -c` runs the first, or opened as a pipe, as perl's `<>`
-  opens the second, creates `MARKER` in `d`. A name read as an option
-  leaves its file unread, which shows where the command prints what it
-  reads. A file replaced in place, as perl's `-i` replaces it, gets a
-  new inode in `ls -i` of the fixtures, before and after. Perl's `<<>>`,
-  with `--` before the names, passes.
+  An absent `MARKER` counts only where the command's own listing, run
+  alone first, shows every fixture, so the fixtures are put in the state
+  it reads: `git diff --name-only` lists them only once they change
+  after `git add -A`. Run it again on a new `d` holding `-i` alone,
+  since perl reads `-i` as its switch only where it comes first. It
+  catches only what follows, and proves no command safe. The fixtures
+  are names in the tree, so text read from a forge is not tried. A name
+  run as shell, as `xargs -I{} sh -c` runs the first, or opened as a
+  pipe, as perl's `<>` opens the second, creates `MARKER` in `d`. A name
+  read as an option leaves its file unread, which shows where the
+  command prints what it reads. A file replaced in place, as perl's `-i`
+  replaces it, gets a new inode in `ls -i` of the fixtures, before and
+  after. Perl's `<<>>`, with `--` before the names, passes.
 - **What a lock pins or installs is measured where it runs.** `uv.lock`
   can list one name at several versions, each under its own
   `resolution-markers`, and list with no marker of its own a package
