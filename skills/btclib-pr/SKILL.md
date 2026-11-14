@@ -1026,7 +1026,7 @@ The human is a bypass actor where it prints the id
 `gh api user --jq .id` prints:
 
 ```shell
-gh api repos/<owner>/<repo>/rulesets --jq '.[].id' \
+gh api --paginate repos/<owner>/<repo>/rulesets --jq '.[].id' \
   | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{} \
     --jq 'select(.enforcement == "active") | .bypass_actors[]?
       | select(.actor_type == "User" and .bypass_mode == "pull_request")
@@ -1038,8 +1038,8 @@ never attempted. Once the same items hold, except the two a 429 fails:
 
 - request the review of every owner but the human who has not approved
   `<sha>`. `btclib-org/.github`'s `GOVERNANCE.md` names the owners, and
-  `gh api "orgs/btclib-org/members?role=admin" --jq '.[].login'` lists
-  them:
+  `gh api --paginate "orgs/btclib-org/members?role=admin" --jq
+  '.[].login'` lists them:
 
   ```shell
   gh pr edit <n> --repo <owner>/<repo> --add-reviewer <login>

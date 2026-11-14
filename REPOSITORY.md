@@ -71,8 +71,8 @@ need not be up to date with `main`. All three contexts are bound to
 No ruleset on `main` carries a `required_status_checks` rule:
 
 ```shell
-gh api repos/btclib-org/ai-agents-process/rules/branches/main \
-  --jq '[.[] | {type, ruleset_id}]'
+gh api --paginate repos/btclib-org/ai-agents-process/rules/branches/main \
+  --jq '.[] | {type, ruleset_id}'
 ```
 
 The protection is the same object `.github`, `portanode` and
@@ -114,7 +114,7 @@ gh api repos/btclib-org/ai-agents-process --jq '.default_branch'
 ```
 
 ```shell
-gh api repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
+gh api --paginate repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
   | xargs -I{} gh api \
     repos/btclib-org/ai-agents-process/rulesets/{} \
     --jq '{name, target, enforcement, refs: .conditions.ref_name.include,
@@ -143,7 +143,7 @@ gh api repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
   `refs/tags/v*` rather than over a branch, with **no bypass actor**.
 
 ```shell
-gh api repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
+gh api --paginate repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
   | xargs -I{} gh api \
     repos/btclib-org/ai-agents-process/rulesets/{} \
     --jq '.rules[] | select(.type=="pull_request") | .parameters'
