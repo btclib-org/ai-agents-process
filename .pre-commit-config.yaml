@@ -86,6 +86,13 @@ repos:
         entry: python scripts/test-git-c-allow.py
         files: ^scripts/(test-)?git-c-allow\.py$
         pass_filenames: false
+      # what scripts/port-check.py answers on fixture repositories
+      - id: test-port-check
+        name: port-check.py answers as its test expects
+        language: python
+        entry: python scripts/test-port-check.py
+        files: ^scripts/(test-)?port-check\.py$
+        pass_filenames: false
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:

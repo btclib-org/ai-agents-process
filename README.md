@@ -33,7 +33,11 @@ The process the btclib-org maintainers follow with the coding agents
   sessions taking that lock's slots, and waiting while every slot is
   held;
 - `scripts/test-git-c-allow.py` — the commands `git-c-allow.py` must
-  approve and must refuse, run by the `test-git-c-allow` hook.
+  approve and must refuse, run by the `test-git-c-allow` hook;
+- `scripts/port-check.py` — the check of a tree's batch of ports against
+  the standard (`/btclib-iss`'s *Ports of the standard*);
+- `scripts/test-port-check.py` — the fixture repositories
+  `port-check.py` must answer, run by the `test-port-check` hook.
 
 `process/btclib-common.md`'s opening says how these files divide the
 process, and its *Clients* says what differs between the two agents.
