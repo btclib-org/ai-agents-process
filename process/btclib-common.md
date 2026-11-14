@@ -894,7 +894,8 @@ find it:
   request, as *When the human has to decide* and *A hold is recorded*
   say;
 - the maintainer's standing permissions and preferences, and a
-  permission given for a limited time, go in memory.
+  permission given for a limited time, go in the memory of each client
+  whose sessions are to follow them.
 
 **A permission given for a limited time carries its end in memory**, and
 is deleted once that end has passed.
