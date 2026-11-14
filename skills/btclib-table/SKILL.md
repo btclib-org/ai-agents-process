@@ -12,7 +12,9 @@ earlier run.
 The skill only reads. It writes nothing, comments nowhere and takes no
 decision, so it needs no worktree and none of the roles of
 `$PROCESS/process/btclib-common.md` (`echo "$PROCESS"` prints the
-clone's path). What it writes after the table follows that file's
+clone's path). Before its first command, the session reads
+`$PROCESS/process/every-session.md` whole, two directories above this
+skill's own, and what it writes after the table follows that file's
 *Write plainly*.
 
 ## Measure
