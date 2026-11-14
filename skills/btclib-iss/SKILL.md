@@ -122,8 +122,9 @@ open:**
       and `## Decision` where a decision was reserved
 - [ ] `closingIssuesReferences` counts what you meant to close
 
-- **A change to `claude-review.yml` is its own pull request**: the bot
-  does not review it (`/btclib-pr`'s *Arming auto-merge*).
+- **A change to `claude-review.yml`, or to a reusable workflow it calls
+  by a local path, is its own pull request**: the bot reviews neither
+  (`/btclib-pr`'s *Arming auto-merge*).
 - **The body is the paragraphs, then sections, then the closing block
   (the shared *Citations and closing keywords*).** The paragraphs keep
   the body limit of the shared *What is posted on a forge* and say what

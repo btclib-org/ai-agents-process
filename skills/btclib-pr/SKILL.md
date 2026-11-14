@@ -574,10 +574,10 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
       the human's own pull request, *The human's own pull request* says
       who does. The missing ACK does not stop the approval. On a bot's
       pull request (*A bot's pins*) whose pins change
-      `.github/workflows/claude-review.yml`, the ACK may be missing, and
-      the bot's `Claude review` check may fail while every other check
-      passed or was skipped, as *Arming auto-merge*'s second case
-      allows
+      `.github/workflows/claude-review.yml`, or a reusable workflow that
+      file calls by a local path, the ACK may be missing, and the bot's
+      `Claude review` check may fail while every other check passed or
+      was skipped, as *Arming auto-merge*'s second case allows
 - [ ] no review thread is unresolved, every page read (*What was
       raised*). It binds every approval, the human's decision included;
       *Arming auto-merge* has it for arming
@@ -1033,10 +1033,11 @@ never attempted. Once the same items hold, except the two a 429 fails:
 
 After a push, request the review again on the new head (*Landing*).
 
-On a pull request that changes `claude-review.yml`, which the bot does
-not review (*Arming auto-merge*), `--land` does not apply. It lands
-through the bypass only where the human is the maintainer and a bypass
-actor, as above, and is otherwise armed.
+On a pull request that changes `claude-review.yml`, or a reusable
+workflow that file calls by a local path, which the bot does not review
+(*Arming auto-merge*), `--land` does not apply. It lands through the
+bypass only where the human is the maintainer and a bypass actor, as
+above, and is otherwise armed.
 
 A pull request whose description says it breaks the live setup, in a
 *Breaks* section as
@@ -1260,9 +1261,14 @@ shared *A pull request's rounds*):
 
 - the bot's run failed with a 429, its quota exhausted, matched as
   *Rebase and CI* says;
-- the pull request changes `claude-review.yml`, which the bot does not
-  review: the action refuses to run where its workflow differs from the
-  default branch's, and its check fails;
+- the pull request changes `claude-review.yml`, or a reusable workflow
+  that `claude-review.yml` calls by a local path, as btclib-org/.github's
+  calls `reusable-claude-review.yml`. The bot reviews neither: the action
+  refuses to run where either differs from the default branch's copy,
+  and its check fails. Run
+  [42404355279](https://github.com/btclib-org/.github/actions/runs/42404355279),
+  on PR btclib-org/.github#2116, logs that refusal as `Skipping action
+  due to workflow validation`;
 - the pull request comes from a fork, `isCrossRepository` being `true`
   in *Whose pull request it is*
   ([ISS 248](https://github.com/btclib-org/ai-agents-process/issues/248)).
