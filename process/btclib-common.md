@@ -1704,6 +1704,52 @@ branch, or a text to be posted.
   be built or installed is named in the verdict as not run. *Another
   project's source is read from a checkout* says where a reference
   implementation is found.
+- **A command the change hands a reader is run on hostile names.** For
+  each command a diff adds to prose or a script that reads names or text
+  from the tree or a forge (a file name, a branch name, an issue body),
+  ask what it does with them, and run it as *Every reviewer tries to
+  break the change* runs its inputs, with `d`, a new scratch directory,
+  as the working directory of the whole pipeline (`env -C "${d:?}"`,
+  then the shell the command is written for, with `-c` and the pipeline
+  as its argument: `env -C` before a pipeline moves only its first
+  command), after:
+
+  ```shell
+  git init -q "${d:?}"
+  for n in 'x|touch MARKER' 'touch MARKER|' -i; do
+    printf 'line of %s\n' "$n" > "${d:?}/$n"
+  done
+  git -C "${d:?}" add -A
+  ```
+
+  Run it again on a new `d` holding `-i` alone, since perl reads `-i` as
+  its switch only where it comes first. It catches only what follows,
+  and proves no command safe. The fixtures are names in the tree, so
+  text read from a forge is not tried. A name run as shell, as
+  `xargs -I{} sh -c` runs the first, or opened as a pipe, as perl's `<>`
+  opens the second, creates `MARKER` in `d`. A name read as an option
+  leaves its file unread, which shows where the command prints what it
+  reads. A file replaced in place, as perl's `-i` replaces it, gets a
+  new inode in `ls -i` of the fixtures, before and after. Perl's `<<>>`,
+  with `--` before the names, passes.
+- **What a lock pins or installs is measured where it runs.** `uv.lock`
+  can list one name at several versions, each under its own
+  `resolution-markers`, and list with no marker of its own a package
+  that only another platform's dependency reaches, as `sphinx` reaches
+  `colorama` under `sys_platform == 'win32'`. A claim about what a lock
+  pins or installs is measured on the running interpreter and platform,
+  as *Every reviewer tries to break the change* runs its inputs, not
+  read from the lock: `uv sync --locked`, with `UV_PROJECT_ENVIRONMENT`
+  set to a new directory and every flag and `UV_` variable of the
+  claim's own command that selects what is installed or the interpreter,
+  as `--no-default-groups` or `--python`, then `importlib.metadata` in
+  that environment (`uv run --no-sync python`, with the same variable).
+  A bare `uv sync` installs no extra and no group outside the defaults,
+  and in a workspace it may leave out another member's dependencies. A
+  `python` from the `PATH` may read another environment. Where the lock
+  holds such entries, they are the measurement's controls: it finds only
+  the version whose markers the interpreter matches, and no package that
+  only another platform's dependency reaches, as `colorama` on macOS.
 - **A *Done when* that is a differential over generated inputs** (against
   Bitcoin Core or another implementation) has its input set fixed before
   the writer starts: a generator with its seed, or a corpus, named in the
