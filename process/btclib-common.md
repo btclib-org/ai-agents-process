@@ -1702,10 +1702,11 @@ branch, or a text to be posted.
   pins or installs is measured on the running interpreter and platform,
   as *Every reviewer tries to break the change* runs its inputs, not
   read from the lock: `uv sync --locked`, with `UV_PROJECT_ENVIRONMENT`
-  set to a new directory and the `--package`, `--extra`, `--group` and
-  `--no-dev` the claim is about, then `importlib.metadata` in that
-  environment (`uv run --no-sync python`, with the same variable). A
-  bare `uv sync` installs no extra and no group outside the defaults,
+  set to a new directory and every flag and `UV_` variable of the
+  claim's own command that selects what is installed or the interpreter,
+  as `--no-default-groups` or `--python`, then `importlib.metadata` in
+  that environment (`uv run --no-sync python`, with the same variable).
+  A bare `uv sync` installs no extra and no group outside the defaults,
   and in a workspace it may leave out another member's dependencies. A
   `python` from the `PATH` may read another environment. Where the lock
   holds such entries, they are the measurement's controls: it finds only
