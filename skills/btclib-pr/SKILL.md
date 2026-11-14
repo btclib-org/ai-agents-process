@@ -673,12 +673,11 @@ A pilot
 ([ISS 432](https://github.com/btclib-org/ai-agents-process/issues/432))
 measures one. Until it reports, its states are these. Findings is one of
 its threads open, read as *What was raised* reads them. Its ACK on the
-head is its check on the head passed, not skipped, on a run whose
-`details_url` names this pull request, since another can share the
-head, with none of its threads open. It is running while a run of that
-check has not completed, and absent where the check was skipped, its
-comment saying why (`Review skipped`, `Reviews paused`), or where no
-such check of this pull request reports on the head.
+head is a pass of the latest run of its check whose `details_url` names
+this pull request, since another can share the head, with none of its
+threads open. It is running while a run of that check has not completed,
+and absent otherwise, as where the check was skipped, its comment saying
+why (`Review skipped`, `Reviews paused`).
 This prints `ack`, `findings`, `running`, `absent`, or `error` where a
 read failed:
 
@@ -717,8 +716,8 @@ head=<head>
   | if test("read-failed") then "error"
     elif any($c[]; .[2] != "completed") then "running"
     elif test("(^|\n)open(\n|$)") then "findings"
-    elif ($c | length) > 0 and $c[-1][3] == "success"
-      and ($c[-1][4] + "?" | contains($u)) then "ack"
+    elif [$c[] | select(.[4] + "?" | contains($u))][-1][3] == "success"
+      then "ack"
     else "absent" end'
 ```
 
