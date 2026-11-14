@@ -1461,7 +1461,8 @@ the orchestrator in the pull request.
   not yet pushed. Check `git ls-remote origin <branch>` against `HEAD`
   after every push. On an open pull request, a fix is pushed only once
   the rounds of *Local review* have ended, and the orchestrator then has
-  the writer push it.
+  the writer push it. An armed pull request is disarmed before any push
+  to it (`/btclib-pr`'s *Merging*).
 - **An embargoed fix is the exception: it is pushed to `origin` only
   once its release commit is ready on top of it.** It is gated locally.
   The standard's section 12, *A security advisory is worked in this

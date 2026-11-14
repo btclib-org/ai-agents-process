@@ -312,6 +312,14 @@ gh api graphql -F t=<thread id> -f query='
 A review or comment outside a thread is answered in one comment on the
 pull request, which meets the shared *What is posted on a forge*.
 
+**Codex's state on the head changes only when Codex reads it again**: a
+reply and a resolved thread leave it in findings. A push can start that
+read, its summary then naming `New commits` as the trigger. Where its
+finding is answered without a push, a comment `@codex review` on the
+pull request asks for the read, and the state on the head is waited
+for. A finding Codex repeats after the reply is a finding again: fixed,
+or answered as a decision.
+
 ### Another person's branch
 
 **Where the session can push to the pull request's branch, it makes
@@ -517,11 +525,12 @@ read as absent, and each reviewer's running test is read first.
 **A pull request is approved or landed only where none of the three is
 in findings, and each that is not absent gave its ACK on the head.** An
 absence does not hold the landing; *The decision* says where the bot's
-makes the approval not obvious. None of the three is a check the
-rulesets require. The reason of each absence is recorded before the
-approval or the landing: in the pull request's `## Evidence` where its
-body is the session's, otherwise in a comment of the session's own
-naming the head.
+makes the approval not obvious. Where all three are absent, the pull
+request waits for the human: no session approves or lands it before his
+word. None of the three is a check the rulesets require. The reason of
+each absence is recorded before the approval or the landing: in the pull
+request's `## Evidence` where its body is the session's, otherwise in a
+comment of the session's own naming the head.
 
 What each command below prints is tested by its value (the shared
 *Shell, checkouts and prose*).
@@ -562,7 +571,7 @@ gh pr view <n> --repo <owner>/<repo> --json headRefOid,reviews \
     elif last | startswith("ACK ") then "ack" else "findings" end'
 ```
 
-It may be absent only in these cases, and in each the pull request is
+Where it is absent, in these cases or another, the pull request is
 merged only once the latest fresh reviewer's `CLEARED` also names the
 head, or the dedicated reviewer's where the other client is unavailable
 (the shared *A pull request's rounds*):
@@ -612,12 +621,15 @@ the pull request, whose body carries its state as
 while a review runs. Its findings come as a review with inline threads.
 The state's format is the vendor's and undocumented, so a state that is
 missing, names another commit or does not parse reads as absent, never
-as an ACK. This prints `ack` where the code review on the head completed
+as an ACK. *Answering it* says what moves the state once a finding is
+answered. This prints `ack` where the code review on the head completed
 with no unresolved finding, `findings` where it completed with one,
 `running` while the `eyes` reaction stands or the state on the head has
 a status other than `completed` and `failed`, `error` where a read
 failed, and `absent` otherwise, as on a `failed` review, which Codex's
-usage limit gives. `<head>` is the full `headRefOid`:
+usage limit gives. The `eyes` reaction is read on the pull request and
+on each of its comments, since Codex's comment does not say which one it
+marks. `<head>` is the full `headRefOid`:
 
 ```shell
 repo=<owner>/<repo>
@@ -630,6 +642,13 @@ head=<head>
   gh api --paginate "repos/${repo:?}/issues/${n:?}/reactions?per_page=100" \
     --jq '.[] | select(.user.login == "chatgpt-codex-connector[bot]"
       and .content == "eyes") | "codex-eyes"' || echo codex-read-failed
+  ids=$(gh api --paginate "repos/${repo:?}/issues/${n:?}/comments" \
+    --jq '.[] | select(.reactions.eyes > 0) | .id') || echo codex-read-failed
+  for id in $(printf '%s\n' "$ids"); do
+    gh api --paginate "repos/${repo:?}/issues/comments/${id}/reactions" \
+      --jq '.[] | select(.user.login == "chatgpt-codex-connector[bot]"
+        and .content == "eyes") | "codex-eyes"' || echo codex-read-failed
+  done
 } | jq -Rrs --arg h "${head:?}" '
   ([scan("codex-review-state:v1 (\\{.*\\}) -->") | .[0]] | last
     | try (fromjson | .code_review) catch null) as $c
@@ -654,10 +673,12 @@ A pilot
 ([ISS 432](https://github.com/btclib-org/ai-agents-process/issues/432))
 measures one. Until it reports, its states are these. Findings is one of
 its threads open, read as *What was raised* reads them. Its ACK on the
-head is its check on the head passed, not skipped, with none of its
-threads open. It is running while a run of that check has not completed,
-and absent where the check was skipped, its comment saying why (`Review
-skipped`, `Reviews paused`), or where no such check reports on the head.
+head is its check on the head passed, not skipped, on a run whose
+`details_url` names this pull request, since another can share the
+head, with none of its threads open. It is running while a run of that
+check has not completed, and absent where the check was skipped, its
+comment saying why (`Review skipped`, `Reviews paused`), or where no
+such check of this pull request reports on the head.
 This prints `ack`, `findings`, `running`, `absent`, or `error` where a
 read failed:
 
@@ -670,7 +691,8 @@ head=<head>
     -F per_page=100 \
     "repos/${repo:?}/commits/${head:?}/check-runs" \
     --jq '.check_runs[] | select(.app.slug == "coderabbitai")
-      | "check \(.id) \(.status) \(.conclusion)"' || echo read-failed
+      | "check \(.id) \(.status) \(.conclusion) \(.details_url)"' ||
+    echo read-failed
   gh api graphql --paginate -F owner="${repo%%/*}" -F repo="${repo#*/}" \
     -F n="${n:?}" -f query='
     query($owner: String!, $repo: String!, $n: Int!, $endCursor: String) {
@@ -689,13 +711,14 @@ head=<head>
       | select((.isResolved | not)
         and .comments.nodes[0].author.login == "coderabbitai") | "open"' ||
     echo read-failed
-} | jq -Rrs '
+} | jq -Rrs --arg u "/${repo:?}/pull/${n:?}?" '
   (split("\n") | map(select(startswith("check ")) | split(" "))
     | sort_by(.[1] | tonumber)) as $c
   | if test("read-failed") then "error"
     elif any($c[]; .[2] != "completed") then "running"
     elif test("(^|\n)open(\n|$)") then "findings"
-    elif ($c | length) > 0 and $c[-1][3] == "success" then "ack"
+    elif ($c | length) > 0 and $c[-1][3] == "success"
+      and ($c[-1][4] + "?" | contains($u)) then "ack"
     else "absent" end'
 ```
 
@@ -1443,7 +1466,8 @@ approvals. A pull request found armed is disarmed at once, and the human
 is told. This lists the armed ones, and the second command disarms one:
 
 ```shell
-gh pr list --repo <owner>/<repo> --json number,autoMergeRequest \
+gh pr list --repo <owner>/<repo> --limit 200 \
+  --json number,autoMergeRequest \
   --jq '.[] | select(.autoMergeRequest) | .number'
 ```
 
