@@ -26,15 +26,18 @@ judged on the next pull requests, whose defects nobody knows in advance.
 briefs a fresh reviewer of the head, as `local-review.md`'s *A pull
 request's rounds* says, with the head's commit message standing for the
 pull request. Its brief names neither this file nor anything posted
-after the head, since both state the defect. A run whose verdict's
-coverage list names this file is discarded and run again. The process it
-is briefed with is the configuration under test, at the `$PROCESS` sha
-the run records. The reviewer reads the prose at the head itself, not on
-the merge with `origin/main` that *A pull request's rounds* asks for,
-since `main` has moved past the case, a defect's fix included. Where the
-run changes this tree's `REVIEWING.md`, a reviewer of this repository's
-cases reads the changed file in place of the head's, without the
-sentences that describe a case's defect, such as PR
+after the head, since both state the defect. The reviewer cannot reach
+the fix either: the case's tree is a repository that holds only the head
+and its ancestors, since a worktree reads every branch of the checkout
+it was added from, and one of those may hold the fix. A run whose
+verdict's coverage list names this file is discarded and run again. The
+process it is briefed with is the configuration under test, at the
+`$PROCESS` sha the run records. The reviewer reads the prose at the head
+itself, not on the merge with `origin/main` that *A pull request's
+rounds* asks for, since `main` has moved past the case, a defect's fix
+included. Where the run changes this tree's `REVIEWING.md`, a reviewer
+of this repository's cases reads the changed file in place of the
+head's, without the sentences that describe a case's defect, such as PR
 btclib-org/ai-agents-process#317's in its *This repository in
 particular*. The run records what it withheld. Where the change under
 test rewrites such a sentence, its case is recorded as unable to
@@ -91,10 +94,12 @@ answer other than `0` is not clean.
 
 **A hit names the defect's mechanism and its consequence** well enough
 to fix it, as *The findings record* in `local-review.md` matches two
-findings. The orchestrator scores each verdict against the case's
-sentence, and the human scores where it cannot tell. The cases are
-chosen, not drawn at random, so a run says how a configuration did on
-them and not how often it finds a defect.
+findings. A defect a run names only in a non-blocking finding is a miss,
+though the entry of the run at `1ddae0d` records such a run as a hit.
+The orchestrator scores each verdict against the case's sentence, and
+the human scores where it cannot tell. The cases are chosen, not drawn
+at random, so a run says how a configuration did on them and not how
+often it finds a defect.
 
 **One factor at a time.** A run changes one thing from the baseline,
 the brief, the model or the effort, and is compared with the
@@ -228,9 +233,8 @@ shows no gain.
   skill the brief names. `agents/reviewer.md` and `REVIEWING.md` are
   `main`'s. The same client, model, effort and briefs, one run per case.
   PR btclib-org/ai-agents-process#317: miss, the defect named only in a
-  non-blocking finding judged as already on the base, which the
-  maintainer ruled a miss on 2026-11-15. PR
-  btclib-org/ai-agents-process#444: hit. PR
+  non-blocking finding judged as already on the base (*How a run is
+  scored*). PR btclib-org/ai-agents-process#444: hit. PR
   btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit.
 
 Neither run made a false finding. Each brief had the reviewer read the
@@ -241,6 +245,58 @@ coverage list named this file. On one run per case the candidate loses
 no hit and gains none. What it adds to the reviewer's reading, *The
 gates*, *Sourcery and CodeRabbit before a push* and *Committing and
 rebasing*, bears on checks no case of the set exercises.
+
+- **Candidate**, 2026-11-15: `$PROCESS` `86cc1ec`, the factor changed
+  being the brief: the item of ISS btclib-org/ai-agents-process#462 in
+  `local-review.md`'s *The verdict*, that each blocking finding names
+  its trigger, its mechanism, its consequence and, where one is known,
+  one correction that suffices. It is compared with the baseline at
+  `53b7a57` above. The same client, model and effort. PR
+  btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/btclib-secp256k1#1331: miss on each run. PR
+  btclib-org/ecc#484: hit.
+- **Baseline and candidate**, 2026-11-15: `$PROCESS` `53b7a57` and
+  `86cc1ec`, as above, one run each on the cases PR
+  btclib-org/ai-agents-process#503 added. PR btclib-org/.github#2288,
+  the clean case: `CLEARED` in both, each with a non-blocking wording
+  finding that is not a defect. PR btclib-org/btclib-node#2516: miss in
+  both; the baseline names the defect only in a non-blocking finding,
+  and the candidate names the same overstatement only in the commit
+  message. PR btclib-org/ecc#580: hit in both.
+
+PR btclib-org/btclib-secp256k1#1331, the one case where a gain was
+plausible, ran four more times in each configuration, and the baseline's
+repeats are those of the entry above. The candidate's reviewers read the
+process as the baseline's did, and no brief named the configuration. No
+verdict's coverage list named this file. On PR
+btclib-org/ai-agents-process#317 the candidate named the exemption and
+its consequence only in a non-blocking finding, as the baseline did.
+
+Outside the cases' defects, on PR btclib-org/btclib-secp256k1#1331 two
+baseline runs and one candidate run asked for changes on findings that
+hold: that `SECURITY.md`'s reasons for `zkp.rangeproof.sign` leave out
+the blinding factor (ISS btclib-org/btclib-secp256k1#1403), and that the
+step's list is kept equal to `SECURITY.md` by hand, which other runs
+raised as non-blocking. The baseline run on PR btclib-org/ecc#484
+blocked on two more findings that hold.
+
+The scoring was not wholly blind: a candidate verdict shows the format,
+and one candidate verdict on PR btclib-org/btclib-secp256k1#1331 was
+scored after the key was read. The briefs of the further runs were
+handed as a file to read, where the first ones were inline. Each case's
+tree was a worktree of its repository's primary checkout, which *What a
+case holds* rules out. Only the void baseline repeat read a fix there,
+but five of the six runs on the added cases noted that the local
+`origin/main` already holds the landed change, and two compared the head
+with it, which on a clean case may favour a `CLEARED`. One candidate run
+on PR btclib-org/ecc#580 ran test modules, though its brief said to run
+no suite.
+
+Neither configuration made a false finding, and the candidate gains no
+hit and loses none. By the rule recorded on ISS
+btclib-org/ai-agents-process#462 the result is inconclusive, and the
+item is not adopted.
 
 ## Cases
 
