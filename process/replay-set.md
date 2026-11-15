@@ -74,8 +74,8 @@ the brief, the model or the effort, and is compared with the
 baseline's run on the same cases. One configuration can answer
 differently on two runs, so a case that alone decides the comparison is
 run again first. A run that changes the brief is compared with a
-baseline at the candidate's `$PROCESS` parent, so that only the change
-under test differs, and the baseline's entry names that sha.
+baseline at the commit before the change under test's first commit, so
+that only that change differs, and the baseline's entry names that sha.
 
 ## Runs
 
