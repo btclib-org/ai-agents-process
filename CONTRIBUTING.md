@@ -336,13 +336,14 @@ The text of the process the maintainers follow with a coding agent:
 skills, `process/every-role.md`, `process/writing.md`,
 `process/local-review.md` and `process/orchestration.md` are what they
 share, and `agents/` holds the agents a session briefs with them.
-`skills/btclib-table/SKILL.md` is a third skill, which only reads: one
-table of the organization's repositories. `skills/night-mode/SKILL.md`
-turns night mode on or off in any session, or says whether it is on.
-`scripts/agents-toml.py` writes the agents' `.toml` files for Codex.
-`README.md` says how a machine is set up to use them. A change here
-changes what every session reads once its branch lands, so it is
-reviewed like code.
+`skills/btclib-table/SKILL.md` and `skills/btclib-inbox/SKILL.md` are
+skills that only read: one table of the organization's repositories, and
+the issues and pull requests that wait on the maintainer.
+`skills/night-mode/SKILL.md` turns night mode on or off in any session,
+or says whether it is on. `scripts/agents-toml.py` writes the agents'
+`.toml` files for Codex. `README.md` says how a machine is set up to use
+them. A change here changes what every session reads once its branch
+lands, so it is reviewed like code.
 
 The findings record a session keeps on a pull request is not a comment
 for *Write plainly*'s limits: `process/every-session.md`'s *What is

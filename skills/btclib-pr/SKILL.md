@@ -624,6 +624,9 @@ gh pr view <n> --repo <owner>/<repo> --json headRefOid,reviews \
     elif last | startswith("ACK ") then "ack" else "findings" end'
 ```
 
+`skills/btclib-inbox/measure.sh` makes the same read in GraphQL, in its
+`ack`, so a change to this one changes that one too.
+
 Where it is absent, in these cases or another, the pull request is
 merged only once the latest fresh reviewer's `CLEARED` also names the
 head, or the dedicated reviewer's where the other client is unavailable
