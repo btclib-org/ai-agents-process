@@ -121,16 +121,26 @@ defect, and that the pull request fixed in `d5dee25` before it landed.
   btclib-org/ai-agents-process#317: miss. PR
   btclib-org/btclib-secp256k1#1331: hit, named as non-blocking in a
   `CLEARED`: a call recorded as `reported` passes on any Valgrind error,
-  whatever caused the exit `42`; scored a hit by the orchestrator, close
-  to the line. PR btclib-org/ecc#484: hit. PR
-  btclib-org/ai-agents-process#444: hit. The change loses no hit on
-  these cases.
+  whatever caused the exit `42`. PR btclib-org/ecc#484: hit. PR
+  btclib-org/ai-agents-process#444: hit.
 
-These two runs withheld nothing either: each brief had the reviewer read
-the prose at the head, run no suite and use no forge, and no verdict's
-coverage list named this file. On PR btclib-org/ai-agents-process#317
-both raised again the finding outside the case's defect that the first
-two runs raised, which holds.
+Neither the run at `aa5dcdc` nor the run at `1ddae0d` made a false
+finding. On PR btclib-org/ai-agents-process#317 both raised again the
+finding outside the case's defect that the runs at `2ef0de4` and
+`466d803` raised, which holds, and neither raised another. Each brief
+had the reviewer read the prose at the head, run no suite and use no
+forge, and no verdict's coverage list named this file.
+
+The run at `1ddae0d` tested the process files alone: each reviewer read
+them at that sha, the case's own `REVIEWING.md` at the case's head, and
+the installed `reviewer` agent, which is `main`'s `agents/reviewer.md`.
+So the change's edits to this tree's `REVIEWING.md`, its pointers to
+`btclib-common.md` retargeted to the new files, and to
+`agents/reviewer.md`, its citations of `btclib-common.md` retargeted and
+a sentence naming what the reviewer reads, were not under test. The
+`REVIEWING.md` edit rewrites the paragraph that states the defect of PR
+btclib-org/ai-agents-process#317, so that case cannot evaluate it. The
+split of the process files loses no hit on these cases.
 
 ## Cases
 
@@ -184,5 +194,5 @@ two runs raised, which holds.
   at that head still tell a session to arm it, as
   `git grep -c -i -E 'auto-merge|--auto' 709efef -- skills process`
   shows in each of the three.
-- found by both runs of 2026-11-15 (*Runs*), and fixed on `main` in
-  `7f7de67`.
+- found by the runs at `2ef0de4` and `466d803` (*Runs*), and fixed on
+  `main` in `7f7de67`.
