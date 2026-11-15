@@ -10,6 +10,11 @@ The process the btclib-org maintainers follow with the coding agents
   pull request to the decision to approve, and to `main`;
 - `skills/btclib-pr/review-quota.md` — what `/btclib-pr` does while the
   review bot's quota is exhausted, read only then;
+- `skills/btclib-inbox/SKILL.md` — the `/btclib-inbox` skill, the issues
+  and pull requests of the organization that wait on the maintainer,
+  which only reads;
+- `skills/btclib-inbox/measure.sh` — the script `/btclib-inbox` runs to
+  read them;
 - `skills/btclib-table/SKILL.md` — the `/btclib-table` skill, one table
   of every repository of the organization, which only reads;
 - `skills/btclib-table/measure.sh` — the script `/btclib-table` runs to
@@ -129,6 +134,10 @@ ln -s "${PROCESS:?}/skills/btclib-pr" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skill
 ```
 
 ```shell
+ln -s "${PROCESS:?}/skills/btclib-inbox" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/btclib-inbox"
+```
+
+```shell
 ln -s "${PROCESS:?}/skills/btclib-table" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/btclib-table"
 ```
 
@@ -173,10 +182,10 @@ have it. Claude Code runs them before every Bash call:
 ```
 
 Check it in a new session: `echo "$PROCESS"` prints the clone's path,
-`/btclib-iss`, `/btclib-pr`, `/btclib-table` and `/night-mode` are
-listed among the skills, `/agents` lists `writer`, `reviewer` and
-`designer`, `/hooks` lists the `PreToolUse` hooks, and the command
-`cd /` is refused.
+`/btclib-iss`, `/btclib-pr`, `/btclib-inbox`, `/btclib-table` and
+`/night-mode` are listed among the skills, `/agents` lists `writer`,
+`reviewer` and `designer`, `/hooks` lists the `PreToolUse` hooks, and
+the command `cd /` is refused.
 
 ### Codex
 
@@ -190,6 +199,10 @@ ln -s "${PROCESS:?}/skills/btclib-iss" ~/.agents/skills/btclib-iss
 
 ```shell
 ln -s "${PROCESS:?}/skills/btclib-pr" ~/.agents/skills/btclib-pr
+```
+
+```shell
+ln -s "${PROCESS:?}/skills/btclib-inbox" ~/.agents/skills/btclib-inbox
 ```
 
 ```shell
@@ -231,11 +244,11 @@ printf 'Work in a btclib-org repository follows %s, read whole first.\n' \
 ```
 
 Check it in a new session: `echo "$PROCESS"` prints the clone's path,
-`/skills` lists `btclib-iss`, `btclib-pr`, `btclib-table` and
-`night-mode`, Codex names `writer`, `reviewer` and `designer` when asked
-which custom agents it can spawn, and `/hooks` lists the
-`PermissionRequest` hook. Codex runs a hook only once you have trusted
-it there.
+`/skills` lists `btclib-iss`, `btclib-pr`, `btclib-inbox`,
+`btclib-table` and `night-mode`, Codex names `writer`, `reviewer` and
+`designer` when asked which custom agents it can spawn, and `/hooks`
+lists the `PermissionRequest` hook. Codex runs a hook only once you have
+trusted it there.
 
 ### A machine set up before the skills
 
@@ -283,6 +296,15 @@ answers what the reviewers raised, gets CI green, and takes them to the
 decision to approve and to `main`. With no argument it sweeps the
 organization's open pull requests: by day it proposes which to work, at
 night it works them without asking, as its *The sweep* says.
+
+```text
+/btclib-inbox [--since <hours> | <time>]
+```
+
+lists the issues and pull requests of the organization that wait on the
+maintainer, newest first, marking those new since the time `--since`
+gives, 24 hours back by default. Where the session can read his mail, it
+also lists his threads with `btclib.org`. It only reads.
 
 ```text
 /btclib-table
