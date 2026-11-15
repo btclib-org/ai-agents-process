@@ -1298,12 +1298,12 @@ named by every ruleset printed, or a read fails other than with those
 404s, hold and ask the human (*Where it is not obvious*).
 
 **Where it is not obvious, the human decides**, as one decision
-(`every-session.md`'s *When the human has to decide*). Its context is
-the `PR` link, the head sha, and each failed item with its measurement.
-The alternatives are: approve, once the thread item holds; ask the
-author for changes, naming them, where the session cannot push to the
-branch; wait, naming on what or whom; close, where that is an option.
-Where only the bot's quota fails the items, the human may run a Claude
+(`every-session.md`'s *When the human has to decide*). Its context
+also gives the head sha and each failed item with its measurement. The
+alternatives are: approve, once the thread item holds; ask the author
+for changes, naming them, where the session cannot push to the branch;
+wait, naming on what or whom; close, where that is an option. Where
+only the bot's quota fails the items, the human may run a Claude
 review locally. Record it as a hold (`every-session.md`'s *When the
 human has to decide*). On "approve", approve as above, with a body
 saying it follows the human's decision. At night it is a deferred item
@@ -1410,6 +1410,9 @@ and how to resolve it. Completing it:
 - **Thank them in a comment of its own**: what their change does, what
   was added and why, in terms they can learn from, and the open issues
   they might take next.
+
+Both thanks, the findings' first line and the comment of its own, bind
+btclib-org only.
 
 Where the bot's review does not run — a fork's pull request, and any
 other where `gh pr checks` shows no review — that review is absent (*The
