@@ -49,8 +49,9 @@ says which a number is. A pull request among the arguments is
 
 **Which sections are yours**, beyond the shared file's map:
 
-- **The writer**: *What the issue still asks*, and `/btclib-pr`'s *What
-  was raised*, *Answering it* and *Rebase and CI*.
+- **The writer**: *What the issue still asks*, *Ports of the standard*
+  where it writes a port, and `/btclib-pr`'s *What was raised*,
+  *Answering it* and *Rebase and CI*.
 - **The reviewer**: `/btclib-pr`'s *Rebase and CI*'s first bullet, for
   the delta it reads.
 - **The orchestrator**: all of this file.
@@ -59,18 +60,83 @@ says which a number is. A pull request among the arguments is
 
 - **Never as a batch; never hold one that is ready.** Open each pull
   request as soon as it is cleared, except an embargoed fix (the shared
-  *Committing and rebasing*).
+  *Committing and rebasing*). Ports of the standard are the one batch
+  (*Ports of the standard*).
 - **Bundle by subject, not by file**, as the tree's `CONTRIBUTING.md`
   says in *One subject, opened as soon as it is written*. Issues one
   decision answers share a subject; issues that only touch the same file
   do not. Before assigning a worker, look for open issues sharing a
   subject with the one at hand (`gh issue view` each) and take them
   together.
-- **A port asks for convergence.** Hash the copies first; ask each tree
-  to take the source byte for byte rather than apply the delta you
-  measured, which can come up short.
 - **Where a pull request is already open for an issue**, this skill
   opens no competing branch: that pull request is `/btclib-pr`'s.
+
+## Ports of the standard
+
+A change of the standard in `btclib-org/.github` that every tree has
+to take lands there first, and reaches each other tree by a port.
+
+- **A tree's ports go in one batch**: one pull request holding every
+  change of the standard landed since the tree's last port. **A batch
+  goes once a day**, after the day's release where the tree had one, and
+  the first session that day to find an issue waiting for it (below)
+  starts it.
+- **A change that may not wait goes at once**, in a round of its own,
+  or as the tree's first batch where none has landed, since the guess
+  below would pass the changes still waiting: a security fix, a change
+  without which a tree's gates, a required check or a release fail, and
+  a change the maintainer names on its issue. A session unsure whether a
+  change may wait asks the maintainer (`every-session.md`'s *When the
+  human has to decide*).
+- **The standard's issue waits for the batches.** Once the standard's
+  change lands, the issue takes `on-hold`, a pause the maintainer
+  decided, and a comment saying its port "travels with the next batch"
+  (`every-session.md`'s *A hold is recorded*). It waits for each tree
+  whose last port (below) does not hold its change. A session finds the
+  waiting issues with:
+
+  ```shell
+  gh issue list -R btclib-org/.github --state open --label on-hold \
+    --limit 1000 --search '"travels with the next batch" in:comments'
+  ```
+
+  Each tree's port cites the issue, and the session whose landing
+  closes it takes the label off (the shared *An issue owed by several
+  trees is closed by the last landing only*).
+- **The standard's alignment tests expect the drift.** The standard's
+  pull request adds to `EXPECTED_DRIFT`, in `tests/verbatim_test.py`,
+  each path it changes that section 14 compares and that has no entry
+  yet, citing the issue. The entry's strict expected failure turns red
+  once every copy agrees. The session whose landing closes the issue an
+  entry cites then removes the entry, in a pull request of the standard,
+  or, where the copies still differ, points it at the issue of a change
+  still waiting on that path.
+- **A batch takes the standard's copies byte for byte**, rather than
+  applying the delta, which can come up short. It takes them from
+  `<S>`, the standard's `origin/main` when the batch starts. A file with
+  a `## This repository in particular` heading takes the part above it.
+  Each other change since the tree's last port is adapted as its issue
+  says.
+- **The subject that lands records the port**: a batch's opens
+  `Port btclib-org/.github@<S>`. A round of its own takes a subject of
+  its own, so that the record does not pass the changes still
+  waiting. Before the first batch, no subject records one: the script
+  below guesses it from the copies, the writer checks each change it
+  lists against the tree, and the body names the guess.
+- **`scripts/port-check.py` checks a batch against `<S>`.** Its
+  docstring says which files it compares, what it prints and what each
+  exit code means:
+
+  ```shell
+  std=<checkout of btclib-org/.github>
+  s=<S>
+  tree=<the tree's worktree>
+  base=<the batch's parent on main>
+  head=<the batch's head>
+  python3 "${PROCESS:?}/scripts/port-check.py" "$std" "$s" "$tree" "$base" "$head"
+  ```
+
+  The shared *A pull request's rounds* says what its exit decides.
 
 ## What the issue still asks
 
@@ -104,7 +170,8 @@ gh issue edit <n> --repo <owner>/<repo> --remove-label upstream-dependent
 
 An issue with a reason label (`every-session.md`'s *When the human has
 to decide*, *A hold is recorded*) is taken only once the wait its label
-names is over, and taking it removes that label the same way.
+names is over, and taking it removes that label the same way, except the
+`on-hold` of a port's wait, which *Ports of the standard* takes off.
 
 ## Opening the pull request
 
