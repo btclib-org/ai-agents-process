@@ -109,7 +109,8 @@ with no file is.
   scratchpad=<the session's scratchpad>
   started=$(cat "${scratchpad:?}/orchestrator/process.sha")
   next=$(cat "${scratchpad:?}/orchestrator/process.next")
-  git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- process/ skills/ scripts/
+  git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- \
+    process/ skills/ scripts/ agents/
   ```
 
   Where the diff prints anything, the session re-reads each section it
@@ -141,13 +142,24 @@ with no file is.
   lists, such as `scripts/gate-lock.sh`: the worker re-reads whole each
   one it has read, and stops following each one `next` no longer holds.
 
+  A file under `agents/` is the definition a worker of its role is
+  started from (*Clients*), and a worker already running keeps the one it
+  started with. Where the diff lists the file a running worker was
+  started from, the next brief names it too: the worker reads it whole
+  and follows it in place of the text it started with. The model, the
+  effort and the tools Claude Code takes from its frontmatter cannot
+  change for a running worker; only a worker started from the new file
+  can take them.
+
   Where the diff exited non-zero, or `process.sha` is missing or empty,
   the changed sections are not known. The session notes `HEAD` again as
   its skill's opening says, then re-reads whole every file under
-  `process/`, `skills/` and `scripts/` it has read, and every one where
-  it cannot tell. The next brief to each worker already running asks it
-  to re-read its role's sections whole, and each file under `scripts/`
-  it has read.
+  `process/`, `skills/`, `scripts/` and `agents/` it has read, and every
+  one where it cannot tell; it stops following each one the checkout no
+  longer holds. The next brief to each worker already running asks it to
+  re-read whole its role's sections, each file under `scripts/` it has
+  read and the file it was started from, as above, and to stop following
+  each one the checkout no longer holds.
 
 ## Night mode
 
