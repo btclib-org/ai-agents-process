@@ -35,10 +35,10 @@ with no file is.
   exit code, the one the repository calls the gate of record first.
   Where you fixed the branch yourself, your own runs are reported the
   same way.
-- **Re-measure every finding before passing it on, and answer each
-  one**, as `/btclib-pr`'s *Answering it* says. A list found incomplete
-  twice is deleted, not lengthened. From the second round, remind the
-  reviewer of `REVIEWING.md`'s stopping criterion.
+- **Before passing a finding on, answer it** as `/btclib-pr`'s
+  *Answering it* says. A list found incomplete twice is deleted, not
+  lengthened. From the second round, remind the reviewer of
+  `REVIEWING.md`'s stopping criterion.
 - **From the sixth round of a branch's local review, the brief names the
   round**, and the rule of *The rounds* that files a finding on a shape
   no tree and no caller holds.
