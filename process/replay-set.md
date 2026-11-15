@@ -153,11 +153,10 @@ defect, and that the pull request fixed in `d5dee25` before it landed.
 - base `d765a161be9100de22248de72f22d6c9cae17c19`
 - head `709efef082c5f81d0fdf775633317699aa0fc1be`
 - defect: the port makes `CONTRIBUTING.md` and `REPOSITORY.md` say
-  auto-merge is off and no pull request can be armed, while the
-  *Arming auto-merge* and *Landing* sections of
-  `skills/btclib-pr/SKILL.md`, `skills/btclib-iss/SKILL.md` and
-  `process/btclib-common.md` at that head still tell a session to arm
-  it, as
+  auto-merge is off and no pull request can be armed, while
+  `skills/btclib-pr/SKILL.md`, in its sections *Arming auto-merge* and
+  *Landing*, `skills/btclib-iss/SKILL.md` and `process/btclib-common.md`
+  at that head still tell a session to arm it, as
   `git grep -c -i -E 'auto-merge|--auto' 709efef -- skills process`
   shows in each of the three.
 - found by both runs of 2026-11-15 (*Runs*), and fixed on `main` in
