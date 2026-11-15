@@ -2,7 +2,8 @@
 
 The pull requests a change to the local reviewer is tried on before it
 lands: those where the local rounds cleared a defect that a later review
-found, and clean ones, where no review found any.
+found. A clean one, where no review found any, belongs there too (*What
+a case holds*).
 
 **A change to the reviewer's brief, its model or its effort is run on
 every case here first**, and its pull request adds the run to *Runs* and
@@ -98,7 +99,8 @@ gh api repos/<owner>/<repo>/compare/main...<head> \
 ```
 
 **A clean change belongs in the set too**, so that a change which only
-makes the reviewer raise more shows as false findings. A finding a run
+makes the reviewer raise more shows as false findings. The set holds
+none while ISS btclib-org/ai-agents-process#516 is open. A finding a run
 makes on one is re-measured: where it holds, the case moves to the
 defects, and where it does not, it is a false finding. A pull request
 becomes a clean case where, on the head it landed on, the three
@@ -384,27 +386,25 @@ finding; neither ran the suite as a gate.
   `writing.md`'s *What the prose that lands may say*, which PR
   btclib-org/ai-agents-process#502 rewrites, and which alone `git diff
   e91f4c3 9c5ada8` changes. Claude Code, the `reviewer` agent, Opus,
-  effort `high`, one run per case and a second on the clean case. In
-  both: PR btclib-org/ai-agents-process#317: miss. PR
+  effort `high`, one run per case, and a second on PR
+  btclib-org/.github#2288, then the clean case, since its first two runs
+  differed. In both: PR btclib-org/ai-agents-process#317: miss. PR
   btclib-org/ai-agents-process#444: hit. PR
   btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit. PR
   btclib-org/btclib-node#2516: miss (*How a run is scored*). PR
-  btclib-org/ecc#580: hit. PR btclib-org/.github#2288, the clean case:
-  the baseline `CHANGES REQUESTED`, then `CLEARED` on the repeat; the
-  candidate `CLEARED`, then `CHANGES REQUESTED`.
+  btclib-org/ecc#580: hit. PR btclib-org/.github#2288, scored as a
+  defect: the baseline hit, then miss on the repeat; the candidate miss,
+  then hit.
 
 On PR btclib-org/.github#2288 all four runs raise the same finding,
-which holds: the docstring says "draft" after "not a" is not listed,
-while a line break, a tab or a second space between the words still gets
-it listed, since `UNDATED`'s lookbehind is the literal "not a ". Two
-runs weigh it blocking and two non-blocking, one of each in each
-configuration, so the case did not come out clean in this run. On PR
-btclib-org/ai-agents-process#317 both block on "tied to the account",
-which holds, and the candidate names the exemption only as non-blocking.
-On PR btclib-org/ecc#484 the candidate also blocks on the rule being
-stated a second time in the review workflow's prompt, as the run at
-`cab9c97` did, which was not measured false. No finding of either
-configuration was measured false.
+which holds, and which moved the case to the defects (*What a case
+holds*). Two runs weigh it blocking and two non-blocking, one of each in
+each configuration. On PR btclib-org/ai-agents-process#317 both block on
+"tied to the account", which holds, and the candidate names the
+exemption only as non-blocking. On PR btclib-org/ecc#484 the candidate
+also blocks on the rule being stated a second time in the review
+workflow's prompt, as the run at `cab9c97` did, which was not measured
+false. No finding of either configuration was measured false.
 
 Each reviewer read the process from a copy of `process/` at its sha
 without this file, and the case from a repository holding only the head
@@ -418,10 +418,10 @@ stand-in memcheck header. On PR btclib-org/btclib-node#2516 both loaded
 btclib, read-only, from outside the tree. The labels were random, and
 the scores were written before the key was read.
 
-The candidate has the baseline's hits and misses on the six defect
-cases, and on the clean case the two differ no more than each differs
-from itself. The run shows no loss from the bullet, and cannot show a
-gain: no case's defect concerns a changelog entry.
+The candidate has the baseline's hits and misses on the other six cases,
+and on PR btclib-org/.github#2288 each configuration hits once in two
+runs. The run shows no loss from the bullet, and cannot show a gain: no
+case's defect concerns a changelog entry.
 
 ## Cases
 
@@ -482,12 +482,20 @@ gain: no case's defect concerns a changelog entry.
 
 - base `4e68136bb12ffdf1bdd21a86479b1c921668848b`
 - head `dfcc9c4262bd9a94cb2bb4f9669052aacb7d1163`
-- clean, as *What a case holds* measures it, on 2026-11-15: the forge's
-  reviews of the head it landed on read no finding, and two fresh
-  reviewers at `$PROCESS` `aa5dcdc` each cleared it. One of them raised
-  two non-blocking findings and a nit, none a defect: the first asks
-  whether ISS btclib-org/.github#2278 is fully answered, and it is,
-  since that issue's *Done when* asks that `--stale` list no
+- defect: the docstring the branch adds to
+  `.github/scripts/bestpractices.py` says "draft" after "not a" is not
+  listed, while `UNDATED`'s lookbehind is the literal "not a ", so a
+  line break, a tab or a second space between the words still gets it
+  listed.
+- found by each run of the replay of 2026-11-15 at `e91f4c3` and
+  `9c5ada8` (*Runs*), and measured again by the orchestrator; not fixed
+  on `main` (ISS btclib-org/.github#2327).
+- measured clean on 2026-11-15, before that run, as *What a case holds*
+  asks: the forge's reviews of the head it landed on read no finding,
+  and two fresh reviewers at `$PROCESS` `aa5dcdc` each cleared it. One
+  of them raised two non-blocking findings and a nit, none a defect: the
+  first asks whether ISS btclib-org/.github#2278 is fully answered, and
+  it is, since that issue's *Done when* asks that `--stale` list no
   justification for "not a draft" alone; the rest is wording.
 
 ### PR btclib-org/btclib-node#2516
