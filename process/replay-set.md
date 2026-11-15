@@ -7,8 +7,10 @@ found, and clean ones, where no review found any.
 **A change to the reviewer's brief, its model or its effort is run on
 every case here first**, and its pull request adds the run to *Runs* and
 names it in `## Evidence`. The brief's part this repository holds is
-`local-review.md`'s *Local review*, `agents/reviewer.md` with its
-generated `.toml`, and this tree's `REVIEWING.md`; another tree's
+the files and sections `every-role.md`'s map gives the reviewer under
+*Everybody* and *The reviewer*, the reviewer's sections of the skill the
+brief names, `agents/reviewer.md` with its generated `.toml`, and this
+tree's `REVIEWING.md`; another tree's
 `REVIEWING.md` and the review bot's prompt, which the brief also
 carries, change in their own trees. The model and the effort are those
 `orchestration.md`'s *Models* gives. Without the run, such a change is
