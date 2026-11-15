@@ -23,8 +23,7 @@ The process the btclib-org maintainers follow with the coding agents
 - `process/writing.md` — the writer's rules, from before it starts to
   the commit it hands over;
 - `process/local-review.md` — how the local review rounds run;
-- `process/orchestration.md` — the orchestrator's rules, night mode and
-  the wrap-up;
+- `process/orchestration.md` — the orchestrator's rules and the wrap-up;
 - `process/btclib-common.md` — a table of the file that holds each
   section a citation of it names;
 - `process/night-mode.md` — how night mode is turned on and off, and

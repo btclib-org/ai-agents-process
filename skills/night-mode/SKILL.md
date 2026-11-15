@@ -6,11 +6,11 @@ argument-hint: "on|off|status"
 
 # Night mode
 
-Do what `$ARGUMENTS` names. The rules are all in
+Do what the word after the skill's name says. The rules are all in
 `$PROCESS/process/night-mode.md`, which the session reads whole whatever
-the word. A session that has not read `$PROCESS/process/every-session.md`
-whole reads it first. `$PROCESS` is two directories above this skill's
-own.
+the word. A session that has not read
+`$PROCESS/process/every-session.md` whole reads it first. `$PROCESS` is
+two directories above this skill's own.
 
 - `on` starts the night as `night-mode.md`'s activation says.
 - `off` ends it as `night-mode.md`'s paragraph on turning it off says.

@@ -2,13 +2,14 @@
 
 This file binds the session that turns night mode on, whichever skill
 it runs or none; in `/btclib-iss` and `/btclib-pr` that is the
-orchestrator. `every-role.md`, beside this file, opens the process: its
-opening says where a section named here in italics with no file is.
+orchestrator. A section named here in italics with no file is in
+`every-session.md`, beside this file.
 
 **The human turns night mode on** with `/night-mode on`, with `--night`
 in a skill's arguments, or in words, **and off** with `/night-mode off`
-or in words, at any point. The session reads this file whole when night
-mode is turned on.
+or in words, at any point. Where night mode is turned on while it is on,
+or off while it is off, the session says so, and the night stays as it
+is. The session reads this file whole when night mode is turned on.
 
 **Night mode has no ceiling and no duration**: it lasts until the human
 turns it off.
@@ -35,11 +36,12 @@ under the ordinary rules. The morning report is the next message, unless
 it was given while the work waited. Its deferred items are then asked as
 *When the human has to decide* says.
 
-**`/night-mode status` answers from the session's context**: whether
-the night is on and since when, and the items deferred so far, listed as
-the morning report lists them. It puts none of them and writes nothing.
-The session runs `date -u +'%F %R UTC'` as the night starts, and the
-time it prints is the one status gives.
+**`/night-mode status` answers from the session's context**: whether the
+night is on and since when, and the items deferred so far, listed as the
+morning report lists them. It puts none of them and writes nothing. The
+session runs `date -u +'%F %R UTC'` as the night starts, and the time it
+prints is the one status gives. Where the context no longer holds the
+time or an item, status says so.
 
 **During the night no question is asked interactively.** Every point
 where the session stops for the human — a decision, a refused
@@ -94,7 +96,8 @@ the comments on the issues. It holds:
   also gives it in that section's shape, as its record;
 - the collateral filed, by number, each with its pull request, in review,
   or excepted with its reason;
-- *Wrap-up*'s report, where the session ends with the night.
+- the report of `orchestration.md`'s *Wrap-up*, where the session ends
+  with the night.
 
 Its deferred items are put one per message, the first in the report
 itself, and each message that takes an answer puts the next until none
