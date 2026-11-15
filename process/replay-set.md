@@ -339,37 +339,43 @@ item is not adopted.
 - **Candidate**, 2026-11-15: `$PROCESS` `cab9c97`, the factor changed
   being the brief's prose rules of ISS btclib-org/ai-agents-process#415,
   *Local review*'s new *A text to be posted* among them. Claude Code,
-  the `reviewer` agent, Opus, effort `high`, one run per case. Its
-  baseline on the first four cases is the runs at `53b7a57` and
-  `853aa9c` above, not run again. The candidate's base, `e029de3`,
-  differs from `53b7a57` by the text of PR
-  btclib-org/ai-agents-process#478, and from `853aa9c` by that text and
-  by the map entry of PR btclib-org/ai-agents-process#484, which it
-  lacks, so the comparison changes more than one factor. PR
-  btclib-org/ai-agents-process#317: miss. PR
+  the `reviewer` agent, Opus, effort `high`, one run per case. It is
+  compared with the baseline at `53b7a57` above on all seven cases: the
+  candidate's base, `e029de3`, differs from `53b7a57` only in
+  `process/orchestration.md`, which no brief of this run had the
+  reviewer read. PR btclib-org/ai-agents-process#317: miss. PR
   btclib-org/ai-agents-process#444: hit. PR
-  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit.
-  The three cases PR btclib-org/ai-agents-process#503 added ran after
-  these four, once it had landed, so the set changed between the two
-  parts of the run. PR btclib-org/.github#2288, clean: `CLEARED` with no
-  finding. PR btclib-org/btclib-node#2516: miss, the defect named and
-  measured only as a non-blocking finding in a `CLEARED`, as the case's
-  own finder gave it. PR btclib-org/ecc#580: hit, as blocking. No run at
-  `53b7a57` or `853aa9c` is on record for these three, so they are
-  reported without a comparison.
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit. PR
+  btclib-org/.github#2288, the clean case: `CLEARED` with no finding. PR
+  btclib-org/btclib-node#2516: miss (*How a run is scored*). PR
+  btclib-org/ecc#580: hit. The last three ran after the first four, once
+  PR btclib-org/ai-agents-process#503 had added them to the set.
 
-The run made no false finding on any of the seven cases. On PR
-btclib-org/ecc#484 it also gave as blocking a second finding, which
-earlier runs did not give as blocking: the new bullet restates a rule
-the review workflow's prompt holds. The orchestrator did not measure it
-false. On PR btclib-org/ai-agents-process#317 it raised again the
-finding the earlier runs raised, which holds. Each brief had the
-reviewer read the process from a copy of `process/` at `cab9c97` without
-this file, read the prose at the head, run no suite and use no forge;
-the change's hunk in `/btclib-pr` is outside what the reviewer's map
-gives it. The reviewers read their own tree's `REVIEWING.md` at the
-head, and no verdict's coverage list named this file. On the four cases
-the baseline ran, the candidate has its hits and misses.
+On the seven cases the candidate has the baseline's hits and misses, and
+it made no false finding. On PR btclib-org/ecc#484 it also gave as
+blocking a second finding, which earlier runs did not give as blocking:
+the new bullet restates a rule the review workflow's prompt holds. The
+orchestrator did not measure it false. On PR
+btclib-org/ai-agents-process#317 it raised again the finding the earlier
+runs raised, which holds. Each brief had the reviewer read the process
+from a copy of `process/` at `cab9c97` without this file, read the prose
+at the head, run no suite and use no forge; the change's hunk in
+`/btclib-pr` is outside what the reviewer's map gives it. No verdict's
+coverage list named this file.
+
+Each case's tree was a worktree of its repository's primary checkout,
+which *What a case holds* rules out. Three runs noted that the local
+`origin/main` already holds the landed change: the one on PR
+btclib-org/.github#2288, the clean case, which did not read it; the one
+on PR btclib-org/btclib-node#2516, which compared the head with it and
+found the touched files unchanged; and the one on PR btclib-org/ecc#580,
+which read the merge with it and found the prose unchanged, its hit
+resting on a walk of the head. The run on PR
+btclib-org/ai-agents-process#317 tried the merge with the local
+`origin/main`, which conflicted, and read the head alone. No run read a
+fix. The runs on PR btclib-org/btclib-node#2516 and PR
+btclib-org/ecc#580 ran tests of the branch as inputs to measure a
+finding; neither ran the suite as a gate.
 
 ## Cases
 
