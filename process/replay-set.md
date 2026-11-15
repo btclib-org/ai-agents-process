@@ -52,7 +52,10 @@ The case's tree is built at a new path from a checkout that holds the
 head, named by its path, so that the fetch needs no network and the
 tree keeps no remote. The first command refuses a path that exists,
 since `git init` keeps the objects of a repository already there, and a
-refusal there stops the build. The three values are set first:
+refusal there stops the build. The fetch and the checkout refuse too,
+unless the tree's refs reach no commit, as in the repository the first
+command makes, so that a paste that goes on past a refusal writes
+nothing in a repository already there. The three values are set first:
 
 ```shell
 tree=<tree>
@@ -65,11 +68,13 @@ head=<head>
 ```
 
 ```shell
-git -C "${tree:?}" fetch "${checkout:?}" "${head:?}"
+all=$(git -C "${tree:?}" rev-list --all) && [ -z "$all" ] &&
+  git -C "$tree" fetch "${checkout:?}" "${head:?}"
 ```
 
 ```shell
-git -C "${tree:?}" checkout --detach FETCH_HEAD
+all=$(git -C "${tree:?}" rev-list --all) && [ -z "$all" ] &&
+  git -C "$tree" checkout --detach FETCH_HEAD
 ```
 
 This prints `isolated` only where each read succeeds, the tree has no
