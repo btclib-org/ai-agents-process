@@ -103,9 +103,10 @@ query($q: String!, $endCursor: String) {
     pageInfo { hasNextPage endCursor }
     nodes {
       ... on Issue {
-        number title url
+        number title url createdAt
         repository { name }
         author { __typename login }
+        authorAssociation
         labels(first: 100) { pageInfo { hasNextPage } nodes { name } }
         timelineItems(itemTypes: [LABELED_EVENT], last: 20) {
           nodes { ... on LabeledEvent { createdAt label { name } } }
@@ -144,6 +145,18 @@ exec sh "${d}/run.sh" "comments.${r}" gh api --paginate \
        .created_at] | @tsv"
 EOF_COMMENTS
 
+# merge.sh <repo>/<n>: the pull request's URL and mergeability
+cat > "${d}/merge.sh" <<'EOF_MERGE'
+r=${1%/*} n=${1#*/}
+exec sh "${d}/run.sh" "merge.${r}.${n}" gh api graphql -f o="${o}" \
+  -f r="${r}" -F n="${n}" -f query='
+  query($o: String!, $r: String!, $n: Int!) {
+    repository(owner: $o, name: $r) {
+      pullRequest(number: $n) { url mergeable }
+    }
+  }' --jq '.data.repository.pullRequest | "\(.url)\t\(.mergeable)"'
+EOF_MERGE
+
 # item.sh <repo>/<n>
 cat > "${d}/item.sh" <<'EOF_ITEMSH'
 r=${1%/*} n=${1#*/}
@@ -178,7 +191,8 @@ def asked: [.timelineItems.nodes[]
   | select(.requestedReviewer.login? == $me) | .createdAt] | last;
 def green: .commits.nodes[0].commit.statusCheckRollup.state == "SUCCESS";
 def unanswered: .author.login as $a
-  | [.comments.nodes[], .reviews.nodes[] | select(human and .author.login != $a)]
+  | [.comments.nodes[], .reviews.nodes[]?
+    | select(human and .author.login != $a)]
   | length == 0;
 # the bot's verdict on the head, read as /btclib-pr's "The reviews on
 # GitHub" reads it with gh pr view: change both together
@@ -186,13 +200,17 @@ def ack: .headRefOid as $h
   | [.verdicts.nodes[] | ((.body // "") + "\n" | split("\n")[0])
     | select(test("^(ACK|CHANGES REQUESTED|NACK|NO VERDICT) " + $h + "(:|\\s|$)"))]
   | length > 0 and (last | startswith("ACK "));
+def agentack: kind == "PR" and .author.login == "claude"
+  and .author.__typename == "Bot" and (.isDraft | not) and green
+  and (.reviewDecision // "REVIEW_REQUIRED") == "REVIEW_REQUIRED" and ack;
 def age: if . == null then "?" else
   [0, ($at | fromdate) - fromdate] | max / 3600 | floor
   | if . < 48 then "\(.) h" else "\(. / 24 | floor) d" end end;
 def balance: if kind == "PR" then " \(.changedFiles) file"
   + (if .changedFiles == 1 then "" else "s" end)
   + ", +\(.additions)/-\(.deletions)" else "" end;
-def row($g; $t; $why; $mark): {g: $g, t: $t, line: ("- \($t | age) "
+def row($g; $t; $why; $mark): {g: $g, t: $t,
+  slug: "\(.repository.name)/\(.number)", line: ("- \($t | age) "
   + "[\(kind) \(.repository.name)#\(.number)](\(.url))\(balance) — \($why)"
   + (if $mark and ($t // "") >= $since then " (new)" else "" end)
   + " — \(.title[:50] | gsub("[[:cntrl:]]"; " ")
@@ -204,27 +222,31 @@ def row($g; $t; $why; $mark): {g: $g, t: $t, line: ("- \($t | age) "
           and (.isDraft | not) and green and unanswered then
         row(1; .commits.nodes[0].commit.committedDate;
           "\(.author.login)'s, green, no reply"; true)
+      elif kind == "ISS" and (held | not) and human and (member | not)
+          and unanswered then
+        row(1; .createdAt; "\(.author.login)'s, no reply"; true)
       elif held then row(2; labeled(held); held; true)
       elif kind == "PR"
           and any(.reviewRequests.nodes[]; .requestedReviewer.login? == $me)
         then row(3; asked; "your review"; true)
-      elif kind == "PR" and .author.login == "claude"
-          and .author.__typename == "Bot" and (.isDraft | not) and green
-          and .mergeable == "MERGEABLE"
-          and (.reviewDecision // "REVIEW_REQUIRED") == "REVIEW_REQUIRED"
-          and ack then
+      elif agentack and .mergeable == "MERGEABLE" then
         row(4; .commits.nodes[0].commit.committedDate;
           "ACK, needs your approval"; true)
+      # group 4's but for a mergeability GitHub has not computed yet:
+      # named on the last line, not left out unsaid
+      elif agentack and .mergeable == "UNKNOWN" then row(0; null; ""; false)
       else empty end),
   (($spoke | map({(.k): .}) | add // {}) as $s
     | $closed[] | select(. != null and .state != "OPEN")
     | $s["\(.repository.name)/\(.number)"] as $c
     | row(5; $c.t; "\($c.login) spoke last"; false)) ]
-| group_by(.g) | .[]
-| ["A person waits on an answer", "Asked of you", "Your review requested",
-   "The bot's ACK, needs your approval",
-   "A person spoke on a closed item"][.[0].g - 1] as $h
-| "**\($h)**", "", (sort_by(.t) | reverse | .[].line), ""
+# the groups, then one line of the slugs of unknown mergeability, or empty
+| (map(select(.g > 0)) | group_by(.g) | .[]
+    | ["A person waits on an answer", "Asked of you", "Your review requested",
+       "The bot's ACK, needs your approval",
+       "A person spoke on a closed item"][.[0].g - 1] as $h
+    | "**\($h)**", "", (sort_by(.t) | reverse | .[].line), ""),
+  (map(select(.g == 0) | .slug) | sort | join(" "))
 EOF_ROWS
 
 sh "${d}/run.sh" me gh api user --jq .login
@@ -236,19 +258,16 @@ check repos
 sh "${d}/run.sh" prs gh api graphql --paginate -f q="org:${o} is:open is:pr" \
   -F query=@"${d}/prs.graphql" &
 sh "${d}/run.sh" issues gh api graphql --paginate \
-  -f q="org:${o} is:open is:issue comments:>0" \
-  -F query=@"${d}/issues.graphql" &
-# label:a,b matches either label
-sh "${d}/run.sh" asked gh api graphql --paginate \
-  -f q="org:${o} is:open is:issue comments:0 label:decision,needs-maintainer" \
-  -F query=@"${d}/issues.graphql" &
-xargs -n 1 -P 6 sh "${d}/comments.sh" < "${d}/repos.out" &
+  -f q="org:${o} is:open is:issue" -F query=@"${d}/issues.graphql" &
+# GNU xargs runs its command once on empty input; BSD xargs does not
+[ ! -s "${d}/repos.out" ] ||
+  xargs -n 1 -P 6 sh "${d}/comments.sh" < "${d}/repos.out" &
 wait
-check prs issues asked
+check prs issues
 while read -r r; do
   check "comments.${r}"
 done < "${d}/repos.out"
-cat "${d}/prs.out" "${d}/issues.out" "${d}/asked.out" > "${d}/open.json"
+cat "${d}/prs.out" "${d}/issues.out" > "${d}/open.json"
 # labels and review requests are read 100 at a time, and never cut short
 more=$(jq -r '.data.search.nodes[] | select(.labels.pageInfo.hasNextPage
     or .reviewRequests.pageInfo.hasNextPage) | .url' "${d}/open.json") ||
@@ -264,14 +283,41 @@ done < "${d}/repos.out" |
   jq -nRc --arg me "${me}" --slurpfile open "${d}/open.json" \
     -f "${d}/spoke.jq" > "${d}/spoke.json" || exit 1
 jq -r .k "${d}/spoke.json" > "${d}/spoke.keys" || exit 1
-xargs -n 1 -P 6 sh "${d}/item.sh" < "${d}/spoke.keys"
+[ ! -s "${d}/spoke.keys" ] ||
+  xargs -n 1 -P 6 sh "${d}/item.sh" < "${d}/spoke.keys"
 while read -r k; do
   check "item.${k%/*}.${k#*/}"
 done < "${d}/spoke.keys"
 while read -r k; do
   cat "${d}/item.${k%/*}.${k#*/}.out"
 done < "${d}/spoke.keys" > "${d}/closed.json"
-jq -nr --arg me "${me}" --arg since "${since}" --arg at "${at}" \
-  --slurpfile open "${d}/open.json" --slurpfile spoke "${d}/spoke.json" \
-  --slurpfile closed "${d}/closed.json" -f "${d}/rows.jq" || exit 1
-echo "since ${since}, read at ${at}"
+rows() {
+  jq -nr --arg me "${me}" --arg since "${since}" --arg at "${at}" \
+    --slurpfile open "${d}/open.json" --slurpfile spoke "${d}/spoke.json" \
+    --slurpfile closed "${d}/closed.json" -f "${d}/rows.jq" \
+    > "${d}/rows.md" || exit 1
+  tail -n 1 "${d}/rows.md" | tr ' ' '\n' | sed '/^$/d' > "${d}/unknown.keys"
+}
+rows
+# GitHub computes a pull request's mergeability once it is asked for:
+# those still unknown are read once more, 5 s later, and no more
+if [ -s "${d}/unknown.keys" ]; then
+  sleep 5
+  xargs -n 1 -P 6 sh "${d}/merge.sh" < "${d}/unknown.keys"
+  while read -r k; do
+    check "merge.${k%/*}.${k#*/}"
+  done < "${d}/unknown.keys"
+  while read -r k; do
+    cat "${d}/merge.${k%/*}.${k#*/}.out"
+  done < "${d}/unknown.keys" > "${d}/merge.tsv"
+  jq -c --rawfile m "${d}/merge.tsv" '([$m | split("\n")[] | select(. != "")
+      | split("\t") | {(.[0]): .[1]}] | add) as $m
+    | .data.search.nodes |= map(.mergeable = ($m[.url // ""] // .mergeable))' \
+    "${d}/open.json" > "${d}/open2.json" || exit 1
+  mv "${d}/open2.json" "${d}/open.json"
+  rows
+fi
+sed '$d' "${d}/rows.md"
+u=$(sed 's|\([^/]*\)/\([0-9]*\)|PR \1#\2|' "${d}/unknown.keys" | paste -sd, - |
+  sed 's/,/, /g')
+echo "since ${since}, read at ${at}${u:+; mergeability unknown: ${u}}"

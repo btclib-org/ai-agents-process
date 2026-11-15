@@ -49,11 +49,13 @@ gives the type `User`, not a bot:
 
 1. **A person waits on an answer.** Among its latest 30 comments, the
    latest by a person is another login's, and it is labelled neither
-   `decision` nor `needs-maintainer`. Or it is an outside contributor's
-   pull request, its author's association being none of `OWNER`,
-   `MEMBER` and `COLLABORATOR`, not a draft, with its checks green, and
-   no other person among the latest 30 comments and the latest 30
-   reviews. Aged from that comment, or else from the head commit.
+   `decision` nor `needs-maintainer`. Or, with neither label, it is an
+   outside person's: its author's association is none of `OWNER`,
+   `MEMBER` and `COLLABORATOR`, and no other person is among its latest
+   30 comments and, on a pull request, its latest 30 reviews. Such a
+   pull request is also not a draft and has its checks green. Aged from
+   that comment, or else from an issue's opening or a pull request's
+   head commit.
 1. **Asked of you.** Labelled `decision` or `needs-maintainer`. Aged
    from the latest time that label was added.
 1. **Your review requested.** A pull request whose pending review
@@ -63,7 +65,9 @@ gives the type `User`, not a bot:
    green and its review decision `REVIEW_REQUIRED` or none, where, among
    the bot's latest 5 reviews, the latest verdict naming the head is
    `ACK`, read as `/btclib-pr`'s *The reviews on GitHub* reads it. Aged
-   from the head commit.
+   from the head commit. A pull request whose mergeability GitHub has
+   not yet computed is read once more, 5 s later; one still unknown is
+   named at the end of the last line, after `; mergeability unknown:`.
 1. **A person spoke on a closed item.** A closed issue or pull request
    whose latest comment by a person, among those created since the
    `--since` time, is another login's. Aged from that comment.
