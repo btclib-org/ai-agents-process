@@ -20,8 +20,9 @@ a fast model for straightforward execution, a reasoning-focused model
 for multi-step work, and the most capable available model for difficult
 or ambiguous problems. Increase capability if progress stalls.
 
-This repository holds the maintainers' process:
-`process/btclib-common.md` contains shared rules,
+This repository holds the maintainers' process: `process/every-role.md`,
+`process/writing.md`, `process/local-review.md` and
+`process/orchestration.md` contain shared rules,
 `skills/btclib-iss/SKILL.md` and `skills/btclib-pr/SKILL.md` guide issue
 and pull-request work, and `agents/` defines the roles a session briefs.
 

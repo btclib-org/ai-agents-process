@@ -503,7 +503,7 @@ def main() -> None:
         except subprocess.TimeoutExpired:
             wrong.append(f"{stdin}: no answer in {EVENT_TIMEOUT} s")
             continue
-        names = "btclib-common.md" in run.stderr and "*Where you work*" in run.stderr
+        names = "every-role.md" in run.stderr and "*Where you work*" in run.stderr
         if (run.returncode, run.stdout, names) != (code, "", section):
             wrong.append(f"{stdin}: exit {run.returncode}, stderr {run.stderr!r}")
     if wrong:

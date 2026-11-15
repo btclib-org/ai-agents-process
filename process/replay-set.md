@@ -7,11 +7,11 @@ found, and clean ones, where no review found any.
 **A change to the reviewer's brief, its model or its effort is run on
 every case here first**, and its pull request adds the run to *Runs* and
 names it in `## Evidence`. The brief's part this repository holds is
-`btclib-common.md`'s *Local review*, `agents/reviewer.md` with its
+`local-review.md`'s *Local review*, `agents/reviewer.md` with its
 generated `.toml`, and this tree's `REVIEWING.md`; another tree's
 `REVIEWING.md` and the review bot's prompt, which the brief also
 carries, change in their own trees. The model and the effort are those
-`btclib-common.md`'s *Models* gives. Without the run, such a change is
+`orchestration.md`'s *Models* gives. Without the run, such a change is
 judged on the next pull requests, whose defects nobody knows in advance.
 
 ## What a case holds
@@ -23,7 +23,7 @@ judged on the next pull requests, whose defects nobody knows in advance.
 - for a clean change, how it was measured clean.
 
 **The expected finding is kept out of the reviewer's input.** The run
-briefs a fresh reviewer of the head, as `btclib-common.md`'s *A pull
+briefs a fresh reviewer of the head, as `local-review.md`'s *A pull
 request's rounds* says, with the head's commit message standing for the
 pull request. Its brief names neither this file nor anything posted
 after the head, since both state the defect. A run whose verdict's
@@ -63,7 +63,7 @@ clean case (ISS btclib-org/ai-agents-process#470).
 ## How a run is scored
 
 **A hit names the defect's mechanism and its consequence** well enough
-to fix it, as *The findings record* in `btclib-common.md` matches two
+to fix it, as *The findings record* in `local-review.md` matches two
 findings. The orchestrator scores each verdict against the case's
 sentence, and the human scores where it cannot tell. The cases are
 chosen, not drawn at random, so a run says how a configuration did on

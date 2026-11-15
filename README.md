@@ -16,8 +16,15 @@ The process the btclib-org maintainers follow with the coding agents
   read that table;
 - `process/every-session.md` — the rules every session follows; its
   opening says when it is read;
-- `process/btclib-common.md` — what `/btclib-iss` and `/btclib-pr`
-  share, read whole by each;
+- `process/every-role.md` — what binds every role of `/btclib-iss` and
+  `/btclib-pr`; its opening says which role reads which file;
+- `process/writing.md` — the writer's rules, from before it starts to
+  the commit it hands over;
+- `process/local-review.md` — how the local review rounds run;
+- `process/orchestration.md` — the orchestrator's rules, night mode and
+  the wrap-up;
+- `process/btclib-common.md` — a table of the file that holds each
+  section a citation of it names;
 - `process/night-mode.md` — what the orchestrator follows while night
   mode is on, read when it is turned on;
 - `process/load-generator.md` — how a timing measurement takes every
@@ -41,11 +48,12 @@ The process the btclib-org maintainers follow with the coding agents
 - `scripts/test-git-c-allow.py` — the commands `git-c-allow.py` must
   approve and must refuse, run by the `test-git-c-allow` hook;
 - `scripts/suite-reads.py` — where a tree's tests may read the files of
-  a diff, which *The gates* asks before it leaves the suite to CI;
+  a diff, which `process/writing.md`'s *The gates* asks before it leaves
+  the suite to CI;
 - `scripts/test-suite-reads.py` — the reads `suite-reads.py` must find
   and must not, run by the `test-suite-reads` hook;
 - `scripts/pretooluse-rules.py` — the hook that refuses a command
-  breaking a rule `process/btclib-common.md`'s *Clients* names;
+  breaking a rule `process/every-role.md`'s *Clients* names;
 - `scripts/test-pretooluse-rules.py` — the commands
   `pretooluse-rules.py` must refuse and must let through, run by the
   `test-pretooluse-rules` hook;
@@ -54,24 +62,24 @@ The process the btclib-org maintainers follow with the coding agents
 - `scripts/test-port-check.py` — the fixture repositories
   `port-check.py` must answer, run by the `test-port-check` hook.
 
-`process/btclib-common.md`'s opening says how these files divide the
+`process/every-role.md`'s opening says how these files divide the
 process, and its *Clients* says what differs between the two agents.
 
 ## Prerequisites
 
 - Claude Code and Codex, both: a session runs in one, and its pull
-  requests' fresh reviewer in the other (`process/btclib-common.md`'s
-  *A pull request's rounds*).
+  requests' fresh reviewer in the other (`process/local-review.md`'s *A
+  pull request's rounds*).
 - `gh`, logged in (`gh auth login`).
-- CodeRabbit's CLI, logged in by the maintainer
-  (`coderabbit auth login`), which `process/btclib-common.md`'s
-  *Sourcery and CodeRabbit before a push* runs.
+- CodeRabbit's CLI, logged in by the maintainer (`coderabbit auth
+  login`), which `process/writing.md`'s *Sourcery and CodeRabbit before
+  a push* runs.
 - `uv`.
-- `jq` on the `PATH`, which commands of `process/btclib-common.md` run.
+- `jq` on the `PATH`, which commands of the files under `process/` run.
 - `python3` on the `PATH`, which runs the hooks' scripts.
 - git signing your commits: `commit.gpgsign = true` and a key registered
   on GitHub. The process signs every commit it writes
-  (`process/btclib-common.md`'s *Signed and signed off*).
+  (`process/writing.md`'s *Signed and signed off*).
 
 ## Setup
 
@@ -209,7 +217,7 @@ process, so that a session started without a skill still finds it:
 
 ```shell
 printf 'Work in a btclib-org repository follows %s, read whole first.\n' \
-  "${PROCESS:?}/process/btclib-common.md" >> ~/.codex/AGENTS.md
+  "${PROCESS:?}/process/every-role.md" >> ~/.codex/AGENTS.md
 ```
 
 Check it in a new session: `echo "$PROCESS"` prints the clone's path,
@@ -275,8 +283,8 @@ the last release, and whether a new one is due. It only reads.
 
 In Codex each starts with `$` instead of `/`: `$btclib-iss`.
 
-`/btclib-iss` and `/btclib-pr` work in every repository of
-`btclib-org`; the shared *Where you work* says how the repository is
+`/btclib-iss` and `/btclib-pr` work in every repository of `btclib-org`;
+`process/every-role.md`'s *Where you work* says how the repository is
 named. `/btclib-pr`'s *The decision* and *Landing* say when a session
 approves and when it lands, `--land` included.
 

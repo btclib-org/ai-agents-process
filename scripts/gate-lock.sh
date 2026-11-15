@@ -3,8 +3,8 @@
 # session that user runs. It has GATE_LOCK_SLOTS slots, 3 by default, so
 # that many workers gate at once. POSIX sh, sourced in the same shell call
 # that runs the gates, by sh, bash or zsh, in the main shell or in a
-# `( ... ) &` subshell. btclib-common.md's "The gates" (the gate lock) says
-# in which shell gate_release runs, and where a timeout goes.
+# `( ... ) &` subshell. writing.md's "The gates" (the gate lock) says in
+# which shell gate_release runs, and where a timeout goes.
 # GATE_LOCK_WORKERS, the `-n` of a suite run in a slot, is by default the
 # cores divided by the slots (3 on 10 cores), and GATE_LOCK_LOAD, a
 # ceiling, 3 times the cores (30 on 10). Sourcing sets each of them that
