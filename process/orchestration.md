@@ -109,7 +109,7 @@ with no file is.
   scratchpad=<the session's scratchpad>
   started=$(cat "${scratchpad:?}/orchestrator/process.sha")
   next=$(cat "${scratchpad:?}/orchestrator/process.next")
-  git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- process/ skills/
+  git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- process/ skills/ scripts/
   ```
 
   Where the diff prints anything, the session re-reads each section it
@@ -140,9 +140,9 @@ with no file is.
   Where the diff exited non-zero, or `process.sha` is missing or empty,
   the changed sections are not known. The session notes `HEAD` again as
   its skill's opening says, then re-reads whole every file under
-  `process/` and `skills/` it has read, and every one where it cannot
-  tell. The next brief to each worker already running asks it to
-  re-read its role's sections whole.
+  `process/`, `skills/` and `scripts/` it has read, and every one where
+  it cannot tell. The next brief to each worker already running asks it
+  to re-read its role's sections whole.
 
 ## Night mode
 
