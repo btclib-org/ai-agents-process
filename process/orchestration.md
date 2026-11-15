@@ -177,13 +177,15 @@ the files they name on your own:
 
 - **What the session learned that could improve `AGENTS.md`**: a
   stable fact needed to work in this tree, what it says, and where it
-  belongs. Nothing found is said in one line.
+  belongs.
 - **Where the process fell short of what the session needed**: a rule
   unclear when it mattered, a case it had no answer for. Say what and
   roughly where — a file under `process/` or a skill.
 - **Each class of defect the local rounds missed**, and where the next
   session will read it, as *The classes of defect found carry forward*
   says.
+
+**A nil answer to any of these is one line in the report.**
 
 These are proposals. Closing them is the human's call, and for the
 process files the maintainer's, since they are shared. Each one that

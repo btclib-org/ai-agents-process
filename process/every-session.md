@@ -33,9 +33,9 @@ two disagree.
   Where it is not on its default branch or not clean, stop and say so.
 - **Write plainly.** Everything written — code comments, docs, these
   process files, commit messages, pull request and issue bodies,
-  comments, reports — is clear, simple and no longer than it needs to
-  be: the point first, plain words, one fact per sentence. A clause whose
-  removal loses nothing a reader needs is cut. **Say a thing once;
+  comments, reports — must be clear, simple and no longer than it needs
+  to be: the point first, plain words, one fact per sentence. A clause
+  whose removal loses nothing a reader needs is cut. **Say a thing once;
   elsewhere, point to it** (the standard's section 9, *One fact in one
   place*): a summary names the section that holds a rule and does not
   restate it. A text the reader has to read twice has failed, however
@@ -66,8 +66,7 @@ two disagree.
       then at most three paragraphs. In a review they are the
       measurement, the technical findings, and what the change leaves
       unfixed (next bullet). A review that reports measurements says in
-      one sentence how they were measured, and offers or links the
-      detail.
+      one sentence how they were measured, and links the detail.
     - **What the reviewed change leaves unfixed gets one paragraph of its
       own**, apart from the measurement. Where the review neither asks
       for a fix in the same pull request nor gives it, the paragraph
@@ -75,6 +74,15 @@ two disagree.
       posted once that pull request is open.
     - **A pull request or issue body is at most two short paragraphs**
       before any code block or required template section.
+    - **"ACK" appears only in an ACK, and every ACK is a review on the
+      head sha it names.** Another reviewer's verdict, quoted as that
+      reviewer gave it, is not a use of the word, as in a row of the
+      findings record or a link of an approval's body. A hit of
+      `grep -nE '(^|[^[:alnum:]])(ut|re|cr|t|N)?ACK' <file>` outside a
+      verdict line and outside such a quote is the defect.
+    - **A gendered pronoun for a person stands only as that person
+      states it**, in our own files too. This lists each one to check:
+      `grep -nwiE 'he|him|his|himself|she|her|hers|herself' <file>`.
     - **A text over a limit is not posted but returned cut**, unless a
       maintainer asked for exactly that detail.
     - **The findings record is a record, not a reply**
@@ -169,7 +177,10 @@ rule, and report the outcome in one line.
 
 **Each decision comes in one shape**, and is not asked until it has it:
 
-- a brief context: what is at stake, why work stops here, and its link;
+- the context, in full every time, even for an item discussed before:
+  the linked repository and number, the title, the author, the state
+  (reviews, verdicts, open questions), what we did and found, why work
+  stops here, and the full texts at stake;
 - the recommendation first, with its reason;
 - the other alternatives, each with what it costs;
 - where an alternative changes a pull request's diff, the delta it

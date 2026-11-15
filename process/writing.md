@@ -235,14 +235,19 @@ of the standard* says.
   the verb.
 - **One keyword closes one issue, and does not cross a newline.** "Closes
   #1, #2" closes `#1`. Write the closing block one keyword per line.
+- **No `@` mention in a pull request body or a commit message**, in any
+  repository. A mention goes in a comment, so a hold's comment that
+  mentions the maintainer stays (`every-session.md`'s *When the human
+  has to decide*).
 - **Sweep before handing over**: grep the commit body (and later the pull
   request body) for every form of the three words next to a reference.
   The same sweep finds bare references with `perl -ne 'print if
   /(?<![\/A-Za-z0-9.\-])#[0-9]+/'`, whose `0-9` keeps
   `btclib-org/btclib-secp256k1#N` from reading as bare. It lists the
-  non-ASCII codepoints of both texts (Python, `ord(c) > 127`) other than
-  the em dash and the ellipsis this file uses: a CJK character mid-word
-  is a generation artefact no gate reads.
+  non-ASCII codepoints (Python, `ord(c) > 127`) of both texts, and of
+  every other text posted on a forge, other than the em dash and the
+  ellipsis this file uses: a CJK character mid-word is a generation
+  artefact no gate reads.
 
 ### The gates
 

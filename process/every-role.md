@@ -760,9 +760,15 @@ plainly*), as on a code defect, where the branch adds it, falsifies it
 or makes it materially worse (*Collateral*).** The tree's own files are
 every tracked file, docstrings and comments included. Only wording that
 could be better does not block. A wording finding on what the branch
-adds is still made, with the shorter text, and is fixed with the next
-change to the branch, unless `/btclib-pr`'s *Answering it* keeps it off
-the branch as a refinement.
+adds is still made, and is fixed with the next change to the branch,
+unless `/btclib-pr`'s *Answering it* keeps it off the branch as a
+refinement.
+
+**The reviewer may propose replacement text.** Where the branch takes
+it, a proposal that changes substance, tone or one of the human's own
+sentences goes to the human as a decision (`every-session.md`'s *When
+the human has to decide*) before the writer applies it, and a
+mechanical fix goes straight to the writer.
 
 **A false or misleading sentence outside the tree does not send a
 cleared branch back**:
@@ -794,6 +800,11 @@ an amend where the branch is amended anyway, and otherwise in the squash
   say it was not run. A small, self-contained one that no red gate,
   security or packaging defect waits on is filed with the `good first
   issue` label, a *Done when* and the file to look at.
+- **Before a change is proposed, closed issues and pull requests are
+  searched for it too**, under broad words, and the maintainers'
+  comments there are read, review threads included. `gh issue list` and
+  `gh pr list` take `--repo <owner>/<repo> --state closed --limit 200
+  --search "<word> <word>"`.
 - **Code outside btclib-org** is reported first in the btclib-org
   repository where it was found, not in its own tracker: `gh issue create
   --repo btclib-org/<repo> --label upstream-report`. Section 11 of
@@ -815,7 +826,7 @@ an amend where the branch is amended anyway, and otherwise in the squash
 - **Read back the number before reporting it**:
   `gh issue view <n> --repo <owner>/<repo>`. In a report, collateral
   appears as `ISS <repo>#123`, as *How an issue and a pull request are
-  named* says, never as a description.
+  named* says, followed by a very short description.
 - **The reviewer files with the body inline**; where it cannot file,
   the body goes verbatim in its report.
 - **Collateral is closed within the same session**, whoever filed it —
