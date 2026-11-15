@@ -107,6 +107,31 @@ raised, as blocking, that "tied to the account" is wider than "does not
 clear within the session": a finding that holds, outside the case's
 defect, and that the pull request fixed in `d5dee25` before it landed.
 
+- **Baseline**, 2026-11-15: `$PROCESS` `aa5dcdc`, no factor changed;
+  Claude Code, the `reviewer` agent, Opus, effort `high`, the brief
+  having the reviewer read `every-session.md` and `btclib-common.md`
+  whole. PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit. PR
+  btclib-org/ai-agents-process#444: hit.
+- **Candidate**, 2026-11-15: `$PROCESS` `1ddae0d`, the factor changed
+  being the brief's files of ISS btclib-org/ai-agents-process#447: the
+  reviewer reads `every-session.md`, `every-role.md`, `local-review.md`
+  and the sections of `writing.md` the map names, in place of
+  `btclib-common.md` whole. The same client, model and effort. PR
+  btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: hit, named as non-blocking in a
+  `CLEARED`: a call recorded as `reported` passes on any Valgrind error,
+  whatever caused the exit `42`; scored a hit by the orchestrator, close
+  to the line. PR btclib-org/ecc#484: hit. PR
+  btclib-org/ai-agents-process#444: hit. The change loses no hit on
+  these cases.
+
+These two runs withheld nothing either: each brief had the reviewer read
+the prose at the head, run no suite and use no forge, and no verdict's
+coverage list named this file. On PR btclib-org/ai-agents-process#317
+both raised again the finding outside the case's defect that the first
+two runs raised, which holds.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
