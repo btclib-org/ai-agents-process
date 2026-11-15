@@ -1912,11 +1912,13 @@ says.
   names the paths in its `CONFLICT` lines.
 - A branch a review on GitHub sends back, the bot's or a person's, goes
   through the same rounds before its fix is pushed.
-- **A port of the standard on whose head `scripts/port-check.py` exits
-  `0` goes to no local reviewer** (`/btclib-iss`'s *Ports of the
-  standard*): the standard's text was reviewed where it landed. That
-  check stands wherever the process asks for the latest fresh reviewer's
-  `CLEARED`, and the reviews on GitHub still read the port.
+- **A port of the standard goes to no local reviewer where
+  `scripts/port-check.py` exits `0` on its head and no change it lists
+  asks the tree for more than the standard's copies** (`/btclib-iss`'s
+  *Ports of the standard*): the standard's text was reviewed where it
+  landed, and the script compares only the copies. That check stands
+  wherever the process asks for the latest fresh reviewer's `CLEARED`,
+  and the reviews on GitHub still read the port.
 
 ### The verdict
 

@@ -5,7 +5,8 @@
 
 Each case builds a standard and a tree in a temporary directory with git
 plumbing, which writes commits without signing them, runs the script,
-and checks its exit code and the lines it must print. A case that makes
+and checks its exit code and the lines it must print. The fixtures' own
+git calls run with none of the caller's `GIT_` variables. A case that makes
 one git call fail puts a stand-in `git` first on `PATH`. The script
 prints each case that answers wrongly, and exits 1 where there is one.
 """
@@ -40,18 +41,29 @@ README = """# The standard
 Files: TypeAlias = dict[str, str | tuple[str, str]]
 
 
+def fixture_env() -> dict[str, str]:
+    """Return the environment of a fixture's git call: none of the caller's `GIT_`."""
+    return {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+
+
 class Repo:
     """A bare repository the fixtures write objects into."""
 
     def __init__(self, path: Path) -> None:
         self.path = str(path)
-        subprocess.run(["git", "init", "-q", "--bare", self.path], check=True)
+        subprocess.run(
+            ["git", "init", "-q", "--bare", self.path], check=True, env=fixture_env()
+        )
         self.clock = 1_700_000_000
         self.last = ""
 
     def git(self, *args: str, data: bytes | None = None) -> str:
         done = subprocess.run(
-            ["git", "-C", self.path, *args], input=data, capture_output=True, check=True
+            ["git", "-C", self.path, *args],
+            input=data,
+            capture_output=True,
+            check=True,
+            env=fixture_env(),
         )
         return done.stdout.decode().strip()
 
@@ -59,7 +71,7 @@ class Repo:
         index = os.path.join(self.path, "fixture-index")
         if os.path.exists(index):
             os.remove(index)
-        env = dict(os.environ, GIT_INDEX_FILE=index)
+        env = dict(fixture_env(), GIT_INDEX_FILE=index)
         for name, value in files.items():
             mode, text = value if isinstance(value, tuple) else ("100644", value)
             blob = text  # a gitlink names its commit
@@ -626,6 +638,7 @@ def run(case: Case, root: Path) -> str | None:
         ["git", "-C", tree.path, "cat-file", "-e", f"{main}^{{commit}}"],
         capture_output=True,
         check=False,
+        env=fixture_env(),
     )
     if known.returncode == 0:
         tree.git("update-ref", "refs/remotes/origin/main", main)

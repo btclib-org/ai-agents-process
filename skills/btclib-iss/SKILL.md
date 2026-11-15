@@ -76,17 +76,28 @@ to take lands there first, and reaches each other tree by a port.
   goes once a day**, after the day's release where the tree had one, and
   the first session that day to find an issue waiting for it (below)
   starts it.
-- **A change that may not wait goes at once**, in a round of its own: a
-  security fix, a change without which a tree's gates, a required check
-  or a release fail, and a change the maintainer names on its issue. A
-  session unsure whether a change may wait asks the maintainer (the
-  shared *When the human has to decide*).
-- **The standard's issue waits for the batch.** Once the standard's
+- **A change that may not wait goes at once**, in a round of its own,
+  or as the tree's first batch where none has landed, since the guess
+  below would pass the changes still waiting: a security fix, a change
+  without which a tree's gates, a required check or a release fail, and
+  a change the maintainer names on its issue. A session unsure whether a
+  change may wait asks the maintainer (`every-session.md`'s *When the
+  human has to decide*).
+- **The standard's issue waits for the batches.** Once the standard's
   change lands, the issue takes `on-hold`, a pause the maintainer
-  decided (the shared *A hold is recorded*), and the batch that carries
-  it takes the label off when it starts. Each tree's port cites the
-  issue (the shared *An issue owed by several trees is closed by the
-  last landing only*).
+  decided, and a comment saying its port "travels with the next batch"
+  (`every-session.md`'s *A hold is recorded*). It waits for each tree
+  whose last port (below) does not hold its change. A session finds the
+  waiting issues with:
+
+  ```shell
+  gh issue list -R btclib-org/.github --state open --label on-hold \
+    --search '"travels with the next batch" in:comments'
+  ```
+
+  Each tree's port cites the issue, and the session whose landing
+  closes it takes the label off (the shared *An issue owed by several
+  trees is closed by the last landing only*).
 - **The standard's alignment tests expect the drift.** The standard's
   pull request adds to `EXPECTED_DRIFT`, in `tests/verbatim_test.py`,
   each path it changes that section 14 compares, citing the issue. The
@@ -100,8 +111,8 @@ to take lands there first, and reaches each other tree by a port.
   Each other change since the tree's last port is adapted as its issue
   says.
 - **The subject that lands records the port**: a batch's opens
-  `Port btclib-org/.github@<S>`. A change that may not wait takes a
-  subject of its own, so that the record does not pass the changes still
+  `Port btclib-org/.github@<S>`. A round of its own takes a subject of
+  its own, so that the record does not pass the changes still
   waiting. Before the first batch, no subject records one: the script
   below guesses it from the copies, the writer checks each change it
   lists against the tree, and the body names the guess.
