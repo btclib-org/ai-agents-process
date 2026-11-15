@@ -118,8 +118,16 @@ to take lands there first, and reaches each other tree by a port.
   a `## This repository in particular` heading takes the part above it.
   Each other change since the tree's last port is adapted as its issue
   says.
-- **The subject that lands records the port**: a batch's opens
-  `Port btclib-org/.github@<S>`. A round of its own takes a subject of
+- **The subject that lands records the port**: a batch's is
+  `Port btclib-org/.github@<S>` alone, with no citation. The body
+  cites each issue the batch advances, one `Advances
+  btclib-org/.github#<n>` line per issue. A batch advances many issues,
+  and a subject naming them all would differ from tree to tree.
+  This is the one exception to the shared *Citations and closing
+  keywords*, which puts the citation on the subject: a bare subject
+  closes nothing, so the last landing closes its issue by hand, as that
+  section's *An issue owed by several trees* already allows.
+  A round of its own takes a subject of
   its own, so that the record does not pass the changes still
   waiting. Before the first batch, no subject records one: the script
   below guesses it from the copies, the writer checks each change it
@@ -231,7 +239,8 @@ open:**
       where there was one, rebased and the gates re-run (the shared *A
       rebase and the clearance*)
 - [ ] the subject that lands carries the right citation (the shared
-      *Citations and closing keywords*)
+      *Citations and closing keywords*), or, for a batch, none
+      (*Ports of the standard*)
 - [ ] the closing block comes after the sections, as the bullet below
       describes, and the sweep finds no other keyword
 - [ ] the body has the shape below: the opening paragraphs,
