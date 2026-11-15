@@ -11,12 +11,12 @@ with no file is.
   the skill's, and the sections of those files and the skill that are
   its role's, the issue or pull request, the repository, the worktree
   and scratch paths, the force-push grant, and the claims you measured.
-  The same for a reviewer and a designer.
+  The same for a reviewer and a designer, and for a designer the
+  `origin/main` sha it reads the tree at.
 - **Before dispatching, ask whether the issue is collateral of a pull
   request this session worked** (*Collateral*).
 - **The role map binds the brief.** A writer does not open pull requests;
-  do not ask it to. The one exception, stated as such in the brief, is a
-  one-line fix to a red `main`.
+  do not ask it to.
 - **Every claim in a brief carries its command, or the words saying it
   is unmeasured.** A writer writes a false premise into prose that lands.
   `ls -d` a path before naming it; a missing checkout is a question for
