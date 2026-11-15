@@ -794,7 +794,11 @@ def git_rules(argv: list[str]) -> list[str]:
         broken.append("stash")
     if sub == "push" and push_forces(args, after):
         broken.append("force")
-    if sub == "worktree" and args[:1] == ["add"] and worktree_fetch_head(args[1:], after):
+    if (
+        sub == "worktree"
+        and args[:1] == ["add"]
+        and worktree_fetch_head(args[1:], after)
+    ):
         broken.append("fetch-head")
     return broken
 
