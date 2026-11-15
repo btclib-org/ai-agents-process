@@ -125,6 +125,20 @@ defect, and that the pull request fixed in `d5dee25` before it landed.
   whatever caused the exit `42`; then miss on the repeat *How a run is
   scored* asks for. PR btclib-org/ecc#484: hit. PR
   btclib-org/ai-agents-process#444: hit.
+- **Candidate**, 2026-11-15: `$PROCESS` `2166200`, whose process files,
+  `agents/` and `REVIEWING.md` are those of `1ddae0d`, the factor
+  changed being the whole brief of ISS btclib-org/ai-agents-process#447:
+  the split process files, the change's `agents/reviewer.md`, and for
+  this repository's cases the change's `REVIEWING.md`. Claude Code,
+  Opus, effort `high`, with a general-purpose agent briefed to read the
+  change's `agents/reviewer.md` whole and act as it, since the installed
+  `reviewer` agent is `main`'s: the agent type, with its wider tools, is
+  another difference from the baseline. PR
+  btclib-org/ai-agents-process#317: miss; the verdict notes, outside its
+  findings, that the rewritten exception now reaches the new sentence,
+  and judges it without effect. PR btclib-org/btclib-secp256k1#1331:
+  miss. PR btclib-org/ecc#484: hit. PR btclib-org/ai-agents-process#444:
+  hit.
 
 Neither the run at `aa5dcdc` nor the run at `1ddae0d`, their repeats
 included, made a false finding. Outside a case's defect, on PR
@@ -137,18 +151,39 @@ btclib-org/btclib-secp256k1#1403). Each brief had the reviewer read the
 prose at the head, run no suite and use no forge, and no verdict's
 coverage list named this file.
 
+The run at `2166200` withheld from PR btclib-org/ai-agents-process#317
+and PR btclib-org/ai-agents-process#444 the sentence of the change's
+`REVIEWING.md` that states the defect of PR
+btclib-org/ai-agents-process#317, from "In [PR ai-agents-process#317]"
+to "exempted that run from the hold too.": their reviewers read that
+file in place of the head's. The reviewers of the other cases read their
+own tree's `REVIEWING.md`. No verdict's coverage list named this file,
+and the verdict on PR btclib-org/ai-agents-process#317 says it is absent
+at that head. Outside the cases' defects, that run raised on PR
+btclib-org/ai-agents-process#317 the finding the runs at `2ef0de4` and
+`466d803` raised, which holds; on PR btclib-org/ecc#484, as blocking,
+that the phrase is split across string literals and that a required copy
+is read as a finding, both of which `main`'s later version of that
+paragraph answers; and on PR btclib-org/btclib-secp256k1#1331, as
+non-blocking, that the workflow's outcome list and the harness's call
+table are copies kept by hand, which the orchestrator did not
+re-measure. No false finding was found.
+
 The run at `1ddae0d` tested the process files alone: each reviewer read
 them at that sha, the case's own `REVIEWING.md` at the case's head, and
 the installed `reviewer` agent, which is `main`'s `agents/reviewer.md`.
-So the change's edits to this tree's `REVIEWING.md`, its pointers to
-`btclib-common.md` retargeted to the new files, and to
-`agents/reviewer.md`, its citations of `btclib-common.md` retargeted and
-a sentence naming what the reviewer reads, were not under test. The
-`REVIEWING.md` edit rewrites the paragraph that states the defect of PR
-btclib-org/ai-agents-process#317, so that case cannot evaluate it. The
-split of the process files loses no hit on these cases and shows no
-gain: the hit at `1ddae0d` on PR btclib-org/btclib-secp256k1#1331 did
-not repeat.
+It left out the change's edit to this tree's `REVIEWING.md`, which
+retargets its pointers to `btclib-common.md` to the new files. It also
+left out the edit to `agents/reviewer.md`, which retargets its citations
+of `btclib-common.md` and adds a sentence naming what the reviewer
+reads. The run at `2166200` tested both edits. The `REVIEWING.md` edit
+rewrites the paragraph that states the defect of PR
+btclib-org/ai-agents-process#317, and that run withheld the sentence, so
+that case cannot evaluate the edit. The run at `1ddae0d` loses no hit,
+and its hit on PR btclib-org/btclib-secp256k1#1331 did not repeat. With
+the whole brief under test, the run at `2166200` matches the baseline at
+`aa5dcdc` on every case, so the change loses no hit on these cases and
+shows no gain.
 
 ## Cases
 
