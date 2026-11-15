@@ -257,11 +257,11 @@ human's last comment and last push. A resolved thread is done.
 
 ## Answering it
 
-**Each item is re-measured first** (the shared *Orchestration*), then
-answered one of three ways:
+**Each item is re-measured first**, the whole of it, not its cheap
+half, then answered one of three ways:
 
-- **accept**: fixed in a new signed commit on top (the shared
-  *Committing and rebasing*).
+- **accept**: fixed as the shared *Committing and rebasing* says, and
+  the answer says what changed.
 - **decline**: with the measurement that refutes it, or that shows it a
   refinement (below).
 - **decision**: a choice the tree does not settle — design, scope, a

@@ -35,11 +35,12 @@ with no file is.
   exit code, the one the repository calls the gate of record first.
   Where you fixed the branch yourself, your own runs are reported the
   same way.
-- **Re-measure every finding before passing it on**, the whole of it, not
-  its cheap half. Answer each one: *accept* (say what changed) or
-  *decline* (with the refuting measurement). A list found incomplete
-  twice is deleted, not lengthened. From the second round, remind the
-  reviewer of `REVIEWING.md`'s stopping criterion.
+- **Re-measure each finding before passing it on**, as `/btclib-pr`'s
+  *Answering it* says, and pass on only what holds. That section says
+  how the writer answers what is passed on, and how you decline the
+  rest. A list found incomplete twice is deleted, not lengthened. From
+  the second round, remind the reviewer of `REVIEWING.md`'s stopping
+  criterion.
 - **From the sixth round of a branch's local review, the brief names the
   round**, and the rule of *The rounds* that files a finding on a shape
   no tree and no caller holds.
@@ -109,7 +110,8 @@ with no file is.
   scratchpad=<the session's scratchpad>
   started=$(cat "${scratchpad:?}/orchestrator/process.sha")
   next=$(cat "${scratchpad:?}/orchestrator/process.next")
-  git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- process/ skills/ scripts/
+  git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- \
+    process/ skills/ scripts/ agents/
   ```
 
   Where the diff prints anything, the session re-reads each section it
@@ -122,9 +124,11 @@ with no file is.
   and every heading within its lines, among those that output piped to
   `grep -n '^#'` lists. In a markdown file, a heading the diff removes,
   a line starting `-#`, and adds nowhere is a section that is gone: the
-  session stops following it. Where the diff exited `0`, the compared
-  sha becomes the noted one, since another session may have moved `HEAD`
-  meanwhile:
+  session stops following it. A file the diff lists that `next` no
+  longer holds, a deleted script for one, is gone too: `git show` cannot
+  print it, and the session stops following it. Where the diff exited
+  `0`, the compared sha becomes the noted one, since another session may
+  have moved `HEAD` meanwhile:
 
   ```shell
   scratchpad=<the session's scratchpad>
@@ -135,14 +139,28 @@ with no file is.
   are its role's, and those gone. Where a map of *Which sections are
   yours* changed, it also names each section the map now gives that
   role, changed or not, and each it no longer gives, which the worker
-  stops following.
+  stops following. It also names each file under `scripts/` the diff
+  lists, such as `scripts/gate-lock.sh`: the worker re-reads whole each
+  one it has read, and stops following each one `next` no longer holds.
+
+  A file under `agents/` is the definition a worker of its role is
+  started from (*Clients*), and a worker already running keeps the one it
+  started with. Where the diff lists the file a running worker was
+  started from, the next brief names it too: the worker reads it whole
+  and follows it in place of the text it started with. The model, the
+  effort and the tools Claude Code takes from its frontmatter cannot
+  change for a running worker; only a worker started from the new file
+  can take them.
 
   Where the diff exited non-zero, or `process.sha` is missing or empty,
   the changed sections are not known. The session notes `HEAD` again as
   its skill's opening says, then re-reads whole every file under
-  `process/`, `skills/` and `scripts/` it has read, and every one where
-  it cannot tell. The next brief to each worker already running asks it
-  to re-read its role's sections whole.
+  `process/`, `skills/`, `scripts/` and `agents/` it has read, and every
+  one where it cannot tell; it stops following each one the checkout no
+  longer holds. The next brief to each worker already running asks it to
+  re-read whole its role's sections, each file under `scripts/` it has
+  read and the file it was started from, as above, and to stop following
+  each one the checkout no longer holds.
 
 ## Night mode
 

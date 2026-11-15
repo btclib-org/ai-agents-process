@@ -1,10 +1,9 @@
 # The btclib-org process: what both skills share
 
-The rules both skills share are in four files beside this one:
-`every-role.md`, `writing.md`, `local-review.md` and `orchestration.md`.
-`every-role.md` is read first: its opening says which role reads which
-file, and which file wins where two disagree. A citation of a section of
-this file finds it in the file the table gives:
+`every-role.md`, beside this file, is read first: its opening says which
+files hold the rules both skills share, which role reads which file, and
+which file wins where two disagree. A citation of a section of this file
+finds it in the file the table gives:
 
 | Section | File |
 | --- | --- |
