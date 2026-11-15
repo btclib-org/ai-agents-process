@@ -57,8 +57,13 @@ gh api repos/<owner>/<repo>/compare/main...<head> \
 **A clean change belongs in the set too**, so that a change which only
 makes the reviewer raise more shows as false findings. A finding a run
 makes on one is re-measured: where it holds, the case moves to the
-defects, and where it does not, it is a false finding. The set holds no
-clean case (ISS btclib-org/ai-agents-process#470).
+defects, and where it does not, it is a false finding. A pull request
+becomes a clean case where, on the head it landed on, the review bot's
+`ACK` names that head, Codex's state reads no finding, CodeRabbit's
+check passed with no thread and no finding in a review body, two fresh
+reviewers briefed as a run's are each clear it, and no review names a
+defect in it that holds: a false sentence is one, wording that could
+only be better is not.
 
 ## How a run is scored
 
@@ -239,3 +244,43 @@ shows no gain.
   shows in each of the three.
 - found by the runs at `2ef0de4` and `466d803` (*Runs*), and fixed on
   `main` in `7f7de67`.
+
+### PR btclib-org/.github#2288
+
+- base `4e68136bb12ffdf1bdd21a86479b1c921668848b`
+- head `dfcc9c4262bd9a94cb2bb4f9669052aacb7d1163`
+- clean, as *What a case holds* measures it, on 2026-11-15: the forge's
+  reviews of the head it landed on read no finding, and two fresh
+  reviewers at `$PROCESS` `aa5dcdc` each cleared it. One of them raised
+  two non-blocking findings and a nit, none a defect: the first asks
+  whether ISS btclib-org/.github#2278 is fully answered, and it is,
+  since that issue's *Done when* asks that `--stale` list no
+  justification for "not a draft" alone; the rest is wording.
+
+### PR btclib-org/btclib-node#2516
+
+- base `aa973d9c6bb93858776350e25e7f19bd1e991da3`
+- head `6415350199171c1cbe9ae4da00e22ba0bd289569`
+- defect: the docstring the branch adds to `_assert_ends_at` in
+  `src/btclib_node/p2p/raw_block.py` says "`i` sums the length fields
+  the walk read", where `i` is the offset at which the walk ends, which
+  also counts the header and the fixed-width fields.
+- found on 2026-11-15 by one of two fresh reviewers reading it as a
+  clean candidate, as a non-blocking finding in its `CLEARED`, after the
+  local Codex reviewer's `CLEARED`, the review bot's `ACK`, Codex's
+  state with no finding and CodeRabbit's passed check (ISS
+  btclib-org/btclib-node#2526); not fixed on `main` at `ae099c4`.
+
+### PR btclib-org/ecc#580
+
+- base `d1ddc9b17aabcc64bbb6898748d81c61005662bc`
+- head `186d8b6de3bc88944a3d4b1357c44d6a2542b396`
+- defect: the comment the branch adds over `_AFF_CALLS` in
+  `tests/curves/curve_group_test.py` says the list holds "each public
+  method of CurveGroup taking an affine point", where it leaves out
+  `add_var`, `require_on_curve` and `is_on_curve`.
+- found on 2026-11-15 by one of two fresh reviewers reading it as a
+  clean candidate, after the local Codex reviewer's `CLEARED`, the
+  review bot's `ACK`, Codex's state with no finding and CodeRabbit's
+  passed check (ISS btclib-org/ecc#583); not fixed on `main` at
+  `5546cf0`.
