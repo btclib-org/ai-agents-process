@@ -315,12 +315,14 @@ archived: open issues, open pull requests, CI and README badge status,
 the last release, and whether a new one is due. It only reads.
 
 ```text
-/night-mode on|off|status
+/night-mode [on|off|status]
 ```
 
 turns night mode on or off, in any session, or says whether it is on,
-since when, and what it has deferred so far. `process/night-mode.md`
-says what the night does.
+since when, and what it has deferred so far.
+`skills/night-mode/SKILL.md` says what each word does, and what the
+command does with none; `process/night-mode.md` says what the night
+does.
 
 In Codex each starts with `$` instead of `/`: `$btclib-iss`.
 
