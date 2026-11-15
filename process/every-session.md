@@ -217,8 +217,8 @@ where one answer would undo or replace that; otherwise it is judged as
 written. An answer that changes only the lines carrying the question is
 left to the question's own issue.
 
-**At night**, `orchestration.md`'s *Night mode*, read when night mode is
-turned on, says what becomes of a decision.
+**At night**, `night-mode.md`, beside this file and read when night mode
+is turned on, says what becomes of a decision.
 
 **A hold is recorded on the issue or pull request**, in the same turn it
 is told to the human: a comment saying why it waits, and its label where
