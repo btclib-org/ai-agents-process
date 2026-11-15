@@ -80,8 +80,9 @@ disagree.
   reviewers run side by side, within the machine's CPU load, memory
   pressure and free disk (`btclib-common.md`'s *The gates* and *Before
   starting*, read before starting work in parallel).
-- **The machine is shared.** Heavy local work — a suite, the hooks, a
-  docs build — runs under the gate lock, up to three workers at once, as
+- **The machine is shared.** Heavy local work — a suite, the hooks
+  except where `btclib-common.md`'s *The gates* says, a docs build —
+  runs under the gate lock, up to three workers at once, as
   `btclib-common.md`'s *The gate lock* says, read before running a gate.
   Everything else runs in parallel with the gates. Targeted test runs
   use `-n 0` or `-n 2`, never `-n auto`. The whole suite runs as the

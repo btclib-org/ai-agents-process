@@ -202,16 +202,17 @@ open:**
   the body limit of `every-session.md`'s *What is posted on a forge* and
   say what the change does and why. The sections do not count against
   that limit, and each stays short.
-- **`## Evidence` is a short table or list**: the gates that ran on the
-  head, with their exit codes; the rebase case the clearance is in; the
-  review; and, once they have answered, each review on GitHub that is
-  absent, with its reason (`/btclib-pr`'s *The reviews on GitHub*). The
-  records the tree asks of a body go here too, each where its own text
-  says it applies: the command that verifies a rule (`CONTRIBUTING.md`),
-  the count that decided the change (the shared *What the prose that
-  lands may say*), the runs the bot can repeat (the shared *A pull
-  request's rounds*), the command that reads a setting back (the shared
-  *Collateral*), and the command that measured a claim (`REVIEWING.md`).
+- **`## Evidence` is a short table or list**: the gates of the head,
+  with their exit codes, as the shared *The gates* reports them; the
+  rebase case the clearance is in; the review; and, once they have
+  answered, each review on GitHub that is absent, with its reason
+  (`/btclib-pr`'s *The reviews on GitHub*). The records the tree asks of
+  a body go here too, each where its own text says it applies: the
+  command that verifies a rule (`CONTRIBUTING.md`), the count that
+  decided the change (the shared *What the prose that lands may say*),
+  the runs the bot can repeat (the shared *A pull request's rounds*),
+  the command that reads a setting back (the shared *Collateral*), and
+  the command that measured a claim (`REVIEWING.md`).
 - **`## Decision` is there only where the issue reserved one**: it says
   that the branch takes it, on what ground, and what the cut-back is.
 - **Count what GitHub will close**:

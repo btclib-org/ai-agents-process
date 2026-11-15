@@ -36,6 +36,10 @@ The process the btclib-org maintainers follow with the coding agents
   held;
 - `scripts/test-git-c-allow.py` — the commands `git-c-allow.py` must
   approve and must refuse, run by the `test-git-c-allow` hook;
+- `scripts/suite-reads.py` — where a tree's tests may read the files of
+  a diff, which *The gates* asks before it leaves the suite to CI;
+- `scripts/test-suite-reads.py` — the reads `suite-reads.py` must find
+  and must not, run by the `test-suite-reads` hook;
 - `scripts/pretooluse-rules.py` — the hook that refuses a command
   breaking a rule `process/btclib-common.md`'s *Clients* names;
 - `scripts/test-pretooluse-rules.py` — the commands
