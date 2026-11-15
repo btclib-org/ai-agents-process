@@ -46,20 +46,28 @@ the change under test rewrites such a sentence, its case is recorded as
 unable to evaluate the change, beside a case that tests the instruction
 without stating its answer, where one is needed.
 
-The case's tree is built from a checkout that holds the head, named by
-its path, so that the fetch needs no network and the tree keeps no
-remote:
+The case's tree is built at a new path from a checkout that holds the
+head, named by its path, so that the fetch needs no network and the
+tree keeps no remote. The first command refuses a path that exists,
+since `git init` keeps the objects of a repository already there, and a
+refusal there stops the build. The three values are set first:
 
 ```shell
-git init <tree>
+tree=<tree>
+checkout=<checkout>
+head=<head>
 ```
 
 ```shell
-git -C <tree> fetch <checkout> <head>
+[ ! -e "${tree:?}" ] && git init "$tree"
 ```
 
 ```shell
-git -C <tree> checkout --detach FETCH_HEAD
+git -C "${tree:?}" fetch "${checkout:?}" "${head:?}"
+```
+
+```shell
+git -C "${tree:?}" checkout --detach FETCH_HEAD
 ```
 
 This prints `isolated` only where each read succeeds, the tree has no
@@ -67,11 +75,10 @@ remote, it has a `HEAD`, and every commit its refs reach is the head or
 one of its ancestors:
 
 ```shell
-tree=<tree>
 remotes=$(git -C "${tree:?}" remote) &&
   all=$(git -C "$tree" rev-list --all) &&
-  head=$(git -C "$tree" rev-list HEAD) &&
-  [ -z "$remotes" ] && [ -n "$head" ] && [ "$all" = "$head" ] &&
+  ancestry=$(git -C "$tree" rev-list HEAD) &&
+  [ -z "$remotes" ] && [ -n "$ancestry" ] && [ "$all" = "$ancestry" ] &&
   echo isolated
 ```
 
