@@ -58,12 +58,30 @@ gh api repos/<owner>/<repo>/compare/main...<head> \
 makes the reviewer raise more shows as false findings. A finding a run
 makes on one is re-measured: where it holds, the case moves to the
 defects, and where it does not, it is a false finding. A pull request
-becomes a clean case where, on the head it landed on, the review bot's
-`ACK` names that head, Codex's state reads no finding, CodeRabbit's
-check passed with no thread and no finding in a review body, two fresh
-reviewers briefed as a run's are each clear it, and no review names a
-defect in it that holds: a false sentence is one, wording that could
-only be better is not.
+becomes a clean case where, on the head it landed on, the three
+reviewers of `/btclib-pr`'s *The reviews on GitHub* read `ack`, both
+reads below print `0`, two fresh reviewers, briefed as for a run, each
+clear it, and no review names a defect in it that holds: a false
+sentence is one, wording that could only be better is not.
+
+```shell
+repo=<owner>/<repo>
+n=<n>
+gh api graphql -F owner="${repo%%/*}" -F repo="${repo#*/}" -F n="${n:?}" \
+  -f query='query($owner: String!, $repo: String!, $n: Int!) {
+    repository(owner: $owner, name: $repo) { pullRequest(number: $n) {
+      reviewThreads { totalCount } } } }' \
+  --jq .data.repository.pullRequest.reviewThreads.totalCount
+gh api --paginate "repos/${repo:?}/pulls/${n:?}/reviews?per_page=100" \
+  --jq '.[] | select(.user.login == "coderabbitai[bot]") | .body' |
+  grep -c -E 'cr-comment:v1|Additional comments|Actionable comments|Nitpick'
+```
+
+The first read counts every review thread, any author, resolved or not.
+The second counts the lines of CodeRabbit's review bodies that mark a
+finding, which *The reviews on GitHub* does not read while ISS
+btclib-org/ai-agents-process#489 is open; it goes once that section
+reads them.
 
 ## How a run is scored
 
