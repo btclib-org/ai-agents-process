@@ -4,13 +4,17 @@ The pull requests a change to the local reviewer is tried on before it
 lands: those where the local rounds cleared a defect that a later review
 found, and clean ones, where no review found any.
 
-**A change to the reviewer's brief, its model or its effort is run on
-every case here first**, and its pull request adds the run to *Runs* and
-names it in `## Evidence`. The brief's part this repository holds is
-the files and sections `every-role.md`'s map gives the reviewer under
-*Everybody* and *The reviewer*, the reviewer's sections of the skill the
-brief names, `agents/reviewer.md` with its generated `.toml`, and this
-tree's `REVIEWING.md`; another tree's
+**A change to a rule the reviewer applies in judging a branch, to its
+model or to its effort is run on every case here first**, and its pull
+request adds the run to *Runs* and names it in `## Evidence`. A change
+to the reviewer's brief owes no run where it alters no such rule: a
+pointer that moves, a sentence made more exact without changing what it
+asks, or a rule only the writer or the orchestrator acts on. Such a pull
+request says in `## Evidence` why it owes none. The brief's part this
+repository holds is the files and sections `every-role.md`'s map gives
+the reviewer under *Everybody* and *The reviewer*, the reviewer's
+sections of the skill the brief names, `agents/reviewer.md` with its
+generated `.toml`, and this tree's `REVIEWING.md`; another tree's
 `REVIEWING.md` and the review bot's prompt, which the brief also
 carries, change in their own trees. The model and the effort are those
 `orchestration.md`'s *Models* gives. Without the run, such a change is
@@ -35,8 +39,9 @@ it was added from, and one of those may hold the fix. A run whose
 verdict's coverage list names this file is discarded and run again. The
 process it is briefed with is the configuration under test, at the
 `$PROCESS` sha the run records. The reviewer reads that process from a
-copy that leaves this file out, so the discard of a run whose coverage
-list names this file is the backstop, not the only guard. The reviewer
+copy that leaves this file out, built and checked as below, so the
+discard of a run whose coverage list names this file is the backstop,
+not the only guard. The reviewer
 reads the prose at the head itself, not on the merge with `origin/main`
 that *A pull request's rounds* asks for, since `main` has moved past the
 case, a defect's fix included. Where the run changes this tree's
@@ -50,9 +55,12 @@ without stating its answer, where one is needed.
 
 The case's tree is built at a new path from a checkout that holds the
 head, named by its path, so that the fetch needs no network and the
-tree keeps no remote. The first command refuses a path that exists,
-since `git init` keeps the objects of a repository already there, and a
-refusal there stops the build. The three values are set first:
+tree keeps no remote. The fetch runs under `git -C` the tree, which
+would resolve a relative path from the tree, so its fence makes the
+checkout's path absolute first. The first command refuses a path that
+exists, since `git init` keeps the objects of a repository already
+there, and a refusal there stops the build. The three values are set
+first:
 
 ```shell
 tree=<tree>
@@ -65,7 +73,8 @@ head=<head>
 ```
 
 ```shell
-git -C "${tree:?}" fetch "${checkout:?}" "${head:?}"
+checkout=$(cd "${checkout:?}" && pwd -P) &&
+  git -C "${tree:?}" fetch "$checkout" "${head:?}"
 ```
 
 ```shell
@@ -82,6 +91,46 @@ remotes=$(git -C "${tree:?}" remote) &&
   ancestry=$(git -C "$tree" rev-list HEAD) &&
   [ -z "$remotes" ] && [ -n "$ancestry" ] && [ "$all" = "$ancestry" ] &&
   echo isolated
+```
+
+The copy of the process is built at a new path from a checkout of this
+repository that holds the `$PROCESS` sha: its `process/` at that sha,
+with this file removed. The first command refuses a path that exists,
+and a refusal there stops the build. The three values are set first:
+
+```shell
+copy=<copy>
+source=<source>
+process=<process>
+```
+
+```shell
+[ ! -e "${copy:?}" ] && mkdir "$copy"
+```
+
+```shell
+git -C "${source:?}" archive "${process:?}" process |
+  tar -x -C "${copy:?}"
+```
+
+```shell
+rm "${copy:?}/process/replay-set.md"
+```
+
+This prints `faithful` only where each read succeeds and the copy's
+files, with their contents, are those of `process/` at the sha less this
+file, so it fails where the copy still holds this file, lacks another
+or differs in one:
+
+```shell
+listing=$(git -C "${source:?}" ls-tree -r "${process:?}" -- process) &&
+  want=$(printf '%s\n' "$listing" |
+    awk -F '\t' '$2 != "process/replay-set.md" {
+      split($1, m, " "); print m[3], $2 }' | LC_ALL=C sort) &&
+  files=$(cd "${copy:?}" && find process -type f) &&
+  have=$(cd "$copy" && printf '%s\n' "$files" | while read -r f; do
+    printf '%s %s\n' "$(git hash-object "$f")" "$f"; done | LC_ALL=C sort) &&
+  [ -n "$want" ] && [ "$want" = "$have" ] && echo faithful
 ```
 
 A forge finding gives a case its head, the commit its thread names, and
