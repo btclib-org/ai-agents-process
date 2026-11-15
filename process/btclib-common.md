@@ -1830,11 +1830,17 @@ finding is closed for the convergence check of *The rounds*.
 number, the sha they are read at, and the lines exactly as they read
 there: the head, or the base for a line the branch removes. A local
 reviewer quotes them in its verdict. For a review on the forge the
-orchestrator quotes them, from its thread's `path` and `original_line`,
-read at the thread's `original_commit_id`, or, where the thread's `side`
-is `LEFT`, at the commit that
-`git merge-base <original_commit_id> origin/<base>` prints. A finding
-that rests on no line, as a sentence the tree lacks, quotes instead the
+orchestrator quotes them from its thread's `path`, from
+`original_start_line`, where it is set, to `original_line`, read at the
+thread's `original_commit_id`, or, where the thread's `side` is `LEFT`,
+at the commit that `git merge-base <original_commit_id> origin/<base>`
+prints where it exits `0`; a non-zero exit leaves the finding unquoted,
+which is a stop. A forge finding with no `original_line`, on a file or
+in a review's summary, quotes the lines it names, which the
+orchestrator finds by its own search and reads at the head, with that
+search as the entry's command; where it names none, the entry quotes the
+finding's own sentence and the command that looked. A finding that
+rests on no line, as a sentence the tree lacks, quotes instead the
 command that shows it and what it printed. A finding on a sentence of
 the pull request body quotes the sentence that
 `gh pr view <n> --repo <owner>/<repo> --json body --jq .body` printed.
@@ -2110,9 +2116,12 @@ says.
       major version, the release notes or changelog read between the two
       versions, and what they say of the tree (`/btclib-pr`'s *The
       decision*)
-- [ ] the coverage list: each file the diff touches, and each other
-      file the review read for it, marked checked, deferred to the
-      reviewer's next verdict, or not read, with why for the last two; a
+- [ ] the coverage list: each file the diff touches, read before the
+      first verdict and marked checked, and each other file the review
+      read for it, marked checked or not read, with why; deferred names
+      only a check the tree at this sha cannot give, a run still going,
+      with what it waits on; a check that runs only on `main` is a claim
+      left untried (*Every reviewer tries to break the change*); a
       `CLEARED` defers nothing
 - [ ] `git status --porcelain` empty in the tree reviewed and in the
       primary checkout
