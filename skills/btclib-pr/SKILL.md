@@ -273,12 +273,20 @@ a decision:
   already rules out, the sentence it calls false is true where the text
   applies it and leads no reader to a wrong step, or it is a matter of
   taste (`REVIEWING.md`'s *The standard an ack is given against*).
+- **filed or declined, never accepted,** where it is a refinement: it
+  makes no sentence false and touches no ordinary case, the inputs and
+  readers the text is written for. It adds no text to the branch. It is
+  filed where the shared *Collateral* would file it, and the reply names
+  the issue; otherwise it is declined. The shared *Which prose is worth
+  a round* says which prose blocks.
 - **accepted** where it is the branch's own: a defect or a false
   sentence its diff or its pull request body adds, or anything else the
   shared *Collateral* counts as the branch's subject (the shared *A pull
   request's rounds* says how a fix to the branch is reviewed). A
   sentence of the body is weighed as the shared *Which prose is worth a
   round* says, and is fixed by editing the body, which the reply names.
+  From the third round on the forge, the shared *The rounds* narrows
+  what is fixed on the branch and files the rest.
 - **filed** where it is older than the branch, holding on the file at
   the merge base too, and the branch does not make it materially worse:
   it goes where the shared *Collateral* says, and the reply names the

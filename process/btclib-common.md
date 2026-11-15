@@ -1664,6 +1664,14 @@ branch, or a text to be posted.
   decide*): another round, the branch as it stands, or a cut-back, with
   the writer's and the reviewer's positions. The rounds wait for the
   answer.
+- **A round on the forge is one push of a pull request's branch and the
+  reviews on GitHub that read it.** The push the pull request is opened
+  on starts the first round, and each later push starts the next.
+  **From the third round on, only a defect on the ordinary case, a false
+  sentence or a crash is fixed on the branch.** Every other finding,
+  whoever makes it, is filed as an issue, and its thread is answered
+  with the issue. An accepted refinement adds prose, and the new prose
+  draws new findings, so the rounds would not end.
 - **A session restart replaces each reviewer it lost.** A restart can
   lose the reviewers the session started, and the rounds keep no record
   of one in flight. So after a restart, the verdict file of a reviewer
@@ -1793,7 +1801,7 @@ bot of `claude-review.yml`, Codex and CodeRabbit, where each reviews.
 They are a safety net under the local rounds: each finding they make
 costs a push, a CI run and another review. Sourcery and CodeRabbit also
 read the branch locally, as *Sourcery and CodeRabbit before a push*
-says.
+says, and so does Codex before each push (*Codex before each push*).
 
 - **The fresh reviewer runs in the other client**, on a model of a
   vendor other than the writer's, because two models of one vendor
@@ -1914,6 +1922,36 @@ says.
   reviewed where it landed, and the script compares only the copies.
   That check stands wherever the process asks for the latest fresh
   reviewer's `CLEARED`, and the reviews on GitHub still read the port.
+
+### Codex before each push
+
+**Codex reads a branch locally before each push the reviews on GitHub
+read**, once the rounds above have ended on the sha to be pushed. Codex
+reviews the pull request on GitHub, and a Claude reviewer does not see
+what it sees. Before the pull request is opened, it reads the whole diff
+of the head it is opened on, from the branch's parent. Before a later
+push to it, it reads the delta from the sha last pushed:
+`git diff <pushed sha>..<sha>`.
+
+- **It is a reviewer in Codex at fresh context**, briefed as the fresh
+  reviewer is (*A pull request's rounds*), with the delta where it reads
+  one. A session in Claude Code starts it as *Clients* starts the
+  reviewer in the other client. A session in Codex spawns the `reviewer`
+  agent (*Clients*). A reviewer in Codex that cleared that sha, having
+  read what this pass reads, stands for it.
+- **What it finds is settled before the push.** Each finding goes in
+  the orchestrator's findings file (*The rounds*), and is answered as
+  `/btclib-pr`'s *Answering it* answers a bot's finding. An accepted one
+  is fixed by the writer, the fix goes through the rounds above, and the
+  pass, resumed as *Clients* says, reads the fix's delta until it
+  clears. Where it still holds a finding that was declined, both
+  positions go to the human, as *The rounds* says. The push waits for
+  its `CLEARED` or for the human's answer.
+- **Where Codex refuses the run, the push goes on without the pass.**
+  The refusal is judged, and holds for later branches, as *A pull
+  request's rounds* says of the other client. The pull request body says
+  that the Codex pass is missing before that push, and quotes the
+  refusal.
 
 ### The verdict
 
