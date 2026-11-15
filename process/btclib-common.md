@@ -1032,8 +1032,9 @@ the orchestrator in the pull request.
   changes only Markdown, the hooks run outside the gate lock:
 
   ```shell
+  wt=<wt>
   base=<base>
-  env -C <wt> uvx pre-commit run --from-ref "${base:?}" --to-ref HEAD
+  env -C "${wt:?}" uvx pre-commit run --from-ref "${base:?}" --to-ref HEAD
   ```
 
 - **The suite is left to CI where no test of the tree reads a file of
@@ -1044,40 +1045,51 @@ the orchestrator in the pull request.
   misses, which CI's run reads. It runs outside the gate lock:
 
   ```shell
-  env -C <scratch> uv run --no-project --python 3.15 \
-    python -I "${PROCESS:?}/scripts/suite-reads.py" <wt> <base>
+  scratch=<scratch>
+  wt=<wt>
+  base=<base>
+  env -C "${scratch:?}" uv run --no-project --python 3.15 \
+    python -I "${PROCESS:?}/scripts/suite-reads.py" "${wt:?}" "${base:?}"
   ```
 
 - **The docs build runs only where the diff touches what it builds**: a
   file under the directory it builds, the package whose docstrings it
-  renders, `pyproject.toml` or `uv.lock`, or a file a page names. The
-  second command lists the pages that name a changed file, and runs
-  once for each path the first lists: `--no-renames` gives a renamed
-  file under both its names, where a plain `--name-only` gives the new
-  one alone. It exits `1` with no output where no page names the path.
-  Where HEAD holds no source directory, or git cannot read one of its
-  objects, it exits `2` with a message. Any other exit of the second, or
-  an exit of the first but `0`, runs the build. Elsewhere it is left to
-  CI:
+  renders, `pyproject.toml` or `uv.lock`, or a file a page names. This
+  lists the pages that name a changed file. It reads each path of the
+  diff as data, NUL-terminated, never as shell text, and `--no-renames`
+  gives a renamed file under both its names, where a plain
+  `--name-only` gives the new one alone. It exits `1` with no output
+  where no page names any. Where HEAD holds no source directory, or git
+  fails, it exits `2` with a message. Any other exit runs the build.
+  Elsewhere it is left to CI:
 
   ```shell
+  wt=<wt>
   base=<base>
-  git -C <wt> diff --name-only --no-renames "${base:?}...HEAD"
-  ```
-
-  ```shell
-  name=<name>
   src=<docs source>
-  if git -C <wt> cat-file -e "HEAD:${src:?}"; then
-    rc=0
-    out=$(git -C <wt> grep -l -F -e "${name:?}" HEAD -- "${src:?}" 2>&1) ||
-      rc=$?
-    [ -z "$out" ] || printf '%s\n' "$out"
-    [ "$rc" -ne 1 ] || [ -z "$out" ] || rc=2
-  else
+  rc=1
+  list=$(mktemp)
+  if ! git -C "${wt:?}" cat-file -e "HEAD:${src:?}"; then
     echo "HEAD holds no ${src}" >&2
     rc=2
+  elif ! git -C "${wt:?}" diff -z --name-only --no-renames \
+    "${base:?}...HEAD" > "$list"; then
+    rc=2
+  else
+    while IFS= read -r -d '' name; do
+      got=0
+      out=$(git -C "${wt:?}" grep -l -F -e "$name" HEAD -- "${src:?}" 2>&1) ||
+        got=$?
+      if [ "$got" -eq 0 ]; then
+        printf '%s\n' "$out"
+        [ "$rc" -eq 2 ] || rc=0
+      elif [ "$got" -ne 1 ] || [ -n "$out" ]; then
+        printf '%s\n' "$out" >&2
+        rc=2
+      fi
+    done < "$list"
   fi
+  rm -f "$list"
   (exit "$rc")
   ```
 
@@ -1091,17 +1103,19 @@ the orchestrator in the pull request.
   The second prints each workflow whose latest completed run did not
   succeed, or `no runs` where none has completed. It reads the newest
   200 completed push runs, so a workflow whose last run is older than
-  those is not read:
+  those, or that has no completed run, is not read:
 
   ```shell
+  wt=<wt>
   m=<merge>
-  a=$(git -C <wt> diff --name-only --no-renames "${m:?}^2...${m:?}^1") &&
-    b=$(git -C <wt> diff --name-only --no-renames "${m:?}^1" "${m:?}") &&
+  a=$(git -C "${wt:?}" diff --name-only --no-renames "${m:?}^2...${m:?}^1") &&
+    b=$(git -C "${wt:?}" diff --name-only --no-renames "${m:?}^1" "${m:?}") &&
     (set -o pipefail; printf '%s\n' "$a" "$b" | grep . | sort | uniq -d)
   ```
 
   ```shell
-  gh run list --repo <owner>/<repo> --branch main --event push \
+  repo=<owner>/<repo>
+  gh run list --repo "${repo:?}" --branch main --event push \
     --status completed --limit 200 --json workflowName,conclusion \
     --jq 'if length == 0 then "no runs" else reduce .[] as $r ({};
     .[$r.workflowName] //= $r.conclusion) | to_entries[]

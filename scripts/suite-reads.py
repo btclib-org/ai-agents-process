@@ -13,7 +13,8 @@ sure, it prints a line: a needless local suite costs less than a red CI.
 It reads every tracked Python file of the worktree, outside comments and
 docstrings, the files under `testpaths`, and the lines of
 `pyproject.toml`, `pytest.ini`, `setup.cfg` and `tox.ini` that name a
-doctest option. A line is printed for:
+doctest option. A `testpaths` holding a wildcard counts as the whole
+tree. A line is printed for:
 
 - a changed path the suite imports or that configures it: a Python file,
   one of those settings files, `uv.lock`, or a path under `testpaths`;
@@ -38,7 +39,9 @@ doctest option. A line is printed for:
   `SHELL_SEPARATORS`, and past the target of an output redirection; one
   holding a newline, `$(`, a backtick, an input redirection or another
   operator is not split, and prints a line. The words of
-  `create_subprocess_exec` are all its arguments;
+  `create_subprocess_exec` are all its arguments. A call given
+  `executable`, and a function of `os` that runs a program but `system`
+  and `popen`, print a line;
 - a git command given as an argument to any other call, unless each of
   its simple commands is git with a subcommand so named;
 - the event loop's `subprocess_shell` and `subprocess_exec`, on any
@@ -75,9 +78,11 @@ Not found:
   by a name that is not a literal, or by a keyword, or through an alias
   of either;
 - code given to `compile` by a keyword, or to an alias of `exec`, `eval`
-  or `compile`;
+  or `compile`, and code given to `python -c` that is not a literal;
 - a file a glob or a walk reaches through a symbolic link, since the
-  scan places a directory where its path names it.
+  scan places a directory where its path names it;
+- a path named in other letter case, which a case-insensitive
+  filesystem reads as the same file.
 
 CI's run of the suite on the pull request still makes the read.
 """
@@ -504,6 +509,10 @@ class Scan:
         runner = self.member(call.func)
         if runner is None or not runs_commands(*runner):
             return None
+        if any(keyword.arg == "executable" for keyword in call.keywords):
+            return "runs the program given as executable, whose reads are not read"
+        if runner[0] == "os" and runner[1] not in ("system", "popen"):
+            return f"runs {runner[1]}, whose arguments are not read"
         first = call.args[0] if call.args else None
         commands: list[list[str | None]]
         if runner[0] == "asyncio" and runner[1].endswith("create_subprocess_exec"):
@@ -755,6 +764,8 @@ def testpaths(root: Path) -> list[str]:
     found = options.get("testpaths", ["."])
     if isinstance(found, str):
         found = found.split()
+    if any(re.search(r"[*?[]", str(path)) for path in found):
+        return ["."]
     return [posixpath.normpath(str(p)) for p in found] or ["."]
 
 

@@ -1527,6 +1527,45 @@ ON_GITHUB: list[tuple[str, dict[str, str], list[str], bool]] = [
         ["docs/guide.md"],
         False,
     ),
+    (
+        "a call given executable",
+        {
+            "tests/a_test.py": 'import subprocess\nsubprocess.check_output(["python3", "-c", "pass"], executable="scripts/check")\n'
+        },
+        ["docs/guide.md"],
+        True,
+    ),
+    (
+        "os.posix_spawn",
+        {
+            "tests/a_test.py": 'import os\nos.posix_spawn("python3", ["python3", "-c", "pass"], os.environ)\n'
+        },
+        ["docs/guide.md"],
+        True,
+    ),
+    (
+        "os.execv",
+        {
+            "tests/a_test.py": 'import os\nos.execv("/bin/sh", ["sh", "-c", "cat docs/guide.md"])\n'
+        },
+        ["docs/guide.md"],
+        True,
+    ),
+    (
+        "os.system of an inert command",
+        {"tests/a_test.py": 'import os\nos.system("git rev-parse HEAD")\n'},
+        ["docs/guide.md"],
+        False,
+    ),
+    (
+        "a testpaths with a wildcard",
+        {
+            "pyproject.toml": '[tool.pytest.ini_options]\ntestpaths = ["tests/*"]\n',
+            "tests/unit/manifest.txt": "docs/guide.md\n",
+        },
+        ["docs/guide.md"],
+        True,
+    ),
 ]
 
 
