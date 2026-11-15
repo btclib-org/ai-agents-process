@@ -7,11 +7,11 @@ found, and clean ones, where no review found any.
 **A change to the reviewer's brief, its model or its effort is run on
 every case here first**, and its pull request adds the run to *Runs* and
 names it in `## Evidence`. The brief's part this repository holds is
-`btclib-common.md`'s *Local review*, `agents/reviewer.md` with its
+`local-review.md`'s *Local review*, `agents/reviewer.md` with its
 generated `.toml`, and this tree's `REVIEWING.md`; another tree's
 `REVIEWING.md` and the review bot's prompt, which the brief also
 carries, change in their own trees. The model and the effort are those
-`btclib-common.md`'s *Models* gives. Without the run, such a change is
+`orchestration.md`'s *Models* gives. Without the run, such a change is
 judged on the next pull requests, whose defects nobody knows in advance.
 
 ## What a case holds
@@ -23,7 +23,7 @@ judged on the next pull requests, whose defects nobody knows in advance.
 - for a clean change, how it was measured clean.
 
 **The expected finding is kept out of the reviewer's input.** The run
-briefs a fresh reviewer of the head, as `btclib-common.md`'s *A pull
+briefs a fresh reviewer of the head, as `local-review.md`'s *A pull
 request's rounds* says, with the head's commit message standing for the
 pull request. Its brief names neither this file nor anything posted
 after the head, since both state the defect. A run whose verdict's
@@ -63,7 +63,7 @@ clean case (ISS btclib-org/ai-agents-process#470).
 ## How a run is scored
 
 **A hit names the defect's mechanism and its consequence** well enough
-to fix it, as *The findings record* in `btclib-common.md` matches two
+to fix it, as *The findings record* in `local-review.md` matches two
 findings. The orchestrator scores each verdict against the case's
 sentence, and the human scores where it cannot tell. The cases are
 chosen, not drawn at random, so a run says how a configuration did on
@@ -106,6 +106,84 @@ named this file. On PR btclib-org/ai-agents-process#317 both also
 raised, as blocking, that "tied to the account" is wider than "does not
 clear within the session": a finding that holds, outside the case's
 defect, and that the pull request fixed in `d5dee25` before it landed.
+
+- **Baseline**, 2026-11-15: `$PROCESS` `aa5dcdc`, no factor changed;
+  Claude Code, the `reviewer` agent, Opus, effort `high`, the brief
+  having the reviewer read `every-session.md` and `btclib-common.md`
+  whole. PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss, then miss on the repeat *How a
+  run is scored* asks for. PR btclib-org/ecc#484: hit. PR
+  btclib-org/ai-agents-process#444: hit.
+- **Candidate**, 2026-11-15: `$PROCESS` `1ddae0d`, the factor changed
+  being the brief's files of ISS btclib-org/ai-agents-process#447: the
+  reviewer reads `every-session.md`, `every-role.md`, `local-review.md`
+  and the sections of `writing.md` the map names, in place of
+  `btclib-common.md` whole. The same client, model and effort. PR
+  btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: hit, named as non-blocking in a
+  `CLEARED`: a call recorded as `reported` passes on any Valgrind error,
+  whatever caused the exit `42`; then miss on the repeat *How a run is
+  scored* asks for. PR btclib-org/ecc#484: hit. PR
+  btclib-org/ai-agents-process#444: hit.
+- **Candidate**, 2026-11-15: `$PROCESS` `2166200`, whose process files,
+  `agents/` and `REVIEWING.md` are those of `1ddae0d`, the factor
+  changed being the whole brief of ISS btclib-org/ai-agents-process#447:
+  the split process files, the change's `agents/reviewer.md`, and for
+  this repository's cases the change's `REVIEWING.md`. Claude Code,
+  Opus, effort `high`, with a general-purpose agent briefed to read the
+  change's `agents/reviewer.md` whole and act as it, since the installed
+  `reviewer` agent is `main`'s: the agent type, with its wider tools, is
+  another difference from the baseline. PR
+  btclib-org/ai-agents-process#317: miss; the verdict notes, outside its
+  findings, that the rewritten exception now reaches the new sentence,
+  and judges it without effect. PR btclib-org/btclib-secp256k1#1331:
+  miss. PR btclib-org/ecc#484: hit. PR btclib-org/ai-agents-process#444:
+  hit.
+
+Neither the run at `aa5dcdc` nor the run at `1ddae0d`, their repeats
+included, made a false finding. Outside a case's defect, on PR
+btclib-org/ai-agents-process#317 both raised again the finding that the
+runs at `2ef0de4` and `466d803` raised, which holds, and the repeat at
+`1ddae0d` on PR btclib-org/btclib-secp256k1#1331 raised, as blocking,
+that `SECURITY.md`'s reasons for `zkp.rangeproof.sign` leave out the
+blinding factor and the message, which holds on `main` (ISS
+btclib-org/btclib-secp256k1#1403). Each brief had the reviewer read the
+prose at the head, run no suite and use no forge, and no verdict's
+coverage list named this file.
+
+The run at `2166200` withheld from PR btclib-org/ai-agents-process#317
+and PR btclib-org/ai-agents-process#444 the sentence of the change's
+`REVIEWING.md` that states the defect of PR
+btclib-org/ai-agents-process#317, from "In [PR ai-agents-process#317]"
+to "exempted that run from the hold too.": their reviewers read that
+file in place of the head's. The reviewers of the other cases read their
+own tree's `REVIEWING.md`. No verdict's coverage list named this file,
+and the verdict on PR btclib-org/ai-agents-process#317 says it is absent
+at that head. Outside the cases' defects, that run raised on PR
+btclib-org/ai-agents-process#317 the finding the runs at `2ef0de4` and
+`466d803` raised, which holds; on PR btclib-org/ecc#484, as blocking,
+that the phrase is split across string literals and that a required copy
+is read as a finding, both of which `main`'s later version of that
+paragraph answers; and on PR btclib-org/btclib-secp256k1#1331, as
+non-blocking, that the workflow's outcome list and the harness's call
+table are copies kept by hand, which the orchestrator did not
+re-measure. No false finding was found.
+
+The run at `1ddae0d` tested the process files alone: each reviewer read
+them at that sha, the case's own `REVIEWING.md` at the case's head, and
+the installed `reviewer` agent, which is `main`'s `agents/reviewer.md`.
+It left out the change's edit to this tree's `REVIEWING.md`, which
+retargets its pointers to `btclib-common.md` to the new files. It also
+left out the edit to `agents/reviewer.md`, which retargets its citations
+of `btclib-common.md` and adds a sentence naming what the reviewer
+reads. The run at `2166200` tested both edits. The `REVIEWING.md` edit
+rewrites the paragraph that states the defect of PR
+btclib-org/ai-agents-process#317, and that run withheld the sentence, so
+that case cannot evaluate the edit. The run at `1ddae0d` loses no hit,
+and its hit on PR btclib-org/btclib-secp256k1#1331 did not repeat. With
+the whole brief under test, the run at `2166200` matches the baseline at
+`aa5dcdc` on every case, so the change loses no hit on these cases and
+shows no gain.
 
 ## Cases
 
@@ -154,10 +232,10 @@ defect, and that the pull request fixed in `d5dee25` before it landed.
 - head `709efef082c5f81d0fdf775633317699aa0fc1be`
 - defect: the port makes `CONTRIBUTING.md` and `REPOSITORY.md` say
   auto-merge is off and no pull request can be armed, while
-  `skills/btclib-pr/SKILL.md`'s *Arming auto-merge* and *Landing*,
-  `skills/btclib-iss/SKILL.md` and `process/btclib-common.md` at that
-  head still tell a session to arm it, as
+  `skills/btclib-pr/SKILL.md`, in its sections *Arming auto-merge* and
+  *Landing*, `skills/btclib-iss/SKILL.md` and `process/btclib-common.md`
+  at that head still tell a session to arm it, as
   `git grep -c -i -E 'auto-merge|--auto' 709efef -- skills process`
   shows in each of the three.
-- found by both runs of 2026-11-15 (*Runs*), and fixed on `main` in
-  `7f7de67`.
+- found by the runs at `2ef0de4` and `466d803` (*Runs*), and fixed on
+  `main` in `7f7de67`.

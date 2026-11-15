@@ -333,8 +333,9 @@ this heading.
 
 The text of the process the maintainers follow with a coding agent:
 `skills/btclib-iss/SKILL.md` and `skills/btclib-pr/SKILL.md` are the two
-skills, `process/btclib-common.md` is what they share, and `agents/`
-holds the agents a session briefs with them.
+skills, `process/every-role.md`, `process/writing.md`,
+`process/local-review.md` and `process/orchestration.md` are what they
+share, and `agents/` holds the agents a session briefs with them.
 `skills/btclib-table/SKILL.md` is a third skill, which only reads: one
 table of the organization's repositories. `scripts/agents-toml.py`
 writes the agents' `.toml` files for Codex. `README.md` says how a

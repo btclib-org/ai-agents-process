@@ -1,10 +1,9 @@
 ; The sandbox macOS's sandbox-exec runs an outside contributor's gates
-; in, as process/btclib-common.md's *The gates* says. Its parameters:
-; WT, the worktree; SBX, the directory that holds the gates' caches,
-; HOME and TMPDIR; HOME, the user's home; UV_PYTHON, what
-; `uv python dir` prints; GIT_DIR and GIT_COMMON_DIR, what
-; `git -C <wt> rev-parse --path-format=absolute` prints for
-; --git-dir and --git-common-dir.
+; in, as process/writing.md's *The gates* says. Its parameters: WT,
+; the worktree; SBX, the directory that holds the gates' caches, HOME
+; and TMPDIR; HOME, the user's home; UV_PYTHON, what `uv python dir`
+; prints; GIT_DIR and GIT_COMMON_DIR, what `git -C <wt> rev-parse
+; --path-format=absolute` prints for --git-dir and --git-common-dir.
 (version 1)
 (allow default)
 

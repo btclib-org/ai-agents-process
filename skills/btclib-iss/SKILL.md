@@ -34,9 +34,11 @@ git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.sha
 The client loaded this file before that note, so the session reads it
 again, whole and once, from `$PROCESS/skills/btclib-iss/SKILL.md`.
 
-**Then read `$PROCESS/process/btclib-common.md`, whole.** Its opening
-says what it holds and what this file holds. What the session writes,
-and this file, follow `every-session.md`'s *Write plainly*.
+**Then read the shared files, whole**: `every-role.md`, `writing.md`,
+`local-review.md` and `orchestration.md`, in `$PROCESS/process/`.
+`every-role.md`'s opening says what they hold and what this file holds.
+What the session writes, and this file, follow `every-session.md`'s
+*Write plainly*.
 
 **Where $ARGUMENTS names no issue, ask the human which, before reading
 anything**: no tracker, no checkout, and no earlier context stands in for
@@ -47,7 +49,7 @@ GitHub numbers issues and pull requests together, so `gh pr view <n>`
 says which a number is. A pull request among the arguments is
 `/btclib-pr`'s: skip it and tell the human.
 
-**Which sections are yours**, beyond the shared file's map:
+**Which sections are yours**, beyond `every-role.md`'s map:
 
 - **The writer**: *What the issue still asks*, *Ports of the standard*
   where it writes a port, and `/btclib-pr`'s *What was raised*,

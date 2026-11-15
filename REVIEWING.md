@@ -526,10 +526,10 @@ this heading.
 Each of these is a question. Where another document holds the rule, the
 question names it.
 
-- **Does the change keep the process the single source?** The opening
-  of `process/btclib-common.md` says where a rule is stated; a copy
-  anywhere else will disagree with it. What a diff added to the agents
-  is read against the process:
+- **Does the change keep the process the single source?** The opening of
+  `process/every-role.md` says where a rule is stated; a copy anywhere
+  else will disagree with it. What a diff added to the agents is read
+  against the process:
 
     ```shell
     git diff origin/main... -- agents/
@@ -541,17 +541,16 @@ question names it.
   read is a rule that role never sees.
 - **Does an exception now reach the rule the change adds, and should
   it?** A sentence such as "None of this applies…", "This does not
-  apply…" or "Except…" can come to cover a rule added beside it, left
-  as it stands or rewritten in the same change. In
-  [PR ai-agents-process#317](https://github.com/btclib-org/ai-agents-process/pull/317)
+  apply…" or "Except…" can come to cover a rule added beside it, left as
+  it stands or rewritten in the same change. In [PR
+  ai-agents-process#317](https://github.com/btclib-org/ai-agents-process/pull/317)
   the commit that added a session hold also rewrote the next sentence
   from "It does not apply to the resumed run of a fresh reviewer" to
   "None of this applies…", which then exempted that run from the hold
-  too. `process/btclib-common.md`'s *A second reason gets its own
-  paragraph*, under *What the prose that lands may say*, is the
-  writer's side. `git diff` shows three lines around a change by
-  default, so an exception left as it stands can fall outside the hunk;
-  this shows twenty:
+  too. `process/writing.md`'s *A second reason gets its own paragraph*,
+  under *What the prose that lands may say*, is the writer's side. `git
+  diff` shows three lines around a change by default, so an exception
+  left as it stands can fall outside the hunk; this shows twenty:
 
     ```shell
     git diff -U20 origin/main... -- '*.md'

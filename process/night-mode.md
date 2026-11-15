@@ -1,7 +1,8 @@
 # Night mode
 
 The orchestrator's, in either skill. A section named in italics with no
-file is one of `btclib-common.md`'s or of `every-session.md`'s.
+file is in `every-session.md` or in `every-role.md`, `writing.md`,
+`local-review.md` or `orchestration.md`.
 
 **Night mode has no ceiling and no duration**: it lasts until the human
 turns it off.
