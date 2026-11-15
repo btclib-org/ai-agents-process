@@ -223,20 +223,19 @@ branch, or a text to be posted.
 keeps**: its own reviewers' and those of every review on the forge, a
 review bot's and a maintainer's included. Until the pull request exists,
 the record is a file of the orchestrator's,
-`<scratchpad>/orchestrator/findings-<repo>-<branch>.md`. Once the pull
-request is open, the record is kept as a comment on it, as below. A
-session that takes the pull request over then reads every finding, its
-outcome and the head it was last checked on, which a file in another
-session's scratch directory would not give it. An embargoed fix's record
-stays in the file until its advisory is published (*Committing and
-rebasing*). So does the record on a tree whose `CONTRIBUTING.md` does
-not yet exempt it from the comment limits: that file wins over
-`every-session.md`'s exemption (*Which file wins*) until the standard's
-*Write plainly* carries it, as btclib-org/.github#2306 asks, and the
-tree takes the port. A text to be posted keeps its record in the file
-alone, `<scratchpad>/orchestrator/findings-<text file>.md`, where the
-hash `shasum -a 256 <text file>` prints for each version stands for a
-head.
+`<work>/findings-<branch>.md` (`every-role.md`'s *The scratchpad is
+shared*). Once the pull request is open, the record is kept as a comment
+on it, as below. A session that takes the pull request over then reads
+every finding, its outcome and the head it was last checked on, which a
+file in another session's scratch directory would not give it. An
+embargoed fix's record stays in the file until its advisory is published
+(*Committing and rebasing*). So does the record on a tree whose
+`CONTRIBUTING.md` does not yet exempt it from the comment limits: that
+file wins over `every-session.md`'s exemption (*Which file wins*) until
+the standard's *Write plainly* carries it, as btclib-org/.github#2306
+asks, and the tree takes the port. A text to be posted keeps its record
+in the file alone, `<work>/findings-<text file>.md`, where the hash
+`shasum -a 256 <text file>` prints for each version stands for a head.
 
 **The record lists every round**: each head reviewed, locally or on the
 forge, with each reviewer that read it and its verdict, a head that

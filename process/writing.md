@@ -565,14 +565,14 @@ of the standard* says.
   the load, the memory and the disk admit a gate, as the header comment
   of `$PROCESS/scripts/gate-lock.sh` says, and prints the readings the
   report copies.
-- **`--basetemp=<scratchpad>/pytest-<repo>-<branch>`**, outside the
-  worktree, the same name on every run of that branch, removed once the branch's
-  gates are done (*Debris goes when its work ends*). A teardown
-  `OSError` or `FileNotFoundError` on `popen-gw*` is a neighbour's run on
-  a shared path (`ps` shows it), not a failing test.
+- **`--basetemp=<work>/pytest-<branch>`** (*The scratchpad is shared*),
+  outside the worktree, the same name on every run of that branch,
+  removed once the branch's gates are done (*Debris goes when its work
+  ends*). A teardown `OSError` or `FileNotFoundError` on `popen-gw*` is a
+  neighbour's run on a shared path (`ps` shows it), not a failing test.
 - **Build artefacts outside the worktree** (`uv build --out-dir
-  <scratchpad>/…`): an untracked file inside it fails `check-sdist`
-  while `git status` reads clean.
+  <scratch>/…`): an untracked file inside it fails `check-sdist` while
+  `git status` reads clean.
 - **A workflow change is dispatched on the branch**: `gh workflow run
   <file>.yml --ref <branch>`. A workflow that has never landed on the
   default branch is exercised first by the pull request's own run, which
