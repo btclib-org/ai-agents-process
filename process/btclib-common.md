@@ -1815,30 +1815,39 @@ brought no finding included.
 
 **An entry holds** the finding in a sentence, with its class (*The
 classes of defect found carry forward*); who raised it; the head it was
-raised on; the lines it rests on, quoted (below); its outcome; and the
-head it was last checked on. The outcome is open until the finding is
-answered as `/btclib-pr`'s *Answering it* says: accepted, with the
-commit that fixes it; declined, with the measurement that refutes it;
-filed, as `ISS <repo>#<n>`; or a decision, waiting on the human or the
-maintainer. An accepted, declined or filed finding is closed for the
-convergence check of *The rounds*.
+raised on; the lines it rests on, quoted, with the sha they are read at
+(below); its outcome; and the head it was last checked on. The outcome
+is open until the finding is answered as `/btclib-pr`'s *Answering it*
+says: accepted, with what fixes it, which is the commit, the corrected
+sentence for a sentence of the pull request body, or the corrected
+subject or sentence, read at the landing, for a commit-message finding
+fixed only in the squash (`/btclib-pr`'s *Landing*); declined, with the
+measurement that refutes it; filed, as `ISS <repo>#<n>`; or a decision,
+waiting on the human or the maintainer. An accepted, declined or filed
+finding is closed for the convergence check of *The rounds*.
 
 **A finding quotes the lines it rests on**: the path, the first line's
-number, and the lines exactly as they read at the head, or at the base
-for a line the branch removes. A local reviewer quotes them in its
-verdict. For a review on the forge the orchestrator quotes them, from
-its thread's path and line at the commit the thread names. A finding
+number, the sha they are read at, and the lines exactly as they read
+there: the head, or the base for a line the branch removes. A local
+reviewer quotes them in its verdict. For a review on the forge the
+orchestrator quotes them, from its thread's `path` and `original_line`,
+read at the thread's `original_commit_id`, or, where the thread's `side`
+is `LEFT`, at the commit that
+`git merge-base <original_commit_id> origin/<base>` prints. A finding
 that rests on no line, as a sentence the tree lacks, quotes instead the
-command that shows it and what it printed.
+command that shows it and what it printed. A finding on a sentence of
+the pull request body quotes the sentence that
+`gh pr view <n> --repo <owner>/<repo> --json body --jq .body` printed.
 
 **The orchestrator checks a local reviewer's quote before passing the
 finding to the writer.** It writes the excerpt to a file of its own,
 ending in a newline, and this exits `0` only where the excerpt is not
-empty and the lines from `<line>` at `<sha>` equal it exactly. A finding
-whose quote fails goes back to its reviewer, not on to the writer: its
-lines are not the branch's. A finding that quotes a command and its
-output instead is checked by running the command at the sha, and fails
-where what it prints differs from the output quoted.
+empty and the lines from `<line>` at `<sha>`, the sha the entry names,
+equal it exactly. A finding whose quote fails goes back to its reviewer,
+not on to the writer: its lines are not the branch's. A finding that
+quotes a command and its output instead is checked by running the
+command at the sha, and fails where what it prints differs from the
+output quoted.
 
 ```shell
 wt=<wt>
@@ -1856,8 +1865,13 @@ git -C "${wt:?}" show "${sha:?}:${file:?}" |
 whether or not a reviewer raised it again, and its last checked head
 becomes the new one. An open finding is fixed only where lines of the
 new head fix it, which the entry then quotes; an accepted one stays
-fixed only where those lines still stand. A reply, the author's or the
-writer's, settles nothing.
+fixed only where those lines still stand. A finding on the pull request
+body is assessed again on each new head and before the landing, against
+`gh pr view <n> --repo <owner>/<repo> --json body --jq .body`: it is
+fixed only where the body holds the corrected sentence the entry quotes.
+A read that exits non-zero is a stop, not a finding left unfixed: it
+says nothing about the body. A reply, the author's or the writer's,
+settles nothing.
 
 **Two findings are one where they share their mechanism and their
 consequence**, whatever their titles or lines. A new finding that
@@ -1885,7 +1899,7 @@ Findings on <head>: <open> open. [Supersedes <earlier record's URL>.]
 
 Class: <the shape of input or the step of reasoning it broke>.
 
-`<path>` from line <line> at <head>:
+`<path>` from line <line> at <sha>:
 
 ```text
 <the lines, exactly>

@@ -31,7 +31,12 @@ coverage list names this file is discarded and run again. The process it
 is briefed with is the configuration under test, at the `$PROCESS` sha
 the run records. The reviewer reads the prose at the head itself, not on
 the merge with `origin/main` that *A pull request's rounds* asks for,
-since `main` has moved past the case, a defect's fix included.
+since `main` has moved past the case, a defect's fix included. Where the
+run changes this tree's `REVIEWING.md`, a reviewer of this repository's
+cases reads the changed file in place of the head's, without the
+sentences that describe a case's defect, such as PR
+btclib-org/ai-agents-process#317's in its *This repository in
+particular*. The run records what it withheld.
 
 A forge finding gives a case its head, the commit its thread names, and
 the head gives its base, the merge base with `main`:
@@ -87,11 +92,10 @@ or the effort.
   *A pull request's rounds* and rewrites the next sentence to "None of
   this applies to the resumed run of a fresh reviewer…", which exempts
   that run from the hold too.
-- found by CodeRabbit on GitHub after the dedicated reviewer's
-  `CLEARED`
+- found by CodeRabbit on GitHub after the dedicated reviewer's `CLEARED`
   ([thread](https://github.com/btclib-org/ai-agents-process/pull/317#discussion_r4498549481)),
-  and fixed in `a290019`. `REVIEWING.md` on `main` cites the case, so the
-  run reads that file at the case's head.
+  and fixed in `a290019`. `REVIEWING.md` on `main` describes this
+  defect, and the copy at the head does not (*What a case holds*).
 
 ### PR btclib-org/btclib-secp256k1#1331
 
