@@ -186,7 +186,10 @@ def standard_adds(std: Repo, tree: Repo) -> tuple[str, str, str]:
 
 def standard_renames(std: Repo, tree: Repo) -> tuple[str, str, str]:
     readme = README.replace("`B.md`", "`E.md`")
-    s = std.commit({"README.md": readme, "A.md": "new\n", "E.md": "same\n"})
+    old = std.commit({"README.md": readme, "A.md": "old\n", "E.md": "same\n"})
+    s = std.commit(
+        {"README.md": readme, "A.md": "new\n", "E.md": "same\n"}, "standard", old
+    )
     return (s, *batch(tree, OLD, NEW))
 
 
@@ -247,7 +250,8 @@ def not_utf8(std: Repo, tree: Repo) -> tuple[str, str, str]:
 
 
 def ordinary_add(std: Repo, tree: Repo) -> tuple[str, str, str]:
-    s = std_at(std)
+    old = std.commit({"README.md": README, "A.md": "old\n"})
+    s = std.commit({"README.md": README, **NEW}, "standard", old)
     return (s, *batch(tree, {"A.md": "old\n"}, NEW))
 
 
@@ -499,6 +503,16 @@ def guess_nothing(std: Repo, tree: Repo) -> tuple[str, str, str]:
     return (cs[-1], *batch(tree, old, {**old, "x.md": "y\n"}))
 
 
+def guess_nothing_equal(std: Repo, tree: Repo) -> tuple[str, str, str]:
+    s = std_at(std)
+    return (s, *batch(tree, {"A.md": "other\n", "B.md": "different\n"}, NEW))
+
+
+def no_copies(std: Repo, tree: Repo) -> tuple[str, str, str]:
+    s = std_at(std)
+    return (s, *batch(tree, {"x.md": "y\n"}, {**NEW, "x.md": "y\n"}))
+
+
 CASES = [
     Case("equal", equal, 0, ("equal A.md", "equal B.md", "(guessed")),
     Case("an unknown <S>", unknown_standard, 2, ("FAILED:",)),
@@ -571,7 +585,14 @@ CASES = [
     Case("guess: unported workflow", unported_workflow, 1, ("guessed", "standard 1")),
     Case("guess: a read fails", guess_read_error, 2, ("FAILED:",), ("last port",)),
     Case("guess: a read fails between runs", guess_read_error_between, 2, ("FAILED:",)),
-    Case("guess: nothing matches", guess_nothing, 1, ("last port: unknown",)),
+    Case("guess: nothing matches", guess_nothing, 2, ("last port: unknown",)),
+    Case(
+        "guess: nothing matches, copies equal",
+        guess_nothing_equal,
+        2,
+        ("equal A.md", "FAILED: the last port is unknown"),
+    ),
+    Case("a tree without copies", no_copies, 2, ("FAILED: the last port is unknown",)),
     Case(
         "a gitlink, submodules ignored by the caller",
         ignored_submodules(False),

@@ -57,9 +57,9 @@ It exits 0 only where every file is equal, 1 where one differs, and 2
 where it cannot tell: a git call that fails, a section 14 it cannot
 read, a path that is not UTF-8, a boundary it cannot place, a refused
 `<S>` or `<base>`, a recorded last port that is not an ancestor of
-`<S>`, or a batch that changes no file. A git call that fails, git
-missing from `PATH` among them, is never read as an absent or empty
-file.
+`<S>`, a last port it cannot find, or a batch that changes no file. A
+git call that fails, git missing from `PATH` among them, is never read
+as an absent or empty file.
 """
 
 from __future__ import annotations
@@ -344,6 +344,9 @@ def main(argv: list[str]) -> int:
             why = compare(std, at, tree, base, head, path, source)
             print(f"equal {path}" if why is None else f"DIFFERS {path}: {why}")
             rc = rc if why is None else 1
+        if since is None:
+            msg = "the last port is unknown, so no change since it is listed"
+            raise Unknown(msg)
     except (Unknown, UnicodeDecodeError) as error:
         print(f"FAILED: {error}")
         return 2

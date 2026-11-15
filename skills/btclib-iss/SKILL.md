@@ -97,7 +97,7 @@ to take lands there first, and reaches each other tree by a port.
 
   ```shell
   gh issue list -R btclib-org/.github --state open --label on-hold \
-    --search '"travels with the next batch" in:comments'
+    --limit 1000 --search '"travels with the next batch" in:comments'
   ```
 
   Each tree's port cites the issue, and the session whose landing
@@ -168,7 +168,8 @@ gh issue edit <n> --repo <owner>/<repo> --remove-label upstream-dependent
 
 An issue with a reason label (`every-session.md`'s *When the human has
 to decide*, *A hold is recorded*) is taken only once the wait its label
-names is over, and taking it removes that label the same way.
+names is over, and taking it removes that label the same way, except the
+`on-hold` of a port's wait, which *Ports of the standard* takes off.
 
 ## Opening the pull request
 
