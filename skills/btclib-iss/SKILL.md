@@ -105,10 +105,12 @@ to take lands there first, and reaches each other tree by a port.
   trees is closed by the last landing only*).
 - **The standard's alignment tests expect the drift.** The standard's
   pull request adds to `EXPECTED_DRIFT`, in `tests/verbatim_test.py`,
-  each path it changes that section 14 compares, citing the issue. The
-  entry's strict expected failure turns red once every copy agrees, and
-  the session whose landing closes the issue then removes the entry in a
-  pull request of the standard.
+  each path it changes that section 14 compares and that has no entry
+  yet, citing the issue. The entry's strict expected failure turns red
+  once every copy agrees. The session whose landing closes the issue an
+  entry cites then removes the entry, in a pull request of the standard,
+  or, where the copies still differ, points it at the issue of a change
+  still waiting on that path.
 - **A batch takes the standard's copies byte for byte**, rather than
   applying the delta, which can come up short. It takes them from
   `<S>`, the standard's `origin/main` when the batch starts. A file with
