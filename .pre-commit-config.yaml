@@ -86,6 +86,13 @@ repos:
         entry: python scripts/test-git-c-allow.py
         files: ^scripts/(test-)?git-c-allow\.py$
         pass_filenames: false
+      # the commands scripts/pretooluse-rules.py refuses and lets through
+      - id: test-pretooluse-rules
+        name: pretooluse-rules.py answers as its test expects
+        language: python
+        entry: python -I scripts/test-pretooluse-rules.py
+        files: ^scripts/(test-)?pretooluse-rules\.py$
+        pass_filenames: false
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
