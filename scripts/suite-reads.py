@@ -103,8 +103,8 @@ WALKS = {"listdir", "scandir", "iterdir", "glob", "iglob", "rglob", "walk"}
 READ_MODULES = ("glob", "os", "subprocess", "asyncio", "shutil", "importlib.resources")
 # Every member of a read module reads or lists files or runs a command,
 # except an UPPER_CASE constant, an exception class, asyncio outside its
-# subprocess API, and these, none of which reads a file's content or
-# runs a command, nor lists a directory but to remove it:
+# subprocess API, and these, none of which reads a file's content, lists
+# a directory or runs a command:
 INERT = {
     "os": {
         # path strings, and os.path's tests of a path (but SIZED)
@@ -117,9 +117,8 @@ INERT = {
         # the process's own state
         *("getcwd", "getcwdb", "getpid", "getppid", "cpu_count"),
     },
-    # a program's path on PATH; and removing a tree, which lists its
-    # directories only to remove them, the same whatever its files hold
-    "shutil": {"which", "rmtree"},
+    # a program's path on PATH
+    "shutil": {"which"},
     # string work on a pattern
     "glob": {"escape", "translate", "has_magic"},
     # the result of a run, as a type
