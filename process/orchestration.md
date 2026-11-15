@@ -11,12 +11,12 @@ with no file is.
   the skill's, and the sections of those files and the skill that are
   its role's, the issue or pull request, the repository, the worktree
   and scratch paths, the force-push grant, and the claims you measured.
-  The same for a reviewer and a designer.
+  The same for a reviewer and a designer, and for a designer the
+  `origin/main` sha it reads the tree at.
 - **Before dispatching, ask whether the issue is collateral of a pull
   request this session worked** (*Collateral*).
 - **The role map binds the brief.** A writer does not open pull requests;
-  do not ask it to. The one exception, stated as such in the brief, is a
-  one-line fix to a red `main`.
+  do not ask it to.
 - **Every claim in a brief carries its command, or the words saying it
   is unmeasured.** A writer writes a false premise into prose that lands.
   `ls -d` a path before naming it; a missing checkout is a question for
@@ -108,7 +108,7 @@ with no file is.
   scratchpad=<the session's scratchpad>
   started=$(cat "${scratchpad:?}/orchestrator/process.sha")
   next=$(cat "${scratchpad:?}/orchestrator/process.next")
-  git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- process/ skills/
+  git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- process/ skills/ scripts/
   ```
 
   Where the diff prints anything, the session re-reads each section it
@@ -139,16 +139,14 @@ with no file is.
   Where the diff exited non-zero, or `process.sha` is missing or empty,
   the changed sections are not known. The session notes `HEAD` again as
   its skill's opening says, then re-reads whole every file under
-  `process/` and `skills/` it has read, and every one where it cannot
-  tell. The next brief to each worker already running asks it to
-  re-read its role's sections whole.
+  `process/`, `skills/` and `scripts/` it has read, and every one where
+  it cannot tell. The next brief to each worker already running asks it
+  to re-read its role's sections whole.
 
 ## Night mode
 
-The human turns night mode on with `--night` in the arguments or in
-words, and off in words, at any point. While it is on, the orchestrator
-follows `$PROCESS/process/night-mode.md`, read whole when it is turned
-on.
+`$PROCESS/process/night-mode.md` says how night mode is turned on and
+off, and what the orchestrator follows while it is on.
 
 ## Wrap-up
 
