@@ -71,17 +71,21 @@ gh api graphql -F owner="${repo%%/*}" -F repo="${repo#*/}" -F n="${n:?}" \
   -f query='query($owner: String!, $repo: String!, $n: Int!) {
     repository(owner: $owner, name: $repo) { pullRequest(number: $n) {
       reviewThreads { totalCount } } } }' \
-  --jq .data.repository.pullRequest.reviewThreads.totalCount
-gh api --paginate "repos/${repo:?}/pulls/${n:?}/reviews?per_page=100" \
-  --jq '.[] | select(.user.login == "coderabbitai[bot]") | .body' |
-  grep -c -E 'cr-comment:v1|Additional comments|Actionable comments|Nitpick'
+  --jq .data.repository.pullRequest.reviewThreads.totalCount ||
+  echo read-failed
+{ gh api --paginate "repos/${repo:?}/pulls/${n:?}/reviews?per_page=100" \
+    --jq '.[] | select(.user.login == "coderabbitai[bot]") | .body' ||
+    echo read-failed
+} | grep -c -E \
+  'read-failed|cr-comment:v1|Additional comments|Actionable comments|Nitpick'
 ```
 
 The first read counts every review thread, any author, resolved or not.
 The second counts the lines of CodeRabbit's review bodies that mark a
 finding, which *The reviews on GitHub* does not read while ISS
 btclib-org/ai-agents-process#489 is open; it goes once that section
-reads them.
+reads them. A failed read prints `read-failed` or counts it, and any
+answer other than `0` is not clean.
 
 ## How a run is scored
 
