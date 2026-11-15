@@ -99,11 +99,11 @@ Show the human one table, grouped:
 Each row is a `PR` link with its diff balance (the shared *How an issue
 and a pull request are named*) and what it waits on. A pull request may
 wait on one that carries `release-hold`, as *Landing* says, and this
-lists those that carry it:
+lists the open or merged ones that carry it:
 
 ```shell
 gh search prs --owner btclib-org --label release-hold --limit 200 \
-  --json repository,number,url,state
+  --json repository,number,url,state --jq '.[] | select(.state != "closed")'
 ```
 
 A draft is listed and not worked. Then put one decision
@@ -1648,8 +1648,7 @@ has not reported yet.
   approved and merged (`CONTRIBUTING.md`'s *Landing it*).
 - **`release-hold` holds merges as `RELEASING.md`'s *Release to PyPI*
   says.** Before the session merges a pull request, these read the
-  repository and its pull requests carrying the label, merged ones
-  included:
+  repository and its open or merged pull requests carrying the label:
 
   ```shell
   gh api repos/<owner>/<repo> --jq .full_name
@@ -1659,22 +1658,23 @@ has not reported yet.
   gh api --paginate \
     'repos/<owner>/<repo>/issues?labels=release-hold&state=all&per_page=100' \
     --jq '.[] | select(.pull_request)
+      | select(.state == "open" or .pull_request.merged_at != null)
       | {number, state, merged: .pull_request.merged_at}'
   ```
 
-  The first must print `<owner>/<repo>`. Where the second lists another
-  pull request that is open or merged, the one at hand waits until it
-  lists no such other, but for the exceptions that step gives. One
-  closed without merging (`state` `closed`, `merged` null) holds
-  nothing: abandoning a release removes its label. Another name from the
-  first, or a nonzero exit of either, is an error, and the merge waits
-  until both answer. The read and the merge are two calls, and no rule
-  of a GitHub ruleset reads a label, so a label put on between them does
-  not stop the merge. Until the release merges, its own check that
-  `main` has not moved catches such a merge, as that step says. A label
-  left behind on a release already published or abandoned is handled as
-  that step says. The label records the wait, and the waiting pull
-  request takes no comment of its own.
+  The first must print `<owner>/<repo>`. Where the second lists a pull
+  request other than the one at hand, the one at hand waits until it
+  lists no other, but for the exceptions that step gives. Another name
+  from the first, or a nonzero exit of either, is an error, and the
+  merge waits until both answer. The read and the merge are two calls,
+  and none of the [rules a GitHub ruleset offers][rulesets] reads a
+  label, so a label put on between them does not stop the merge. Until
+  the release merges, its own check that `main` has not moved catches
+  such a merge, as that step says. A label left on a merged release
+  already published still holds every merge until the maintainer's word,
+  and one on a pull request closed without merging holds nothing and is
+  removed by whoever finds it, as that step says. The label records the
+  wait, and the waiting pull request takes no comment of its own.
 - **What gates a merge on GitHub** is the repository's own
   `REPOSITORY.md`, read from `origin/main`: typically an approval from
   somebody other than the author, every review thread resolved, and the
@@ -1991,3 +1991,4 @@ has not reported yet.
 Then the shared *Wrap-up*.
 
 [dependabot-rebase]: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/manage-dependabot-prs#allowing-dependabot-to-rebase-and-force-push-over-extra-commits
+[rulesets]: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets
