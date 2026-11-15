@@ -341,15 +341,16 @@ the process names its own files by their path under it. Claude Code's
   and CodeRabbit before a push*, *A force-push with lease, to a branch
   the session works only* and *Signed and signed off*, in `writing.md`.
   Its `RULES` says what it refuses of each. The sections stay the rule,
-  and the hook is a net under them: it refuses only what the command's
-  words show for certain, so a command it lets through may still break
-  one. Codex runs no such hook, so its own sessions have the sections
-  alone.
+  and the hook is a net under them: it lets through a command whose
+  words leave a breach uncertain, so a command it lets through may
+  still break one, and it refuses some spellings that break no rule.
+  Codex runs no such hook, so its own sessions have the sections alone.
 
   A command the hook refuses is written again as the section it names
   asks: the refusal is that section's, not a denied permission (*A
   denied permission is a stop*). A refused command that breaks no rule
-  is a defect of the script, filed as *Collateral* says.
+  is a defect of the script, filed as *Collateral* says, unless the
+  script's docstring lists it among the false refusals it keeps.
 
 - **Git writes under Codex.** Its `workspace-write` sandbox keeps each
   writable root's `.git`, and the git directory it points to, read-only,
