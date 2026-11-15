@@ -1666,10 +1666,13 @@ has not reported yet.
   request other than the one at hand, the one at hand waits until it
   lists no other, but for the exceptions that step gives. Another name
   from the first, or a nonzero exit of either, is an error, and the
-  merge waits until both answer. A label left behind on a release
-  already published or abandoned is handled as that step says. The label
-  records the wait, and the waiting pull request takes no comment of its
-  own.
+  merge waits until both answer. The read and the merge are two calls,
+  and no rule of a GitHub ruleset reads a label, so a label put on
+  between them does not stop the merge. Until the release merges, its
+  own check that `main` has not moved catches such a merge, as that step
+  says. A label left behind on a release already published or abandoned
+  is handled as that step says. The label records the wait, and the
+  waiting pull request takes no comment of its own.
 - **What gates a merge on GitHub** is the repository's own
   `REPOSITORY.md`, read from `origin/main`: typically an approval from
   somebody other than the author, every review thread resolved, and the

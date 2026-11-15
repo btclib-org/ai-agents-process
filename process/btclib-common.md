@@ -705,10 +705,6 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
 
 This section is in `every-session.md`, beside this file.
 
-**`RELEASING.md`'s *Release to PyPI* says when a release pull request
-carries `release-hold`** and what the label holds, and `/btclib-pr`'s
-*Landing* how a session reads it.
-
 ### What a session's memory holds
 
 **A client's persistent memory, as Claude Code's file-based memory, is
