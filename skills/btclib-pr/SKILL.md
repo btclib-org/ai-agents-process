@@ -260,7 +260,8 @@ answered one of three ways:
 
 - **accept**: fixed in a new signed commit on top (the shared
   *Committing and rebasing*).
-- **decline**: with the measurement that refutes it.
+- **decline**: with the measurement that refutes it, or that shows it a
+  refinement (below).
 - **decision**: a choice the tree does not settle — design, scope, a
   reserved decision. It goes to the human or the maintainer, as
   `every-session.md`'s *When the human has to decide* says.
@@ -276,6 +277,13 @@ a decision:
   already rules out, the sentence it calls false is true where the text
   applies it and leads no reader to a wrong step, or it is a matter of
   taste (`REVIEWING.md`'s *The standard an ack is given against*).
+- **filed or declined, never accepted, where it is a refinement**, which
+  names no defect on any input and no sentence the shared *Which prose
+  is worth a round* blocks on, or where the shared *The rounds* files
+  it: it adds no text to the branch. A defect *The rounds* files is
+  filed as the last route says; any other finding of this route is
+  filed so, or else declined with its ground. Repeated after the reply,
+  it is answered by pointing to the first reply, and resolved.
 - **accepted** where it is the branch's own: a defect or a false
   sentence its diff or its pull request body adds, or anything else the
   shared *Collateral* counts as the branch's subject (the shared *A pull
@@ -301,9 +309,9 @@ a decision:
   git -C <wt> show <base>:<path>
   ```
 
-**Every inline `suggestion` is applied in the worktree or declined with
-its measurement.** It is not applied with GitHub's button, so that the
-gates run on it.
+**Every inline `suggestion` that is accepted is applied in the
+worktree.** It is not applied with GitHub's button, so that the gates
+run on it.
 
 **Every thread gets a reply, and is then resolved.** An accepted one
 names the commit that fixes it; a declined one carries its measurement.
@@ -336,7 +344,9 @@ read, its summary then naming `New commits` as the trigger. Where its
 finding is answered without a push, a comment `@codex review` on the
 pull request asks for the read, and the state on the head is waited
 for. A finding Codex repeats after the reply is a finding again: fixed,
-or answered as a decision.
+or answered as a decision, unless the refinement route above answers
+it. *The reviews on GitHub* says when the state such findings leave
+does not hold the landing.
 
 ### Another person's branch
 
@@ -547,7 +557,7 @@ them.
       read and what follows, and is read where such a run fails.
 
 - **The reviews on GitHub are answered like any other**, iterating until
-  none is in findings on the current head (*The reviews on GitHub*).
+  none holds the landing on the current head (*The reviews on GitHub*).
 
 ## The reviews on GitHub
 
@@ -559,14 +569,17 @@ whatever an earlier answer on that head says: it is waited for, never
 read as absent, and each reviewer's running test is read first.
 
 **A pull request is approved or landed only where none of the three is
-in findings, and each that is not absent gave its ACK on the head.** An
-absence does not hold the landing; *The decision* says where the bot's
-makes the approval not obvious. Where all three are absent, the pull
-request waits for the human: no session approves or lands it before his
-word. None of the three is a check the rulesets require. The reason of
-each absence is recorded before the approval or the landing: in the pull
-request's `## Evidence` where its body is the session's, otherwise in a
-comment of the session's own naming the head.
+in findings, and each that is not absent gave its ACK on the head.**
+Codex's state in findings counts as its ACK here where it rests only on
+threads that *Answering it*'s refinement route answered and resolved,
+and those threads are recorded as the reason of an absence is, below.
+An absence does not hold the landing; *The decision* says where the
+bot's makes the approval not obvious. Where all three are absent, the
+pull request waits for the human: no session approves or lands it
+before his word. None of the three is a check the rulesets require. The
+reason of each absence is recorded before the approval or the landing:
+in the pull request's `## Evidence` where its body is the session's,
+otherwise in a comment of the session's own naming the head.
 
 What each command below prints is tested by its value
 (`every-session.md`'s *Shell, checkouts and prose*).

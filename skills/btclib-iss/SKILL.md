@@ -252,15 +252,16 @@ open:**
   that limit, and each stays short.
 - **`## Evidence` is a short table or list**: the gates of the head,
   with their exit codes, as the shared *The gates* reports them; the
-  rebase case the clearance is in; the review; and, once they have
-  answered, each review on GitHub that is absent, with its reason
-  (`/btclib-pr`'s *The reviews on GitHub*). The records the tree asks of
-  a body go here too, each where its own text says it applies: the
-  command that verifies a rule (`CONTRIBUTING.md`), the count that
-  decided the change (the shared *What the prose that lands may say*),
-  the runs the bot can repeat (the shared *A pull request's rounds*),
-  the command that reads a setting back (the shared *Collateral*), and
-  the command that measured a claim (`REVIEWING.md`).
+  rebase case the clearance is in; the review, with each finding the
+  shared *The rounds* files from the sixth round, as not covered; and,
+  once they have answered, each review on GitHub that is absent, with
+  its reason (`/btclib-pr`'s *The reviews on GitHub*). The records the
+  tree asks of a body go here too, each where its own text says it
+  applies: the command that verifies a rule (`CONTRIBUTING.md`), the
+  count that decided the change (the shared *What the prose that lands
+  may say*), the runs the bot can repeat (the shared *A pull request's
+  rounds*), the command that reads a setting back (the shared
+  *Collateral*), and the command that measured a claim (`REVIEWING.md`).
 - **`## Decision` is there only where the issue reserved one, or the
   design pass put one** (*The design pass*): it says what the branch
   takes, on what ground, and what the cut-back is.
