@@ -109,7 +109,7 @@ with no file is.
   scratchpad=<the session's scratchpad>
   started=$(cat "${scratchpad:?}/orchestrator/process.sha")
   next=$(cat "${scratchpad:?}/orchestrator/process.next")
-  git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- process/ skills/
+  git -C "${PROCESS:?}" diff "${started:?}" "${next:?}" -- process/ skills/ scripts/
   ```
 
   Where the diff prints anything, the session re-reads each section it
@@ -122,9 +122,11 @@ with no file is.
   and every heading within its lines, among those that output piped to
   `grep -n '^#'` lists. In a markdown file, a heading the diff removes,
   a line starting `-#`, and adds nowhere is a section that is gone: the
-  session stops following it. Where the diff exited `0`, the compared
-  sha becomes the noted one, since another session may have moved `HEAD`
-  meanwhile:
+  session stops following it. A file the diff lists that `next` no
+  longer holds, a deleted script for one, is gone too: `git show` cannot
+  print it, and the session stops following it. Where the diff exited
+  `0`, the compared sha becomes the noted one, since another session may
+  have moved `HEAD` meanwhile:
 
   ```shell
   scratchpad=<the session's scratchpad>
@@ -135,14 +137,17 @@ with no file is.
   are its role's, and those gone. Where a map of *Which sections are
   yours* changed, it also names each section the map now gives that
   role, changed or not, and each it no longer gives, which the worker
-  stops following.
+  stops following. It also names each file under `scripts/` the diff
+  lists, such as `scripts/gate-lock.sh`: the worker re-reads whole each
+  one it has read, and stops following each one `next` no longer holds.
 
   Where the diff exited non-zero, or `process.sha` is missing or empty,
   the changed sections are not known. The session notes `HEAD` again as
   its skill's opening says, then re-reads whole every file under
-  `process/` and `skills/` it has read, and every one where it cannot
-  tell. The next brief to each worker already running asks it to
-  re-read its role's sections whole.
+  `process/`, `skills/` and `scripts/` it has read, and every one where
+  it cannot tell. The next brief to each worker already running asks it
+  to re-read its role's sections whole, and each file under `scripts/`
+  it has read.
 
 ## Night mode
 
