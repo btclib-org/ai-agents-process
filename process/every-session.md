@@ -4,10 +4,11 @@ Every session reads this file whole before its first command, in any
 repository; a writer creates its worktree first, as the `writer` agent's
 *What holds whatever the process* says. It holds the part of the
 btclib-org process that binds every session, whatever its role. Where a
-rule here rests on a section of `btclib-common.md`, beside this file, it
-names that file and when to read it. That file holds the rest, and its
-opening says what each role reads and which file wins where two
-disagree.
+rule here rests on a section of another file beside this one, it names
+that file and when to read it. `every-role.md`, `writing.md`,
+`local-review.md` and `orchestration.md` hold the rest, and the opening
+of `every-role.md` says what each role reads and which file wins where
+two disagree.
 
 ## Shell, checkouts and prose
 
@@ -77,23 +78,22 @@ disagree.
     - **A text over a limit is not posted but returned cut**, unless a
       maintainer asked for exactly that detail.
     - **The findings record is a record, not a reply**
-      (`btclib-common.md`'s *The findings record*, read before keeping
+      (`local-review.md`'s *The findings record*, read before keeping
       one): no limit on a comment's length, lists or headings binds it,
       and its first line is still the point.
 - **Parallelize as much as you can.** Reads, remote work, writers and
   reviewers run side by side, within the machine's CPU load, memory
-  pressure and free disk (`btclib-common.md`'s *The gates* and *Before
+  pressure and free disk (`writing.md`'s *The gates* and *Before
   starting*, read before starting work in parallel).
 - **The machine is shared.** Heavy local work — a suite, the hooks
-  except where `btclib-common.md`'s *The gates* says, a docs build —
-  runs under the gate lock, up to three workers at once, as
-  `btclib-common.md`'s *The gate lock* says, read before running a gate.
-  Everything else runs in parallel with the gates. Targeted test runs
-  use `-n 0` or `-n 2`, never `-n auto`. The whole suite runs as the
-  tree's gate says; where the tree runs it under pytest-xdist, with
-  `-n "$GATE_LOCK_WORKERS"` (`btclib-common.md`'s *The gate lock*), which
-  overrides an `-n auto` in its `addopts`. Other sessions' processes are
-  not yours to kill.
+  except where `writing.md`'s *The gates* says, a docs build — runs
+  under the gate lock, up to three workers at once, as `writing.md`'s
+  *The gate lock* says, read before running a gate. Everything else runs
+  in parallel with the gates. Targeted test runs use `-n 0` or `-n 2`,
+  never `-n auto`. The whole suite runs as the tree's gate says; where
+  the tree runs it under pytest-xdist, with `-n "$GATE_LOCK_WORKERS"`
+  (`writing.md`'s *The gate lock*), which overrides an `-n auto` in its
+  `addopts`. Other sessions' processes are not yours to kill.
 - **The forge's quota is shared.** Every session and agent on this
   machine calls the forge through the same `gh` login, and so draws on
   the same hourly quotas: `core` for REST, `graphql` for what `gh pr
@@ -173,7 +173,7 @@ rule, and report the outcome in one line.
 - the recommendation first, with its reason;
 - the other alternatives, each with what it costs;
 - where an alternative changes a pull request's diff, the delta it
-  brings, written as the diff balance is (`btclib-common.md`'s *How an
+  brings, written as the diff balance is (`every-role.md`'s *How an
   issue and a pull request are named*, read before putting such a
   decision), measured on the alternative drafted in a scratch worktree,
   or else estimated and marked as an estimate.
@@ -182,7 +182,7 @@ Number the alternatives, so that one number answers.
 
 **This holds wherever work stops for the human.** The repository
 question is the exception: it lists the candidates without recommending
-one, since the repository is never inferred (`btclib-common.md`'s *Where
+one, since the repository is never inferred (`every-role.md`'s *Where
 you work*, read before working in a repository). It is still asked on
 its own.
 
@@ -195,18 +195,18 @@ issue reserved, a disagreement on its pull request that survives a
 second exchange. Such a decision is not put to the human: it is recorded
 as a hold whose comment @-mentions the maintainer. These stay the
 human's: which pull requests to work, an approval, the session's own
-review rounds (`btclib-common.md`'s *The rounds*, read before running
+review rounds (`local-review.md`'s *The rounds*, read before running
 them), a finding its reviewer still holds included.
 
 **A design question a writer raises on a branch, which its issue did not
-reserve, is filed as its own issue** (`btclib-common.md`'s *Collateral*,
+reserve, is filed as its own issue** (`every-role.md`'s *Collateral*,
 read before filing it) and decided there. Ask what each answer would do
 to what the branch's issue asks. The branch waits for the answer only
 where one answer would undo or replace that; otherwise it is judged as
 written. An answer that changes only the lines carrying the question is
 left to the question's own issue.
 
-**At night**, `btclib-common.md`'s *Night mode*, read when night mode is
+**At night**, `orchestration.md`'s *Night mode*, read when night mode is
 turned on, says what becomes of a decision.
 
 **A hold is recorded on the issue or pull request**, in the same turn it
