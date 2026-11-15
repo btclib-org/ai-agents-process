@@ -536,6 +536,22 @@ says.
   That check stands wherever the process asks for the latest fresh
   reviewer's `CLEARED`, and the reviews on GitHub still read the port.
 
+### A text to be posted
+
+**Its reviewer checks these as blocking items, beyond the limits of
+`every-session.md`'s *What is posted on a forge***, with every bot's
+report on the thread and our texts posted in the last 7 days, which its
+brief carries beside the draft:
+
+- every number and sha against the evidence, and that each gist
+  revision cited exists;
+- the non-ASCII list of *Citations and closing keywords*;
+- every phrase of three words or more already used in those texts of
+  the last 7 days, reworded where it reads as a formula;
+- nothing repeated from the description of the pull request or issue,
+  or from a bot: a point any bot already made blocks;
+- how the maintainer will receive the text.
+
 ### The verdict
 
 **The verdict holds:**
