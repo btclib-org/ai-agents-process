@@ -5,12 +5,14 @@ lands: those where the local rounds cleared a defect that a later review
 found. A clean one, where no review found any, belongs there too (*What
 a case holds*).
 
-**A change to the reviewer's model or its effort, or a change to the
-files of its brief that adds, alters or removes a rule it applies in
-judging a branch, is run on every case here first**, and its pull
-request adds the run to *Runs* and names it in `## Evidence`. The model
-and the effort are those `orchestration.md`'s *Models* gives. The
-brief's part this repository holds is the files and sections
+**A change to the reviewer's model, its effort or its tools, or a
+change to the files of its brief that adds, alters or removes a rule it
+applies in judging a branch, is run on every case here first**, and its
+pull request adds the run to *Runs* and names it in `## Evidence`. The
+model and the effort are those `orchestration.md`'s *Models* gives. The
+tools are those the `tools` key of `agents/reviewer.md`'s frontmatter
+gives a Claude Code reviewer; the generated `.toml` carries no such key.
+The brief's part this repository holds is the files and sections
 `every-role.md`'s map gives the reviewer under *Everybody* and
 *The reviewer*, the reviewer's sections of the skill the brief names,
 `agents/reviewer.md` with its generated `.toml`, and this tree's
@@ -19,10 +21,10 @@ prompt, which the brief also carries, change in their own trees. Without
 the run, such a change is judged on the next pull requests, whose
 defects nobody knows in advance.
 
-**A change to the brief's files that changes no such rule owes no run**:
-a pointer that moves, a sentence made more exact without changing what
-it asks, a rule only the writer or the orchestrator acts on. Its pull
-request says in `## Evidence` why it owes none.
+**A change to the brief's files that changes none of these owes no
+run**: a pointer that moves, a sentence made more exact without changing
+what it asks, a rule only the writer or the orchestrator acts on. Its
+pull request says in `## Evidence` why it owes none.
 
 ## What a case holds
 
@@ -204,7 +206,7 @@ at random, so a run says how a configuration did on them and not how
 often it finds a defect.
 
 **One factor at a time.** A run changes one thing from the baseline,
-the brief, the model or the effort, and is compared with the
+the brief, the model, the effort or the tools, and is compared with the
 baseline's run on the same cases. One configuration can answer
 differently on two runs, so a case that alone decides the comparison is
 run again first. A run that changes the brief is compared with a
