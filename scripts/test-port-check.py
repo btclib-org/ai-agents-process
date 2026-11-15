@@ -176,12 +176,17 @@ def heading_standard_only(std: Repo, tree: Repo) -> tuple[str, str, str]:
     return (s, *batch(tree, OLD, {**NEW, "A.md": "new" + M + "std\n"}))
 
 
-def standard_adds(std: Repo, tree: Repo) -> tuple[str, str, str]:
-    readme = README.replace(
-        "- `C.toml`", "- `D.md` — owed by every repository.\n- `C.toml`"
-    )
-    s = std_at(std, {"D.md": "added\n"}, readme)
-    return (s, *batch(tree, OLD, NEW))
+def standard_adds(marker: str) -> Build:
+    """List a `D.md` the tree lacks, its line opening with `marker`."""
+
+    def build(std: Repo, tree: Repo) -> tuple[str, str, str]:
+        readme = README.replace(
+            "- `C.toml`", f"{marker}`D.md` — owed by every repository.\n- `C.toml`"
+        )
+        s = std_at(std, {"D.md": "added\n"}, readme)
+        return (s, *batch(tree, OLD, NEW))
+
+    return build
 
 
 def standard_renames(std: Repo, tree: Repo) -> tuple[str, str, str]:
@@ -527,7 +532,22 @@ CASES = [
     Case(
         "heading in <S> only", heading_standard_only, 1, ("DIFFERS A.md: the heading",)
     ),
-    Case("<S> adds a file", standard_adds, 1, ("DIFFERS D.md: missing in the tree",)),
+    Case(
+        "<S> adds a file",
+        standard_adds("- "),
+        1,
+        ("DIFFERS D.md: missing in the tree",),
+    ),
+    *(
+        Case(
+            f"<S> adds a file under {marker!r}",
+            standard_adds(marker),
+            2,
+            ("FAILED: a line of section 14's list is not a dash bullet",),
+            ("DIFFERS",),
+        )
+        for marker in ("* ", "+ ", "1. ", " - ")
+    ),
     Case(
         "<S> renames a file",
         standard_renames,
