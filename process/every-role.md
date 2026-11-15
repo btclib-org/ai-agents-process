@@ -29,10 +29,9 @@ not yours; one that is cannot be skipped as somebody else's.
 - **Everybody**: `every-session.md` and this file, whole.
 - **The writer**: `writing.md`, whole, and the sections of the skill its
   brief names.
-- **The reviewer**: `local-review.md`, whole, and in `writing.md`'s
-  *Writing work* the checklist, *A rule stated more than once*, *What
-  the prose that lands may say*, *Citations and closing keywords* and
-  *Signed and signed off*, which it judges.
+- **The reviewer**: `local-review.md`, whole; `writing.md`'s *Writing
+  work*, whole, which it judges; and the sections of the skill its brief
+  names.
 - **The designer**: `writing.md`'s *Before starting*, its first bullet,
   and the sections of the skill its brief names.
 - **The orchestrator**: the four files, whole, and all of its skill.
