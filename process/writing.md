@@ -632,8 +632,8 @@ of the standard* says.
 
 ### Sourcery and CodeRabbit before a push
 
-The findings of these local runs are answered as a reviewer's are
-(*Orchestration*), and the writer's report lists each with its answer.
+The findings of these local runs are answered as `/btclib-pr`'s
+*Answering it* says, and the writer's report lists each with its answer.
 
 - **Sourcery reads each commit before it is pushed**, in a tree that runs
   the `sourcery` check, from a clone of the worktree in the scratch
