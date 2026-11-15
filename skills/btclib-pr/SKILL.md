@@ -1649,9 +1649,10 @@ has not reported yet.
   failure, and a check that only reports does not count. While `main` is
   red, its repair is the first work, and other pull requests are still
   approved and merged (`CONTRIBUTING.md`'s *Landing it*).
-- **`release-hold` holds merges as `RELEASING.md`'s *Release to PyPI*
-  says.** Before the session merges a pull request, these read the
-  repository and its open or merged pull requests carrying the label:
+- **`release-hold` holds merges as a publishing tree's `RELEASING.md`
+  says in *Release to PyPI*.** Before the session merges a pull request,
+  these read the repository and its open or merged pull requests
+  carrying the label:
 
   ```shell
   gh api repos/<owner>/<repo> --jq .full_name

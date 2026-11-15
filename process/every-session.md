@@ -224,6 +224,6 @@ shows it. An exhausted review quota is handled as
 `/btclib-pr`'s *Rebase and CI* says. A hold kept only in the session's
 context does not exist, and another session will take the work.
 
-**`RELEASING.md`'s *Release to PyPI* says when a release pull request
-carries `release-hold`** and what the label holds, and `/btclib-pr`'s
-*Landing* how a session reads it.
+**A publishing tree's `RELEASING.md` says in *Release to PyPI* when a
+release pull request carries `release-hold`** and what the label holds,
+and `/btclib-pr`'s *Landing* how a session reads it.
