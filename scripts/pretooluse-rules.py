@@ -3,7 +3,7 @@
 
 Claude Code runs it before each Bash call (`PreToolUse`), with the call
 as JSON on stdin. Where the command breaks a rule in `RULES`, it prints
-the section of `process/btclib-common.md` that holds the rule on stderr
+the section of the process that holds the rule, and its file, on stderr
 and exits 2, which refuses the call. Otherwise it prints nothing and
 exits 0, and the call goes on to the usual permission flow.
 
@@ -29,19 +29,25 @@ import re
 import shlex
 import sys
 
+# The files of the process that hold the rules.
+EVERY = "process/every-session.md"
 COMMON = "process/btclib-common.md"
+# For each rule: what breaks it, its section, and the file holding that.
 RULES = {
     "cd": (
         "the command opens with `cd`",
         "*Never open a command with `cd`*, in *Shell, checkouts and prose*",
+        EVERY,
     ),
     "xdist": (
         "pytest runs with `-n auto` or `-n logical`",
         "*The machine is shared*, in *Shell, checkouts and prose*",
+        EVERY,
     ),
     "watch": (
         "a gh watch asks more often than every 120 seconds",
         "*The forge's quota is shared*, in *Shell, checkouts and prose*",
+        EVERY,
     ),
     "datadir": (
         "a Bitcoin Core program runs without an explicit `-datadir=`",
@@ -49,6 +55,7 @@ RULES = {
             "*A Bitcoin Core program runs on a data directory of the scratch"
             " directory*, in *Shell, checkouts and prose*"
         ),
+        EVERY,
     ),
     "stash": (
         "`git stash` writes the shared `refs/stash`",
@@ -56,6 +63,7 @@ RULES = {
             "*Never the primary checkout, never `git stash`, never a push to"
             " `main`*, in *Where you work*"
         ),
+        COMMON,
     ),
     "fetch-head": (
         "`git worktree add` at `FETCH_HEAD`",
@@ -63,10 +71,12 @@ RULES = {
             "*A worktree for a pull request is added at its `headRefOid`*,"
             " in *Where you work*"
         ),
+        COMMON,
     ),
     "prune": (
         "`uv cache prune --force`",
         "*Look at the free disk*, in *Before starting*",
+        COMMON,
     ),
     "force": (
         "`git push` forces without a lease",
@@ -74,14 +84,17 @@ RULES = {
             "*A force-push with lease, to a branch the session works only*,"
             " in *Committing and rebasing*"
         ),
+        COMMON,
     ),
     "sign": (
         "git turns commit signing off",
         "*Signed and signed off*, in *Committing and rebasing*",
+        COMMON,
     ),
     "credits": (
         "CodeRabbit's CLI runs with `--use-credits`",
         "*Sourcery and CodeRabbit before a push*, in *Writing work*",
+        COMMON,
     ),
 }
 
@@ -234,6 +247,9 @@ BITCOIN = {
 BITCOIN_COMMANDS = {"node", "gui", "rpc", "wallet"}
 FALSE = {"false", "no", "off", ""}
 WATCH_INTERVAL = 120
+# The options of `gh run watch` and `gh pr checks` other than the interval
+# that take a value, as their `--help` lists them.
+GH_VALUES = {"-R", "--repo", "-q", "--jq", "--json", "-t", "--template"}
 
 
 class TooDeep(Exception):
@@ -469,6 +485,11 @@ class Lexer:
             if c == '"':
                 self.double_quoted()
                 continue
+            if c == "#" and (self.i == 0 or s[self.i - 1] in " \t\n;&|"):
+                # a comment, whose braces close nothing
+                end = s.find("\n", self.i)
+                self.i = len(s) if end < 0 else end
+                continue
             self.i += 1
             if c == opener:
                 depth += 1
@@ -669,15 +690,24 @@ def env_clears(words: list[str], at: int) -> bool:
 
 
 def shell_script(words: list[str]) -> str | None:
-    """The string a shell's `-c` runs, or None where it runs no `-c`."""
-    i, c_flag = 1, False
+    """The string a shell's `-c` runs, or None where it runs no `-c`, or
+    only reads it, as `-n` and `-o noexec` have it, the last deciding."""
+    i, c_flag, noexec = 1, False, False
     while i < len(words) and len(words[i]) > 1 and words[i][0] in "-+":
-        if words[i] in ("-o", "+o", "--rcfile", "--init-file"):
+        word = words[i]
+        if word in ("-o", "+o"):
+            if words[i + 1 : i + 2] == ["noexec"]:
+                noexec = word == "-o"
             i += 1
-        elif words[i][0] == "-" and words[i][1] != "-" and "c" in words[i]:
-            c_flag = True
+        elif word in ("--rcfile", "--init-file"):
+            i += 1
+        elif word[1] != "-":
+            if word[0] == "-" and "c" in word:
+                c_flag = True
+            if "n" in word:
+                noexec = word[0] == "-"
         i += 1
-    return words[i] if c_flag and i < len(words) else None
+    return words[i] if c_flag and not noexec and i < len(words) else None
 
 
 def commands(text: str, depth: int) -> list[Found]:
@@ -748,22 +778,36 @@ def git_rules(argv: list[str]) -> list[str]:
             i += 1
     if i >= len(argv) or "$" in argv[i]:
         return []
-    sub, args = argv[i], options(argv[i + 1 :])
+    rest = argv[i + 1 :]
+    sub, args = argv[i], options(rest)
+    # git reads the words after `--` as operands
+    after = rest[len(args) + 1 :]
     if "-h" in args or "--help" in args:
         return []
     broken = []
-    if sub in GIT_SIGNING and not NO_COMMIT & set(args) and signing_off(configs, args):
+    if sub in GIT_SIGNING and not no_commit(args) and signing_off(configs, args):
         broken.append("sign")
     if sub == "config" and git_config_unsigns(args):
         broken.append("sign")
     reads = (["list"], ["show"])
     if sub == "stash" and not unknown(args[:1]) and args[:1] not in reads:
         broken.append("stash")
-    if sub == "push" and push_forces(args):
+    if sub == "push" and push_forces(args, after):
         broken.append("force")
-    if sub == "worktree" and args[:1] == ["add"] and worktree_fetch_head(args[1:]):
+    if sub == "worktree" and args[:1] == ["add"] and worktree_fetch_head(args[1:], after):
         broken.append("fetch-head")
     return broken
+
+
+def no_commit(args: list[str]) -> bool:
+    """Whether an option with which the command writes no commit is given,
+    the values of the options before it skipped."""
+    i = 0
+    while i < len(args):
+        if args[i] in NO_COMMIT:
+            return True
+        i += 2 if args[i] in COMMIT_VALUES else 1
+    return False
 
 
 def signing_off(configs: list[str], args: list[str]) -> bool:
@@ -826,10 +870,11 @@ def git_config_unsigns(args: list[str]) -> bool:
     return False
 
 
-def push_forces(args: list[str]) -> bool:
+def push_forces(args: list[str], after: list[str]) -> bool:
     """Whether `git push` forces a ref with no lease: `--force`, `-f`, or
-    a `+` refspec without `--force-with-lease`. A word holding `$` after
-    the last force might be `--no-force`, and anywhere the lease."""
+    a `+` refspec, before or after `--`, without `--force-with-lease`. A
+    word holding `$` after the last force might be `--no-force`, and
+    anywhere before `--` the lease."""
     if "--dry-run" in args or any(short_flag(a, "n") for a in args):
         return False
     force = lease = plus = False
@@ -853,12 +898,14 @@ def push_forces(args: list[str]) -> bool:
         i += 1
     if force and not unknown(args[last + 1 :]):
         return True
+    plus = plus or any(w.startswith("+") for w in after)
     return plus and not lease and not unknown(args)
 
 
-def worktree_fetch_head(args: list[str]) -> bool:
+def worktree_fetch_head(args: list[str], after: list[str]) -> bool:
     """Whether `git worktree add` checks out `FETCH_HEAD`: its second
-    operand, after the path, the options and their values skipped."""
+    operand, after the path, the options and their values skipped, and
+    every word after `--` an operand."""
     operands, i = [], 0
     while i < len(args):
         if args[i] in WORKTREE_VALUES:
@@ -867,7 +914,7 @@ def worktree_fetch_head(args: list[str]) -> bool:
         if not args[i].startswith("-"):
             operands.append(args[i])
         i += 1
-    revision = (operands + ["", ""])[1]
+    revision = (operands + after + ["", ""])[1]
     return bool(re.fullmatch(r"FETCH_HEAD([~^@].*)?", revision))
 
 
@@ -986,8 +1033,16 @@ def watch_too_often(argv: list[str]) -> bool:
             interval, at = arg.partition("=")[2], i
         elif arg.startswith("-i") and not arg.startswith("--"):
             interval, at = arg[2:], i
-    # a word holding `$` after the last interval might set another
-    if unknown(argv[at + 1 :]):
+    # a word holding `$` after the last interval might set another, but
+    # not where it is the value of another option
+    rest = argv[at + 1 :]
+    later = [
+        w
+        for j, w in enumerate(rest)
+        if not (j and rest[j - 1] in GH_VALUES)
+        and not w.startswith(tuple(o + "=" for o in GH_VALUES if o[1] == "-"))
+    ]
+    if unknown(later):
         return False
     if interval is None:
         return True
@@ -1070,9 +1125,12 @@ def main() -> None:
     broken = broken_rules(command) if isinstance(command, str) else []
     if not broken:
         return
-    lines = [f"pretooluse-rules.py refused this command. In {COMMON}:"]
-    lines += [f"- {RULES[r][1]}: {RULES[r][0]}." for r in broken]
-    lines.append("Write it again as that section asks, as *Hooks* in *Clients* says.")
+    lines = ["pretooluse-rules.py refused this command:"]
+    lines += [f"- {RULES[r][2]}, {RULES[r][1]}: {RULES[r][0]}." for r in broken]
+    lines.append(
+        "Write it again as that section asks, as *Hooks* in *Clients*, in"
+        f" {COMMON}, says."
+    )
     print("\n".join(lines), file=sys.stderr)
     sys.exit(2)
 

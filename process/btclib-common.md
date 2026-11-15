@@ -331,14 +331,15 @@ the process names its own files by their path under it. Claude Code's
   Codex from `~/.codex/hooks.json`. Both run `scripts/git-c-allow.py`.
 
   Claude Code also runs `scripts/pretooluse-rules.py`. It refuses a Bash
-  command that breaks a rule of these sections, and names the section:
-  *Never open a command with `cd`*, *The machine is shared*, *The
-  forge's quota is shared*, *A Bitcoin Core program runs on a data
-  directory of the scratch directory*, *Never the primary checkout,
-  never `git stash`, never a push to `main`*, *A worktree for a pull
-  request is added at its `headRefOid`*, *Look at the free disk*,
-  *Sourcery and CodeRabbit before a push*, *A force-push with lease, to a
-  branch the session works only* and *Signed and signed off*. Its `RULES`
+  command that breaks a rule of these sections, and names the section
+  and the file that holds it: *Never open a command with `cd`*, *The
+  machine is shared*, *The forge's quota is shared* and *A Bitcoin Core
+  program runs on a data directory of the scratch directory*, in
+  `every-session.md`; *Never the primary checkout, never `git stash`,
+  never a push to `main`*, *A worktree for a pull request is added at
+  its `headRefOid`*, *Look at the free disk*, *Sourcery and CodeRabbit
+  before a push*, *A force-push with lease, to a branch the session
+  works only* and *Signed and signed off*, in this file. Its `RULES`
   says what it refuses of each. The sections stay the rule, and the hook
   is a net under them: it refuses only what the command's words show for
   certain, so a command it lets through may still break one. Codex runs

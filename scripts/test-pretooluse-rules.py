@@ -15,6 +15,7 @@ wrong, and exits 1 where there is one.
 import gc
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 import time
@@ -167,6 +168,10 @@ CASES: list[tuple[str, set[str]]] = [
     ("eval eval git stash", {"stash"}),
     ("eval " * 30 + "'git stash'", {"stash"}),
     ("eval echo git stash", set()),
+    ("bash -n -c 'git stash'", set()),
+    ("bash -nc 'git stash'", set()),
+    ("sh -o noexec -c 'git stash'", set()),
+    ("bash -n +n -c 'git stash'", {"stash"}),
     ("eval pytest -nauto \\$X", set()),
     ("echo `git stash`", {"stash"}),
     ('echo "$(git stash)"', {"stash"}),
@@ -196,6 +201,9 @@ CASES: list[tuple[str, set[str]]] = [
     ("git push --no-force-with-lease --force-with-lease origin +b:b", set()),
     ("git push --dry-run --force origin b", set()),
     ("git push -n -f origin b", set()),
+    ('git push -- origin +HEAD:refs/heads/topic', {"force"}),
+    ('git push -- --force', set()),
+    ('git worktree add -- /scratch/wt FETCH_HEAD', {"fetch-head"}),
     ("git push --force-with-lease=refs/heads/b:abc origin HEAD:refs/heads/b", set()),
     ("git push -o ci.skip origin b", set()),
     ("git push origin b-r2", set()),
@@ -274,6 +282,8 @@ CASES: list[tuple[str, set[str]]] = [
     ("git -c commit.gpgsign=false merge --abort", set()),
     ("git -c commit.gpgsign=false commit --dry-run -s -m x", set()),
     ("git -c commit.gpgsign=false rebase --continue", {"sign"}),
+    ("git -c commit.gpgsign=false commit -m --dry-run", {"sign"}),
+    ("git -c commit.gpgsign=false commit -m x --dry-run", set()),
     # several rules in one call, and text the shell does not run
     ("cd /w && git stash && pytest -n auto", {"cd", "stash", "xdist"}),
     ("git commit -m 'unterminated", set()),
@@ -284,6 +294,8 @@ CASES: list[tuple[str, set[str]]] = [
     ('f() { echo "$(git stash)"; }', set()),
     ("f () { git stash; }", set()),
     ("function f () { git stash; }", set()),
+    ('f() {\n    # }\n    git stash\n}', set()),
+    ('f() { echo "${#x}"; }; git stash', {"stash"}),
     ("f() (git stash)", set()),
     ('f() { echo "$(git stash)"; }; git stash', {"stash"}),
     ("arr=(); git stash", {"stash"}),
@@ -315,6 +327,10 @@ CASES: list[tuple[str, set[str]]] = [
     ('git -c commit.gpgsign=false commit "$OPTS"', set()),
     ('gh run watch "$run" --exit-status', set()),
     ('gh run watch 123 --interval 10 "$MORE"', set()),
+    ('gh run watch 123 --interval 10 --repo "$REPO"', {"watch"}),
+    ('gh run watch 123 --interval 10 -R "$REPO"', {"watch"}),
+    ('gh run watch 123 --interval 10 --repo="$REPO"', {"watch"}),
+    ('gh pr checks 1 --watch --interval 10 --json "$F" --jq "$Q"', {"watch"}),
     ('pytest -n auto "$@"', set()),
     ('pytest -nauto "$@"', set()),
     ('pytest --numprocesses=auto "$@"', set()),
@@ -455,6 +471,16 @@ def main() -> None:
         named = set(hook.broken_rules(command))
         if named != expected:
             wrong.append(f"{command!r}: named {sorted(named)}, not {sorted(expected)}")
+    # each refusal names a file that holds its section, as a bold rule or
+    # a heading, and the heading above it
+    root = HOOK.parent.parent
+    for key, (_, section, file) in hook.RULES.items():
+        text = " ".join((root / file).read_text().split())
+        rule, above = re.findall(r"\*([^*]+)\*", section)
+        if f"**{rule}" not in text and f"# {rule}" not in text:
+            wrong.append(f"{key}: {file} holds no rule *{rule}*")
+        if f"# {above}" not in text:
+            wrong.append(f"{key}: {file} holds no heading *{above}*")
     for label, build, n in GROWTH:
         named = set(hook.broken_rules(build(n)))
         failed = growth(hook, build, n)
