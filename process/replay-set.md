@@ -379,6 +379,50 @@ fix. The runs on PR btclib-org/btclib-node#2516 and PR
 btclib-org/ecc#580 ran tests of the branch as inputs to measure a
 finding; neither ran the suite as a gate.
 
+- **Baseline and candidate**, 2026-11-15: `$PROCESS` `e91f4c3` and
+  `9c5ada8`, the factor changed being the brief: the changelog bullet of
+  `writing.md`'s *What the prose that lands may say*, which PR
+  btclib-org/ai-agents-process#502 rewrites, and which alone `git diff
+  e91f4c3 9c5ada8` changes. Claude Code, the `reviewer` agent, Opus,
+  effort `high`, one run per case and a second on the clean case. In
+  both: PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit. PR
+  btclib-org/btclib-node#2516: miss (*How a run is scored*). PR
+  btclib-org/ecc#580: hit. PR btclib-org/.github#2288, the clean case:
+  the baseline `CHANGES REQUESTED`, then `CLEARED` on the repeat; the
+  candidate `CLEARED`, then `CHANGES REQUESTED`.
+
+On PR btclib-org/.github#2288 all four runs raise the same finding,
+which holds: the docstring says "draft" after "not a" is not listed,
+while a line break, a tab or a second space between the words still gets
+it listed, since `UNDATED`'s lookbehind is the literal "not a ". Two
+runs weigh it blocking and two non-blocking, one of each in each
+configuration, so the case did not come out clean in this run. On PR
+btclib-org/ai-agents-process#317 both block on "tied to the account",
+which holds, and the candidate names the exemption only as non-blocking.
+On PR btclib-org/ecc#484 the candidate also blocks on the rule being
+stated a second time in the review workflow's prompt, as the run at
+`cab9c97` did, which was not measured false. No finding of either
+configuration was measured false.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, and the case from a repository holding only the head
+and its ancestors (*What a case holds*). The brief forbade the network,
+the forge, any suite and any other checkout of the case's repository,
+and every reviewer reports that it ran no gate. On PR
+btclib-org/btclib-secp256k1#1331 the baseline's reviewer ran its harness
+under Valgrind in a local container with no network, reading the zkp pin
+from a local upstream clone, and the candidate's built it against a
+stand-in memcheck header. On PR btclib-org/btclib-node#2516 both loaded
+btclib, read-only, from outside the tree. The labels were random, and
+the scores were written before the key was read.
+
+The candidate has the baseline's hits and misses on the six defect
+cases, and on the clean case the two differ no more than each differs
+from itself. The run shows no loss from the bullet, and cannot show a
+gain: no case's defect concerns a changelog entry.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
