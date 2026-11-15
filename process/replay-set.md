@@ -4,17 +4,24 @@ The pull requests a change to the local reviewer is tried on before it
 lands: those where the local rounds cleared a defect that a later review
 found, and clean ones, where no review found any.
 
-**A change to the reviewer's brief, its model or its effort is run on
-every case here first**, and its pull request adds the run to *Runs* and
-names it in `## Evidence`. The brief's part this repository holds is
-the files and sections `every-role.md`'s map gives the reviewer under
-*Everybody* and *The reviewer*, the reviewer's sections of the skill the
-brief names, `agents/reviewer.md` with its generated `.toml`, and this
-tree's `REVIEWING.md`; another tree's
-`REVIEWING.md` and the review bot's prompt, which the brief also
-carries, change in their own trees. The model and the effort are those
-`orchestration.md`'s *Models* gives. Without the run, such a change is
-judged on the next pull requests, whose defects nobody knows in advance.
+**A change to the reviewer's model or its effort, or a change to the
+files of its brief that adds, alters or removes a rule it applies in
+judging a branch, is run on every case here first**, and its pull
+request adds the run to *Runs* and names it in `## Evidence`. The model
+and the effort are those `orchestration.md`'s *Models* gives. The
+brief's part this repository holds is the files and sections
+`every-role.md`'s map gives the reviewer under *Everybody* and
+*The reviewer*, the reviewer's sections of the skill the brief names,
+`agents/reviewer.md` with its generated `.toml`, and this tree's
+`REVIEWING.md`; another tree's `REVIEWING.md` and the review bot's
+prompt, which the brief also carries, change in their own trees. Without
+the run, such a change is judged on the next pull requests, whose
+defects nobody knows in advance.
+
+**A change to the brief's files that changes no such rule owes no run**:
+a pointer that moves, a sentence made more exact without changing what
+it asks, a rule only the writer or the orchestrator acts on. Its pull
+request says in `## Evidence` why it owes none.
 
 ## What a case holds
 
@@ -52,7 +59,9 @@ The case's tree is built at a new path from a checkout that holds the
 head, named by its path, so that the fetch needs no network and the
 tree keeps no remote. The first command refuses a path that exists,
 since `git init` keeps the objects of a repository already there, and a
-refusal there stops the build. The three values are set first:
+refusal there stops the build. The fetch runs in the tree, so it makes
+the checkout's path absolute first: a relative one would be read from
+the tree. The three values are set first:
 
 ```shell
 tree=<tree>
@@ -65,7 +74,8 @@ head=<head>
 ```
 
 ```shell
-git -C "${tree:?}" fetch "${checkout:?}" "${head:?}"
+src=$(realpath "${checkout:?}") &&
+  git -C "${tree:?}" fetch "$src" "${head:?}"
 ```
 
 ```shell
@@ -82,6 +92,57 @@ remotes=$(git -C "${tree:?}" remote) &&
   ancestry=$(git -C "$tree" rev-list HEAD) &&
   [ -z "$remotes" ] && [ -n "$ancestry" ] && [ "$all" = "$ancestry" ] &&
   echo isolated
+```
+
+The copy the reviewer reads the process from
+(*The expected finding is kept out of the reviewer's input*) is built
+from a clone that holds the run's `$PROCESS` sha. The exclude pathspec
+keeps this file out of the archive, so it is never written. The build
+refuses a path that holds a control character: a command substitution
+drops the newlines that end what `dirname` and `basename` print, so the
+guard would test one path and `tar` write another. It refuses a path
+that exists, a symbolic link included, and `tar` makes the directory
+itself. `pipefail` makes a failed `git archive` fail the build, where
+`tar` would extract nothing and exit `0`. The three values are set
+first:
+
+```shell
+copy=<copy>
+clone=<clone>
+sha=<sha>
+```
+
+```shell
+case ${copy:?} in *[[:cntrl:]]*) false ;; esac && [ ! -e "$copy" ] &&
+  [ ! -L "$copy" ] && parent=$(dirname -- "$copy") &&
+  name=$(basename -- "$copy") &&
+  (set -o pipefail && git -C "${clone:?}" archive --prefix="$name/" \
+    "${sha:?}" -- process ':(exclude)process/replay-set.md' |
+    tar -x -C "$parent")
+```
+
+This prints `copied` only where each read succeeds, the copy is a
+directory holding `process/` alone, every entry under it is a directory
+or a regular file named with letters, digits, `.`, `_` and `-` only,
+nothing stands at `process/replay-set.md`, and the files are those of
+the sha's `process/` but this file, byte for byte:
+
+```shell
+[ ! -L "${copy:?}" ] && [ -d "$copy" ] &&
+  top=$(env -C "$copy" find . -mindepth 1 -maxdepth 1) &&
+  [ "$top" = ./process ] &&
+  odd=$(env -C "$copy" LC_ALL=C find . ! -type d ! -type f -o \
+    -name '*[!A-Za-z0-9._-]*') &&
+  [ -z "$odd" ] && [ ! -e "$copy/process/replay-set.md" ] &&
+  [ ! -L "$copy/process/replay-set.md" ] &&
+  want=$(git -C "${clone:?}" ls-tree -r --format='%(objectname) %(path)' \
+    "${sha:?}" -- process) && [ -n "$want" ] &&
+  got=$(env -C "$copy" find process -type f -exec sh -c 'for f; do
+    o=$(git hash-object --no-filters -- "$f") || exit; echo "$o $f"; done' \
+    sh {} +) &&
+  [ "$(printf '%s\n' "$got" | LC_ALL=C sort)" = "$(printf '%s\n' "$want" |
+    grep -v ' process/replay-set\.md$' | LC_ALL=C sort)" ] &&
+  echo copied
 ```
 
 A forge finding gives a case its head, the commit its thread names, and
