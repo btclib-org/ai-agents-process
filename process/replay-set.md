@@ -185,6 +185,36 @@ the whole brief under test, the run at `2166200` matches the baseline at
 `aa5dcdc` on every case, so the change loses no hit on these cases and
 shows no gain.
 
+- **Baseline**, 2026-11-15: `$PROCESS` `53b7a57`, no factor changed;
+  Claude Code, the `reviewer` agent, Opus, effort `high`, one first run
+  per case. PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/btclib-secp256k1#1331: miss, and miss on each repeat but
+  one, which is void: its reviewer read the subject of the fix commit on
+  a local branch. PR btclib-org/ecc#484: hit.
+- **Candidate**, 2026-11-15: `$PROCESS` `853aa9c`, the factor changed
+  being the reviewer's map entry of ISS
+  btclib-org/ai-agents-process#483: it gives `writing.md`'s *Writing
+  work* whole, in place of the checklist, *A rule stated more than
+  once*, *What the prose that lands may say*, *Citations and closing
+  keywords* and *Signed and signed off*, and adds the sections of the
+  skill the brief names. `agents/reviewer.md` and `REVIEWING.md` are
+  `main`'s. The same client, model, effort and briefs, one run per case.
+  PR btclib-org/ai-agents-process#317: miss, the defect named only in a
+  non-blocking finding judged as already on the base, which the
+  maintainer ruled a miss on 2026-11-15. PR
+  btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit.
+
+Neither run made a false finding. Each brief had the reviewer read the
+process from a copy of its files at the run's sha without this file,
+read the prose at the head, run no suite and use no forge. The reviewers
+read their own tree's `REVIEWING.md` at the head, and no verdict's
+coverage list named this file. On one run per case the candidate loses
+no hit and gains none. What it adds to the reviewer's reading, *The
+gates*, *Sourcery and CodeRabbit before a push* and *Committing and
+rebasing*, bears on checks no case of the set exercises.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
