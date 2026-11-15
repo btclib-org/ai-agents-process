@@ -111,7 +111,8 @@ defect, and that the pull request fixed in `d5dee25` before it landed.
   Claude Code, the `reviewer` agent, Opus, effort `high`, the brief
   having the reviewer read `every-session.md` and `btclib-common.md`
   whole. PR btclib-org/ai-agents-process#317: miss. PR
-  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit. PR
+  btclib-org/btclib-secp256k1#1331: miss, then miss on the repeat *How a
+  run is scored* asks for. PR btclib-org/ecc#484: hit. PR
   btclib-org/ai-agents-process#444: hit.
 - **Candidate**, 2026-11-15: `$PROCESS` `1ddae0d`, the factor changed
   being the brief's files of ISS btclib-org/ai-agents-process#447: the
@@ -121,15 +122,20 @@ defect, and that the pull request fixed in `d5dee25` before it landed.
   btclib-org/ai-agents-process#317: miss. PR
   btclib-org/btclib-secp256k1#1331: hit, named as non-blocking in a
   `CLEARED`: a call recorded as `reported` passes on any Valgrind error,
-  whatever caused the exit `42`. PR btclib-org/ecc#484: hit. PR
+  whatever caused the exit `42`; then miss on the repeat *How a run is
+  scored* asks for. PR btclib-org/ecc#484: hit. PR
   btclib-org/ai-agents-process#444: hit.
 
-Neither the run at `aa5dcdc` nor the run at `1ddae0d` made a false
-finding. On PR btclib-org/ai-agents-process#317 both raised again the
-finding outside the case's defect that the runs at `2ef0de4` and
-`466d803` raised, which holds, and neither raised another. Each brief
-had the reviewer read the prose at the head, run no suite and use no
-forge, and no verdict's coverage list named this file.
+Neither the run at `aa5dcdc` nor the run at `1ddae0d`, their repeats
+included, made a false finding. Outside a case's defect, on PR
+btclib-org/ai-agents-process#317 both raised again the finding that the
+runs at `2ef0de4` and `466d803` raised, which holds, and the repeat at
+`1ddae0d` on PR btclib-org/btclib-secp256k1#1331 raised, as blocking,
+that `SECURITY.md`'s reasons for `zkp.rangeproof.sign` leave out the
+blinding factor and the message, which holds on `main` (ISS
+btclib-org/btclib-secp256k1#1403). Each brief had the reviewer read the
+prose at the head, run no suite and use no forge, and no verdict's
+coverage list named this file.
 
 The run at `1ddae0d` tested the process files alone: each reviewer read
 them at that sha, the case's own `REVIEWING.md` at the case's head, and
@@ -140,7 +146,9 @@ So the change's edits to this tree's `REVIEWING.md`, its pointers to
 a sentence naming what the reviewer reads, were not under test. The
 `REVIEWING.md` edit rewrites the paragraph that states the defect of PR
 btclib-org/ai-agents-process#317, so that case cannot evaluate it. The
-split of the process files loses no hit on these cases.
+split of the process files loses no hit on these cases and shows no
+gain: the hit at `1ddae0d` on PR btclib-org/btclib-secp256k1#1331 did
+not repeat.
 
 ## Cases
 
