@@ -10,19 +10,21 @@ Two skills carry work in every repository of `btclib-org`:
 `/btclib-pr`'s *The decision* and *Landing* say when a pull request is
 approved and when it lands.
 
-This file binds both. It holds the rules they share, or names the
-file under `process/` that holds them, except those `/btclib-iss`'s
-*Following it* reads in `/btclib-pr`. Both open by having this file
-read whole, and each holds only what is its own. The `writer` and
-`reviewer` agents are generic: the brief names this file and the skill,
-and they read the sections the maps give them. Change a rule in the
-file that holds it or in the skill where it fires, not in an agent.
+This file binds both. It holds the rules they share, or names the file
+under `process/` that holds them, except those `/btclib-iss`'s
+*Following it* reads in `/btclib-pr`. Both open by having
+`process/every-session.md` and this file read whole, and each holds only
+what is its own. The `writer` and `reviewer` agents are generic: the
+brief names `every-session.md`, this file and the skill, and they read
+the first whole and the sections the maps give them. Change a rule in
+the file that holds it or in the skill where it fires, not in an agent.
 
 **Which sections are yours.** A heading that is not yours is genuinely
 not yours; one that is cannot be skipped as somebody else's.
 
-- **Everybody**: *How an issue and a pull request are named*, *What binds
-  every role*, *Collateral*.
+- **Everybody**: `every-session.md`, whole, and in this file *How an
+  issue and a pull request are named*, *What binds every role*,
+  *Collateral*.
 - **The writer**: *Before starting*, *Writing work*, and the sections of
   the skill its brief names.
 - **The reviewer**: *Local review*, and in *Writing work* the checklist,
@@ -166,16 +168,17 @@ the process names its own files by their path under it. Claude Code's
   (*Debris goes when its work ends*).
 
   An input a reviewer names as not run may be one the session cannot run
-  either. The branch then goes to the human as one decision (*When the
-  human has to decide*), which carries the input and why no one could
-  run it. One such input needs a package that an outside contributor's
-  branch adds: the sandbox of *The gates* does not hold it, and CI, on
-  which *The gates* then relies, runs no reviewer's input. The branch is
-  held as *A hold is recorded* says. The human's answer stands in for
-  the input's result: the reviewer's resumed run, or the dedicated
-  reviewer that takes over from it (*A pull request's rounds*), gets the
-  answer on the record in its place. The pull request body records the
-  decision and the answer.
+  either. The branch then goes to the human as one decision
+  (`every-session.md`'s *When the human has to decide*), which carries
+  the input and why no one could run it. One such input needs a package
+  that an outside contributor's branch adds: the sandbox of *The gates*
+  does not hold it, and CI, on which *The gates* then relies, runs no
+  reviewer's input. The branch is held as `every-session.md`'s *A hold
+  is recorded* says. The human's answer stands in for the input's
+  result: the reviewer's resumed run, or the dedicated reviewer that
+  takes over from it (*A pull request's rounds*), gets the answer on the
+  record in its place. The pull request body records the decision and
+  the answer.
 
   Claude Code starts a Codex reviewer with `codex exec`. That spawns no
   custom agent by name, so the brief's first sentence says to read
@@ -384,133 +387,7 @@ the process names its own files by their path under it. Claude Code's
 
 ### Shell, checkouts and prose
 
-- **Never open a command with `cd`.** The working directory resets to
-  the primary checkout between tool calls, so a `cd` in one call and the
-  command in the next runs it in the primary checkout, and both report
-  success. Bind the directory in the command itself: `git -C <dir> …`,
-  `env -C <dir> …`, or `git -C <checkout> show <sha>:<path>`, which needs
-  no working directory. This holds for reads too.
-- **Read a checkout only after bringing it forward.** `git fetch` moves
-  `origin/<branch>` and leaves the files on disk behind. A primary or
-  reference checkout (not your own worktree) is read after:
-
-  ```shell
-  git -C <checkout> rev-parse --abbrev-ref HEAD    # main or master
-  git -C <checkout> status --porcelain             # empty
-  git -C <checkout> fetch origin
-  git -C <checkout> pull --ff-only
-  git -C <checkout> rev-parse HEAD origin/<branch> # equal
-  ```
-
-  Where it is not on its default branch or not clean, stop and say so.
-- **Write plainly.** Everything written — code comments, docs, these
-  process files, commit messages, pull request and issue bodies,
-  comments, reports — is clear, simple and no longer than it needs to
-  be: the point first, plain words, one fact per sentence. A clause whose
-  removal loses nothing a reader needs is cut. **Say a thing once;
-  elsewhere, point to it** (the standard's section 9, *One fact in one
-  place*): a summary names the section that holds a rule and does not
-  restate it. A text the reader has to read twice has failed, however
-  correct. **English in the tree**: code comments, docstrings, documents,
-  the messages a script prints, logs and commit messages are in English,
-  whatever language the conversation that produced them was in.
-- **What is posted on a forge** — an issue, a pull request, a comment or
-  a reply, in any repository — meets these limits, and every reviewer
-  checks them as a blocking item:
-    - **The first line is the point**: the verdict of a pull request
-      review, the problem an issue or pull request addresses, the answer
-      a reply gives. A reader who stops there knows it.
-    - **A verdict is given only on a pull request, and only where the
-      review supports it.** In btclib-org only the deciding review gives
-      one, as `REVIEWING.md`'s *The verdict* says. The deciding review's
-      summary keeps the shape `REVIEWING.md`'s *The verdict* gives it,
-      its findings one bullet each; the limits below hold for every
-      other review.
-    - **A review that gives no verdict states its finding on its first
-      line**, with no `Comment:` prefix and no "a comment, not a
-      review".
-    - **Then purpose, finding, conclusion**: what was checked and why,
-      what was found, and what follows for the pull request or the next
-      step. One point per text; no sha or line-number chains, no
-      preemptive rebuttals, plain words.
-    - **A comment or reply is about 250 words, and never more than 300**
-      (`wc -w <file>`), with no list and no heading: the first line,
-      then at most three paragraphs. In a review they are the
-      measurement, the technical findings, and what the change leaves
-      unfixed (next bullet). A review that reports measurements says in
-      one sentence how they were measured, and offers or links the
-      detail.
-    - **What the reviewed change leaves unfixed gets one paragraph of its
-      own**, apart from the measurement. Where the review neither asks
-      for a fix in the same pull request nor gives it, the paragraph
-      links the pull request we open with the fix, and the review is
-      posted once that pull request is open.
-    - **A pull request or issue body is at most two short paragraphs**
-      before any code block or required template section.
-    - **A text over a limit is not posted but returned cut**, unless a
-      maintainer asked for exactly that detail.
-- **Parallelize as much as you can.** Reads, remote work, writers and
-  reviewers run side by side, within the machine's CPU load, memory
-  pressure and free disk (*The gates*, *Before starting*).
-- **The machine is shared.** Heavy local work — a suite, the hooks, a
-  docs build — runs under the gate lock, up to three workers at once, as
-  *The gate lock* says. Everything else runs in parallel with the gates.
-  Targeted test runs use `-n 0` or `-n 2`, never `-n auto`. The whole
-  suite runs as the tree's gate says; where the tree runs it under
-  pytest-xdist, with `-n "$GATE_LOCK_WORKERS"` (*The gate lock*), which
-  overrides an `-n auto` in its `addopts`. Other sessions' processes are
-  not yours to kill.
-- **The forge's quota is shared.** Every session and agent on this
-  machine calls the forge through the same `gh` login, and so draws on
-  the same hourly quotas: `core` for REST, `graphql` for what `gh pr
-  checks` asks. A wait on checks or runs asks every 120 seconds or more:
-  a loop sleeps `120`, and a `--watch` or a `gh run watch` takes
-  `--interval 120`, never `gh`'s default. One wait at a time per pull
-  request, not one per agent. Where either quota has under 500 left,
-  waits stop until the reset it prints, and the report says so:
-
-  ```shell
-  gh api rate_limit --jq '.resources | {core, graphql} | to_entries[]
-    | "\(.key) \(.value.remaining) reset \(.value.reset | todate)"'
-  ```
-
-- **A Bitcoin Core program runs on a data directory of the scratch
-  directory.** Every call of one that takes `-datadir`, as `bitcoind`
-  and `bitcoin-cli` do, carries an explicit `-datadir=<scratch>`,
-  `-version` included. Without it the call uses the machine's default
-  data directory, which may hold a real node: `bitcoind` writes its
-  `settings.json` there before it acts on `-version`, and `bitcoin-cli`
-  reads its configuration and cookie there and so reaches that node.
-  Bitcoin Core's functional tests are the exception: their framework
-  starts each node with a `-datadir` of its own.
-- **`timeout` may not be installed, so a command that uses it checks
-  `command -v timeout` first.** Where that prints nothing, the command
-  runs without a time limit, and the report says so. On macOS,
-  Homebrew's coreutils provides it, and it exits `124` when time runs
-  out, or `137` where its `-k` had to send KILL. Coreutils installs its
-  GNU versions of the commands macOS already ships, such as `date` and
-  `stat`, under a `g` prefix (`gdate`, `gstat`); the unprefixed ones
-  stay BSD.
-- **A filter that prints `false` exits `0`**, in `gh`'s `--jq` as in
-  `jq`, so what a command prints is tested by its value, as
-  `[ "$(…)" = true ]`, never by its exit code. `jq -e` exits `1` on
-  `false` or `null`; `gh` has no such flag.
-- **`grep` and `find` in the tool's shell may be functions** (`type
-  grep`). `grep` over `ugrep -G --ignore-files` skips what `.gitignore`
-  covers under the search root and reads a `$` mid-pattern as an anchor,
-  both silently: prefer `git grep`, or `-F` and `[$]`. `find` as bfs
-  (`find --version`) refuses GNU's `-newermt 'today'` on stderr: a sweep
-  uses ISO-8601 timestamps, never discards stderr, and runs a path known
-  to match as its control.
-- **macOS `sed` reads `\b` as a plain `b`.** `sed -i '' 's/\bx\b/y/g'`
-  edits `bxb`, never the word `x`, and exits `0`. Use `perl -pi -e`, and
-  read the edit in `git diff`, never in the exit code.
-- **In `zsh` a word beginning with `=` is a command lookup** (`echo ====`
-  fails the whole line), `path` is the `PATH` array and never a variable
-  name, and a glob after `env -C <dir>` expands in the caller's
-  directory: quote `=` words and pass absolute paths. BSD `env` takes
-  `-C` and `-u` before any `NAME=val`; after one, `-C` is read as the
-  command and exits `127`.
+This section is in `every-session.md`, beside this file.
 
 ### Where you work
 
@@ -535,24 +412,24 @@ the process names its own files by their path under it. Claude Code's
   `main`.** `refs/stash` is shared across worktrees and sessions: commit
   to your own branch instead.
 - **The primary checkout is not written — except the fast-forward that
-  brings it forward (*Shell, checkouts and prose*) — and an accident in it
-  is undone only where it is provably yours.** The orchestrator checks
-  `git status --porcelain` there between rounds. Where it is dirty, diff
-  it against the worktree that should have held the change. Where the
-  dirty content is byte-identical to that worktree's own version — its
-  uncommitted change or the blob on its branch — and nothing is staged
-  or committed in the checkout, undo it and report it: a modified path
-  with `git -C <checkout> restore -- <paths>`, an untracked stray file by
-  removing it by name. Anything else — a path no worktree explains, a
-  difference of one byte, a staged or committed change — is reported and
-  left for the human.
+  brings it forward (`every-session.md`'s *Shell, checkouts and prose*)
+  — and an accident in it is undone only where it is provably yours.**
+  The orchestrator checks `git status --porcelain` there between rounds.
+  Where it is dirty, diff it against the worktree that should have held
+  the change. Where the dirty content is byte-identical to that
+  worktree's own version — its uncommitted change or the blob on its
+  branch — and nothing is staged or committed in the checkout, undo it
+  and report it: a modified path with `git -C <checkout> restore --
+  <paths>`, an untracked stray file by removing it by name. Anything
+  else — a path no worktree explains, a difference of one byte, a staged
+  or committed change — is reported and left for the human.
 - **Every command that writes carries an explicit absolute path.** Shell
-  state does not survive between calls (*Never open a command with
-  `cd`*), so `WT=…` in one call is empty in the next. A fresh
-  worktree and the checkout are byte-identical, so reads look right and
-  only the write shows it. Use `git -C <abs>`, `env -C <abs>`, absolute
-  paths in every edit, an explicit target for `git clone`; never a
-  relative `>` or a `sed -i` on a bare filename.
+  state does not survive between calls (`every-session.md`'s *Never open
+  a command with `cd`*), so `WT=…` in one call is empty in the next. A
+  fresh worktree and the checkout are byte-identical, so reads look
+  right and only the write shows it. Use `git -C <abs>`, `env -C <abs>`,
+  absolute paths in every edit, an explicit target for `git clone`;
+  never a relative `>` or a `sed -i` on a bare filename.
 - **A command can write without your meaning it to, and `.gitignore`
   hides it.** `compileall`, a linter cache, a build inspected in place
   all leave files `git status` does not show. Ask even read-only
@@ -784,13 +661,14 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
   first number after `load averages:` in what `LC_ALL=C uptime` prints,
   beside its numbers.
 - **A repository's state is read from the API, or from a checkout
-  brought forward** (*Shell, checkouts and prose*) — instruction files
-  included. The orchestrator brings the primary checkout forward; a
-  worker reads its own worktree, or, without one, at a named sha
-  (`git show <sha>:<path>`). A claim that must hold is still measured
-  at a sha. The sha in `git worktree list` is a checkout's `HEAD`, not the tip.
-  An issue's body and its comments are read separately: `gh issue view
-  --comments` prints the comments in place of the body.
+  brought forward** (`every-session.md`'s *Shell, checkouts and prose*)
+  — instruction files included. The orchestrator brings the primary
+  checkout forward; a worker reads its own worktree, or, without one, at
+  a named sha (`git show <sha>:<path>`). A claim that must hold is still
+  measured at a sha. The sha in `git worktree list` is a checkout's
+  `HEAD`, not the tip. An issue's body and its comments are read
+  separately: `gh issue view --comments` prints the comments in place of
+  the body.
 - **A forge write that exits non-zero is read back** (`gh pr view --json
   state`, `git ls-remote`, the issue body) before it is reported refused
   or retried: a timeout on the response is not a failed write.
@@ -815,87 +693,17 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
   request*).
 - **Another project's source is read from a checkout**, not fetched a
   file at a time through `gh api`: a local clone of `bitcoin/bitcoin`
-  (`master`) for Bitcoin Core, of `btclib-org/btclib` for btclib, brought
-  forward first (*Shell, checkouts and prose*). Where none exists, ask
-  the human for its path. **Name the commit you read at**
-  (`git -C <checkout> rev-parse --short HEAD`). For btclib prefer the worktree's
+  (`master`) for Bitcoin Core, of `btclib-org/btclib` for btclib,
+  brought forward first (`every-session.md`'s *Shell, checkouts and
+  prose*). Where none exists, ask the human for its path. **Name the
+  commit you read at** (`git -C <checkout> rev-parse --short HEAD`). For
+  btclib prefer the worktree's
   `.venv/lib/python*/site-packages/btclib/`, the commit `uv.lock` pins
   (`direct_url.json` names it).
 
 ### When the human has to decide
 
-**One decision per message, and the next as soon as it is answered.**
-The message that takes an answer also puts the next decision, in the
-same turn, so the human never waits on the session to be asked. Never a
-batch or a numbered list of decisions, even where the human asks for
-"the open questions": those are put the same way, starting now. Put
-first the one that blocks the most work. A report may list what waits on
-the human, one line each; it asks none of it, and it closes by putting
-the first one.
-
-**No decision is held back.** One that can be asked is asked now, not at
-the end of a task. One whose shape is missing a measurement gets that
-measurement started at once, and is asked when it returns.
-
-**The work does not wait for the answer.** While a decision is open,
-everything that does not depend on it goes on in parallel.
-
-**A question the rules already answer is not a decision:** apply the
-rule, and report the outcome in one line.
-
-**Each decision comes in one shape**, and is not asked until it has it:
-
-- a brief context: what is at stake, why work stops here, and its link;
-- the recommendation first, with its reason;
-- the other alternatives, each with what it costs;
-- where an alternative changes a pull request's diff, the delta it
-  brings, written as the diff balance is, measured on the alternative
-  drafted in a scratch worktree, or else estimated and marked as an
-  estimate.
-
-Number the alternatives, so that one number answers.
-
-**This holds wherever work stops for the human.** The repository
-question is the exception: it lists the candidates without recommending
-one, since the repository is never inferred (*Where you work*). It is
-still asked on its own.
-
-**A writer or reviewer puts a decision in its report**, in this shape,
-and the orchestrator asks it.
-
-**Where the human is not the maintainer, a decision on what a change
-does goes to the maintainer**: its design, its scope, a decision its
-issue reserved, a disagreement on its pull request that survives a
-second exchange. Such a decision is not put to the human: it is
-recorded as a hold whose comment @-mentions the maintainer. These stay
-the human's: which pull requests to work, an approval, the session's own
-review rounds (*The rounds*), a finding its reviewer still holds
-included.
-
-**A design question a writer raises on a branch, which its issue did
-not reserve, is filed as its own issue** (*Collateral*) and decided
-there. Ask what each answer would do to what the branch's issue asks.
-The branch waits for the answer only where one answer would undo or
-replace that; otherwise it is judged as written. An answer that changes
-only the lines carrying the question is left to the question's own
-issue.
-
-**At night**, *Night mode* says what becomes of a decision.
-
-**A hold is recorded on the issue or pull request**, in the same turn it
-is told to the human: a comment saying why it waits, and its label where
-the repository has it. A question put to the human or the maintainer
-takes `decision`. Any other wait takes the label naming its reason, the
-comment giving the detail: `needs-maintainer`, `needs-contributors`,
-`waits-release`, `waits-github`, `waits-issue`, `flaky-watch` or
-`needs-hardware`, whose meanings `.github/labels.yml` of
-`btclib-org/.github` gives, or `upstream-dependent` for an upstream
-project. A pause the human decided takes `on-hold`. An awaited review
-takes no label: the review request shows it. A wait on the author's
-changes takes none either: the review that asked for them
-shows it. An exhausted review quota is handled as
-`/btclib-pr`'s *Rebase and CI* says. A hold kept only in the session's
-context does not exist, and another session will take the work.
+This section is in `every-session.md`, beside this file.
 
 ### What a session's memory holds
 
@@ -909,8 +717,8 @@ find it:
 - how work is done, a technical lesson included, goes in the process,
   proposed as *Wrap-up* says;
 - a decision about one issue or pull request goes on that issue or pull
-  request, as *When the human has to decide* and *A hold is recorded*
-  say;
+  request, as `every-session.md`'s *When the human has to decide* and
+  *A hold is recorded* say;
 - the maintainer's standing permissions and preferences, and a
   permission given for a limited time, go in the memory of each client
   whose sessions are to follow them.
@@ -924,13 +732,13 @@ session's work** unless it says so.
 ### Which prose is worth a round
 
 **A reviewer blocks on a sentence in the tree's own files that is false,
-misleading, or a rule stated a second time (*Write plainly*), as on a
-code defect, where the branch adds it, falsifies it or makes it
-materially worse (*Collateral*).** The tree's own files are every
-tracked file, docstrings and comments included. Only wording that could
-be better does not block. A wording finding on what the branch adds is
-still made, with the shorter text, and is fixed with the next change to
-the branch.
+misleading, or a rule stated a second time (`every-session.md`'s *Write
+plainly*), as on a code defect, where the branch adds it, falsifies it
+or makes it materially worse (*Collateral*).** The tree's own files are
+every tracked file, docstrings and comments included. Only wording that
+could be better does not block. A wording finding on what the branch
+adds is still made, with the shorter text, and is fixed with the next
+change to the branch.
 
 **A false or misleading sentence outside the tree does not send a
 cleared branch back**:
@@ -1016,7 +824,8 @@ does it before briefing anybody.
   first (a flagged build may be in its `.venv`).
 - **Look at the machine.** `uptime`, and `ps -eo pid,etime,pcpu,command |
   sort -k3 -rn | head`. Report to the human anything that looks orphaned;
-  killing it is not yours (*The machine is shared*).
+  killing it is not yours (`every-session.md`'s *The machine is
+  shared*).
 - **Look at the free disk** before cloning, building or adding a
   worktree: `df -g <scratchpad>`. Under 30 GB available, the
   orchestrator sweeps (*The orchestrator, never a writer, sweeps*), runs
@@ -1080,11 +889,11 @@ lists, with a pattern for each way the rule or the claim is worded,
 matched across line breaks (*`grep` reads lines, and prose wraps*). List
 each hit as `file:line` with what you do with it. Change them all in one
 round. A restatement becomes a pointer to the section that holds the
-rule (*Write plainly*), and a sentence made false is corrected. The
-report carries the patterns and the hits. The reviewer runs the same
-search, adds the patterns it would have used, and reads the files where
-the rule or the claim is stated. A sentence either search finds and the
-list lacks is a finding.
+rule (`every-session.md`'s *Write plainly*), and a sentence made false
+is corrected. The report carries the patterns and the hits. The reviewer
+runs the same search, adds the patterns it would have used, and reads
+the files where the rule or the claim is stated. A sentence either
+search finds and the list lacks is a finding.
 
 **A tree-wide sweep starts from a census** of every spelling over `git
 ls-files`, and ends at the census re-run answering zero, its exceptions
@@ -1429,7 +1238,7 @@ the orchestrator in the pull request.
   `|| rc=$?` keeps its exit code, and keeps a shell under `set -e` from
   ending there. `timeout` cannot wrap `gate_wait`, a shell function, and
   where `command -v timeout` prints nothing the gates run without it
-  (*Shell, checkouts and prose*).
+  (`every-session.md`'s *Shell, checkouts and prose*).
 
   `-k 60` sends KILL where the gate's command still runs a minute after
   TERM. Without it, a command that ignores TERM keeps `timeout` waiting
@@ -1470,8 +1279,8 @@ The findings of these local runs are answered as a reviewer's are
   `<target>`, the branch the pull request will target: `main`, or the
   parent of a stacked branch. The timeout is longer than the
   `expectedDuration` of the CLI's `review_context` event, since a review
-  stopped early is discarded. The timeout follows *Shell, checkouts and
-  prose*:
+  stopped early is discarded. The timeout follows `every-session.md`'s
+  *Shell, checkouts and prose*:
 
   ```shell
   wt=<wt>
@@ -1679,11 +1488,11 @@ branch, or a text to be posted.
   except after a session restart (below). *A pull request's rounds* says
   when the dedicated reviewer takes over a fresh reviewer's findings.
   Where a finding is declined and its reviewer still holds it, both
-  positions go to the human as one decision (*When the human has to
-  decide*, `REVIEWING.md`'s *Re-review*), and the rounds wait for the
-  answer. Where the human upholds the finding, the fix goes back to that
-  reviewer. Where they decline it, their answer stands in for that
-  reviewer's `CLEARED`.
+  positions go to the human as one decision (`every-session.md`'s *When
+  the human has to decide*, `REVIEWING.md`'s *Re-review*), and the
+  rounds wait for the answer. Where the human upholds the finding, the
+  fix goes back to that reviewer. Where they decline it, their answer
+  stands in for that reviewer's `CLEARED`.
 - **Then a fresh reviewer reads the whole of it.** It is a new worker,
   started once the reviewer before it has cleared. Where its first
   verdict is `CHANGES REQUESTED`, it stays until it clears, as above.
@@ -1722,9 +1531,10 @@ branch, or a text to be posted.
   third fresh reviewer since the dedicated reviewer last cleared, or any
   after it, gives a first verdict of `CHANGES REQUESTED` with a finding
   a prose-only fix cannot answer. Then the orchestrator puts it to the
-  human as one decision (*When the human has to decide*): another round,
-  the branch as it stands, or a cut-back, with the writer's and the
-  reviewer's positions. The rounds wait for the answer.
+  human as one decision (`every-session.md`'s *When the human has to
+  decide*): another round, the branch as it stands, or a cut-back, with
+  the writer's and the reviewer's positions. The rounds wait for the
+  answer.
 - **A session restart replaces each reviewer it lost.** A restart can
   lose the reviewers the session started, and the rounds keep no record
   of one in flight. So after a restart, the verdict file of a reviewer
@@ -1768,6 +1578,61 @@ branch, or a text to be posted.
   be built or installed is named in the verdict as not run. *Another
   project's source is read from a checkout* says where a reference
   implementation is found.
+- **A command the change hands a reader is run on hostile names.** For
+  each command a diff adds to prose or a script that reads names or text
+  from the tree or a forge (a file name, a branch name, an issue body),
+  ask what it does with them, and where it reads file names, run it as
+  *Every reviewer tries to break the change* runs its inputs, with `d`,
+  a new scratch directory, as the working directory of the whole
+  pipeline (`env -C "${d:?}"`, then the shell the command is written
+  for, with `-c` and the pipeline as its argument: `env -C` before a
+  pipeline moves only its first command), after:
+
+  ```shell
+  git init -q "${d:?}"
+  for n in 'x|touch MARKER' 'touch MARKER|' -i; do
+    printf 'line of %s\n' "$n" > "${d:?}/$n"
+  done
+  git -C "${d:?}" add -A
+  ```
+
+  An absent `MARKER` counts only where the command's own listing, run
+  alone first, shows every fixture, so the fixtures are put in the state
+  it reads: `git diff --name-only` lists them only once they change
+  after `git add -A`. Run it again on a new `d` holding `-i` alone,
+  since perl reads `-i` as its switch only where it comes first. It
+  catches only what follows, and proves no command safe. The fixtures
+  are file names, so a branch name or text read from a forge is not
+  tried. A name run as shell, as `xargs -I{} sh -c` runs the first, or
+  opened as a pipe, as perl's `<>` opens the second, creates `MARKER` in
+  `d`. A name read as an option leaves its file unread, which shows
+  where the command prints what it reads. A file replaced in place, as
+  perl's `-i` replaces it, gets a new inode in `ls -i` of the fixtures,
+  before and after. Perl's `<<>>`, with `--` before the names, passes.
+- **What a lock pins or installs is measured where it runs.** `uv.lock`
+  can list one name at several versions, each under its own
+  `resolution-markers`, and list with no marker of its own a package
+  that only another platform's dependency reaches, as `sphinx` reaches
+  `colorama` under `sys_platform == 'win32'`. A claim about what a lock
+  pins or installs is measured on its target, the running interpreter's
+  Python on the platform `--python-platform` names or else on the host,
+  as *Every reviewer tries to break the change* runs its inputs, not
+  read from the lock: `uv sync --locked`, with `UV_PROJECT_ENVIRONMENT`
+  set to a new directory and every flag and `UV_` variable of the
+  claim's own command that selects what is installed or the interpreter,
+  as `--no-default-groups` or `--python`, then `importlib.metadata` in
+  that environment (`uv run --no-sync python -I`, with the same
+  variable, since `-I` drops `PYTHONPATH` and `PYTHONHOME`). Where the
+  command takes `--active`, the sync fills `VIRTUAL_ENV` instead, so
+  that is the new directory and the query takes `--active` too. It
+  reports what that interpreter sees, which may hold more than the lock
+  installed. A bare `uv sync` installs no extra and no group outside the
+  defaults, and in a workspace it may leave out another member's
+  dependencies. A `python` from the `PATH` may read another environment.
+  Where the lock holds such entries, they are the measurement's
+  controls: it finds only the version whose markers the target matches,
+  and no package that only another platform's dependency reaches, as
+  `colorama` for a macOS target.
 - **A *Done when* that is a differential over generated inputs** (against
   Bitcoin Core or another implementation) has its input set fixed before
   the writer starts: a generator with its seed, or a corpus, named in the
@@ -2103,10 +1968,11 @@ only after its `CLEARED`, which ends the rounds (*The rounds*).
 ## Orchestration
 
 - **Dispatching a writer**: this file's path
-  (`$PROCESS/process/btclib-common.md`), the skill's, and the
-  sections of both that are its role's, the issue or pull request, the
-  repository, the worktree and scratch paths, the force-push grant, and
-  the claims you measured. The same for a reviewer.
+  (`$PROCESS/process/btclib-common.md`), `every-session.md`'s and the
+  skill's, and the sections of this file and the skill that are its
+  role's, the issue or pull request, the repository, the worktree and
+  scratch paths, the force-push grant, and the claims you measured. The
+  same for a reviewer.
 - **Before dispatching, ask whether the issue is collateral of a pull
   request this session worked** (*Collateral*).
 - **The role map binds the brief.** A writer does not open pull requests;
@@ -2141,7 +2007,7 @@ only after its `CLEARED`, which ends the rounds (*The rounds*).
   file.** Tell each which regions the others hold, and to stop and
   report rather than cross. The number of workers is set by the disjoint
   regions and your own capacity to review and land, within the machine's
-  limits (*Parallelize as much as you can*).
+  limits (`every-session.md`'s *Parallelize as much as you can*).
 - **A quiet worker is asked for status, not stopped.** Where the
   human asks for a kill, say what will be lost and leave the
   worktree standing.
@@ -2174,9 +2040,9 @@ only after its `CLEARED`, which ends the rounds (*The rounds*).
   `model_reasoning_effort`.
 - **A worker that exceeds the time you set is interrupted**, not waited
   for.
-- **Writing runs in parallel; gating runs under the gate lock** (*The
-  machine is shared*). A reviewer that runs the gates itself is briefed
-  with *The gates*.
+- **Writing runs in parallel; gating runs under the gate lock**
+  (`every-session.md`'s *The machine is shared*). A reviewer that runs
+  the gates itself is briefed with *The gates*.
 - **A writer that has reported is sent nothing further until its
   reviewer has answered.**
 - **A session that runs long re-reads what can arrive meanwhile**
@@ -2186,8 +2052,9 @@ only after its `CLEARED`, which ends the rounds (*The rounds*).
 - **The process is re-read when `main` changes it.** The session notes
   `$PROCESS`'s `HEAD` in `<scratchpad>/orchestrator/process.sha` before
   it first reads this file, as its skill's opening says. Between rounds,
-  and before it briefs a worker, it brings `$PROCESS` forward (*Shell,
-  checkouts and prose*) and notes the `HEAD` it compares:
+  and before it briefs a worker, it brings `$PROCESS` forward
+  (`every-session.md`'s *Shell, checkouts and prose*) and notes the
+  `HEAD` it compares:
 
   ```shell
   scratchpad=<the session's scratchpad>
@@ -2278,5 +2145,5 @@ the files they name on your own:
 
 These are proposals. Closing them is the human's call, and for the
 process files the maintainer's, since they are shared. Each one that
-needs their answer is put to them as its own decision (*When the human
-has to decide*).
+needs their answer is put to them as its own decision
+(`every-session.md`'s *When the human has to decide*).
