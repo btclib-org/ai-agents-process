@@ -1,7 +1,7 @@
 ---
 name: night-mode
-description: "night-mode — turn night mode on or off in any session, or say whether it is on, since when and what it has deferred"
-argument-hint: "on|off|status"
+description: "night-mode — turn night mode on or off in any session, or toggle it with no word, or say whether it is on, since when and what it has deferred"
+argument-hint: "[on|off|status]"
 ---
 
 # Night mode
@@ -16,4 +16,8 @@ two directories above this skill's own.
 - `off` ends it as `night-mode.md`'s paragraph on turning it off says.
 - `status` answers as `night-mode.md`'s paragraph on status says.
 
-With no word, or any other, name the three and change nothing.
+With no word, the night toggles: where it is off, the session starts it
+as `on` does, the whole activation included, and where it is on, ends it
+as `off` does, and says which it did. Where the context no longer holds
+whether the night is on, the session says so and changes nothing. With
+any other word, name the three and change nothing.
