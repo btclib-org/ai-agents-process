@@ -1819,12 +1819,13 @@ raised on; the lines it rests on, quoted, with the sha they are read at
 (below); its outcome; and the head it was last checked on. The outcome
 is open until the finding is answered as `/btclib-pr`'s *Answering it*
 says: accepted, with what fixes it, which is the commit, the corrected
-sentence for a sentence of the pull request body, or the corrected
-subject or sentence, read at the landing, for a commit-message finding
-fixed only in the squash (`/btclib-pr`'s *Landing*); declined, with the
-measurement that refutes it; filed, as `ISS <repo>#<n>`; or a decision,
-waiting on the human or the maintainer. An accepted, declined or filed
-finding is closed for the convergence check of *The rounds*.
+sentence or its removal for a sentence of the pull request body, or the
+corrected subject or sentence, read at the landing, for a
+commit-message finding fixed only in the squash (`/btclib-pr`'s
+*Landing*); declined, with the measurement that refutes it; filed, as
+`ISS <repo>#<n>`; or a decision, waiting on the human or the
+maintainer. An accepted, declined or filed finding is closed for the
+convergence check of *The rounds*.
 
 **A finding quotes the lines it rests on**: the path, the first line's
 number, the sha they are read at, and the lines exactly as they read
@@ -1869,12 +1870,14 @@ git -C "${wt:?}" show "${sha:?}:${file:?}" |
 
 **On each new head, every entry is assessed again against the code**,
 whether or not a reviewer raised it again, and its last checked head
-becomes the new one. An open finding is fixed only where lines of the
-new head fix it, which the entry then quotes; an accepted one stays
-fixed only where those lines still stand. A finding on the pull request
-body is assessed again on each new head and before the landing, against
+becomes the new one. An open finding is fixed only where the new head
+fixes it, by lines the entry then quotes or by removing the lines it
+quoted, with the commit named; an accepted one stays fixed only while
+that still holds. A finding on the pull request body is assessed again
+on each new head and before the landing, against
 `gh pr view <n> --repo <owner>/<repo> --json body --jq .body`: it is
-fixed only where the body holds the corrected sentence the entry quotes.
+fixed only where the body holds the corrected sentence the entry quotes,
+or no longer holds the one the finding rests on.
 A read that exits non-zero is a stop, not a finding left unfixed: it
 says nothing about the body. A reply, the author's or the writer's,
 settles nothing.
