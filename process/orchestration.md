@@ -146,10 +146,8 @@ with no file is.
 
 ## Night mode
 
-The human turns night mode on with `--night` in the arguments or in
-words, and off in words, at any point. While it is on, the orchestrator
-follows `$PROCESS/process/night-mode.md`, read whole when it is turned
-on.
+`$PROCESS/process/night-mode.md` says how night mode is turned on and
+off, and what the orchestrator follows while it is on.
 
 ## Wrap-up
 
