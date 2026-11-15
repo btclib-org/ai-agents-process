@@ -967,7 +967,9 @@ btclib-org/.github's tracker as collateral (*Collateral*).
 ### Citations and closing keywords
 
 These are written first by the writer, in the commit, and re-checked by
-the orchestrator in the pull request.
+the orchestrator in the pull request. A batch of ports cites the issues
+in its pull request's body, not its subject, as `/btclib-iss`'s *Ports
+of the standard* says.
 
 - **The citation goes on the subject that lands.** Read the setting:
   `gh api repos/<owner>/<repo> --jq .squash_merge_commit_title`. At

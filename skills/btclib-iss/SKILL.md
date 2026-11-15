@@ -118,12 +118,15 @@ to take lands there first, and reaches each other tree by a port.
   a `## This repository in particular` heading takes the part above it.
   Each other change since the tree's last port is adapted as its issue
   says.
-- **The subject that lands records the port**: a batch's opens
-  `Port btclib-org/.github@<S>`. A round of its own takes a subject of
-  its own, so that the record does not pass the changes still
-  waiting. Before the first batch, no subject records one: the script
-  below guesses it from the copies, the writer checks each change it
-  lists against the tree, and the body names the guess.
+- **The subject that lands records the port**: a batch's is
+  `Port btclib-org/.github@<S>` alone, with neither the citations of the
+  shared *Citations and closing keywords* nor the pull request's number,
+  and its pull request's body cites each issue the batch advances on an
+  `Advances …` line. A round of its own takes a subject of its own, so
+  that the record does not pass the changes still waiting. Before the
+  first batch, no subject records one: the script below guesses it from
+  the copies, the writer checks each change it lists against the tree,
+  and the body names the guess.
 - **`scripts/port-check.py` checks a batch against `<S>`.** Its
   docstring says which files it compares, what it prints and what each
   exit code means:
