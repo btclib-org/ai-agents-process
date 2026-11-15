@@ -97,13 +97,22 @@ Show the human one table, grouped:
 - the rest: by day, listed and not worked.
 
 Each row is a `PR` link with its diff balance (the shared *How an issue
-and a pull request are named*) and what it waits on. A draft is listed
-and not worked. Then put one decision (`every-session.md`'s *When the
-human has to decide*): which to work, and in what order, the recommended
-order first with its reason. In a repository whose `main` is red, its
-repair comes first (*Landing*'s first bullet). Outside contributors'
-pull requests come next, oldest first: their author waits on us, and a
-reply that comes days late can lose a contributor.
+and a pull request are named*) and what it waits on. A pull request may
+wait on one that carries `release-hold`, as *Landing* says, and this
+lists the open or merged ones that carry it:
+
+```shell
+gh search prs --owner btclib-org --label release-hold --limit 200 \
+  --json repository,number,url,state --jq '.[] | select(.state != "closed")'
+```
+
+A draft is listed and not worked. Then put one decision
+(`every-session.md`'s *When the human has to decide*): which to work,
+and in what order, the recommended order first with its reason. In a
+repository whose `main` is red, its repair comes first (*Landing*'s
+first bullet). Outside contributors' pull requests come next, oldest
+first: their author waits on us, and a reply that comes days late can
+lose a contributor.
 
 **At night, no decision is put.** Where the human answered this decision
 before the night started (`$PROCESS/process/night-mode.md`'s
@@ -1637,6 +1646,35 @@ has not reported yet.
   failure, and a check that only reports does not count. While `main` is
   red, its repair is the first work, and other pull requests are still
   approved and merged (`CONTRIBUTING.md`'s *Landing it*).
+- **`release-hold` holds merges as `RELEASING.md`'s *Release to PyPI*
+  says.** Before the session merges a pull request, these read the
+  repository and its open or merged pull requests carrying the label:
+
+  ```shell
+  gh api repos/<owner>/<repo> --jq .full_name
+  ```
+
+  ```shell
+  gh api --paginate \
+    'repos/<owner>/<repo>/issues?labels=release-hold&state=all&per_page=100' \
+    --jq '.[] | select(.pull_request)
+      | select(.state == "open" or .pull_request.merged_at != null)
+      | {number, state, merged: .pull_request.merged_at}'
+  ```
+
+  The first must print `<owner>/<repo>`. Where the second lists a pull
+  request other than the one at hand, the one at hand waits until it
+  lists no other, but for the exceptions that step gives. Another name
+  from the first, or a nonzero exit of either, is an error, and the
+  merge waits until both answer. The read and the merge are two calls,
+  and none of the [rules a GitHub ruleset offers][rulesets] reads a
+  label, so a label put on between them does not stop the merge. Until
+  the release merges, its own check that `main` has not moved catches
+  such a merge, as that step says. A label left on a merged release
+  already published still holds every merge until the maintainer's word,
+  and one on a pull request closed without merging holds nothing and is
+  removed by whoever finds it, as that step says. The label records the
+  wait, and the waiting pull request takes no comment of its own.
 - **What gates a merge on GitHub** is the repository's own
   `REPOSITORY.md`, read from `origin/main`: typically an approval from
   somebody other than the author, every review thread resolved, and the
@@ -1953,3 +1991,4 @@ has not reported yet.
 Then the shared *Wrap-up*.
 
 [dependabot-rebase]: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/manage-dependabot-prs#allowing-dependabot-to-rebase-and-force-push-over-extra-commits
+[rulesets]: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets
