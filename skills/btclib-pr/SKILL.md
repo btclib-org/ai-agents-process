@@ -1781,11 +1781,12 @@ has not reported yet.
   ```
 
   The subject is the pull request's title with its citation (the shared
-  *Citations and closing keywords*) and `(#<n>)`; `--subject` replaces the whole
-  subject. The message says what the change
-  does, and keeps every `Signed-off-by:` and `Co-authored-by:` line of
-  the commits it squashes. A finding that lives only in the commit
-  message is fixed here, with no new round.
+  *Citations and closing keywords*) and `(#<n>)`, except for a batch of
+  ports (`/btclib-iss`'s *Ports of the standard*); `--subject` replaces
+  the whole subject. The message says what the change does, and keeps
+  every `Signed-off-by:` and `Co-authored-by:` line of the commits it
+  squashes. A finding that lives only in the commit message is fixed
+  here, with no new round.
 
   Never land through the bypass (`--admin`, or any other route to it)
   except where *The human's own pull request* says. It merges with no
