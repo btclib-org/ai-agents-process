@@ -170,15 +170,14 @@ btclib-org/.github's tracker as collateral (*Collateral*).
 ### What the prose that lands may say
 
 - **No entry in `CHANGELOG.md` or `RELEASE_NOTES.md`.** In a tree that
-  publishes, a pull request's entry is a file under `changelog/next/`:
-  section 9 of the organization's standard (*`CHANGELOG.md` and
-  `RELEASE_NOTES.md`*) says which pull request adds one and what it
-  holds. A tree's `CONTRIBUTING.md` that still asks for an entry in
-  either file is a drifted copy, and the standard wins (*Which file
-  wins*). An entry in either file found on a branch is dropped. A
-  release's own pull request writes that release's section, and so does
-  the pull request that moves an entry left in `changelog/next/` into
-  it, as section 9 says.
+  publishes, section 9 of the organization's standard (*`CHANGELOG.md`
+  and `RELEASE_NOTES.md`*) says which pull request adds an entry under
+  `changelog/next/`, and what the entry holds. A tree's
+  `CONTRIBUTING.md` that still asks for an entry in either file is a
+  drifted copy, and the standard wins (*Which file wins*). An entry in
+  either file found on a branch is dropped. A release's own pull request
+  writes that release's section, and so does the pull request that moves
+  an entry left in `changelog/next/` into it, as section 9 says.
 - **Backward compatibility is not a constraint.** Choose the most
   rational design and document what it breaks in the commit message and
   the pull request body.
