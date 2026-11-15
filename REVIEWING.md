@@ -568,3 +568,6 @@ question names it.
 - **Was the claim measured?** A sentence about what a command prints or
   what a setting answers was read from the command or the endpoint, and
   the pull request says which.
+- **Does a change to the reviewer carry its run on the replay set?**
+  `process/replay-set.md` says which changes owe one and where it is
+  recorded.

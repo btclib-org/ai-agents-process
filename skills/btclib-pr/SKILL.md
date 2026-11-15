@@ -265,6 +265,9 @@ answered one of three ways:
   reserved decision. It goes to the human or the maintainer, as
   `every-session.md`'s *When the human has to decide* says.
 
+Each item and its answer go in the findings record (the shared *The
+findings record*).
+
 **A bot's finding, the review bot's, Codex's or CodeRabbit's, takes the
 first of these routes that fits**, measured on the head, unless it needs
 a decision:
