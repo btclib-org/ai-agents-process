@@ -12,7 +12,9 @@ earlier run.
 The skill only reads. It writes nothing, comments nowhere and takes no
 decision, so it needs no worktree and none of the roles of
 `$PROCESS/process/btclib-common.md` (`echo "$PROCESS"` prints the
-clone's path). What it writes after the table follows that file's
+clone's path). Before its first command, the session reads
+`$PROCESS/process/every-session.md` whole, two directories above this
+skill's own, and what it writes after the table follows that file's
 *Write plainly*.
 
 ## Measure
@@ -143,8 +145,8 @@ measure's last line, which leaves out a row whose ISS or PR count is an
 error. BL3 is the badge project's baseline percentage. 🥇% is its gold
 percentage, `🥇` where that is 100. Both are `-` where the repository has
 no badge project. CI and 📛 are `✅` where the measure's `ci` and `badges`
-say `ok`, and `❌` otherwise. An ISS, PR, BL3 or 🥇% cell whose value is
-an error shows `err`.
+say `ok`, and `❌` otherwise. An ISS, PR, BL3, 🥇% or last 🚀 cell whose
+value is an error shows `err`, and so does new 🚀? beside such a last 🚀.
 
 last 🚀 is the latest tag without its leading `v`, `never` where
 there is none. A cell holds its value and nothing else.

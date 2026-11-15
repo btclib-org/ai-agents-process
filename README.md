@@ -14,6 +14,8 @@ The process the btclib-org maintainers follow with the coding agents
   of every repository of the organization, which only reads;
 - `skills/btclib-table/measure.sh` — the script `/btclib-table` runs to
   read that table;
+- `process/every-session.md` — the rules every session follows; its
+  opening says when it is read;
 - `process/btclib-common.md` — what `/btclib-iss` and `/btclib-pr`
   share, read whole by each;
 - `process/night-mode.md` — what the orchestrator follows while night
