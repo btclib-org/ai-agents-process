@@ -34,13 +34,15 @@ git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.sha
 The client loaded this file before that note, so the session reads it
 again, whole and once, from `$PROCESS/skills/btclib-pr/SKILL.md`.
 
-**Then read `$PROCESS/process/btclib-common.md`, whole.** Its opening
-says what it holds and what this file holds. What the session writes,
-and this file, follow `every-session.md`'s *Write plainly*.
+**Then read the shared files, whole**: `every-role.md`, `writing.md`,
+`local-review.md` and `orchestration.md`, in `$PROCESS/process/`.
+`every-role.md`'s opening says what they hold and what this file holds.
+What the session writes, and this file, follow `every-session.md`'s
+*Write plainly*.
 
 The shared *Where you work* says how the repository is named.
 
-**Which sections are yours**, beyond the shared file's map:
+**Which sections are yours**, beyond `every-role.md`'s map:
 
 - **The writer**: *What was raised*, *Answering it*, *Rebase and CI*,
   *Outside contributors*.
@@ -775,7 +777,7 @@ head=<head>
 
 ## The decision
 
-**The session's approval is the human's** (the shared file's *Three
+**The session's approval is the human's** (`every-role.md`'s *Three
 roles this file names*). Their standing instruction covers an obvious
 approval, as defined below, and nothing else. Every other approval is
 theirs to give.
