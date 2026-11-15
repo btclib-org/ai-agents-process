@@ -30,8 +30,8 @@ not yours; one that is cannot be skipped as somebody else's.
   the skill its brief names.
 - **The reviewer**: *Local review*, and in *Writing work* the checklist,
   *A rule stated more than once*, *What the prose that lands may say*,
-  *Citations and closing keywords* and *Signed and signed off*, which it
-  judges.
+  *Citations and closing keywords*, *The gates*, *Sourcery and CodeRabbit
+  before a push* and *Signed and signed off*, which it judges.
 - **The designer**: *Before starting*'s first bullet, and the sections
   of the skill its brief names.
 - **The orchestrator**: all of this file and all of its skill.
