@@ -61,6 +61,17 @@ CASES: list[tuple[str, set[str]]] = [
     ("env PYTEST_ADDOPTS='-n auto' pytest", {"xdist"}),
     ("PYTEST_ADDOPTS=\"-n 'auto'\" pytest", {"xdist"}),
     ("PYTEST_ADDOPTS='-n auto' pytest -- -n 2", {"xdist"}),
+    # after a `--` in PYTEST_ADDOPTS, pytest reads the command's words as
+    # operands
+    ("PYTEST_ADDOPTS='-n auto --' pytest -n 2", {"xdist"}),
+    ("PYTEST_ADDOPTS='-n auto --' pytest --help", {"xdist"}),
+    ("PYTEST_ADDOPTS='-n auto --' pytest -h", {"xdist"}),
+    ("PYTEST_ADDOPTS='-n auto --' pytest --version --version", {"xdist"}),
+    # a version request there is refused, though newer releases answer it
+    ("PYTEST_ADDOPTS='-n auto --' pytest --version", {"xdist"}),
+    ("PYTEST_ADDOPTS='-n auto --' pytest -V", {"xdist"}),
+    ("PYTEST_ADDOPTS='-n auto --' pytest \"$X\"", {"xdist"}),
+    ("PYTEST_ADDOPTS='-n auto --' pytest --version --version \"$X\"", {"xdist"}),
     ("PYTEST_ADDOPTS=\"-o 'cache_dir=some -n auto '\" pytest", set()),
     ("PYTEST_ADDOPTS=\"-k 'some -n auto '\" pytest", set()),
     ('PYTEST_ADDOPTS="$OPTS -n auto" pytest', set()),
@@ -349,17 +360,19 @@ GROWTH: list[tuple[str, Callable[[int], str], int]] = [
     ("assignments", lambda n: "A=x " * n + "echo ok", 50_000),
     ("runs of $", lambda n: "echo " + "$" * n, 500_000),
     ("empty quotes", lambda n: "echo " + 'a""' * n, 150_000),
+    # the export's value is long and quick to lex, so that a scan of the
+    # whole text for each pytest command costs more than the commands
     (
         "pytest after an export",
-        lambda n: "export PYTEST_ADDOPTS='" + "-q " * n + "'; " + "pytest; " * n,
+        lambda n: "export PYTEST_ADDOPTS='" + "-q " * 200 * n + "'; " + "pytest; " * n,
         3_000,
     ),
     ("nested eval", lambda n: "eval " * n + "echo", 200_000),
 ]
 GROWTH_BOUND = 3.0
 SLACK = 0.02
-# A measure that fails may be the clock's: it is taken again, this many
-# times in all.
+# Each size is measured this many times, and the least time counts: a
+# load on the machine only adds to a measure.
 TRIES = 3
 # Nested `eval` of words the shell reads again as they stand, which the
 # script lexes once, and what it must name.
@@ -438,11 +451,12 @@ def cpu(hook: Any, command: str) -> float:
 def growth(hook: Any, build: Callable[[int], str], n: int) -> str | None:
     """None where the time at 2n is within the bound of the time at n,
     else the two times."""
-    small = large = 0.0
+    small = large = float("inf")
     for _ in range(TRIES):
-        small, large = cpu(hook, build(n)), cpu(hook, build(2 * n))
-        if large <= GROWTH_BOUND * small + SLACK:
-            return None
+        small = min(small, cpu(hook, build(n)))
+        large = min(large, cpu(hook, build(2 * n)))
+    if large <= GROWTH_BOUND * small + SLACK:
+        return None
     return f"{small:.3f} s at n, {large:.3f} s at 2n"
 
 

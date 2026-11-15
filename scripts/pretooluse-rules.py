@@ -9,18 +9,41 @@ exits 0, and the call goes on to the usual permission flow.
 
 The sections are the rule; this is a net under them. It splits the
 command into words as the shell would, follows `sh -c`, `eval`, `$(…)`,
-backticks, subshells and wrappers such as `env`, `timeout` and
-`uv run`, and skips quoted text, comments, heredoc bodies and function
-bodies, so a rule named in a commit message or an `echo` is not a
-breach. It refuses only what the words show for certain. Where options
-repeat, the last decides, as the program reads them. A word holding an
-unexpanded `$` might be any word, so a command passes where such a word
-could make it comply, and a spelling the script cannot read passes. So
-does a help request to git, gh, uv, pytest or coderabbit, a version
-request to git, uv or pytest, input it cannot parse, and text with a
-quote, a substitution or a group it never closes. Of `PYTEST_ADDOPTS`
-it reads only a literal value assigned as a prefix of the pytest
-command itself: set any other way, the variable is not read.
+backticks, subshells and wrappers such as `env`, `timeout` and `uv run`,
+and skips quoted text, comments, heredoc bodies and function bodies, so
+a rule named in a commit message or an `echo` is not a breach. It
+refuses what the words show for certain, and some spellings that break
+no rule, named below. Where options repeat, the last decides, as the
+program reads them. A word holding an unexpanded `$` might be any word,
+so a command passes where such a word could make it comply, and a
+spelling the script cannot read passes. So does a help request to git,
+gh, uv, pytest or coderabbit, a version request to git, uv or pytest,
+input it cannot parse, and text with a quote, a substitution or a group
+it never closes. Of `PYTEST_ADDOPTS` it reads only a literal value
+assigned as a prefix of the pytest command itself: set any other way,
+the variable is not read. Where that value holds `-n auto` or
+`-n logical` and then `--`, no help or version request to pytest
+passes: after that `--`, pytest parses the command's own words as
+operands.
+
+Reading those spellings right would deepen the parser, and a refusal too
+many is the safe side, so they stay refused. Among them:
+
+- a help request to `uv run`, `uv tool run`, `uvx`, `python3` or
+  `coverage run`, or a version request to `uvx` or `python3`, with a
+  command after it, which then runs nothing, as
+  `uv run --help git stash`;
+- a `git config` that sets another key to the value `commit.gpgsign`, as
+  `git config --global alias.example commit.gpgsign false`;
+- a `-n auto` after a `--` that a literal `PYTEST_ADDOPTS` holds, which
+  pytest reads as an operand, as `PYTEST_ADDOPTS=-- pytest -n auto`;
+- a version request after such a `--`, which newer pytest releases
+  answer before reading the variable, as
+  `PYTEST_ADDOPTS='-n auto --' pytest --version`;
+- a `}` inside a word or a heredoc of a function's body, which the
+  script reads as the end of the body, as
+  `f() { echo foo}bar; git stash; }`;
+- a branch that never runs, as `if false; then git stash; fi`.
 """
 
 import json
@@ -975,9 +998,13 @@ def xdist_last(args: list[str]) -> tuple[str | None, bool]:
     return last, unknown(args[end:])
 
 
-def xdist_auto(args: list[str], addopts: tuple[str | None, bool]) -> bool:
+def xdist_auto(args: list[str], addopts: tuple[str | None, bool, bool]) -> bool:
     """Whether pytest runs `-n auto` or `-n logical`: `addopts` is what
-    `xdist_last` gives for `PYTEST_ADDOPTS`, which pytest reads first."""
+    the function of that name gives for `PYTEST_ADDOPTS`, which pytest
+    reads first."""
+    if addopts[2] and addopts[0] in ("auto", "logical") and not addopts[1]:
+        # pytest reads the command's own words after that `--`, as operands
+        return True
     last, later = xdist_last(args)
     if last == "" or addopts[0] == "":
         return False
@@ -1077,17 +1104,20 @@ def credits_used(argv: list[str]) -> bool:
     return "--use-credits" in args
 
 
-def addopts(value: str | None) -> tuple[str | None, bool]:
+def addopts(value: str | None) -> tuple[str | None, bool, bool]:
     """What `xdist_last` reads in a `PYTEST_ADDOPTS` set as a prefix of
-    the pytest command, split with `shlex.split` as pytest splits it. A
-    value holding an expansion, or one shlex cannot split, is not read,
-    nor is the variable set any other way."""
+    the pytest command, split with `shlex.split` as pytest splits it, and
+    whether the value holds a `--`. A value holding an expansion, or one
+    shlex cannot split, is not read, nor is the variable set any other
+    way."""
     if value is None or "$" in value:
-        return None, False
+        return None, False, False
     try:
-        return xdist_last(shlex.split(value))
+        words = shlex.split(value)
     except ValueError:
-        return None, False
+        return None, False, False
+    last, later = xdist_last(words)
+    return last, later, "--" in words
 
 
 def broken_rules(text: str) -> list[str]:
