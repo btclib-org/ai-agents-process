@@ -1,16 +1,22 @@
 # Night mode
 
-The orchestrator's, in either skill. A section named in italics with no
-file is in `every-session.md` or in `every-role.md`, `writing.md`,
-`local-review.md` or `orchestration.md`.
+This file binds the session that turns night mode on, whichever skill
+it runs or none; in `/btclib-iss` and `/btclib-pr` that is the
+orchestrator. `every-role.md`, beside this file, opens the process: its
+opening says where a section named here in italics with no file is.
+
+**The human turns night mode on** with `/night-mode on`, with `--night`
+in a skill's arguments, or in words, **and off** with `/night-mode off`
+or in words, at any point. The session reads this file whole when night
+mode is turned on.
 
 **Night mode has no ceiling and no duration**: it lasts until the human
 turns it off.
 
-**At activation, ask first for the repository**, where the skill needs
-one and the session has not settled it, and, for `/btclib-iss` with no
-issue named, the issues. Where they leave before answering, the night
-does not start.
+**At activation, ask first for the repository**, where a skill the
+session runs needs one and the session has not settled it, and, for
+`/btclib-iss` with no issue named, the issues. Where they leave before
+answering, the night does not start.
 
 **Then offer the questions that can be asked now**: those whose answer
 would let work go on overnight, and that the session can put now or once
@@ -29,15 +35,21 @@ under the ordinary rules. The morning report is the next message, unless
 it was given while the work waited. Its deferred items are then asked as
 *When the human has to decide* says.
 
+**`/night-mode status` answers from the session's context**: whether
+the night is on and since when, and the items deferred so far, listed as
+the morning report lists them. It puts none of them and writes nothing.
+The session runs `date -u +'%F %R UTC'` as the night starts, and the
+time it prints is the one status gives.
+
 **During the night no question is asked interactively.** Every point
-where a skill stops for the human — a decision, a refused permission, a
-dirty primary checkout that is not provably the session's, an approval
-that is not obvious, a session whose state is uncertain, a branch that
-takes a decision its issue reserved — becomes an item of the morning
-report, and the work that depends on it stops there. A decision that
-goes to the maintainer (*When the human has to decide*) is a hold, not
-an item. A branch taking a reserved decision is opened, not landed, and
-its cut-back is one of the decision's alternatives. A design pass's
+where the session stops for the human — a decision, a refused
+permission, a dirty primary checkout that is not provably the session's,
+an approval that is not obvious, a session whose state is uncertain, a
+branch that takes a decision its issue reserved — becomes an item of the
+morning report, and the work that depends on it stops there. A decision
+that goes to the maintainer (*When the human has to decide*) is a hold,
+not an item. A branch taking a reserved decision is opened, not landed,
+and its cut-back is one of the decision's alternatives. A design pass's
 question (`/btclib-iss`'s *The design pass*) stops no writer: the writer
 takes the recommended option, the question waits as any other decision
 does, and the branch is one taking a reserved decision. *When the human
