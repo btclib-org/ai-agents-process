@@ -40,7 +40,10 @@ free plan, and everything below depends on them.
 ```shell
 gh api repos/btclib-org/ai-agents-process \
   --jq '{visibility, has_issues}'
-# {"has_issues":true,"visibility":"public"}
+```
+
+```json
+{"has_issues":true,"visibility":"public"}
 ```
 
 ## Required checks on main
@@ -48,10 +51,13 @@ gh api repos/btclib-org/ai-agents-process \
 ```shell
 gh api repos/btclib-org/ai-agents-process/branches/main/protection \
   --jq '.required_status_checks | {strict, checks}'
-# {"checks":[{"app_id":15368,"context":"Lint"},
-#            {"app_id":15368,"context":"Dependency review"},
-#            {"app_id":15368,"context":"Sign-off"}],
-#  "strict":false}
+```
+
+```json
+{"checks":[{"app_id":15368,"context":"Lint"},
+           {"app_id":15368,"context":"Dependency review"},
+           {"app_id":15368,"context":"Sign-off"}],
+ "strict":false}
 ```
 
 **`lint.yml` runs on every pull request, and a red `Lint`, `Dependency
@@ -95,9 +101,12 @@ gh api repos/btclib-org/ai-agents-process/branches/main/protection \
          force: .allow_force_pushes.enabled,
          delete: .allow_deletions.enabled,
          signatures: .required_signatures.enabled}'
-# {"admins":false,"delete":false,"force":false,"linear":true,
-#  "reviews":{"dismiss":true,"n":1,"owners":false},
-#  "signatures":false,"threads":true}
+```
+
+```json
+{"admins":false,"delete":false,"force":false,"linear":true,
+ "reviews":{"dismiss":true,"n":1,"owners":false},
+ "signatures":false,"threads":true}
 ```
 
 The `PUT` sets every field it is given and clears the rest, so it carries
@@ -115,7 +124,10 @@ header says why.
 
 ```shell
 gh api repos/btclib-org/ai-agents-process --jq '.default_branch'
-# main
+```
+
+```text
+main
 ```
 
 ```shell
@@ -126,15 +138,18 @@ gh api --paginate repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
     --jq '{name, target, enforcement, refs: .conditions.ref_name.include,
            rules: [.rules[].type],
            bypass: [.bypass_actors[]?.bypass_mode]}')
-# {"bypass":[],"enforcement":"active","name":"main-integrity",
-#  "refs":["refs/heads/main"],
-#  "rules":["required_linear_history","non_fast_forward","deletion"],
-#  "target":"branch"}
-# {"bypass":["pull_request"],"enforcement":"active",
-#  "name":"main-self-merge","refs":["refs/heads/main"],
-#  "rules":["pull_request"],"target":"branch"}
-# {"bypass":[],"enforcement":"active","name":"tag-integrity",
-#  "refs":["refs/tags/v*"],"rules":["required_signatures"],"target":"tag"}
+```
+
+```text
+{"bypass":[],"enforcement":"active","name":"main-integrity",
+ "refs":["refs/heads/main"],
+ "rules":["required_linear_history","non_fast_forward","deletion"],
+ "target":"branch"}
+{"bypass":["pull_request"],"enforcement":"active",
+ "name":"main-self-merge","refs":["refs/heads/main"],
+ "rules":["pull_request"],"target":"branch"}
+{"bypass":[],"enforcement":"active","name":"tag-integrity",
+ "refs":["refs/tags/v*"],"rules":["required_signatures"],"target":"tag"}
 ```
 
 - `main-integrity` — required linear history, no
@@ -158,19 +173,25 @@ gh api --paginate repos/btclib-org/ai-agents-process/rulesets --jq '.[].id' \
   | xargs -I{} gh api \
     repos/btclib-org/ai-agents-process/rulesets/{} \
     --jq '.rules[] | select(.type=="pull_request") | .parameters')
-# {"allowed_merge_methods":["squash"],
-#  "dismiss_stale_reviews_on_push":true,
-#  "dismissal_restriction":{"allowed_actors":[],"enabled":false},
-#  "require_code_owner_review":true,
-#  "require_extra_approval_for_unattributed_changes":true,
-#  "require_last_push_approval":false,"required_approving_review_count":1,
-#  "required_review_thread_resolution":true,"required_reviewers":[]}
+```
+
+```json
+{"allowed_merge_methods":["squash"],
+ "dismiss_stale_reviews_on_push":true,
+ "dismissal_restriction":{"allowed_actors":[],"enabled":false},
+ "require_code_owner_review":true,
+ "require_extra_approval_for_unattributed_changes":true,
+ "require_last_push_approval":false,"required_approving_review_count":1,
+ "required_review_thread_resolution":true,"required_reviewers":[]}
 ```
 
 ```shell
 gh api repos/btclib-org/ai-agents-process/rulesets/24293514 \
   --jq '.bypass_actors'
-# [{"actor_id":3296421,"actor_type":"User","bypass_mode":"pull_request"}]
+```
+
+```json
+[{"actor_id":3296421,"actor_type":"User","bypass_mode":"pull_request"}]
 ```
 
 Id 3296421 is `fametrano`: `gh api users/fametrano --jq .id`.
@@ -203,9 +224,12 @@ gh api repos/btclib-org/ai-agents-process \
          delete_on_merge: .delete_branch_on_merge,
          title: .squash_merge_commit_title,
          message: .squash_merge_commit_message}'
-# {"auto":false,"delete_on_merge":true,"merge":false,
-#  "message":"COMMIT_MESSAGES","rebase":false,"squash":true,
-#  "title":"COMMIT_OR_PR_TITLE"}
+```
+
+```json
+{"auto":false,"delete_on_merge":true,"merge":false,
+ "message":"COMMIT_MESSAGES","rebase":false,"squash":true,
+ "title":"COMMIT_OR_PR_TITLE"}
 ```
 
 Squash is the only method GitHub can be asked for. `COMMIT_OR_PR_TITLE`
@@ -219,7 +243,10 @@ the two titles lands is its *Merge method* rule. `allow_auto_merge` is
 ```shell
 gh api repos/btclib-org/ai-agents-process \
   --jq '{wiki: .has_wiki, projects: .has_projects, issues: .has_issues}'
-# {"issues":true,"projects":false,"wiki":false}
+```
+
+```json
+{"issues":true,"projects":false,"wiki":false}
 ```
 
 Issues are on: this repository's own tracker is where a defect in the
@@ -234,7 +261,10 @@ answers with its absence**, so what is read is the status line alone:
 
 ```shell
 gh api -i repos/btclib-org/ai-agents-process/pages 2>/dev/null | head -1
-# HTTP/2.0 404 Not Found
+```
+
+```text
+HTTP/2.0 404 Not Found
 ```
 
 The same call against `btclib-org/btclib-org.github.io`, the tree that
@@ -245,7 +275,10 @@ serves `btclib.org`, answers `HTTP/2.0 200 OK`, which is what makes the
 
 ```shell
 gh api repos/btclib-org/ai-agents-process --jq '.topics'
-# ["btclib","claude-code","development-process"]
+```
+
+```json
+["btclib","claude-code","development-process"]
 ```
 
 The standard makes a package's `keywords` its topics; there is no package
@@ -258,9 +291,12 @@ has no topics.
 
 ```shell
 gh api repos/btclib-org/ai-agents-process --jq '{description, homepage}'
-# {"description":"The btclib-org process for coding agents: the
-#  btclib-iss, btclib-pr and btclib-table skills, the file they share,
-#  and the writer and reviewer agents","homepage":null}
+```
+
+```text
+{"description":"The btclib-org process for coding agents: the
+ btclib-iss, btclib-pr and btclib-table skills, the file they share,
+ and the writer and reviewer agents","homepage":null}
 ```
 
 `homepage` is null. The standard gives that field to a tree that
@@ -271,8 +307,11 @@ here.
 
 ```shell
 gh api repos/btclib-org/ai-agents-process/actions/permissions/workflow
-# {"default_workflow_permissions":"read",
-#  "can_approve_pull_request_reviews":false}
+```
+
+```json
+{"default_workflow_permissions":"read",
+ "can_approve_pull_request_reviews":false}
 ```
 
 `read` is the floor every workflow here starts from. A job that
@@ -299,7 +338,10 @@ afterwards rather than assuming it moved.
 ```shell
 gh api repos/btclib-org/ai-agents-process/actions/permissions \
   --jq '{enabled, allowed_actions, sha_pinning_required}'
-# {"allowed_actions":"all","enabled":true,"sha_pinning_required":true}
+```
+
+```json
+{"allowed_actions":"all","enabled":true,"sha_pinning_required":true}
 ```
 
 `sha_pinning_required` is set at the organization level: [section 11 of
@@ -309,9 +351,18 @@ the standard has the reasons for both fields][s11-tokens].
 
 ```shell
 gh api repos/btclib-org/ai-agents-process --jq .web_commit_signoff_required
-# true
+```
+
+```text
+true
+```
+
+```shell
 gh api orgs/btclib-org --jq .web_commit_signoff_required
-# true
+```
+
+```text
+true
 ```
 
 Set at the organization level, [for the reason section 11
@@ -321,11 +372,14 @@ gives][s11-sigs].
 
 ```shell
 gh api repos/btclib-org/ai-agents-process --jq '.security_and_analysis'
-# {"dependabot_security_updates":{"status":"enabled"},
-#  "secret_scanning":{"status":"enabled"},
-#  "secret_scanning_non_provider_patterns":{"status":"disabled"},
-#  "secret_scanning_push_protection":{"status":"enabled"},
-#  "secret_scanning_validity_checks":{"status":"disabled"}}
+```
+
+```json
+{"dependabot_security_updates":{"status":"enabled"},
+ "secret_scanning":{"status":"enabled"},
+ "secret_scanning_non_provider_patterns":{"status":"disabled"},
+ "secret_scanning_push_protection":{"status":"enabled"},
+ "secret_scanning_validity_checks":{"status":"disabled"}}
 ```
 
 **The first three are what the standard asks for, and they are on.** The
@@ -342,9 +396,18 @@ updates, the pull requests that answer an alert, at another:
 
 ```shell
 gh api -i repos/btclib-org/ai-agents-process/vulnerability-alerts | head -1
-# HTTP/2.0 204 No Content
+```
+
+```text
+HTTP/2.0 204 No Content
+```
+
+```shell
 gh api repos/btclib-org/ai-agents-process/automated-security-fixes
-# {"enabled":true,"paused":false}
+```
+
+```json
+{"enabled":true,"paused":false}
 ```
 
 Version bumps are the other half of what Dependabot does here, and they
@@ -358,7 +421,10 @@ pre-commit.ci for hook `rev:` bumps instead
 
 ```shell
 gh api repos/btclib-org/ai-agents-process/private-vulnerability-reporting
-# {"enabled":true}
+```
+
+```json
+{"enabled":true}
 ```
 
 On, as the standard asks of every tier. The policy the Security tab shows
@@ -371,13 +437,28 @@ one publishes nothing.
 ```shell
 gh api repos/btclib-org/ai-agents-process/actions/secrets \
   --jq '[.secrets[].name]'
-# []
+```
+
+```json
+[]
+```
+
+```shell
 gh api orgs/btclib-org/actions/secrets/CLAUDE_CODE_OAUTH_TOKEN \
   --jq '.visibility'
-# all
+```
+
+```text
+all
+```
+
+```shell
 gh api orgs/btclib-org/dependabot/secrets/CLAUDE_CODE_OAUTH_TOKEN \
   --jq '.visibility'
-# all
+```
+
+```text
+all
 ```
 
 This repository holds no secret of its own. A workflow here that reads
@@ -396,7 +477,10 @@ the pull requests `.github/dependabot.yml` opens.
 ```shell
 gh api repos/btclib-org/ai-agents-process/environments \
   --jq '[.environments[].name]'
-# []
+```
+
+```json
+[]
 ```
 
 There is no `pypi` environment and no trusted publisher, nothing here
@@ -414,7 +498,10 @@ the organization, so the repository's own store is read too:
 
 ```shell
 gh api repos/btclib-org/ai-agents-process/actions/variables --jq .total_count
-# 0
+```
+
+```text
+0
 ```
 
 The agent runs only while the organization's `CLAUDE_IMPLEMENT_ENABLED`,
@@ -434,7 +521,10 @@ gh api --paginate \
   ```shell
   gh api repos/btclib-org/ai-agents-process/code-scanning/default-setup \
     --jq '{state, languages}'
-  # {"languages":["actions","python"],"state":"not-configured"}
+  ```
+
+  ```json
+  {"languages":["actions","python"],"state":"not-configured"}
   ```
 
   Section 10 of the standard names the trees that run `codeql`, and this
