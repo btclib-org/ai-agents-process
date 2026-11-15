@@ -76,6 +76,10 @@ disagree.
       before any code block or required template section.
     - **A text over a limit is not posted but returned cut**, unless a
       maintainer asked for exactly that detail.
+    - **The findings record is a record, not a reply**
+      (`btclib-common.md`'s *The findings record*, read before keeping
+      one): no limit on a comment's length, lists or headings binds it,
+      and its first line is still the point.
 - **Parallelize as much as you can.** Reads, remote work, writers and
   reviewers run side by side, within the machine's CPU load, memory
   pressure and free disk (`btclib-common.md`'s *The gates* and *Before
@@ -182,8 +186,8 @@ one, since the repository is never inferred (`btclib-common.md`'s *Where
 you work*, read before working in a repository). It is still asked on
 its own.
 
-**A writer or reviewer puts a decision in its report**, in this shape,
-and the orchestrator asks it.
+**A writer, reviewer or designer puts a decision in its report**, in
+this shape, and the orchestrator asks it.
 
 **Where the human is not the maintainer, a decision on what a change
 does goes to the maintainer**: its design, its scope, a decision its

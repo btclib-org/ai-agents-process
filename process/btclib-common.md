@@ -14,10 +14,11 @@ This file binds both. It holds the rules they share, or names the file
 under `process/` that holds them, except those `/btclib-iss`'s
 *Following it* reads in `/btclib-pr`. Both open by having
 `process/every-session.md` and this file read whole, and each holds only
-what is its own. The `writer` and `reviewer` agents are generic: the
-brief names `every-session.md`, this file and the skill, and they read
-the first whole and the sections the maps give them. Change a rule in
-the file that holds it or in the skill where it fires, not in an agent.
+what is its own. The `writer`, `reviewer` and `designer` agents are
+generic: the brief names `every-session.md`, this file and the skill,
+and they read the first whole and the sections the maps give them.
+Change a rule in the file that holds it or in the skill where it fires,
+not in an agent.
 
 **Which sections are yours.** A heading that is not yours is genuinely
 not yours; one that is cannot be skipped as somebody else's.
@@ -31,6 +32,8 @@ not yours; one that is cannot be skipped as somebody else's.
   *A rule stated more than once*, *What the prose that lands may say*,
   *Citations and closing keywords* and *Signed and signed off*, which it
   judges.
+- **The designer**: *Before starting*'s first bullet, and the sections
+  of the skill its brief names.
 - **The orchestrator**: all of this file and all of its skill.
 
 **Which file wins.** Where two texts state the same point differently,
@@ -41,13 +44,11 @@ global instructions (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`). A
 repository's own file that has drifted from the standard in
 `btclib-org/.github` is a defect, tracked there, and the standard wins
 until it is brought in line. The process, a repository's own files
-included, wins over the generic `writer` and `reviewer` agents, except
-that on the model and its effort the agent definition is the more
-specific text
-(*Models*), and each agent's *What holds whatever the process* holds as
-its heading says. A brief never overrides the process. Any other
-contradiction is still a defect, and it is fixed in the more general
-file.
+included, wins over the generic agents, except that on the model and its
+effort the agent definition is the more specific text (*Models*), and
+each agent's *What holds whatever the process* holds as its heading
+says. A brief never overrides the process. Any other contradiction is
+still a defect, and it is fixed in the more general file.
 
 **Three roles this file names.** *The human* is whoever runs the
 session: they answer its questions and receive its reports, and the
@@ -106,7 +107,7 @@ to another repository is qualified*.
 
 ## What binds every role
 
-These bind the writer, the reviewer and the orchestrator alike.
+These bind every role alike.
 
 ### Clients
 
@@ -121,14 +122,13 @@ the process names its own files by their path under it. Claude Code's
   the words after the skill's name in place of `$ARGUMENTS`. Codex
   leaves `$ARGUMENTS` as written, and it means the same words.
 - **Agents.** Claude Code reads them from `~/.claude/agents/*.md`. It
-  starts the writer or the reviewer with the `Agent` tool, naming the
-  agent, and resumes one with `SendMessage` to its id. That id is taken
-  from the notification whose summary names the agent's task, never from
-  the dispatch several turns back: a resume sent to the wrong id is a
-  brief for another task. Codex reads them from
-  `~/.codex/agents/*.toml`. It starts one when asked to spawn the custom
-  agent of that name, and resumes one by a follow-up to its agent thread.
-  Starting always makes a new agent.
+  starts one with the `Agent` tool, naming the agent, and resumes one
+  with `SendMessage` to its id. That id is taken from the notification
+  whose summary names the agent's task, never from the dispatch several
+  turns back: a resume sent to the wrong id is a brief for another task.
+  Codex reads them from `~/.codex/agents/*.toml`. It starts one when
+  asked to spawn the custom agent of that name, and resumes one by a
+  follow-up to its agent thread. Starting always makes a new agent.
 - **The reviewer in the other client** (*A pull request's rounds*) is
   started from the shell, and reviews a detached worktree at the sha.
   Its brief, in a file of the scratch directory, holds what a fresh
@@ -1652,18 +1652,17 @@ branch, or a text to be posted.
   or at the `CLEARED` that the fresh-reviewer bullet above lets end them,
   or at the dedicated reviewer's `CLEARED` where the other client is
   unavailable (*A pull request's rounds*).
-- **The orchestrator checks that the rounds converge.** It keeps each
-  verdict's findings, each marked open or closed, in a file in its
-  scratch directory. The rounds do not converge where a closed finding
-  comes back, from any reviewer, where a fix leaves the reviewer that
-  asked for it with as many findings as before, or more, or where the
-  third fresh reviewer since the dedicated reviewer last cleared, or any
-  after it, gives a first verdict of `CHANGES REQUESTED` with a finding
-  a prose-only fix cannot answer. Then the orchestrator puts it to the
-  human as one decision (`every-session.md`'s *When the human has to
-  decide*): another round, the branch as it stands, or a cut-back, with
-  the writer's and the reviewer's positions. The rounds wait for the
-  answer.
+- **The orchestrator checks that the rounds converge**, on the findings
+  record (*The findings record*). The rounds do not converge where a
+  closed finding comes back, from any reviewer, where a fix leaves the
+  reviewer that asked for it with as many findings as before, or more,
+  or where the third fresh reviewer since the dedicated reviewer last
+  cleared, or any after it, gives a first verdict of `CHANGES REQUESTED`
+  with a finding a prose-only fix cannot answer. Then the orchestrator
+  puts it to the human as one decision (`every-session.md`'s *When the
+  human has to decide*): another round, the branch as it stands, or a
+  cut-back, with the writer's and the reviewer's positions. The rounds
+  wait for the answer.
 - **A session restart replaces each reviewer it lost.** A restart can
   lose the reviewers the session started, and the rounds keep no record
   of one in flight. So after a restart, the verdict file of a reviewer
@@ -1678,6 +1677,11 @@ branch, or a text to be posted.
   count of the convergence check above too.
 - A non-blocking finding waits for the next change; *Which prose is
   worth a round* says which prose blocks.
+- **A reviewer's first verdict is one wide pass.** It records every
+  distinct, substantiated finding it makes, small ones included, each
+  saying whether it blocks, and ends with its coverage list (*The
+  verdict*). A finding held back for a later verdict costs a round of
+  its own.
 - **Every reviewer tries to break the change.** It lists each claim the
   change makes — a behaviour, an equivalence with the code it replaces,
   a bound, a figure in the commit message, the pull request body or a
@@ -1768,22 +1772,176 @@ branch, or a text to be posted.
   issue or the brief. Every reviewer judges the branch on that set. An
   input outside it blocks only where the branch does worse than `main`
   on it; otherwise it becomes a new issue.
-- **The classes of defect found carry forward.** The orchestrator's
-  findings file (*The orchestrator checks that the rounds converge*)
-  gives each finding its class: the shape of input or the step of
-  reasoning it broke. It records the findings of its own reviewers and
-  of every review on the forge, a review bot's and a maintainer's
-  included. The brief of each later reviewer of the branch, and of the
-  writer and the reviewer of another branch of the session on the same
-  files, lists the classes of the findings that held, and asks the
-  writer to guard against each and the reviewer to try each first. A
-  finding a forge review makes after a local `CLEARED`, and that holds
-  (the fix accepts it or the human upholds it), is marked in that file
-  as one the local rounds missed, and the session's report to the human
-  names its class and proposes where the next session will read it: for
-  a btclib-org tree, its `REVIEWING.md`'s *This repository in
-  particular*, or the shared part in `btclib-org/.github` where the
-  class is not that tree's own (*Wrap-up*).
+- **The classes of defect found carry forward.** The findings record
+  (*The findings record*) gives each finding its class: the shape of
+  input or the step of reasoning it broke. The brief of each later
+  reviewer of the branch, and of the writer and the reviewer of another
+  branch of the session on the same files, lists the classes of the
+  findings that held, and asks the writer to guard against each and the
+  reviewer to try each first. A finding a forge review makes after a
+  local `CLEARED`, and that holds (the fix accepts it or the human
+  upholds it), is marked in the record as one the local rounds missed,
+  and the session's report to the human names its class and proposes
+  where the next session will read it: for a btclib-org tree, its
+  `REVIEWING.md`'s *This repository in particular*, or the shared part
+  in `btclib-org/.github` where the class is not that tree's own
+  (*Wrap-up*). The report also proposes the pull request as a case of
+  `$PROCESS/process/replay-set.md`.
+
+### The findings record
+
+**Every finding on a branch goes in one record, which the orchestrator
+keeps**: its own reviewers' and those of every review on the forge, a
+review bot's and a maintainer's included. Until the pull request exists,
+the record is a file of the orchestrator's,
+`<scratchpad>/orchestrator/findings-<repo>-<branch>.md`. Once the pull
+request is open, the record is kept as a comment on it, as below. A
+session that takes the pull request over then reads every finding, its
+outcome and the head it was last checked on, which a file in another
+session's scratch directory would not give it. An embargoed fix's record
+stays in the file until its advisory is published (*Committing and
+rebasing*). So does the record on a tree whose `CONTRIBUTING.md` does
+not yet exempt it from the comment limits: that file wins over
+`every-session.md`'s exemption (*Which file wins*) until the standard's
+*Write plainly* carries it, as btclib-org/.github#2306 asks, and the
+tree takes the port. A text to be posted keeps its record in the file
+alone, `<scratchpad>/orchestrator/findings-<text file>.md`, where the
+hash `shasum -a 256 <text file>` prints for each version stands for a
+head.
+
+**The record lists every round**: each head reviewed, locally or on the
+forge, with each reviewer that read it and its verdict, a head that
+brought no finding included.
+
+**An entry holds** the finding in a sentence, with its class (*The
+classes of defect found carry forward*); who raised it; the head it was
+raised on; the lines it rests on, quoted (below); its outcome; and the
+head it was last checked on. The outcome is open until the finding is
+answered as `/btclib-pr`'s *Answering it* says: accepted, with the
+commit that fixes it; declined, with the measurement that refutes it;
+filed, as `ISS <repo>#<n>`; or a decision, waiting on the human or the
+maintainer. An accepted, declined or filed finding is closed for the
+convergence check of *The rounds*.
+
+**A finding quotes the lines it rests on**: the path, the first line's
+number, and the lines exactly as they read at the head, or at the base
+for a line the branch removes. A local reviewer quotes them in its
+verdict. For a review on the forge the orchestrator quotes them, from
+its thread's path and line at the commit the thread names. A finding
+that rests on no line, as a sentence the tree lacks, quotes instead the
+command that shows it and what it printed.
+
+**The orchestrator checks a local reviewer's quote before passing the
+finding to the writer.** It writes the excerpt to a file of its own,
+ending in a newline, and this exits `0` only where the excerpt is not
+empty and the lines from `<line>` at `<sha>` equal it exactly. A finding
+whose quote fails goes back to its reviewer, not on to the writer: its
+lines are not the branch's. A finding that quotes a command and its
+output instead is checked by running the command at the sha, and fails
+where what it prints differs from the output quoted.
+
+```shell
+wt=<wt>
+sha=<sha>
+file=<path>
+line=<line>
+quote=<excerpt file>
+n=$(wc -l < "${quote:?}")
+[ "$n" -gt 0 ] && (set -o pipefail
+git -C "${wt:?}" show "${sha:?}:${file:?}" |
+  sed -n "${line:?},$((line + n - 1))p" | cmp -s - "${quote:?}")
+```
+
+**On each new head, every entry is assessed again against the code**,
+whether or not a reviewer raised it again, and its last checked head
+becomes the new one. An open finding is fixed only where lines of the
+new head fix it, which the entry then quotes; an accepted one stays
+fixed only where those lines still stand. A reply, the author's or the
+writer's, settles nothing.
+
+**Two findings are one where they share their mechanism and their
+consequence**, whatever their titles or lines. A new finding that
+matches an entry is that entry, and one that matches a closed entry is a
+closed finding come back (*The rounds*).
+
+**The comment is a table, one details block per finding, and the marker
+line last**, a shape `every-session.md`'s *What is posted on a forge*
+allows a record. The bracketed sentence is written only where the record
+supersedes another login's (below):
+
+````markdown
+Findings on <head>: <open> open. [Supersedes <earlier record's URL>.]
+
+| Round | Head | Reviewer | Verdict |
+| --- | --- | --- | --- |
+| 1 | 1a2b3c4 | dedicated reviewer | CHANGES REQUESTED |
+| 2 | 5d6e7f8 | dedicated reviewer | CLEARED |
+
+| # | Raised by | On | Where | Outcome | Checked on |
+| --- | --- | --- | --- | --- | --- |
+| 1 | dedicated reviewer | 1a2b3c4 | `x.md:120` | accepted, 5d6e7f8 | 5d6e7f8 |
+
+<details><summary>1. <the finding, in a sentence></summary>
+
+Class: <the shape of input or the step of reasoning it broke>.
+
+`<path>` from line <line> at <head>:
+
+```text
+<the lines, exactly>
+```
+
+<the outcome: the lines that fix it, the measurement, or the issue>
+
+</details>
+
+<!-- btclib-findings-record -->
+````
+
+**A record is a comment whose last line is the marker line**, posted by
+an owner, a member or a collaborator of the repository, and one login
+has one at most. This prints every record's id, login and URL, the least
+recently updated first; the last line is the active record. It prints
+nothing where there is none, and exits non-zero where a read failed or
+one login posted more than one, which it names:
+
+```shell
+repo=<owner>/<repo>
+n=<n>
+(set -o pipefail
+gh api --paginate "repos/${repo:?}/issues/${n:?}/comments?per_page=100" |
+  jq -rs '[.[][] | select((.author_association
+      | IN("OWNER", "MEMBER", "COLLABORATOR"))
+    and ((.body // "") | rtrimstr("\n") | split("\n") | last
+        | rtrimstr("\r"))
+      == "<!-- " + "btclib-findings-record" + " -->")]
+  | sort_by(.updated_at) as $r
+  | ($r | group_by(.user.login) | map(select(length > 1))) as $twice
+  | if ($twice | length) > 0
+    then error("more than one record by \($twice[0][0].user.login)")
+    else $r[] | "\(.id) \(.user.login) \(.html_url)" end')
+```
+
+**A non-zero exit is a stop**: the session reports it, and neither edits
+nor posts. Where it exits `0` and a line names the session's login
+(`gh api user --jq .login`), the session edits that comment, whether or
+not another login's is later:
+
+```shell
+gh api -X PATCH repos/<owner>/<repo>/issues/comments/<id> \
+  -F body=@<record file>
+```
+
+Where no line does, it posts its own record:
+
+```shell
+gh pr comment <n> --repo <owner>/<repo> --body-file <record file>
+```
+
+Where the active record is another login's, the record the session
+writes names it on its first line, by its URL, as superseded, as the
+shape above shows, and carries every entry of it forward: a session does
+not edit a record another login posted.
 
 ### A pull request's rounds
 
@@ -1922,8 +2080,11 @@ says.
 - [ ] `CLEARED <sha>` or `CHANGES REQUESTED`, on the sha you were given,
       still the branch's tip
 - [ ] which gate case you were in, and whose runs you rely on
-- [ ] every finding carries its measurement, and its weight (*Which
-      prose is worth a round*)
+- [ ] every finding carries its measurement, the lines it rests on
+      quoted (*The findings record*), and its weight (*Which prose is
+      worth a round*)
+- [ ] in a first verdict, every distinct finding, small ones included
+      (*The rounds*)
 - [ ] the claims tried, as *Every reviewer tries to break the change*
       says
 - [ ] where the change touches a rule the tree states, or makes a
@@ -1935,7 +2096,10 @@ says.
       major version, the release notes or changelog read between the two
       versions, and what they say of the tree (`/btclib-pr`'s *The
       decision*)
-- [ ] what the verdict does not cover
+- [ ] the coverage list: each file the diff touches, and each other
+      file the review read for it, marked checked, deferred to the
+      reviewer's next verdict, or not read, with why for the last two; a
+      `CLEARED` defers nothing
 - [ ] `git status --porcelain` empty in the tree reviewed and in the
       primary checkout
 - [ ] collateral filed, with the body inline
@@ -2102,7 +2266,7 @@ only after its `CLEARED`, which ends the rounds (*The rounds*).
   skill's, and the sections of this file and the skill that are its
   role's, the issue or pull request, the repository, the worktree and
   scratch paths, the force-push grant, and the claims you measured. The
-  same for a reviewer.
+  same for a reviewer and a designer.
 - **Before dispatching, ask whether the issue is collateral of a pull
   request this session worked** (*Collateral*).
 - **The role map binds the brief.** A writer does not open pull requests;
@@ -2154,16 +2318,16 @@ only after its `CLEARED`, which ends the rounds (*The rounds*).
   the dedicated reviewer comes back only for its pull request's
   collateral. *Clients* says how a worker is resumed, and that starting
   one always makes a new one.
-- **Models**: in Claude Code the writer and the reviewer run on Opus at
-  effort `high`, which their agent definitions set, so neither follows
-  the effort of the session that starts it: the exception *Which file
-  wins* makes to the general model advice in `AGENTS.md`. Where that
-  session's environment sets `CLAUDE_CODE_EFFORT_LEVEL`, the variable
-  wins over the definition. A reviewer Codex starts with `claude -p
-  --agent` takes the definition's model but not its effort, so its
-  command in *Clients* names `--effort high`. The orchestrator may run
-  on Opus. In Codex the agent files set no model: an agent runs on the
-  one its spawn request names, else on the `[agents]` default of
+- **Models**: in Claude Code the writer, the reviewer and the designer
+  run on Opus at effort `high`, which their agent definitions set, so
+  none follows the effort of the session that starts it: the exception
+  *Which file wins* makes to the general model advice in `AGENTS.md`.
+  Where that session's environment sets `CLAUDE_CODE_EFFORT_LEVEL`, the
+  variable wins over the definition. A reviewer Codex starts with
+  `claude -p --agent` takes the definition's model but not its effort,
+  so its command in *Clients* names `--effort high`. The orchestrator
+  may run on Opus. In Codex the agent files set no model: an agent runs
+  on the one its spawn request names, else on the `[agents]` default of
   `config.toml`, else on the orchestrator's. A reviewer `codex exec`
   starts runs on `gpt-6.1-sol` at effort `high`, which its command in
   *Clients* names, rather than on `config.toml`'s `model` and

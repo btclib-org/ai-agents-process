@@ -333,14 +333,17 @@ this heading.
 
 The text of the process the maintainers follow with a coding agent:
 `skills/btclib-iss/SKILL.md` and `skills/btclib-pr/SKILL.md` are the two
-skills, `process/btclib-common.md` is what they share, and
-`agents/writer.md` and `agents/reviewer.md` are the agents a session
-briefs with them. `skills/btclib-table/SKILL.md` is a third skill, which
-only reads: one table of the organization's repositories.
-`scripts/agents-toml.py` writes the agents' `.toml` files for Codex.
-`README.md` says how a machine is set up to use them. A change here
-changes what every session reads once its branch lands, so it is
-reviewed like code.
+skills, `process/btclib-common.md` is what they share, and `agents/`
+holds the agents a session briefs with them.
+`skills/btclib-table/SKILL.md` is a third skill, which only reads: one
+table of the organization's repositories. `scripts/agents-toml.py`
+writes the agents' `.toml` files for Codex. `README.md` says how a
+machine is set up to use them. A change here changes what every session
+reads once its branch lands, so it is reviewed like code.
+
+The findings record a session keeps on a pull request is not a comment
+for *Write plainly*'s limits: `process/every-session.md`'s *What is
+posted on a forge* says what binds it.
 
 ### The environment and the gates
 

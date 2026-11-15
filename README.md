@@ -22,10 +22,14 @@ The process the btclib-org maintainers follow with the coding agents
   mode is on, read when it is turned on;
 - `process/load-generator.md` — how a timing measurement takes every
   slot of the gate lock, read before running one;
+- `process/replay-set.md` — the pull requests a change to the reviewer
+  is tried on before it lands;
+- `agents/designer.md` — the agent that weighs how an issue could be
+  answered, before a writer starts;
 - `agents/writer.md` — the agent that writes a change in its own
   worktree;
 - `agents/reviewer.md` — the agent that reviews it at fresh context;
-- `agents/*.toml` — the same two agents for Codex, which
+- `agents/*.toml` — the same agents for Codex, which
   `scripts/agents-toml.py` writes from the `.md` files;
 - `hooks.json` and `scripts/git-c-allow.py` — the hook that approves a
   fixed set of `git -C` commands;
@@ -127,6 +131,10 @@ ln -s "${PROCESS:?}/agents/writer.md" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agent
 ln -s "${PROCESS:?}/agents/reviewer.md" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/reviewer.md"
 ```
 
+```shell
+ln -s "${PROCESS:?}/agents/designer.md" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/designer.md"
+```
+
 Add the hooks under `hooks` in that directory's `settings.json`, with the
 clone's path written out for `$PROCESS`, since a hook's shell need not
 have it. Claude Code runs them before every Bash call:
@@ -153,8 +161,8 @@ have it. Claude Code runs them before every Bash call:
 
 Check it in a new session: `echo "$PROCESS"` prints the clone's path,
 `/btclib-iss`, `/btclib-pr` and `/btclib-table` are listed among the
-skills, `/agents` lists `writer` and `reviewer`, `/hooks` lists the
-`PreToolUse` hooks, and the command `cd /` is refused.
+skills, `/agents` lists `writer`, `reviewer` and `designer`, `/hooks`
+lists the `PreToolUse` hooks, and the command `cd /` is refused.
 
 ### Codex
 
@@ -182,6 +190,10 @@ ln -s "${PROCESS:?}/agents/writer.toml" ~/.codex/agents/writer.toml
 ln -s "${PROCESS:?}/agents/reviewer.toml" ~/.codex/agents/reviewer.toml
 ```
 
+```shell
+ln -s "${PROCESS:?}/agents/designer.toml" ~/.codex/agents/designer.toml
+```
+
 Codex reads its hooks from `~/.codex/hooks.json`. Write it from
 `hooks.json`, with the clone's path for `$PROCESS`. Where the file
 exists already, add the `PermissionRequest` entry to it by hand instead.
@@ -202,9 +214,9 @@ printf 'Work in a btclib-org repository follows %s, read whole first.\n' \
 
 Check it in a new session: `echo "$PROCESS"` prints the clone's path,
 `/skills` lists `btclib-iss`, `btclib-pr` and `btclib-table`, Codex
-names `writer` and `reviewer` when asked which custom agents it can
-spawn, and `/hooks` lists the `PermissionRequest` hook. Codex runs a
-hook only once you have trusted it there.
+names `writer`, `reviewer` and `designer` when asked which custom agents
+it can spawn, and `/hooks` lists the `PermissionRequest` hook. Codex
+runs a hook only once you have trusted it there.
 
 ### A machine set up before the skills
 

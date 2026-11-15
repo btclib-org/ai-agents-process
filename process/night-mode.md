@@ -29,16 +29,19 @@ it was given while the work waited. Its deferred items are then asked as
 *When the human has to decide* says.
 
 **During the night no question is asked interactively.** Every point
-where a skill stops for the human — a decision, a refused permission,
-a dirty primary checkout that is not provably the session's, an
-approval that is not obvious, a
-session whose state is uncertain, a branch that takes a decision its
-issue reserved — becomes an item of the morning report, and the work that
-depends on it stops there. A decision that goes to the maintainer (*When
-the human has to decide*) is a hold, not an item. A branch taking a
-reserved decision is opened, not landed, and its cut-back is one of the
-decision's alternatives. *When the human has to decide* says when a
-design question a branch's issue did not reserve stops that branch.
+where a skill stops for the human — a decision, a refused permission, a
+dirty primary checkout that is not provably the session's, an approval
+that is not obvious, a session whose state is uncertain, a branch that
+takes a decision its issue reserved — becomes an item of the morning
+report, and the work that depends on it stops there. A decision that
+goes to the maintainer (*When the human has to decide*) is a hold, not
+an item. A branch taking a reserved decision is opened, not landed, and
+its cut-back is one of the decision's alternatives. A design pass's
+question (`/btclib-iss`'s *The design pass*) stops no writer: the writer
+takes the recommended option, the question waits as any other decision
+does, and the branch is one taking a reserved decision. *When the human
+has to decide* says when a design question a branch's issue did not
+reserve stops that branch.
 
 - **Record each item as a hold**, its comment carrying, in prose, what
   the shape *When the human has to decide* gives; a missing label is not
@@ -50,7 +53,9 @@ design question a branch's issue did not reserve stops that branch.
 - **Never resolve a deferred item by default**, nor by taking your own
   recommendation. The recommendation goes in the report. The one
   exception is `/btclib-pr`'s *The sweep*, which at night works pull
-  requests without asking, as that section says.
+  requests without asking, as that section says. A writer that takes a
+  design pass's recommendation (above) resolves nothing: its question
+  stays the item.
 - **Everything that does not depend on it goes on**: other issues, other
   pull requests, review rounds, collateral, the approvals and landings
   `/btclib-pr` calls obvious, and the landings `--land` instructs, given

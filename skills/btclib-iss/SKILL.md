@@ -54,6 +54,7 @@ says which a number is. A pull request among the arguments is
   *Answering it* and *Rebase and CI*.
 - **The reviewer**: `/btclib-pr`'s *Rebase and CI*'s first bullet, for
   the delta it reads.
+- **The designer**: *The design pass*.
 - **The orchestrator**: all of this file.
 
 ## Several issues, several pull requests
@@ -173,6 +174,49 @@ to decide*, *A hold is recorded*) is taken only once the wait its label
 names is over, and taking it removes that label the same way, except the
 `on-hold` of a port's wait, which *Ports of the standard* takes off.
 
+## The design pass
+
+The orchestrator's, once *What the issue still asks* leaves something to
+write, and before a writer is dispatched. A `designer` agent at fresh
+context weighs how the issue could be answered, because a design choice
+a review finds in a later round costs a rewrite, its gates and another
+round.
+
+**It runs for every issue except these**, and the writer's brief says
+which exception applied:
+
+- **a port of the standard** (*Ports of the standard*);
+- **an issue whose shape is fixed**: the issue, or a comment of the
+  maintainer on it, says what to write, as the file and the text, the
+  command or the code, and leaves the writer only its wording. An issue
+  that names only an outcome, or a change with a choice still open in
+  it, is not one.
+
+**Its brief** holds the issue with its comments, the repository, and the
+`origin/main` sha the designer reads the tree at, as the shared
+*Orchestration* says of a brief. It asks for this report:
+
+1. the problem and the goal, stated without the solution;
+1. the baseline: what doing nothing costs, and what the tree already
+   holds that answers part of it;
+1. the benefit a pull request, an issue or a run shows, apart from the
+   benefit only claimed;
+1. at most four alternatives, each materially different from the others,
+   with its benefit, its cost and what stays unverified; an empty list
+   rather than a generic one;
+1. the one to take, and why;
+1. where the choice depends on a requirement, a measurement or the
+   maintainer's preference, that as one decisive question.
+
+**The pass stays small**: no gate, no build, and a report that fits in a
+writer's brief.
+
+**The report goes whole into the writer's brief.** Its question is put
+as `every-session.md`'s *When the human has to decide* says, and the
+writer starts once it is answered; at night, `night-mode.md` says what
+becomes of it. The pull request body's `## Decision` records it
+(*Opening the pull request*).
+
 ## Opening the pull request
 
 The orchestrator's. **Before opening, and the last item once it is
@@ -190,8 +234,9 @@ open:**
       *Citations and closing keywords*)
 - [ ] the closing block comes after the sections, as the bullet below
       describes, and the sweep finds no other keyword
-- [ ] the body has the shape below: the opening paragraphs, `## Evidence`,
-      and `## Decision` where a decision was reserved
+- [ ] the body has the shape below: the opening paragraphs,
+      `## Evidence`, and `## Decision` where a decision was reserved or
+      the design pass put one
 - [ ] `closingIssuesReferences` counts what you meant to close
 
 - **A change to `claude-review.yml`, or to a reusable workflow it calls
@@ -213,8 +258,9 @@ open:**
   the runs the bot can repeat (the shared *A pull request's rounds*),
   the command that reads a setting back (the shared *Collateral*), and
   the command that measured a claim (`REVIEWING.md`).
-- **`## Decision` is there only where the issue reserved one**: it says
-  that the branch takes it, on what ground, and what the cut-back is.
+- **`## Decision` is there only where the issue reserved one, or the
+  design pass put one** (*The design pass*): it says what the branch
+  takes, on what ground, and what the cut-back is.
 - **Count what GitHub will close**:
   `gh pr view <n> --json closingIssuesReferences --jq
   '.closingIssuesReferences | length'`. The field lags creation by
