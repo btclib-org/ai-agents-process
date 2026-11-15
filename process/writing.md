@@ -175,8 +175,8 @@ btclib-org/.github's tracker as collateral (*Collateral*).
   the standard wins (*Which file wins*). An entry found on a branch is
   dropped. A release's own pull request writes that release's section,
   and so does the pull request that moves an entry left in
-  `changelog/next/` under the newest release while it has no tag
-  (btclib-org/.github#2321, section 9 of the organization's standard).
+  `changelog/next/` into it, as section 9 of the organization's standard
+  says.
 - **Backward compatibility is not a constraint.** Choose the most
   rational design and document what it breaks in the commit message and
   the pull request body.
