@@ -242,6 +242,34 @@ no hit and gains none. What it adds to the reviewer's reading, *The
 gates*, *Sourcery and CodeRabbit before a push* and *Committing and
 rebasing*, bears on checks no case of the set exercises.
 
+- **Candidate**, 2026-11-15: `$PROCESS` `cab9c97`, the factor changed
+  being the brief's prose rules of ISS btclib-org/ai-agents-process#415,
+  *Local review*'s new *A text to be posted* among them. Claude Code,
+  the `reviewer` agent, Opus, effort `high`, one run per case. Its
+  baseline is the runs at `53b7a57` and `853aa9c` above, not run again.
+  The candidate's base, `e029de3`, differs from `53b7a57` by the text of
+  PR btclib-org/ai-agents-process#478, and from `853aa9c` by that text
+  and by the map entry of PR btclib-org/ai-agents-process#484, which it
+  lacks, so the comparison changes more than one factor. PR
+  btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit.
+
+The run made no false finding. On PR btclib-org/ecc#484 it also gave as
+blocking a second finding, which earlier runs did not give as blocking:
+the new bullet restates a rule the review workflow's prompt holds. The
+orchestrator did not measure it false. On PR
+btclib-org/ai-agents-process#317 it raised again the finding the earlier
+runs raised, which holds. Each brief had the reviewer read the process
+from a copy of `process/` at `cab9c97` without this file, read the prose
+at the head, run no suite and use no forge; the change's hunk in
+`/btclib-pr` is outside what the reviewer's map gives it. The reviewers
+read their own tree's `REVIEWING.md` at the head, and no verdict's
+coverage list named this file. The candidate has the baseline's hits and
+misses. It was not run on PR btclib-org/.github#2288, PR
+btclib-org/btclib-node#2516 or PR btclib-org/ecc#580, since the run was
+made before those cases joined the set.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
