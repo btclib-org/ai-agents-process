@@ -14,16 +14,29 @@ The process the btclib-org maintainers follow with the coding agents
   of every repository of the organization, which only reads;
 - `skills/btclib-table/measure.sh` — the script `/btclib-table` runs to
   read that table;
-- `process/btclib-common.md` — what `/btclib-iss` and `/btclib-pr`
-  share, read whole by each;
+- `process/every-session.md` — the rules every session follows; its
+  opening says when it is read;
+- `process/every-role.md` — what binds every role of `/btclib-iss` and
+  `/btclib-pr`; its opening says which role reads which file;
+- `process/writing.md` — the writer's rules, from before it starts to
+  the commit it hands over;
+- `process/local-review.md` — how the local review rounds run;
+- `process/orchestration.md` — the orchestrator's rules, night mode and
+  the wrap-up;
+- `process/btclib-common.md` — a table of the file that holds each
+  section a citation of it names;
 - `process/night-mode.md` — what the orchestrator follows while night
   mode is on, read when it is turned on;
 - `process/load-generator.md` — how a timing measurement takes every
   slot of the gate lock, read before running one;
+- `process/replay-set.md` — the pull requests a change to the reviewer
+  is tried on before it lands;
+- `agents/designer.md` — the agent that weighs how an issue could be
+  answered, before a writer starts;
 - `agents/writer.md` — the agent that writes a change in its own
   worktree;
 - `agents/reviewer.md` — the agent that reviews it at fresh context;
-- `agents/*.toml` — the same two agents for Codex, which
+- `agents/*.toml` — the same agents for Codex, which
   `scripts/agents-toml.py` writes from the `.md` files;
 - `hooks.json` and `scripts/git-c-allow.py` — the hook that approves a
   fixed set of `git -C` commands;
@@ -33,22 +46,40 @@ The process the btclib-org maintainers follow with the coding agents
   sessions taking that lock's slots, and waiting while every slot is
   held;
 - `scripts/test-git-c-allow.py` — the commands `git-c-allow.py` must
-  approve and must refuse, run by the `test-git-c-allow` hook.
+  approve and must refuse, run by the `test-git-c-allow` hook;
+- `scripts/suite-reads.py` — where a tree's tests may read the files of
+  a diff, which `process/writing.md`'s *The gates* asks before it leaves
+  the suite to CI;
+- `scripts/test-suite-reads.py` — the reads `suite-reads.py` must find
+  and must not, run by the `test-suite-reads` hook;
+- `scripts/pretooluse-rules.py` — the hook that refuses a command
+  breaking a rule `process/every-role.md`'s *Clients* names;
+- `scripts/test-pretooluse-rules.py` — the commands
+  `pretooluse-rules.py` must refuse and must let through, run by the
+  `test-pretooluse-rules` hook;
+- `scripts/port-check.py` — the check of a tree's batch of ports against
+  the standard (`/btclib-iss`'s *Ports of the standard*);
+- `scripts/test-port-check.py` — the fixture repositories
+  `port-check.py` must answer, run by the `test-port-check` hook.
 
-`process/btclib-common.md`'s opening says how these files divide the
+`process/every-role.md`'s opening says how these files divide the
 process, and its *Clients* says what differs between the two agents.
 
 ## Prerequisites
 
 - Claude Code and Codex, both: a session runs in one, and its pull
-  requests' fresh reviewer in the other (`process/btclib-common.md`'s
-  *A pull request's rounds*).
+  requests' fresh reviewer in the other (`process/local-review.md`'s *A
+  pull request's rounds*).
 - `gh`, logged in (`gh auth login`).
+- CodeRabbit's CLI, logged in by the maintainer (`coderabbit auth
+  login`), which `process/writing.md`'s *Sourcery and CodeRabbit before
+  a push* runs.
 - `uv`.
-- `python3` on the `PATH`, which runs `scripts/git-c-allow.py`.
+- `jq` on the `PATH`, which commands of the files under `process/` run.
+- `python3` on the `PATH`, which runs the hooks' scripts.
 - git signing your commits: `commit.gpgsign = true` and a key registered
   on GitHub. The process signs every commit it writes
-  (`process/btclib-common.md`'s *Signed and signed off*).
+  (`process/writing.md`'s *Signed and signed off*).
 
 ## Setup
 
@@ -56,7 +87,7 @@ Clone the repository, and export its path as `PROCESS`, in this shell
 and where every later shell reads it, `~/.zshenv` for zsh: each command
 either agent runs is a new shell, and the process finds its files
 through `$PROCESS`. The clone can sit at any absolute path without `"`,
-`$`, `` ` ``, `\`, `|` or `&`, which the hook below cannot carry;
+`$`, `` ` ``, `\`, `|` or `&`, which the hooks below cannot carry;
 `~/Git/ai-agents-process` is only an example:
 
 ```shell
@@ -108,9 +139,13 @@ ln -s "${PROCESS:?}/agents/writer.md" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agent
 ln -s "${PROCESS:?}/agents/reviewer.md" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/reviewer.md"
 ```
 
-Add the hook under `hooks` in that directory's `settings.json`, with the
+```shell
+ln -s "${PROCESS:?}/agents/designer.md" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/designer.md"
+```
+
+Add the hooks under `hooks` in that directory's `settings.json`, with the
 clone's path written out for `$PROCESS`, since a hook's shell need not
-have it. Claude Code runs it before every Bash call:
+have it. Claude Code runs them before every Bash call:
 
 ```json
 "PreToolUse": [
@@ -121,6 +156,11 @@ have it. Claude Code runs it before every Bash call:
         "type": "command",
         "command": "\"$PROCESS/scripts/git-c-allow.py\"",
         "timeout": 5
+      },
+      {
+        "type": "command",
+        "command": "python3 -I \"$PROCESS/scripts/pretooluse-rules.py\"",
+        "timeout": 5
       }
     ]
   }
@@ -129,8 +169,8 @@ have it. Claude Code runs it before every Bash call:
 
 Check it in a new session: `echo "$PROCESS"` prints the clone's path,
 `/btclib-iss`, `/btclib-pr` and `/btclib-table` are listed among the
-skills, `/agents` lists `writer` and `reviewer`, and `/hooks` lists the
-`PreToolUse` hook.
+skills, `/agents` lists `writer`, `reviewer` and `designer`, `/hooks`
+lists the `PreToolUse` hooks, and the command `cd /` is refused.
 
 ### Codex
 
@@ -158,6 +198,10 @@ ln -s "${PROCESS:?}/agents/writer.toml" ~/.codex/agents/writer.toml
 ln -s "${PROCESS:?}/agents/reviewer.toml" ~/.codex/agents/reviewer.toml
 ```
 
+```shell
+ln -s "${PROCESS:?}/agents/designer.toml" ~/.codex/agents/designer.toml
+```
+
 Codex reads its hooks from `~/.codex/hooks.json`. Write it from
 `hooks.json`, with the clone's path for `$PROCESS`. Where the file
 exists already, add the `PermissionRequest` entry to it by hand instead.
@@ -173,14 +217,14 @@ process, so that a session started without a skill still finds it:
 
 ```shell
 printf 'Work in a btclib-org repository follows %s, read whole first.\n' \
-  "${PROCESS:?}/process/btclib-common.md" >> ~/.codex/AGENTS.md
+  "${PROCESS:?}/process/every-role.md" >> ~/.codex/AGENTS.md
 ```
 
 Check it in a new session: `echo "$PROCESS"` prints the clone's path,
 `/skills` lists `btclib-iss`, `btclib-pr` and `btclib-table`, Codex
-names `writer` and `reviewer` when asked which custom agents it can
-spawn, and `/hooks` lists the `PermissionRequest` hook. Codex runs a
-hook only once you have trusted it there.
+names `writer`, `reviewer` and `designer` when asked which custom agents
+it can spawn, and `/hooks` lists the `PermissionRequest` hook. Codex
+runs a hook only once you have trusted it there.
 
 ### A machine set up before the skills
 
@@ -227,7 +271,7 @@ as their author.
 answers what the reviewers raised, gets CI green, and takes them to the
 decision to approve and to `main`. With no argument it sweeps the
 organization's open pull requests: by day it proposes which to work, at
-night it works every one that is not a draft.
+night it works them without asking, as its *The sweep* says.
 
 ```text
 /btclib-table
@@ -239,8 +283,8 @@ the last release, and whether a new one is due. It only reads.
 
 In Codex each starts with `$` instead of `/`: `$btclib-iss`.
 
-`/btclib-iss` and `/btclib-pr` work in every repository of
-`btclib-org`; the shared *Where you work* says how the repository is
+`/btclib-iss` and `/btclib-pr` work in every repository of `btclib-org`;
+`process/every-role.md`'s *Where you work* says how the repository is
 named. `/btclib-pr`'s *The decision* and *Landing* say when a session
 approves and when it lands, `--land` included.
 
@@ -261,14 +305,16 @@ again in `/hooks`.
 The links then point at the new text. Do not edit the clone the links
 point at: change the process through a pull request from a worktree,
 reviewed by another person, like any other btclib-org repository.
-[CONTRIBUTING.md](./CONTRIBUTING.md) says how.
+[AGENTS.md](https://github.com/btclib-org/ai-agents-process/blob/main/AGENTS.md)
+shows the worktree commands.
 
 ## Contributing
 
-Development is LLM-based: humans are welcome, as long as they are
-comfortable with agentic development ;-). A contribution must have been
-read and understood by the person who submits it.
-[`CONTRIBUTING.md`](./CONTRIBUTING.md#working-with-an-llm) has the rules.
+Software development in btclib-org is mainly LLM-driven, but human
+beings are welcome too. A contribution must have been read and
+understood by the person who submits it.
+[`CONTRIBUTING.md`](https://github.com/btclib-org/ai-agents-process/blob/main/CONTRIBUTING.md#working-with-an-llm)
+has the rules.
 
 ## Status
 

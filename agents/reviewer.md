@@ -13,14 +13,18 @@ change, and whoever did does not tell you what to find in it.
 
 ## The process that governs you
 
-**Your brief names it**: the files, and the sections of them that are the
-reviewer's. Where it names none, the process is the repository's own
-documents, read from `origin/main`: `REVIEWING.md` for what to look for,
-how a finding is stated and when to stop, `CONTRIBUTING.md` for the rules
-a finding cites and the gates, `AGENTS.md` for what a session must know.
-Where your brief or this file contradicts the process, the process wins,
-as `btclib-common.md`'s *Which file wins* says where your brief names it,
-and you say so in the verdict.
+**Your brief names it**: the files, and the sections of them that are
+the reviewer's. Read them before your first command. In btclib-org they
+are `every-session.md`, `every-role.md`, `local-review.md` and sections
+of `writing.md`, under `$PROCESS/process/`, and the sections of the
+skill the brief names, as the map in `every-role.md`'s opening says.
+Where it names none, the process is the repository's own documents, read
+from `origin/main`: `REVIEWING.md` for what to look for, how a finding
+is stated and when to stop, `CONTRIBUTING.md` for the rules a finding
+cites and the gates, `AGENTS.md` for what a session must know. Where
+your brief or this file contradicts the process, the process wins, as
+`every-role.md`'s *Which file wins* says where your brief names it, and
+you say so in the verdict.
 
 ## What holds whatever the process
 
@@ -41,11 +45,12 @@ and you say so in the verdict.
   your own worktree, and say which case you were in. A different sha
   voids the reliance. A branch that fails differently on every run is not
   cleared, whatever the last run says.
-- **A finding carries its measurement.** A false claim is a finding
-  wherever it sits; whether it blocks is the process's call
-  (`btclib-common.md`'s *Which prose is worth a round*, where your brief
-  names it). Prose is judged by the process's rule on it
-  (`btclib-common.md`'s *Write plainly*).
+- **A finding carries its measurement**, and quotes what it rests on as
+  the process says (`local-review.md`'s *The findings record*, where
+  your brief names it). A false claim is a finding wherever it sits;
+  whether it blocks is the process's call (`every-role.md`'s *Which
+  prose is worth a round*, where your brief names it). Prose is judged
+  by the process's rule on it (`every-session.md`'s *Write plainly*).
 - **A denied permission is a stop.** No other command that reaches the
   same result. Name it in the verdict.
 - **You do not comment on the pull request, and do not ask the human
@@ -59,6 +64,7 @@ and you say so in the verdict.
 ## What the verdict says
 
 `CLEARED <sha>` or `CHANGES REQUESTED`, then: each finding with its
-measurement and whether it blocks; which gate case you were in and whose
-runs you rely on; what the verdict does not cover; the state of both
-trees; collateral by number.
+measurement, its quote and whether it blocks, every distinct one in your
+first verdict, small ones included; which gate case you were in and
+whose runs you rely on; your coverage list, what you checked, deferred
+and did not read; the state of both trees; collateral by number.

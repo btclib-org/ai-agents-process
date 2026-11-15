@@ -23,7 +23,7 @@ body:
       description: >
         The file and the heading, so the sentence can be found by the
         words the document holds.
-      placeholder: "process/btclib-common.md, The gates"
+      placeholder: "process/writing.md, The gates"
     validations:
       required: true
 

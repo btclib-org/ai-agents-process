@@ -1,6 +1,6 @@
 ---
 # the lint gate of this repository. What it ships is mostly prose -- the
-# skills, the file two of them share, the two agents and the files
+# skills, the file two of them share, the agents and the files
 # around them -- so the hooks below are the ones with a subject here:
 # the markdown, the yaml of the workflows and of the issue forms, the
 # json and toml the agents read, the shell and Python scripts, and the
@@ -85,6 +85,27 @@ repos:
         language: python
         entry: python scripts/test-git-c-allow.py
         files: ^scripts/(test-)?git-c-allow\.py$
+        pass_filenames: false
+      # the reads scripts/suite-reads.py finds and misses in small trees
+      - id: test-suite-reads
+        name: suite-reads.py answers as its test expects
+        language: python
+        entry: python scripts/test-suite-reads.py
+        files: ^scripts/(test-)?suite-reads\.py$
+        pass_filenames: false
+      # what scripts/port-check.py answers on fixture repositories
+      - id: test-port-check
+        name: port-check.py answers as its test expects
+        language: python
+        entry: python scripts/test-port-check.py
+        files: ^scripts/(test-)?port-check\.py$
+        pass_filenames: false
+      # the commands scripts/pretooluse-rules.py refuses and lets through
+      - id: test-pretooluse-rules
+        name: pretooluse-rules.py answers as its test expects
+        language: python
+        entry: python -I scripts/test-pretooluse-rules.py
+        files: ^scripts/(test-)?pretooluse-rules\.py$
         pass_filenames: false
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -188,6 +209,17 @@ repos:
         entry: |-
           (?<![`!\[])(?:!?\[(?:[^]]|\]\([^)]*\))*\]\(|^\x20{0,3}\[[^]]+\]:\s*)(?!\./|#|[A-Za-z][A-Za-z0-9+.-]*:)[^)\s]
         types: [markdown]
+        exclude: ^README\.md$
+      # the root README.md links a file of the tree absolutely, at every
+      # tier: section 2 of the organization's standard is the rule. The
+      # pattern above with "./" no longer admitted
+      - id: readme-absolute-link
+        name: the root README.md links a file of the tree absolutely
+        language: pygrep
+        entry: |-
+          (?<![`!\[])(?:!?\[(?:[^]]|\]\([^)]*\))*\]\(|^\x20{0,3}\[[^]]+\]:\s*)(?!#|[A-Za-z][A-Za-z0-9+.-]*:)[^)\s]
+        files: ^README\.md$
+        types: [markdown]
       # a line that ends inside a word, at that word's own hyphen.
       # Section 4 of the organization's standard is the rule: what such a line
       # renders as, why nothing else here catches it, what this pattern cannot
@@ -234,6 +266,9 @@ repos:
         # named by path rather than by type: `jsonc` is not a tag identify
         # knows, so a types_or entry for it fails the config outright
         files: ^(.*\.ya?ml|\.markdownlint\.jsonc)$
+        # not the gate itself, whose `# frozen:` spacing pre-commit.ci
+        # writes: section 4 of the organization's standard says why
+        exclude: ^\.pre-commit-config\.yaml$
   # the same for toml, with the choices and their reasons in .taplo.toml.
   # scripts/agents-toml.py writes agents/*.toml in the form taplo leaves
   # unchanged, so this hook and `agents-toml` above agree on them
@@ -281,12 +316,9 @@ repos:
   # is the sha `pre-commit autoupdate --freeze` writes for the tag its
   # comment names, the annotated tag's own object, so a moved tag cannot
   # change what runs here.
-  # The cost: pre-commit.ci's weekly bump keeps this line frozen, writing
-  # the new sha with `  # frozen: <tag>`, two spaces before the `#`,
-  # which prettier above rewrites to one. The bot's pull request then
-  # fails prettier until a commit restores the one-space form. A local
-  # `pre-commit autoupdate` without `--freeze` writes the tag name instead
-  # and drops the comment.
+  # The cost: a local `pre-commit autoupdate` without `--freeze` writes
+  # the tag name instead and drops the comment. pre-commit.ci's weekly
+  # bump keeps the line frozen.
   # The hook is `language: golang`, so pre-commit builds it with a go
   # toolchain. `actionlint-shellcheck` installs a Go build of shellcheck
   # beside actionlint in the hook's environment: actionlint hands the body

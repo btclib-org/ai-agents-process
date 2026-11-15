@@ -81,7 +81,7 @@ directions:
    child, the author answers it twice and resolves it once.
 1. **The tree at that sha**, checked out and gated. `gh pr checkout <N>`,
    and whatever this repository's `CONTRIBUTING.md` says builds its
-   environment; `CONTRIBUTING.md` has the worktree procedure.
+   environment.
 
 Read the whole diff before writing the first comment. A comment on line
 5 that line 60 answers costs the author a reply and the reviewer their
@@ -332,11 +332,11 @@ is not evidence that the diff is right.
 
 **CI is not the reviewer's concern.** Do not wait for a workflow run, do
 not read one, do not report a check as a finding, do not withhold a
-review because something is pending or red. A run is cancelled by the
-next push to the same branch, so a red or missing check is as likely to
-be the concurrency group as the diff; whether CI is green is the
-author's problem at landing time, and the local run is the evidence
-either way.
+review because something is pending or red. A pull request's run is
+cancelled by the next push to its branch, so a red or missing check is
+as likely to be the concurrency group as the diff; whether CI is green
+is the author's problem at landing time, and the local run is the
+evidence either way.
 
 ## What every review here also checks
 
@@ -526,10 +526,10 @@ this heading.
 Each of these is a question. Where another document holds the rule, the
 question names it.
 
-- **Does the change keep the process the single source?** The opening
-  of `process/btclib-common.md` says where a rule is stated; a copy
-  anywhere else will disagree with it. What a diff added to the agents
-  is read against the process:
+- **Does the change keep the process the single source?** The opening of
+  `process/every-role.md` says where a rule is stated; a copy anywhere
+  else will disagree with it. What a diff added to the agents is read
+  against the process:
 
     ```shell
     git diff origin/main... -- agents/
@@ -541,17 +541,16 @@ question names it.
   read is a rule that role never sees.
 - **Does an exception now reach the rule the change adds, and should
   it?** A sentence such as "None of this applies…", "This does not
-  apply…" or "Except…" can come to cover a rule added beside it, left
-  as it stands or rewritten in the same change. In
-  [PR ai-agents-process#317](https://github.com/btclib-org/ai-agents-process/pull/317)
+  apply…" or "Except…" can come to cover a rule added beside it, left as
+  it stands or rewritten in the same change. In [PR
+  ai-agents-process#317](https://github.com/btclib-org/ai-agents-process/pull/317)
   the commit that added a session hold also rewrote the next sentence
   from "It does not apply to the resumed run of a fresh reviewer" to
   "None of this applies…", which then exempted that run from the hold
-  too. `process/btclib-common.md`'s *A second reason gets its own
-  paragraph*, under *What the prose that lands may say*, is the
-  writer's side. `git diff` shows three lines around a change by
-  default, so an exception left as it stands can fall outside the hunk;
-  this shows twenty:
+  too. `process/writing.md`'s *A second reason gets its own paragraph*,
+  under *What the prose that lands may say*, is the writer's side. `git
+  diff` shows three lines around a change by default, so an exception
+  left as it stands can fall outside the hunk; this shows twenty:
 
     ```shell
     git diff -U20 origin/main... -- '*.md'
@@ -568,3 +567,6 @@ question names it.
 - **Was the claim measured?** A sentence about what a command prints or
   what a setting answers was read from the command or the endpoint, and
   the pull request says which.
+- **Does a change to the reviewer carry its run on the replay set?**
+  `process/replay-set.md` says which changes owe one and where it is
+  recorded.

@@ -26,7 +26,8 @@ call() {
   printf '%s' "${o}"
 }
 r=$1
-# given a workflow id too: that workflow's ci entry, into "${d}/<repo>.wf.<id>"
+# given a workflow id too: that workflow's ci entry, into "${d}/<repo>.wf.<id>";
+# one page of its 20 latest runs, as the ci entry looks at no older one
 if [ $# -gt 1 ]; then
   c=$(call gh api -X GET "repos/btclib-org/${r}/actions/workflows/${2}/runs" \
     -f branch=main -f status=completed -f per_page=20 \
@@ -49,13 +50,15 @@ fi
   printf '%s' "iss=${iss} | pr=${prs}"
 } > "${d}/${r}.counts" &
 {
-  ci="" wfs=$(call gh api \
+  ci="" wfs=$(call gh api --paginate \
     "repos/btclib-org/${r}/actions/workflows?per_page=100" \
     --jq '.workflows[] | select(.state == "active")
       | select(.path != ".github/workflows/release.yml") | .id') ||
     ci="${wfs}"
   if [ -z "${ci}" ] && [ -n "${wfs}" ]; then
     ids=$(printf '%s' "${wfs}" | paste -sd, -)
+    # one page on purpose: a workflow it does not settle prints "?" and
+    # is read on its own below
     page=$(call gh api -X GET "repos/btclib-org/${r}/actions/runs" \
       -f branch=main -f status=completed -f per_page=100 \
       --jq "[${ids}] as \$ids | .total_count as \$t | .workflow_runs as \$runs
@@ -94,10 +97,13 @@ EOF_WFS
   printf '%s' "${rel}"
 } > "${d}/${r}.rel" &
 {
-  tag=$(gh api "repos/btclib-org/${r}/tags?per_page=100" --jq '.[].name' \
-    2>/dev/null | sort -V | tail -n 1)
+  tag=$(gh api --paginate "repos/btclib-org/${r}/tags?per_page=100" \
+    --jq '.[].name' 2>/dev/null) || tag=error
+  tag=$(printf '%s\n' "${tag}" | sort -V | tail -n 1)
   since=""
-  [ -n "${tag}" ] && since=$(gh api \
+  # no per_page, so that the one page read holds the newest commits, HEAD
+  # among them: with per_page it holds the oldest
+  [ "${tag:-error}" != error ] && since=$(gh api \
     "repos/btclib-org/${r}/compare/${tag}...HEAD" --jq '
       .base_commit.commit.committer.date[:10] + " | since: "
       + ([.commits[].commit.message | split("\n")[0]] | join(" || "))' \
