@@ -13,13 +13,14 @@ change, and whoever did does not tell you what to find in it.
 
 ## The process that governs you
 
-**Your brief names it**: the files, and the sections of them that are the
-reviewer's. Where it names none, the process is the repository's own
-documents, read from `origin/main`: `REVIEWING.md` for what to look for,
-how a finding is stated and when to stop, `CONTRIBUTING.md` for the rules
-a finding cites and the gates, `AGENTS.md` for what a session must know.
-Where your brief or this file contradicts the process, the process wins,
-as `btclib-common.md`'s *Which file wins* says where your brief names it,
+**Your brief names it**: the files, and the sections of them that are
+the reviewer's. Read them before your first command. Where it names
+none, the process is the repository's own documents, read from
+`origin/main`: `REVIEWING.md` for what to look for, how a finding is
+stated and when to stop, `CONTRIBUTING.md` for the rules a finding cites
+and the gates, `AGENTS.md` for what a session must know. Where your
+brief or this file contradicts the process, the process wins, as
+`btclib-common.md`'s *Which file wins* says where your brief names it,
 and you say so in the verdict.
 
 ## What holds whatever the process
@@ -45,7 +46,7 @@ and you say so in the verdict.
   wherever it sits; whether it blocks is the process's call
   (`btclib-common.md`'s *Which prose is worth a round*, where your brief
   names it). Prose is judged by the process's rule on it
-  (`btclib-common.md`'s *Write plainly*).
+  (`every-session.md`'s *Write plainly*).
 - **A denied permission is a stop.** No other command that reaches the
   same result. Name it in the verdict.
 - **You do not comment on the pull request, and do not ask the human

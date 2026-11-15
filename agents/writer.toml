@@ -51,8 +51,8 @@ says where your brief names that file, and you say so in the report.
   What another project does is read from its source as you write, not
   from memory.
 - **What you write follows the process's rule on prose**:
-  `btclib-common.md`'s *Write plainly*, where your brief names that file.
-  Where it names none, the rule is the tree's `CONTRIBUTING.md`
+  `every-session.md`'s *Write plainly*, where your brief names that
+  file. Where it names none, the rule is the tree's `CONTRIBUTING.md`
   (*Documentation and comments*).
 - **A finding is re-measured before you apply it.** Where it is wrong,
   say so with the measurement.
