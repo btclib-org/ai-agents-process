@@ -36,7 +36,10 @@ run changes this tree's `REVIEWING.md`, a reviewer of this repository's
 cases reads the changed file in place of the head's, without the
 sentences that describe a case's defect, such as PR
 btclib-org/ai-agents-process#317's in its *This repository in
-particular*. The run records what it withheld.
+particular*. The run records what it withheld. Where the change under
+test rewrites such a sentence, its case is recorded as unable to
+evaluate the change, beside a case that tests the instruction without
+stating its answer, where one is needed.
 
 A forge finding gives a case its head, the commit its thread names, and
 the head gives its base, the merge base with `main`:
@@ -54,7 +57,8 @@ gh api repos/<owner>/<repo>/compare/main...<head> \
 **A clean change belongs in the set too**, so that a change which only
 makes the reviewer raise more shows as false findings. A finding a run
 makes on one is re-measured: where it holds, the case moves to the
-defects, and where it does not, it is a false finding.
+defects, and where it does not, it is a false finding. The set holds no
+clean case (ISS btclib-org/ai-agents-process#470).
 
 ## How a run is scored
 
@@ -69,7 +73,9 @@ them and not how often it finds a defect.
 the brief, the model or the effort, and is compared with the
 baseline's run on the same cases. One configuration can answer
 differently on two runs, so a case that alone decides the comparison is
-run again first.
+run again first. A run that changes the brief is compared with a
+baseline at the commit before the change under test's first commit, so
+that only that change differs, and the baseline's entry names that sha.
 
 ## Runs
 
@@ -77,10 +83,29 @@ Each run is an entry: the date, the `$PROCESS` sha, the factor changed
 and its value, the client, the model and the effort, a hit or a miss for
 each defect, and each false finding on any case apart.
 
-The change that creates this set records no run. Its baseline is
-[ISS ai-agents-process#456](https://github.com/btclib-org/ai-agents-process/issues/456),
-and the rule above binds from the next change to the brief, the model
-or the effort.
+- **Baseline**, 2026-11-15: `$PROCESS` `2ef0de4`, no factor changed;
+  Claude Code, the `reviewer` agent, Opus, effort `high`. PR
+  btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit.
+  PR btclib-org/ai-agents-process#444, clean when run: one finding,
+  which holds and moved the case to the defects.
+- **Candidate**, 2026-11-15: `$PROCESS` `466d803`, the factor changed
+  being the brief: *Local review*'s round rules of ISS
+  btclib-org/ai-agents-process#461 and ISS
+  btclib-org/ai-agents-process#464. The same client, model and effort.
+  The same four results: miss, miss, hit, and the same finding on the
+  last. The change neither loses a hit nor adds a false finding on
+  these cases.
+
+Both runs withheld nothing: the reviewer read the head's own
+`REVIEWING.md`, which does not describe the defect of PR
+btclib-org/ai-agents-process#317, and the change under test changes
+no `REVIEWING.md`. Each brief had the reviewer read the prose at the
+head, run no suite and use no forge, and no verdict's coverage list
+named this file. On PR btclib-org/ai-agents-process#317 both also
+raised, as blocking, that "tied to the account" is wider than "does not
+clear within the session": a finding that holds, outside the case's
+defect, and that the pull request fixed in `d5dee25` before it landed.
 
 ## Cases
 
@@ -123,11 +148,16 @@ or the effort.
   ([thread](https://github.com/btclib-org/ecc/pull/484#discussion_r4503224613)),
   and fixed in `2545806`.
 
-### PR btclib-org/ai-agents-process#444, clean
+### PR btclib-org/ai-agents-process#444
 
 - base `d765a161be9100de22248de72f22d6c9cae17c19`
 - head `709efef082c5f81d0fdf775633317699aa0fc1be`
-- clean: it landed on that head, where the review bot's `ACK` names it,
-  Codex's state reads no finding, and CodeRabbit's check passed with no
-  thread, each read as `/btclib-pr`'s *The reviews on GitHub* reads
-  them.
+- defect: the port makes `CONTRIBUTING.md` and `REPOSITORY.md` say
+  auto-merge is off and no pull request can be armed, while
+  `skills/btclib-pr/SKILL.md`'s *Arming auto-merge* and *Landing*,
+  `skills/btclib-iss/SKILL.md` and `process/btclib-common.md` at that
+  head still tell a session to arm it, as
+  `git grep -c -i -E 'auto-merge|--auto' 709efef -- skills process`
+  shows in each of the three.
+- found by both runs of 2026-11-15 (*Runs*), and fixed on `main` in
+  `7f7de67`.

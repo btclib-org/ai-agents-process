@@ -759,7 +759,8 @@ or makes it materially worse (*Collateral*).** The tree's own files are
 every tracked file, docstrings and comments included. Only wording that
 could be better does not block. A wording finding on what the branch
 adds is still made, with the shorter text, and is fixed with the next
-change to the branch.
+change to the branch, unless `/btclib-pr`'s *Answering it* keeps it off
+the branch as a refinement.
 
 **A false or misleading sentence outside the tree does not send a
 cleared branch back**:
@@ -1656,15 +1657,31 @@ branch, or a text to be posted.
   unavailable (*A pull request's rounds*).
 - **The orchestrator checks that the rounds converge**, on the findings
   record (*The findings record*). The rounds do not converge where a
-  closed finding comes back, from any reviewer, where a fix leaves the
-  reviewer that asked for it with as many findings as before, or more,
-  or where the third fresh reviewer since the dedicated reviewer last
-  cleared, or any after it, gives a first verdict of `CHANGES REQUESTED`
-  with a finding a prose-only fix cannot answer. Then the orchestrator
-  puts it to the human as one decision (`every-session.md`'s *When the
-  human has to decide*): another round, the branch as it stands, or a
-  cut-back, with the writer's and the reviewer's positions. The rounds
-  wait for the answer.
+  closed finding comes back blocking, from any reviewer, where a fix
+  leaves the reviewer that asked for it with as many findings as before,
+  or more, or where the third fresh reviewer since the dedicated
+  reviewer last cleared, or any after it, gives a first verdict of
+  `CHANGES REQUESTED` with a finding a prose-only fix cannot answer.
+  Then the orchestrator puts it to the human as one decision
+  (`every-session.md`'s *When the human has to decide*): another round,
+  the branch as it stands, or a cut-back, with the writer's and the
+  reviewer's positions. The rounds wait for the answer.
+- **From the sixth round of a branch's local review, a finding on a
+  shape that no tree and no caller holds is filed as an issue and does
+  not block.** Each verdict of a local reviewer is a round, as the
+  findings record lists them. The reviewer classifies the finding, not
+  the writer, and gives in its verdict the search that shows no tree
+  and no caller holds the shape: the command and what it printed. The
+  pull request's body lists each such finding as `/btclib-iss`'s
+  *Opening the pull request* says. A defect on the ordinary case, a
+  shape that a tree or a caller holds, blocks at any round, and so do a
+  false sentence and a crash.
+- **From the third round on the forge, only a defect on the ordinary
+  case, a false sentence or a crash is fixed on the branch.** A round on
+  the forge is a head the reviews on GitHub read (`/btclib-pr`'s *The
+  reviews on GitHub*): the head the pull request is opened on, then each
+  push to it. Every other finding is filed as `/btclib-pr`'s *Answering
+  it* says.
 - **A session restart replaces each reviewer it lost.** A restart can
   lose the reviewers the session started, and the rounds keep no record
   of one in flight. So after a restart, the verdict file of a reviewer
@@ -1677,8 +1694,8 @@ branch, or a text to be posted.
   verdict and the sha that verdict named. Each new reviewer takes the
   lost one's place: for *The rounds* it is the same reviewer, in the
   count of the convergence check above too.
-- A non-blocking finding waits for the next change; *Which prose is
-  worth a round* says which prose blocks.
+- A non-blocking finding that is not filed waits for the next change;
+  *Which prose is worth a round* says which prose blocks.
 - **A reviewer's first verdict is one wide pass.** It records every
   distinct, substantiated finding it makes, small ones included, each
   saying whether it blocks, and ends with its coverage list (*The
@@ -1699,12 +1716,13 @@ branch, or a text to be posted.
   classes *The classes of defect found carry forward* puts first. An
   input that breaks a claim is a finding. It blocks where the claim is
   in the tree, or in a text to be posted that the rounds review on its
-  own, within the limit a differential *Done when* sets (below); a claim
-  of a branch's commit message, pull request body or reply is weighed as
-  *Which prose is worth a round* says. The fix of a blocking one adds
-  the input as a test where the tree tests that code. The verdict lists
-  each claim tried, with the inputs run against it and what they
-  printed, and names the claims left untried.
+  own, within the limits the sixth round (above) and a differential
+  *Done when* (below) set; a claim of a branch's commit message, pull
+  request body or reply is weighed as *Which prose is worth a round*
+  says. The fix of a blocking one adds the input as a test where the
+  tree tests that code. The verdict lists each claim tried, with the
+  inputs run against it and what they printed, and names the claims
+  left untried.
 - **Where an oracle is at hand, the inputs run through it**, rather than
   being read against a specification: a built reference implementation,
   such as Bitcoin Core or libsecp256k1, a second independent
@@ -1824,10 +1842,10 @@ says: accepted, with what fixes it, which is the commit, the corrected
 sentence or its removal for a sentence of the pull request body, or the
 corrected subject or sentence, read at the landing, for a
 commit-message finding fixed only in the squash (`/btclib-pr`'s
-*Landing*); declined, with the measurement that refutes it; filed, as
-`ISS <repo>#<n>`; or a decision, waiting on the human or the
-maintainer. An accepted, declined or filed finding is closed for the
-convergence check of *The rounds*.
+*Landing*); declined, with the measurement that refutes it or shows it
+a refinement; filed, as `ISS <repo>#<n>`; or a decision, waiting on the
+human or the maintainer. An accepted, declined or filed finding is
+closed for the convergence check of *The rounds*.
 
 **A finding quotes the lines it rests on**: the path, the first line's
 number, the sha they are read at, and the lines exactly as they read
@@ -2089,6 +2107,17 @@ says.
   names the paths in its `CONFLICT` lines.
 - A branch a review on GitHub sends back, the bot's or a person's, goes
   through the same rounds before its fix is pushed.
+- **Codex reads the branch locally before each round on the forge**
+  (*The rounds*): the whole head before the pull request is opened, and
+  before a later push the delta from the last head Codex read. It is a
+  Codex `reviewer`, started as *Clients* says, from Claude Code by its
+  `codex exec` command. A `CLEARED` of the head by a Codex reviewer of
+  the rounds stands for it, and so does the port check of the next
+  bullet. Its findings go in the findings record, answered as
+  `/btclib-pr`'s *Answering it* answers a bot's, and each is closed
+  there before the head goes to the forge. Where Codex refuses the run,
+  the head goes without it, the refusal judged and recorded as *Where
+  the other client is unavailable* says of the fresh reviewer's.
 - **A port of the standard goes to no local reviewer where
   `scripts/port-check.py` exits `0` on the head that lands, run again
   after each rebase or merge of `main` as the gates are, and no change
@@ -2110,6 +2139,8 @@ says.
       worth a round*)
 - [ ] in a first verdict, every distinct finding, small ones included
       (*The rounds*)
+- [ ] each finding *The rounds* files from the sixth round, with its
+      search
 - [ ] the claims tried, as *Every reviewer tries to break the change*
       says
 - [ ] where the change touches a rule the tree states, or makes a
@@ -2323,6 +2354,9 @@ only after its `CLEARED`, which ends the rounds (*The rounds*).
   *decline* (with the refuting measurement). A list found incomplete
   twice is deleted, not lengthened. From the second round, remind the
   reviewer of `REVIEWING.md`'s stopping criterion.
+- **From the sixth round of a branch's local review, the brief names the
+  round**, and the rule of *The rounds* that files a finding on a shape
+  no tree and no caller holds.
 - **Weigh a finding by who reads the text and how often** before sending
   it on.
 - **Workers writing in one repository at once contend for regions of a
