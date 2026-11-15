@@ -31,7 +31,8 @@ import sys
 
 # The files of the process that hold the rules.
 EVERY = "process/every-session.md"
-COMMON = "process/btclib-common.md"
+ROLE = "process/every-role.md"
+WRITING = "process/writing.md"
 # For each rule: what breaks it, its section, and the file holding that.
 RULES = {
     "cd": (
@@ -63,7 +64,7 @@ RULES = {
             "*Never the primary checkout, never `git stash`, never a push to"
             " `main`*, in *Where you work*"
         ),
-        COMMON,
+        ROLE,
     ),
     "fetch-head": (
         "`git worktree add` at `FETCH_HEAD`",
@@ -71,12 +72,12 @@ RULES = {
             "*A worktree for a pull request is added at its `headRefOid`*,"
             " in *Where you work*"
         ),
-        COMMON,
+        ROLE,
     ),
     "prune": (
         "`uv cache prune --force`",
         "*Look at the free disk*, in *Before starting*",
-        COMMON,
+        WRITING,
     ),
     "force": (
         "`git push` forces without a lease",
@@ -84,17 +85,17 @@ RULES = {
             "*A force-push with lease, to a branch the session works only*,"
             " in *Committing and rebasing*"
         ),
-        COMMON,
+        WRITING,
     ),
     "sign": (
         "git turns commit signing off",
         "*Signed and signed off*, in *Committing and rebasing*",
-        COMMON,
+        WRITING,
     ),
     "credits": (
         "CodeRabbit's CLI runs with `--use-credits`",
         "*Sourcery and CodeRabbit before a push*, in *Writing work*",
-        COMMON,
+        WRITING,
     ),
 }
 
@@ -1133,7 +1134,7 @@ def main() -> None:
     lines += [f"- {RULES[r][2]}, {RULES[r][1]}: {RULES[r][0]}." for r in broken]
     lines.append(
         "Write it again as that section asks, as *Hooks* in *Clients*, in"
-        f" {COMMON}, says."
+        f" {ROLE}, says."
     )
     print("\n".join(lines), file=sys.stderr)
     sys.exit(2)

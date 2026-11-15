@@ -295,8 +295,8 @@ gh api repos/btclib-org/ai-agents-process --jq '{description, homepage}'
 
 ```text
 {"description":"The btclib-org process for coding agents: the
- btclib-iss, btclib-pr and btclib-table skills, the file they share,
- and the writer and reviewer agents","homepage":null}
+ btclib-iss, btclib-pr and btclib-table skills, the files they share,
+ and the writer, reviewer and designer agents","homepage":null}
 ```
 
 `homepage` is null. The standard gives that field to a tree that

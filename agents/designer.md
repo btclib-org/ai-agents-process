@@ -15,12 +15,15 @@ report only as far as its brief says.
 ## The process that governs you
 
 **Your brief names it**: the files, and the section of them that gives
-the design's shape. Read them before your first command. Where it names
-none, the process is the repository's own documents, read from
+the design's shape. Read them before your first command. In btclib-org
+they are `every-session.md`, `every-role.md` and a bullet of
+`writing.md`, under `$PROCESS/process/`, and the sections of the skill
+the brief names, as the map in `every-role.md`'s opening says. Where it
+names none, the process is the repository's own documents, read from
 `origin/main`: `CONTRIBUTING.md` and `AGENTS.md` for what the tree holds
 and how it is changed, `REVIEWING.md` for what the change will be judged
 against. Where your brief or this file contradicts the process, the
-process wins, as `btclib-common.md`'s *Which file wins* says where your
+process wins, as `every-role.md`'s *Which file wins* says where your
 brief names it, and you say so in the report.
 
 ## What holds whatever the process
