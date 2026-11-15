@@ -22,20 +22,23 @@ doctest option. A line is printed for:
   one; in a `conftest.py`, also the suffix of one, such as `".md"`;
 - the name of a changed file in a file under `testpaths` that is not
   Python, as a fixture or a shell script;
-- a doctest option that names or globs a changed path;
+- a doctest option that names or globs a changed path, on its own line,
+  and the value of a `--doctest-glob` on a later line;
 - a walk or a glob that may list a changed path: a walk of a directory
   not built from `Path(__file__)`, a glob whose pattern is not a literal,
   and a literal pattern that matches a changed path below its directory,
-  or below any directory where the scan cannot place it, as where the
-  pattern holds `..`; and a glob given an option other than `recursive`;
-  a `[...]` stands for any one character;
+  or below any directory where the scan cannot place it; a pattern
+  holding `..`; and a glob given an option other than `recursive`; a
+  `[...]` stands for any one character;
 - a call that runs a command, unless each of its simple commands has a
-  literal git or Python program and words that name no changed path,
-  for git a subcommand of `GIT_INERT`, and for Python no word that is
-  Python code in which this scan prints a line. A shell string is split into simple
-  commands at `SHELL_SEPARATORS`, and past the target of an output
-  redirection; one holding a newline, `$(`, a backtick, an input
-  redirection or another operator is not split, and prints a line;
+  literal git or Python program, `sys.executable` among them, and words
+  that name no changed path, for git a subcommand of `GIT_INERT`, and
+  for Python no word that is Python code in which this scan prints a
+  line. A shell string is split into simple commands at
+  `SHELL_SEPARATORS`, and past the target of an output redirection; one
+  holding a newline, `$(`, a backtick, an input redirection or another
+  operator is not split, and prints a line. The words of
+  `create_subprocess_exec` are all its arguments;
 - a git command given as an argument to any other call, unless each of
   its simple commands is git with a subcommand so named;
 - the event loop's `subprocess_shell` and `subprocess_exec`, on any
@@ -475,8 +478,9 @@ class Scan:
                 return f"{name} takes a pattern the scan cannot read"
             if name == "rglob":
                 pattern = "**/" + pattern
-        climbs = pattern is not None and ".." in PurePosixPath(pattern).parts
-        where = None if owner is None or climbs else self.directory(owner)
+        if pattern is not None and ".." in PurePosixPath(pattern).parts:
+            return f"{name} takes a pattern that climbs with .."
+        where = None if owner is None else self.directory(owner)
         if where is None:
             if pattern is None:
                 return f"{name} lists a directory the scan cannot place"
@@ -502,12 +506,10 @@ class Scan:
             return None
         first = call.args[0] if call.args else None
         commands: list[list[str | None]]
-        if isinstance(first, ast.List | ast.Tuple):
-            items = [self.literal(item) for item in first.elts]
-            head = first.elts[0] if first.elts else None
-            if isinstance(head, ast.Attribute) and head.attr == "executable":
-                items[0] = "python"
-            commands = [items]
+        if runner[0] == "asyncio" and runner[1].endswith("create_subprocess_exec"):
+            commands = [[self.word(arg) for arg in call.args]]
+        elif isinstance(first, ast.List | ast.Tuple):
+            commands = [[self.word(item) for item in first.elts]]
         else:
             text = self.literal(first)
             split = simple_commands(text) if text is not None else None
@@ -525,6 +527,16 @@ class Scan:
                 if names(word, path):
                     return f"runs a command whose word {word!r} matches {path}"
         return None
+
+    def word(self, node: ast.expr) -> str | None:
+        """A word of a command: a literal, or `python` for `sys.executable`."""
+        if (
+            isinstance(node, ast.Attribute)
+            and node.attr == "executable"
+            and getattr(node.value, "id", "") == "sys"
+        ):
+            return "python"
+        return self.literal(node)
 
     def simple(self, command: list[str | None]) -> str | None:
         """Why one simple command may read a changed path, or None."""
@@ -714,6 +726,11 @@ def scan_settings(text: str, file: str, changed: list[str]) -> list[str]:
         values = re.findall(r"[\w*?./!\[\]-]+", code)
         if any(names(v.split("=")[-1], p) for v in values for p in changed):
             hits.append(f"{file}:{number}: a doctest option collects a changed path")
+    code = "\n".join(line.split("#", 1)[0] for line in text.splitlines())
+    for match in re.finditer(r"--doctest-glob[\s=\"',]+([^\s\"',\]]+)", code):
+        number = code.count("\n", 0, match.start()) + 1
+        if any(names(match.group(1), p) for p in changed):
+            hits.append(f"{file}:{number}: a doctest glob collects a changed path")
     return hits
 
 

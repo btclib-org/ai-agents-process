@@ -1468,6 +1468,68 @@ ROUND_F: list[tuple[str, dict[str, str], list[str], bool]] = [
 ]
 
 
+# the findings of the reviews on GitHub of the pull request, with their
+# controls
+ON_GITHUB: list[tuple[str, dict[str, str], list[str], bool]] = [
+    (
+        "an executable of another object",
+        {
+            "tests/a_test.py": 'import subprocess\nclass Tool:\n    executable = "make"\nsubprocess.run([Tool.executable, "test"])\n'
+        },
+        ["README.md"],
+        True,
+    ),
+    (
+        "a glob that climbs inside its pattern",
+        {
+            "tests/a_test.py": 'from pathlib import Path\nROOT = Path(__file__).resolve().parents[1]\nP = list(ROOT.glob("tests/../docs/*.md"))\n'
+        },
+        ["docs/guide.md"],
+        True,
+    ),
+    (
+        "create_subprocess_exec of Python that globs",
+        {
+            "tests/a_test.py": 'import asyncio\nasyncio.create_subprocess_exec("python3", "-c", "from pathlib import Path; P = list(Path(\'.\').glob(\'docs/*\'))")\n'
+        },
+        ["docs/guide.md"],
+        True,
+    ),
+    (
+        "create_subprocess_exec of Python that reads nothing",
+        {
+            "tests/a_test.py": 'import asyncio\nasyncio.create_subprocess_exec("python3", "-c", "pass")\n'
+        },
+        ["docs/guide.md"],
+        False,
+    ),
+    (
+        "a doctest glob on a later line",
+        {
+            "pyproject.toml": '[tool.pytest.ini_options]\ntestpaths = ["tests"]\naddopts = """\n--doctest-glob\n*.md\n"""\n'
+        },
+        ["docs/guide.md"],
+        True,
+    ),
+    (
+        "a doctest glob in a list across lines",
+        {
+            "pyproject.toml": '[tool.pytest.ini_options]\ntestpaths = ["tests"]\naddopts = [\n  "--doctest-glob",\n  "*.md",\n]\n'
+        },
+        ["docs/guide.md"],
+        True,
+    ),
+    (
+        "a doctest glob of another kind on a later line",
+        {
+            "pyproject.toml": '[tool.pytest.ini_options]\ntestpaths = ["tests"]\naddopts = """\n--doctest-glob\n*.rst\n"""\n'
+        },
+        ["docs/guide.md"],
+        False,
+    ),
+]
+
+
 def finds(files: dict[str, str], changed: list[str]) -> bool:
     """Say whether the script finds a read in a tree of these files."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -1498,6 +1560,7 @@ def main() -> None:
         + ROUND_D
         + ROUND_E
         + ROUND_F
+        + ON_GITHUB
         if finds(files, changed) != expected
     ]
     if wrong:

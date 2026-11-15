@@ -1050,12 +1050,20 @@ the orchestrator in the pull request.
 
 - **The docs build runs only where the diff touches what it builds**: a
   file under the directory it builds, the package whose docstrings it
-  renders, `pyproject.toml` or `uv.lock`, or a file a page names. This
-  lists the pages that name a changed file, a renamed one under each of
-  its names, and exits `1` with no output where none does. Where HEAD
-  holds no source directory, or git cannot read one of its objects, it
-  exits `2` with a message. Any other exit runs the build. Elsewhere it
-  is left to CI:
+  renders, `pyproject.toml` or `uv.lock`, or a file a page names. The
+  second command lists the pages that name a changed file, and runs
+  once for each path the first lists: `--no-renames` gives a renamed
+  file under both its names, where a plain `--name-only` gives the new
+  one alone. It exits `1` with no output where no page names the path.
+  Where HEAD holds no source directory, or git cannot read one of its
+  objects, it exits `2` with a message. Any other exit of the second, or
+  an exit of the first but `0`, runs the build. Elsewhere it is left to
+  CI:
+
+  ```shell
+  base=<base>
+  git -C <wt> diff --name-only --no-renames "${base:?}...HEAD"
+  ```
 
   ```shell
   name=<name>
