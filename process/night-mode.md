@@ -84,9 +84,9 @@ reserve stops that branch.
   morning report may be given then.
 
 **The morning report** is a message to the human. A copy in
-`<scratchpad>/night-report-<date>.md` is a convenience, since the
-scratchpad may not outlive the session. The record is that message and
-the comments on the issues. It holds:
+`<scratchpad>/orchestrator/night-report-<date>.md` is a convenience,
+since the scratchpad may not outlive the session. The record is that
+message and the comments on the issues. It holds:
 
 - what was opened, approved and landed, with links, and each landing's
   verification;

@@ -131,16 +131,16 @@ the process names its own files by their path under it. Claude Code's
   follow-up to its agent thread. Starting always makes a new agent.
 - **The reviewer in the other client** (*A pull request's rounds*) is
   started from the shell, and reviews a detached worktree at the sha.
-  Its brief, in a file of the scratch directory, holds what a fresh
-  reviewer's brief holds, the bot's prompt included. A new run of the
-  same command, whose brief adds its last verdict and the sha that
-  verdict named, is how it is resumed: for *The rounds* it is the same
-  reviewer, though a new process. A run that times out exits `124`.
+  Its brief holds what a fresh reviewer's brief holds, the bot's prompt
+  included. A new run of the same command, whose brief adds its last
+  verdict and the sha that verdict named, is how it is resumed: for *The
+  rounds* it is the same reviewer, though a new process. A run that times
+  out exits `124`.
 
   In Codex it runs under `workspace-write` with one writable root: its
-  own directory in the scratch directory, which is also its working
-  directory. There it writes the inputs of *Every reviewer tries to break
-  the change* and runs them offline. Where the worktree holds a
+  own directory, `<work>/<name>`, which is also its working directory.
+  There it writes the inputs of *Every reviewer tries to break the
+  change* and runs them offline. Where the worktree holds a
   `uv.lock`, they run with `uv run --project <wt>`, from the worktree's
   `.venv`, which the session syncs, and from a `UV_CACHE_DIR` inside the
   reviewer's directory, which holds what that sync had to download.
@@ -213,30 +213,30 @@ the process names its own files by their path under it. Claude Code's
   sandboxed one of *The gates* instead of the second command:
 
   ```shell
-  mkdir -p <scratch>/<name>/tmp
+  mkdir -p <work>/<name>/tmp
   ```
 
   ```shell
   env -C <wt> -u UV_PROJECT_ENVIRONMENT \
-    UV_CACHE_DIR=<scratch>/<name>/uv-cache uv sync --locked
+    UV_CACHE_DIR=<work>/<name>/uv-cache uv sync --locked
   ```
 
   ```shell
-  rm -f <scratch>/<name>.last.md
+  rm -f <work>/<name>.last.md
   ```
 
   ```shell
-  env -i -C <scratch>/<name> HOME="$HOME" PATH="$PATH" \
-    UV_CACHE_DIR=<scratch>/<name>/uv-cache UV_OFFLINE=1 \
-    TMPDIR=<scratch>/<name>/tmp \
+  env -i -C <work>/<name> HOME="$HOME" PATH="$PATH" \
+    UV_CACHE_DIR=<work>/<name>/uv-cache UV_OFFLINE=1 \
+    TMPDIR=<work>/<name>/tmp \
     timeout 900 codex exec -s workspace-write --skip-git-repo-check \
     --ignore-rules -m gpt-6.1-sol -c model_reasoning_effort=high \
-    -c 'sandbox_workspace_write.writable_roots=["<scratch>/<name>"]' \
+    -c 'sandbox_workspace_write.writable_roots=["<work>/<name>"]' \
     -c sandbox_workspace_write.network_access=false \
     -c sandbox_workspace_write.exclude_slash_tmp=true \
     -c sandbox_workspace_write.exclude_tmpdir_env_var=true \
-    -o <scratch>/<name>.last.md - \
-    < <scratch>/<name>-brief.txt > <scratch>/<name>.log 2>&1
+    -o <work>/<name>.last.md - \
+    < <work>/<name>-brief.txt > <work>/<name>.log 2>&1
   ```
 
   Codex starts a Claude Code reviewer with `claude -p --agent reviewer`,
@@ -295,12 +295,12 @@ the process names its own files by their path under it. Claude Code's
   directory, so an empty or missing value stops it:
 
   ```shell
-  mkdir -p <scratch>/<name>/.claude/agents
+  mkdir -p <work>/<name>/.claude/agents
   ```
 
   ```shell
   ln -s "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/reviewer.md" \
-    <scratch>/<name>/.claude/agents/reviewer.md
+    <work>/<name>/.claude/agents/reviewer.md
   ```
 
   ```shell
@@ -311,16 +311,16 @@ the process names its own files by their path under it. Claude Code's
   sbx='{"sandbox":{"enabled":true,"failIfUnavailable":true,'
   sbx="${sbx}"'"allowUnsandboxedCommands":false,'
   sbx="${sbx}"'"network":{"strictAllowlist":true}}}'
-  env -i -C <scratch>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
+  env -i -C <work>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
     ${CLAUDE_CONFIG_DIR:+"CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"} \
-    CLAUDE_CODE_TMPDIR=<tmp> UV_CACHE_DIR=<scratch>/<name>/uv-cache \
+    CLAUDE_CODE_TMPDIR=<tmp> UV_CACHE_DIR=<work>/<name>/uv-cache \
     UV_OFFLINE=1 ZDOTDIR=/var/empty \
     sh -c 'test -d "${CLAUDE_CODE_TMPDIR:?}" && exec "$@"' sh timeout 1800 \
     claude -p --agent reviewer --effort high --max-turns 80 \
     --output-format text \
     --setting-sources project --permission-mode dontAsk \
     --settings "${sbx:?}" --allowedTools Bash,Read,Grep,Glob \
-    < <scratch>/<name>-brief.txt > <scratch>/<name>.log 2>&1
+    < <work>/<name>-brief.txt > <work>/<name>.log 2>&1
   ```
 
   ```shell
@@ -421,7 +421,8 @@ This section is in `every-session.md`, beside this file.
   named none, ask **before any tracker is read**. A worker gets it in
   its brief; where the brief's tree and the issue do not belong together,
   stop and report.
-- **Your own worktree, from origin/main, from the first edit**, named
+- **Your own worktree, from origin/main, from the first edit**, in the
+  directory of its piece of work (*The scratchpad is shared*), named
   **`wt-<tracker>-<issue>-<repo>-<role>`**, most general part first:
   `tracker` because an issue number is unique only within one tracker;
   `issue` because worktrees are keyed on their basename in the one shared
@@ -460,12 +461,35 @@ This section is in `every-session.md`, beside this file.
   gitignored, identified by name and by a time inside the session — is
   removed and reported; anything older, or not certainly the session's,
   is reported and left.
-- **The scratchpad is shared.** Give every file a name that is yours
-  (`msg-<branch>.txt`), and keep everything you write under one directory
-  of your own, `<scratchpad>/<tracker>-<issue>-<repo>-<role>/` — the
-  worktree beside it, not inside it. **Read back from the repository
-  what you wrote from a file**: `git show -s --format=%B HEAD` after a
-  `-F`, the committed file after a fixer.
+- **The scratchpad is shared, so each piece of work has one directory in
+  it.** Everything a session creates for one issue, or for a pull
+  request where there is none, sits under one directory,
+  `<scratchpad>/<tracker>-<issue>-<repo>/`, which the process calls
+  `<work>`. Its parts are named as the worktree's are (*Your own
+  worktree*). The exception is a temporary file or directory that
+  `mktemp` makes and that goes as soon as the command using it ends, as
+  `writing.md`'s docs-build list does and as `<tmp>` does, which
+  *Clients* keeps on a short path for a Claude Code reviewer's run and
+  the session removes once that run ends. `<work>` holds:
+
+    - each worktree, under the whole name *Your own worktree* gives it;
+    - each reviewer's directory in the other client (*Clients*), under a
+      `<name>` that no role and no other reviewer in `<work>` uses, and
+      the files *Clients* puts beside it;
+    - the gate's basetemp (*The gates*) and the findings record's file
+      (`local-review.md`'s *The findings record*);
+    - everything else a role writes, in its own directory,
+      `<work>/<role>/`, which the process calls that role's scratch
+      directory, `<scratch>`, each file under a name that is its own
+      (`msg-<branch>.txt`).
+
+  What the orchestrator keeps for the whole session belongs to no piece
+  of work and stays in `<scratchpad>/orchestrator/`, as the sha of *The
+  process is re-read when `main` changes it* does.
+
+  **Read back from the repository what you wrote from a file**:
+  `git show -s --format=%B HEAD` after a `-F`, the committed file after a
+  fixer.
 - **A deletion under test prints its path first.** Where a test, a
   fixture or a rehearsal runs `rm` or another deletion on a path that a
   tilde, a variable or a glob builds, expand it once, in the shell that
@@ -699,9 +723,9 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
   read back and resolved.
 - **`refs/remotes/origin/main` is shared by every worktree and moves
   under you.** For a gate, pin the base once (`git -C <wt> rev-parse
-  origin/main > <your scratch dir>/base-<branch>.sha`) and read that sha
-  throughout; re-read
-  `origin/main` deliberately, at rebase and at merge time.
+  origin/main > <scratch>/base-<branch>.sha`) and read that sha
+  throughout; re-read `origin/main` deliberately, at rebase and at merge
+  time.
 - **Under squash, ancestry is the wrong question.** A landed branch is
   not an ancestor of `main`; ask whether its content is on `origin/main`
   before removing a branch, worktree or clone.
