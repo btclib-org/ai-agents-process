@@ -12,9 +12,10 @@
 # it takes the shell blocks of *The gates* that gate a commit, where they
 # are: the one that reads `<gate wt>`'s git directories, the one that
 # runs sandbox-exec, the one that starts `"$@" uv sync --locked`, the
-# one that runs `git status --porcelain`, and the `find` check. Their
-# placeholders become paths of a fixture, and the gate command, `uv sync
-# --locked`, a script of the test's. The fixture is a repository whose
+# one that runs `git status --porcelain`, the `find` check, and the
+# hooks gate. Their placeholders become paths of a fixture, and the gate
+# commands, `uv sync --locked` and `uv run pre-commit run`, scripts of
+# the test's. The fixture is a repository whose
 # commit holds the gitlink `sub`, with `<wt>` detached at it, and for
 # each case a new `<gate wt>`, added from `<wt>`, and `<sbx>`. git reads
 # no global or system configuration, and no config written here runs a
@@ -54,6 +55,10 @@
 #   length, with `* ident` in `$HOME/.config/git/attributes`, which git
 #   would collapse back. Each status file lists the change, as
 #   `!! hidden/`, ` M file`, `?? x` or ` M id`.
+# - hooks: the hooks gate runs, with the commit's parent and then the
+#   commit itself for `<base>`. Its pre-commit, run by bash, records its
+#   directory and arguments: `<gate wt>`, then `--files ./file ./id
+#   ./sub`, and then `--all-files` for the empty diff.
 # - octopus: `<gate wt>` merges two heads with `--no-commit`, which
 #   stages a change to `file` and a new file `new`, and the status block
 #   runs before the gate into a base file. With a gate that writes
@@ -141,6 +146,12 @@ block '^gwt=.*\nst=' > "$tmp/find.sh"
 { block 'sandbox-exec -f'
   block 'porcelain' | sed "s|$tmp/gate-status|$tmp/gate-base|g"; } \
   > "$tmp/base.sh"
+{ block 'sandbox-exec -f'
+  block 'pre-commit run "[$][{]files' |
+    sed -e "s|<sha>|$sha|g" -e "s|uv run pre-commit run|sh $tmp/hooks.sh|"
+} > "$tmp/hooks-gate.sh"
+grep -q "sh $tmp/hooks.sh" "$tmp/hooks-gate.sh" ||
+  { no "no hooks gate block in $doc"; exit 1; }
 cat "$tmp/gate-only.sh" "$tmp/find.sh" > "$tmp/block.sh"
 grep -q "sh $tmp/gate.sh" "$tmp/block.sh" ||
   { no "no gate block in $doc"; exit 1; }
@@ -271,6 +282,32 @@ for c in hidden crlf attributes ignore ident; do
     ok "$c: the status file lists '$want'"
   else no "$c: the status file does not list '$want':" \
     "$(tr "\n" " " 2>/dev/null < "$st")"; fi
+done
+
+# shellcheck disable=SC2016
+printf '{ pwd -P; printf "%%s\\n" "$@"; } > "$HOME/hooks-args"\n' \
+  > "$tmp/hooks.sh"
+for c in diff empty; do
+  case $c in
+    diff) b=$base want="$gwt
+--files
+./file
+./id
+./sub" ;;
+    empty) b=$sha want="$gwt
+--all-files" ;;
+  esac
+  fresh
+  rm -f "$sbx/home/hooks-args"
+  sed "s|<base>|$b|g" "$tmp/hooks-gate.sh" > "$tmp/hooks-$c.sh"
+  bash "$tmp/hooks-$c.sh" > "$tmp/hooks-$c.log" 2>&1
+  rc=$?
+  got=$(cat "$sbx/home/hooks-args" 2>/dev/null)
+  if [ "$rc" -eq 0 ] && [ "$got" = "$want" ]; then
+    ok "hooks, $c: pre-commit ran in <gate wt> with $(printf '%s' "$got" |
+      sed 1d | tr '\n' ' ')"
+  else no "hooks, $c: exit $rc, pre-commit ran with:" \
+    "$(printf '%s' "$got" | tr '\n' ' ')"; fi
 done
 
 # Two heads on the gated commit: one changes file, one adds new.

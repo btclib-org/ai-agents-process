@@ -588,17 +588,20 @@ of the standard* says.
   starting with `-` is not read as one of pre-commit's options, as `-h`
   would print its help and exit `0`; pre-commit turns it back into the
   path. pre-commit runs once, so the exit is its own; where git fails,
-  it exits `2`:
+  it exits `2`. It runs in the shell that set the sandbox's command, as
+  `"$@"` followed by pre-commit, and git reads the list in `<wt>`. On
+  the octopus `<sha>` is the `main` its worktree was added at, so the
+  list is empty and the hooks read the whole merge:
 
   ```shell
   wt=<wt>
-  sbx=<sbx>
+  sha=<sha>
   base=<base>
   rc=0
   files=()
   list=$(mktemp)
   if ! git -C "${wt:?}" diff -z --name-only --diff-filter=d \
-    "${base:?}...HEAD" > "$list"; then
+    "${base:?}...${sha:?}" > "$list"; then
     rc=2
   else
     while IFS= read -r -d '' name; do
@@ -609,17 +612,7 @@ of the standard* says.
     else
       files=(--files "${files[@]}")
     fi
-    env -i -C "$wt" HOME="${sbx:?}/home" PATH="$PATH" TMPDIR="$sbx/tmp" \
-      UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR="$sbx/uv-cache" \
-      PRE_COMMIT_HOME="$sbx/pre-commit" UV_OFFLINE=1 \
-      sandbox-exec -f "${PROCESS:?}/scripts/gate-sandbox.sb" \
-      -D WT="$(realpath "$wt")" -D SBX="$(realpath "$sbx")" \
-      -D HOME="$(realpath "$HOME")" -D UV_PYTHON="$(uv python dir)" \
-      -D GIT_DIR="$(git -C "$wt" rev-parse --path-format=absolute \
-        --git-dir)" \
-      -D GIT_COMMON_DIR="$(git -C "$wt" rev-parse --path-format=absolute \
-        --git-common-dir)" \
-      uv run pre-commit run "${files[@]}" || rc=$?
+    "$@" uv run pre-commit run "${files[@]}" || rc=$?
   fi
   rm -f "$list"
   (exit "$rc")
