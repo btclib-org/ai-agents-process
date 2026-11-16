@@ -105,16 +105,16 @@ branch, or a text to be posted.
   of *The gates*. A rule in prose is tried the same way, on the cases it
   has to decide. Where the change makes more claims than a handful of
   runs can try, the claims the tests reach least go first, after the
-  classes `orchestration.md`'s *The classes of defect found carry
-  forward* puts first. An input that breaks a claim is a finding. It
-  blocks where the claim is in the tree, or in a text to be posted that
-  the rounds review on its own, within the limits the sixth round
-  (above) and a differential *Done when* (below) set; a claim of a
-  branch's commit message, pull request body or reply is weighed as
-  *Which prose is worth a round* says. `writing.md`'s *Writing work*
-  says what the fix of a blocking one adds. The verdict lists each claim
-  tried, with the inputs run against it and what they printed, and names
-  the claims left untried.
+  classes its brief lists and asks it to try first (`orchestration.md`'s
+  *The classes of defect found carry forward*). An input that breaks a
+  claim is a finding. It blocks where the claim is in the tree, or in a
+  text to be posted that the rounds review on its own, within the limits
+  the sixth round (above) and a differential *Done when* (below) set; a
+  claim of a branch's commit message, pull request body or reply is
+  weighed as *Which prose is worth a round* says. `writing.md`'s
+  *Writing work* says what the fix of a blocking one adds. The verdict
+  lists each claim tried, with the inputs run against it and what they
+  printed, and names the claims left untried.
 - **Where an oracle is at hand, the inputs run through it**, rather than
   being read against a specification: a built reference implementation,
   such as Bitcoin Core or libsecp256k1, a second independent

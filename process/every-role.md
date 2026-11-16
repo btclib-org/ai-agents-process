@@ -167,12 +167,12 @@ the process names its own files by their path under it. Claude Code's
 
   A Claude Code reviewer's Bash commands run in Claude Code's own
   sandbox, so that the inputs it writes and runs are held as a Codex
-  reviewer's are, for the same reason: they write only in the reviewer's
-  directory, which is its working directory, and in a temporary
-  directory of the run's own, and reach no host. The reviewer reads the
-  worktree and runs its inputs with `uv run` the same way. An input that
-  needs a package neither the worktree's `.venv` nor the standard
-  library holds is handled as a Codex reviewer's is, above.
+  reviewer's are, since an input runs the branch's code: they write only
+  in the reviewer's directory, which is its working directory, and in a
+  temporary directory of the run's own, and reach no host. The reviewer
+  reads the worktree and runs its inputs with `uv run` the same way. An
+  input that needs a package neither the worktree's `.venv` nor the
+  standard library holds is handled as a Codex reviewer's is, above.
 
 - **Hooks.** Claude Code reads them from `~/.claude/settings.json`,
   Codex from `~/.codex/hooks.json`. Both run `scripts/git-c-allow.py`.
