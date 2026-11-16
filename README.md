@@ -67,6 +67,10 @@ The process the btclib-org maintainers follow with the coding agents
 - `scripts/test-pretooluse-rules.py` — the commands
   `pretooluse-rules.py` must refuse and must let through, run by the
   `test-pretooluse-rules` hook;
+- `scripts/test-rebase-clearance.py` — `python3
+  scripts/test-rebase-clearance.py` runs the comparison of
+  `process/orchestration.md`'s *A rebase and the clearance* on small
+  branches, which must keep the clearance or refuse it;
 - `scripts/port-check.py` — the check of a tree's batch of ports against
   the standard (`/btclib-iss`'s *Ports of the standard*);
 - `scripts/test-port-check.py` — the fixture repositories

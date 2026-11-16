@@ -473,19 +473,21 @@ It holds even where `main` already carried a hunk, which the rebased
 commit then lacks.
 
 **A rebase that applies without a conflict but replays other commits, or
-drops one, keeps the `CLEARED` only where the branch's own added and
-removed lines are unchanged.** Otherwise a fresh reviewer reads the
-whole branch. For a one-commit branch, "unchanged" is proved by
-comparing every added and removed line — bullets and blank lines
-included, headers dropped — with explicit shas, each revision a separate
-argument:
+drops one, keeps the `CLEARED` only where the branch's own diff is
+unchanged.** Otherwise a fresh reviewer reads the whole branch. For a
+one-commit branch, "unchanged" is proved by comparing every line of the
+diff but its headers and its context: each added and removed line,
+bullets and blank lines included, and each line git prints for a mode, a
+new or deleted file and a binary file's content. Renames are off, so a
+rename is the removal and the addition of its lines. The shas are
+explicit, each revision a separate argument:
 
 ```shell
-hdr='^(diff --git |index |@@ |--- (a/|/dev/null)|\+\+\+ (b/|/dev/null))'
-before=$(git -C <wt> diff '<cleared sha>^' '<cleared sha>' \
-           | grep -vE "$hdr" | grep -E '^[+-]')
-after=$(git -C <wt> diff '<new tip>^' '<new tip>' \
-          | grep -vE "$hdr" | grep -E '^[+-]')
+hdr='^(diff --git |index |@@ |--- (a/|/dev/null)|\+\+\+ (b/|/dev/null)| )'
+before=$(git -C <wt> diff --no-renames --binary \
+           '<cleared sha>^' '<cleared sha>' | grep -vE "$hdr")
+after=$(git -C <wt> diff --no-renames --binary \
+          '<new tip>^' '<new tip>' | grep -vE "$hdr")
 printf '%s\n' "$before" | shasum
 printf '%s\n' "$after"  | shasum
 printf '%s\n' "$before" "$after" | grep -c .   # not zero
