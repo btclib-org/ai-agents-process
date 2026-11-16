@@ -1469,8 +1469,10 @@ requests*, naming its day.
 contributor reads. The request that rule counts from is the first
 comment on the pull request that asks for the trailer and warns of the
 closing, by a maintainer, a session or a job; where none does, it is the
-session's ask above. This lists every comment, every page read, with its
-`createdAt`, author and URL, and the session reads each to find it:
+session's ask above. Such a comment can be a comment on the pull
+request, the body of a review or a comment of a review, which GitHub
+serves apart. These list each kind, every page read, with its time,
+author and URL, and the session reads them all and takes the earliest:
 
 ```shell
 n=<n>
@@ -1479,6 +1481,16 @@ repo=<owner>/<repo>
 
 ```shell
 gh api --paginate "repos/${repo:?}/issues/${n:?}/comments" \
+  --jq '.[] | "\(.created_at) \(.user.login) \(.html_url)"'
+```
+
+```shell
+gh api --paginate "repos/${repo:?}/pulls/${n:?}/reviews" \
+  --jq '.[] | "\(.submitted_at) \(.user.login) \(.html_url)"'
+```
+
+```shell
+gh api --paginate "repos/${repo:?}/pulls/${n:?}/comments" \
   --jq '.[] | "\(.created_at) \(.user.login) \(.html_url)"'
 ```
 
@@ -1502,23 +1514,61 @@ gh pr close "${n:?}" --repo "${repo:?}" --comment "$(cat "${comment:?}")"
 
 Each issue it held then gets a comment: those its
 `closingIssuesReferences` lists, and any its title or body says it is
-for. The comment links the pull request, says it was closed for a
-missing sign-off, and says that the first pull request whose `Sign-off`
-check passes takes the issue. The session posts it and removes the pull
-request's author from that issue's assignees:
+for. Each issue sits in the repository its reference names, which may
+not be the pull request's: `<issue repo>` is that repository,
+`<owner>/<repo>` for a bare `#N`. This prints each issue
+`closingIssuesReferences` lists, with its repository:
 
 ```shell
+gh pr view "${n:?}" --repo "${repo:?}" --json closingIssuesReferences \
+  --jq '.closingIssuesReferences[]
+    | "\(.repository.owner.login)/\(.repository.name) \(.number)"'
+```
+
+The comment links the pull request, says it was closed for a missing
+sign-off, and says that the first pull request whose `Sign-off` check
+passes takes the issue:
+
+```shell
+irepo=<issue repo>
 issue=<issue>
 login=<author login>
 note=<issue comment file>
 ```
 
 ```shell
-gh issue comment "${issue:?}" --repo "${repo:?}" --body-file "${note:?}"
+gh issue comment "${issue:?}" --repo "${irepo:?}" --body-file "${note:?}"
+```
+
+The session then removes the pull request's author from that issue's
+assignees, unless another open pull request of theirs whose `Sign-off`
+check passes still cites the issue: that one holds it. A pull request in
+any repository of the organization can cite it. This searches them all
+for the issue's number, and the shared *Before starting*'s commands, run
+in `<issue repo>`, add any there the search index does not yet hold:
+
+```shell
+gh search prs --owner btclib-org --state open "${issue:?} in:title,body" \
+  --limit 100 --json url --jq '.[].url'
+```
+
+The search matches the number as a word, so the session reads each
+hit's title, body and `closingIssuesReferences`, and keeps it only where
+it cites the issue: as `<issue repo>#<issue>`, by the issue's URL, or as
+a bare `#<issue>` in `<issue repo>` itself. This prints the bucket of
+each kept hit's `Sign-off` check, which is `pass` where it passes:
+
+```shell
+pr=<hit url>
 ```
 
 ```shell
-gh issue edit "${issue:?}" --repo "${repo:?}" --remove-assignee "${login:?}"
+gh pr checks "${pr:?}" --json name,bucket \
+  --jq '.[] | select(.name | test("(^|/ )Sign-off$")) | .bucket'
+```
+
+```shell
+gh issue edit "${issue:?}" --repo "${irepo:?}" --remove-assignee "${login:?}"
 ```
 
 On the contributor's comment asking for a reopen, the session reopens
@@ -1533,11 +1583,11 @@ gh pr reopen "${n:?}" --repo "${repo:?}"
 Once its `Sign-off` check passes, read as above, the reopened pull
 request may take back each issue it held. Right before that, the session
 reads again who holds the issue: its assignees, which this prints, and
-the open pull requests citing it, found as the shared *Before starting*
-finds them:
+the open pull requests citing it in any repository, found and kept as
+above:
 
 ```shell
-gh api "repos/${repo:?}/issues/${issue:?}" --jq '[.assignees[].login]'
+gh api "repos/${irepo:?}/issues/${issue:?}" --jq '[.assignees[].login]'
 ```
 
 Where another pull request holds it, the first of them whose `Sign-off`
@@ -1548,7 +1598,7 @@ pull request takes it, with a comment from a file as above, and assigns
 the author again where it removed them:
 
 ```shell
-gh issue edit "${issue:?}" --repo "${repo:?}" --add-assignee "${login:?}"
+gh issue edit "${issue:?}" --repo "${irepo:?}" --add-assignee "${login:?}"
 ```
 
 On an issue labelled `good first issue`, the removal and the assignment
