@@ -554,6 +554,144 @@ brief carries beside the draft:
   or from a bot: a point any bot already made blocks;
 - how the maintainer will receive the text.
 
+**Our texts of the last 7 days are those of the `gh` login**: the
+bodies and comments of issues and pull requests, its reviews, and its
+review comments, replies included, since a review comment belongs to a
+review by its own author. This writes them to `<file>`, one JSON object
+a line holding the text's `url` and `body`, and prints how many it
+wrote. Where a read fails, an answer carries `errors`, or a list comes
+back short or would be cut, it says why on stderr and prints `error`.
+The events API stops at 300 events and a search at 1000 results, so
+the bodies and comments come from the login's own lists, newest first,
+which hold no such limit; a search finds only the pull requests the
+login reviewed, whose reviews it then reads:
+
+```shell
+out=<file>
+```
+
+```shell
+uv run --isolated --no-config --no-project --python 3.15 python -I -c '
+import json, os, subprocess, sys, time
+out, texts, ids, prs = sys.argv[1], [], [], 0
+since = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 604800))
+def gql(query, **v):
+    body = json.dumps({"query": query, "variables": v})
+    r = subprocess.run(["gh", "api", "graphql", "--input", "-"], input=body,
+                       stdout=subprocess.PIPE, text=True, check=True)
+    a = json.loads(r.stdout)
+    if a.get("errors") or not a.get("data"):
+        sys.exit("graphql: " + json.dumps(a.get("errors")))
+    return a["data"]
+for k in "issueComments", "issues", "pullRequests":
+    c = None
+    while True:
+        p = gql("query($c: String) { viewer { K(first: 100, after: $c,"
+                " orderBy: {field: UPDATED_AT, direction: DESC}) { pageInfo {"
+                " hasNextPage endCursor } nodes { url body createdAt"
+                " updatedAt } } } }".replace("K", k), c=c)["viewer"][k]
+        if p["pageInfo"]["hasNextPage"] and len(p["nodes"]) < 100:
+            sys.exit(k + ": a page cut short")
+        texts += [n for n in p["nodes"] if n["createdAt"] >= since]
+        if (not p["pageInfo"]["hasNextPage"]
+                or p["nodes"][-1]["updatedAt"] < since):
+            break
+        c = p["pageInfo"]["endCursor"]
+me, c = gql("{ viewer { login } }")["viewer"]["login"], None
+while True:
+    p = gql("query($q: String!, $me: String!, $c: String) { search(query: $q,"
+            " type: ISSUE, first: 100, after: $c) { issueCount pageInfo {"
+            " hasNextPage endCursor } nodes { ... on PullRequest { reviews("
+            "first: 100, author: $me) { totalCount nodes { id submittedAt }"
+            " } } } } }", me=me, c=c,
+            q=f"reviewed-by:{me} updated:>={since}")["search"]
+    if p["issueCount"] > 1000:
+        sys.exit("search: over 1000 pull requests")
+    prs += len(p["nodes"])
+    for r in (n["reviews"] for n in p["nodes"]):
+        if len(r["nodes"]) != r["totalCount"]:
+            sys.exit("search: the reviews of a pull request cut short")
+        ids += [n["id"] for n in r["nodes"]
+                if (n["submittedAt"] or "") >= since]
+    if not p["pageInfo"]["hasNextPage"]:
+        break
+    c = p["pageInfo"]["endCursor"]
+if prs != p["issueCount"]:
+    sys.exit("search: the pull requests cut short")
+for i in range(0, len(ids), 100):
+    rs = gql("query($ids: [ID!]!) { nodes(ids: $ids) { ... on"
+             " PullRequestReview { url body comments(first: 100) {"
+             " totalCount nodes { url body } } } } }",
+             ids=ids[i:i + 100])["nodes"]
+    if len(rs) != len(ids[i:i + 100]) or None in rs:
+        sys.exit("nodes: the reviews cut short")
+    for r in rs:
+        if len(r["comments"]["nodes"]) != r["comments"]["totalCount"]:
+            sys.exit("nodes: the comments of a review cut short")
+        texts += [r] + r["comments"]["nodes"]
+texts = [{"url": t["url"], "body": t["body"]} for t in texts if t["body"]]
+with open(out + ".part", "w") as f:
+    f.writelines(json.dumps(t) + "\n" for t in texts)
+os.replace(out + ".part", out)
+print(len(texts), "texts since", since)' "${out:?}" || echo error
+```
+
+**A phrase already used is found with this**, which prints each phrase
+of three words or more that `<draft>` shares with a text in `<texts>`,
+the file the command above wrote, once for each place in the draft,
+except where a longer phrase it prints covers that place. Each goes
+beside the `url` of a text that holds it whole, and the last line says
+how many it printed:
+
+```shell
+draft=<draft>
+texts=<texts>
+```
+
+```shell
+uv run --isolated --no-config --no-project --python 3.15 python -I -c '
+import json, re, sys
+def words(t):
+    return re.findall(r"[^\W_][\w\x27-]*(?<![_\x27-])", t.lower())
+texts, used = [], {}
+for line in open(sys.argv[2]):
+    t = json.loads(line)
+    texts.append((t["url"], words(t["body"])))
+    w = texts[-1][1]
+    for p in range(len(w) - 2):
+        used.setdefault(tuple(w[p:p + 3]), []).append((len(texts) - 1, p))
+d, n, end = words(open(sys.argv[1]).read()), 0, 0
+for i in range(len(d) - 2):
+    hits, k = used.get(tuple(d[i:i + 3])), 3
+    if not hits:
+        continue
+    while i + k < len(d):
+        more = [(t, p) for t, p in hits if texts[t][1][p + k:p + k + 1]
+                == [d[i + k]]]
+        if not more:
+            break
+        hits, k = more, k + 1
+    if i + k > end:
+        print(" ".join(d[i:i + k]), texts[hits[0][0]][0], sep="\t")
+        n, end = n + 1, i + k
+print(n, "phrases already used")' "${draft:?}" "${texts:?}" || echo error
+```
+
+**This checks that a gist revision cited exists**: it prints `exists`
+where the endpoint returns the revision, and `error` otherwise. The
+endpoint takes a revision's whole sha, and answers HTTP 422 for a
+prefix of one as for a revision the gist does not hold:
+
+```shell
+gist=<id>
+rev=<revision>
+```
+
+```shell
+got=$(gh api "gists/${gist:?}/${rev:?}" --jq .id) &&
+  [ "$got" = "$gist" ] && echo exists || echo error
+```
+
 ### The verdict
 
 **The verdict holds:**
