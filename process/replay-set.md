@@ -126,8 +126,8 @@ case ${n:?} in *[!0-9]*) false ;; esac &&
   { rc=0; err=$(git -C "$tree" grep -l -w -F -e "${name}#${n}" \
     -e "${name}/pull/${n}" $(printf '%s\n' "$revs") \
     -- process/replay-set.md 2>&1 1>&3 3>&-) || rc=$?; } 3>&1 &&
-  printf '%s' "$err" >&2 && [ "$rc" -eq 1 ] && [ -z "$err" ] &&
-  echo unnamed
+  printf '%s' "$err" >&2 && [ -z "$err" ] && [ "$rc" -le 1 ] &&
+  { [ "$rc" -eq 0 ] || echo unnamed; }
 ```
 
 The check finds a case only by its reference and reads no other file of
