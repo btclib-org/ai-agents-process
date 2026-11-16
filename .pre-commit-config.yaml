@@ -100,6 +100,14 @@ repos:
         entry: python scripts/test-port-check.py
         files: ^scripts/(test-)?port-check\.py$
         pass_filenames: false
+      # the clearance comparison of a rebase, read from process/*.md and
+      # run on fixture commits
+      - id: test-rebase-clearance
+        name: the rebase clearance comparison answers as its test expects
+        language: python
+        entry: python -I scripts/test-rebase-clearance.py
+        files: ^(process/.*\.md|scripts/test-rebase-clearance\.py)$
+        pass_filenames: false
       # the commands scripts/pretooluse-rules.py refuses and lets through
       - id: test-pretooluse-rules
         name: pretooluse-rules.py answers as its test expects
