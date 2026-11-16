@@ -98,16 +98,17 @@
 #   where a stand-in fails a step only the run takes;
 # - a directory holding a findings record, findings-*.md, at its top or
 #   below, is refused; once the lines of process/every-role.md that move
-#   the records have run, given <work> with a trailing slash, it is
-#   removed and the record kept in the orchestrator's directory; where a
-#   record of that name is there already, both are kept and the
-#   directory is refused; an orphan worktree with no commit, in a
-#   repository with no remote named origin, is removed (where git
-#   worktree add --orphan works; otherwise the test says it skipped
-#   it); a worktree whose git directory holds modules is refused by
-#   --check and by the run, and so is one whose
-#   repository has no remote named origin, where a bundle named origin
-#   in the worktree lists its commit;
+#   the records have run, given <work> with a trailing slash, it is removed
+#   and the record kept in the orchestrator's directory; where a record of
+#   that name is there already, both are kept and the directory is refused;
+#   an orphan worktree with no commit, in a repository with no remote named
+#   origin, is removed, and --check names no branch to delete (where git
+#   worktree add --orphan works; otherwise the test says it skipped it); a
+#   worktree whose git directory holds modules is refused by --check and by
+#   the run, and so is one whose repository has no remote named origin,
+#   where a bundle named origin in the worktree lists its commit;
+# - a detached worktree whose commit is on origin is removed, no branch
+#   is deleted, and neither --check nor the run names a branch;
 # - a worktree whose HEAD is a symbolic ref to a tag is refused, and the
 #   tag kept;
 # - a worktree whose gitlink path is a symbolic link is refused by
@@ -893,9 +894,41 @@ b"
     "$sp/orphan/wt" 2> /dev/null; then
     run "$base" work "$sp/orphan"
     expect 'orphan, no origin' 0 "removed: $sp/orphan"
+    case $outc in
+      *"would deregister: $sp/orphan/wt"*) ;;
+      *) fail "orphan, no origin: --check names no worktree: $outc" ;;
+    esac
+    case $outc in
+      *'would delete branch:'*)
+        fail "orphan, no origin: --check would delete a branch: $outc"
+        ;;
+    esac
   else
     noorphan=1
   fi
+
+  # a detached worktree has a commit at HEAD and no branch
+  w=$sp/detached wt=$sp/detached/wt
+  mkdir -p "$w/writer"
+  echo note > "$w/writer/msg.txt"
+  git -C "$m" worktree add -q --detach "$wt" origin/main 2> /dev/null ||
+    fail 'detached: no worktree'
+  heads=$(git -C "$m" for-each-ref refs/heads)
+  run "$base" work "$w"
+  expect detached 0 "removed: $w"
+  registered detached no "$wt"
+  case $outc in
+    *"would deregister: $wt"*) ;;
+    *) fail "detached: --check names no worktree: $outc" ;;
+  esac
+  case $outc in
+    *'would delete branch:'*) fail "detached: --check names a branch: $outc" ;;
+  esac
+  case $out in
+    *'branch:'*) fail "detached: the run names a branch: $out" ;;
+  esac
+  [ "$(git -C "$m" for-each-ref refs/heads)" = "$heads" ] ||
+    fail 'detached: a branch was deleted'
 
   mkwork "$m" missing-parent
   p=0000000000000000000000000000000000000001

@@ -478,18 +478,26 @@ commit then lacks.
 
 **A rebase that applies without a conflict but replays other commits, or
 drops one, keeps the `CLEARED` only where the branch's own added and
-removed lines are unchanged.** Otherwise a fresh reviewer reads the
-whole branch. For a one-commit branch, "unchanged" is proved by
-comparing every added and removed line — bullets and blank lines
-included, headers dropped — with explicit shas, each revision a separate
-argument:
+removed lines are unchanged, each in the same file.** Otherwise a fresh
+reviewer reads the whole branch. For a one-commit branch, "unchanged" is
+proved by comparing every added and removed line — bullets and blank
+lines included — and the lines that name each file, with explicit shas,
+each revision a separate argument. The `diff --git` line that opens each
+file's diff is the boundary between files: every line of a hunk starts
+with a space, `+`, `-` or `\`, so no content prints one, where removing
+a line `-- a/B` from another file prints `--- a/B`. The `---` and `+++`
+lines say whether the file is added or deleted. The flags hold the
+output to that form whatever the reader's git configuration says: under
+`color.diff=always` the `grep` drops every colored line, so with the
+headers left uncolored two different edits compare equal:
 
 ```shell
-hdr='^(diff --git |index |@@ |--- (a/|/dev/null)|\+\+\+ (b/|/dev/null))'
-before=$(git -C <wt> diff '<cleared sha>^' '<cleared sha>' \
-           | grep -vE "$hdr" | grep -E '^[+-]')
-after=$(git -C <wt> diff '<new tip>^' '<new tip>' \
-          | grep -vE "$hdr" | grep -E '^[+-]')
+before=$(git -C <wt> diff --no-color --no-ext-diff --no-textconv \
+           --src-prefix=a/ --dst-prefix=b/ '<cleared sha>^' '<cleared sha>' \
+           | grep -E '^(diff --git |[+-])')
+after=$(git -C <wt> diff --no-color --no-ext-diff --no-textconv \
+          --src-prefix=a/ --dst-prefix=b/ '<new tip>^' '<new tip>' \
+          | grep -E '^(diff --git |[+-])')
 printf '%s\n' "$before" | shasum
 printf '%s\n' "$after"  | shasum
 printf '%s\n' "$before" "$after" | grep -c .   # not zero

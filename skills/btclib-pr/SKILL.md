@@ -1732,22 +1732,22 @@ has not reported yet.
     'repos/<owner>/<repo>/issues?labels=release-hold&state=all&per_page=100' \
     --jq '.[] | select(.pull_request)
       | select(.state == "open" or .pull_request.merged_at != null)
-      | {number, state, merged: .pull_request.merged_at}'
+      | "\(.number) \(.state) \(.pull_request.merged_at // "unmerged")"'
   ```
 
-  The first must print `<owner>/<repo>`. Where the second lists a pull
-  request other than the one at hand, the one at hand waits until it
-  lists no other, but for the exceptions that step gives. Another name
-  from the first, or a nonzero exit of either, is an error, and the
-  merge waits until both answer. The read and the merge are two calls,
-  and none of the [rules a GitHub ruleset offers][rulesets] reads a
-  label, so a label put on between them does not stop the merge. Until
-  the release merges, its own check that `main` has not moved catches
-  such a merge, as that step says. A label left on a merged release
-  already published still holds every merge until the maintainer's word,
-  and one on a pull request closed without merging holds nothing and is
-  removed by whoever finds it, as that step says. The label records the
-  wait, and the waiting pull request takes no comment of its own.
+  The first must print `<owner>/<repo>`. The second prints one line per
+  hold: the pull request's number, its state, and when it merged or
+  `unmerged`. Where it lists a pull request other than the one at hand,
+  the one at hand waits until it lists no other, but for the exceptions
+  that step gives. Another name from the first, or a nonzero exit of
+  either, is an error, and the merge waits until both answer. The read
+  and the merge are two calls, and none of the [rules a GitHub ruleset
+  offers][rulesets] reads a label, so a label put on between them does
+  not stop the merge. That step checks once more, just before the
+  release merges, that `main` has not moved. This narrows the gap and
+  does not close it, since that check and the release's merge are two
+  calls too. The label records the wait, and the waiting pull request
+  takes no comment of its own.
 - **What gates a merge on GitHub** is the repository's own
   `REPOSITORY.md`, read from `origin/main`: typically an approval from
   somebody other than the author, every review thread resolved, and the

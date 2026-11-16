@@ -489,7 +489,8 @@ sweep() {
   while IFS= read -r t <&3 && IFS= read -r cd_ <&3 &&
     IFS= read -r b <&3 && IFS= read -r h <&3; do
     printf 'would deregister: %s\n' "$t"
-    [ -z "$b" ] || printf 'would delete branch: %s of %s\n' "$b" "$cd_"
+    [ -n "$b" ] && [ -n "$h" ] || continue
+    printf 'would delete branch: %s of %s\n' "$b" "$cd_"
   done 3< "$todo"
   printf 'would remove: %s\n' "$r"
 }
