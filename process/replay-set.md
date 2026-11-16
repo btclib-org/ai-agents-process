@@ -207,15 +207,15 @@ gh api repos/<owner>/<repo>/compare/main...<head> \
 ```
 
 **A clean change belongs in the set too**, so that a change which only
-makes the reviewer raise more shows as false findings. The set holds
-none while ISS btclib-org/ai-agents-process#516 is open. A finding a run
-makes on one is re-measured: where it holds, the case moves to the
-defects, and where it does not, it is a false finding. A pull request
-becomes a clean case where, on the head it landed on, the three
-reviewers of `/btclib-pr`'s *The reviews on GitHub* read `ack`, both
-reads below print `0`, two fresh reviewers, briefed as for a run, each
-clear it, and no review names a defect in it that holds: a false
-sentence is one, wording that could only be better is not.
+makes the reviewer raise more shows as false findings. PR
+btclib-org/ai-agents-process#522 is one (*Cases*). A finding a run makes
+on one is re-measured: where it holds, the case moves to the defects,
+and where it does not, it is a false finding. A pull request becomes a
+clean case where, on the head it landed on, the three reviewers of
+`/btclib-pr`'s *The reviews on GitHub* read `ack`, both reads below
+print `0`, two fresh reviewers, briefed as for a run, each clear it, and
+no review names a defect in it that holds: a false sentence is one,
+wording that could only be better is not.
 
 ```shell
 repo=<owner>/<repo>
@@ -857,3 +857,51 @@ the text that moved.
   review bot's `ACK`, Codex's state with no finding and CodeRabbit's
   passed check (ISS btclib-org/ecc#583); not fixed on `main` at
   `5546cf0`.
+
+### PR btclib-org/ai-agents-process#522
+
+- base `dfa8ed07dfe568750d579bf92b136d34e6b2b4a2`
+- head `c20a251ea8d041dd3fac65c222d837cf01513506`
+- clean: the case is the head that landed, on which no review names a
+  defect that holds.
+- measured clean on 2026-11-16, as *What a case holds* asks: on that
+  head the review bot, Codex and CodeRabbit read `ack`, both reads print
+  `0`, and CodeRabbit's review body is empty. Fresh reviewers at
+  `$PROCESS` `58a8649` each cleared it, with no finding a defect. Two
+  were briefed as for a run and read the head's copy of this file, for
+  which the check of *A case's tree can hold this file* prints
+  `unnamed`; the briefs of the other two also named this file, to forbid
+  reading it. Each says "The skill" in `process/night-mode.md` could
+  name its file, and three find "in place of every rule" in the commit
+  message hard to read. One also asks that the skill's sentence on a
+  lost context say it covers only the command with no word, and whether
+  a model may call the skill with no word.
+- the local rounds of its branch made two findings, neither a defect of
+  the head. The local Codex reviewer blocked on `21418e3`, an earlier
+  commit never pushed, whose diff moved rules into the skill and left
+  its pointer "The rules are all in `$PROCESS/process/night-mode.md`";
+  it cleared the head, which rewrites the pointer. The CodeRabbit CLI
+  found that `/night-mode --night` meets both `process/night-mode.md`'s
+  `--night` clause and the skill's sentence on any other word. The pull
+  request's body declined it, since the skill is the more specific text
+  (`every-role.md`'s *Which file wins*), and the base's two files meet
+  the same way.
+
+### PR btclib-org/ai-agents-process#526
+
+- base `dfa8ed07dfe568750d579bf92b136d34e6b2b4a2`
+- head `062425cf6ddc1019a6ac8ef46ff5f7f405606a73`
+- defect: `obligations()` in `scripts/port-check.py` joins each line
+  that starts with two spaces to the bullet before it, so a list item
+  indented two spaces after a paragraph that closes section 14's list is
+  never compared, and the check can exit `0` on a tree that lacks that
+  copy, though the docstring the branch adds says a list item that is
+  not a dash bullet raises.
+- found on 2026-11-16 by both fresh reviewers reading it as a clean
+  candidate at `$PROCESS` `58a8649`, as the blocking finding of each
+  `CHANGES REQUESTED`, after the local Codex reviewer's `CLEARED`, the
+  CodeRabbit CLI's read with no finding, the review bot's `ACK`, Codex's
+  state with no finding and CodeRabbit's approval (ISS
+  btclib-org/ai-agents-process#535); not fixed on `main` at `3af75db`.
+  Neither `REVIEWING.md`, at the head and on `main`, nor the reviewers'
+  copy of `process/` describes this defect (*What a case holds*).
