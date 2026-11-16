@@ -311,13 +311,15 @@ a decision:
   taste (`REVIEWING.md`'s *The standard an ack is given against*).
 - **filed or declined, never accepted, where it is a refinement**, which
   names no defect on any input and no sentence the shared *Which prose
-  is worth a round* blocks on, or where the shared *The rounds* files
-  it: it adds no text to the branch. A defect *The rounds* files is
-  filed as the shared *Collateral* says, and the reply names its issue,
-  whether or not the branch adds the defect; any other finding of this
-  route is filed the same way, or else declined with its ground.
-  Repeated after the reply, it is answered by pointing to the first
-  reply, and resolved.
+  is worth a round* blocks on, or where the shared *The rounds* keeps it
+  off the branch: it adds no text to the branch. A defect *The rounds*
+  keeps off the branch is filed as the shared *Collateral* says, and the
+  reply names its issue, whether or not the branch adds the defect. A
+  refinement of prose is declined with its ground, not filed, since
+  `REVIEWING.md`'s *What is filed, and what is not* files no prose; any
+  other finding of this route is filed the same way, or else declined
+  with its ground. Repeated after the reply, it is answered by pointing
+  to the first reply, and resolved.
 - **accepted** where it is the branch's own: a defect or a false
   sentence its diff or its pull request body adds, or anything else the
   shared *Collateral* counts as the branch's subject (the shared *A pull

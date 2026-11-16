@@ -68,7 +68,8 @@ branch, or a text to be posted.
   record (*The findings record*). The rounds do not converge where a
   closed finding comes back blocking, from any reviewer, where a fix
   leaves the reviewer that asked for it with as many findings as before,
-  or more, or where the third fresh reviewer since the dedicated
+  or more, not counting a finding closed by filing (*The findings
+  record*), or where the third fresh reviewer since the dedicated
   reviewer last cleared, or any after it, gives a first verdict of
   `CHANGES REQUESTED` with a finding a prose-only fix cannot answer.
   Then the orchestrator puts it to the human as one decision
@@ -77,20 +78,20 @@ branch, or a text to be posted.
   reviewer's positions. The rounds wait for the answer.
 - **From the sixth round of a branch's local review, a finding on a
   shape that no tree and no caller holds is filed as an issue and does
-  not block.** Each verdict of a local reviewer is a round, as the
-  findings record lists them. The reviewer classifies the finding, not
-  the writer, and gives in its verdict the search that shows no tree
-  and no caller holds the shape: the command and what it printed. The
-  pull request's body lists each such finding as `/btclib-iss`'s
-  *Opening the pull request* says. A defect on the ordinary case, a
-  shape that a tree or a caller holds, blocks at any round, and so do a
-  false sentence and a crash.
+  not block.** Each verdict of a local reviewer is a round, so a head
+  that two reviewers read is two rounds. The reviewer classifies the
+  finding, not the writer, and gives in its verdict the search that
+  shows no tree and no caller holds the shape: the command and what it
+  printed. The pull request's body lists each such finding as
+  `/btclib-iss`'s *Opening the pull request* says. A defect on the
+  ordinary case, a shape that a tree or a caller holds, blocks at any
+  round, and so do a false sentence and a crash.
 - **From the third round on the forge, only a defect on the ordinary
   case, a false sentence or a crash is fixed on the branch.** A round on
   the forge is a head the reviews on GitHub read (`/btclib-pr`'s *The
   reviews on GitHub*): the head the pull request is opened on, then each
-  push to it. Every other finding is filed as `/btclib-pr`'s *Answering
-  it* says.
+  push to it. Every other finding stays off the branch, answered as
+  `/btclib-pr`'s *Answering it* says.
 - **A session restart replaces each reviewer it lost.** A restart can
   lose the reviewers the session started, and the rounds keep no record
   of one in flight. So after a restart, the verdict file of a reviewer
@@ -237,9 +238,9 @@ asks, and the tree takes the port. A text to be posted keeps its record
 in the file alone, `<work>/findings-<text file>.md`, where the hash
 `shasum -a 256 <text file>` prints for each version stands for a head.
 
-**The record lists every round**: each head reviewed, locally or on the
-forge, with each reviewer that read it and its verdict, a head that
-brought no finding included.
+**The record lists every round, local or on the forge, as *The rounds*
+counts them**: its head, each reviewer that read the head in that round
+and its verdict, a round that brought no finding included.
 
 **An entry holds** the finding in a sentence, with its class (*The
 classes of defect found carry forward*); who raised it; the head it was
@@ -521,11 +522,13 @@ says.
   Codex `reviewer`, started as *Clients* says, from Claude Code by its
   `codex exec` command. A `CLEARED` of the head by a Codex reviewer of
   the rounds stands for it, and so does the port check of the next
-  bullet. Its findings go in the findings record, answered as
-  `/btclib-pr`'s *Answering it* answers a bot's, and each is closed
-  there before the head goes to the forge. Where Codex refuses the run,
-  the head goes without it, the refusal judged and recorded as *Where
-  the other client is unavailable* says of the fresh reviewer's.
+  bullet. A rebase that keeps the `CLEARED` (*A rebase and the
+  clearance*) asks for no new pass. The pass's findings go in the
+  findings record, answered as `/btclib-pr`'s *Answering it* answers a
+  bot's, and each is closed there before the head goes to the forge.
+  Where Codex refuses the run, the head goes without it, the refusal
+  judged and recorded as *Where the other client is unavailable* says of
+  the fresh reviewer's.
 - **A port of the standard goes to no local reviewer where
   `scripts/port-check.py` exits `0` on the head that lands, run again
   after each rebase or merge of `main` as the gates are, and no change

@@ -223,19 +223,32 @@ Each run is an entry: the date, the `$PROCESS` sha, the factor changed
 and its value, the client, the model and the effort, a hit or a miss for
 each defect, and each false finding on any case apart.
 
+**An entry whose `$PROCESS` sha is not on `main` also records the tree
+the copy is built from**, which `git rev-parse '<sha>:process'` prints.
+Such a sha is a commit of a branch, which the squash does not land and
+an amend or a rebase can replace: after `git fetch origin`,
+`git merge-base --is-ancestor <sha> origin/main` exits `1` for it. In a
+clone that holds the tree, `git ls-tree -r <tree>` lists its files and
+`git cat-file -p '<tree>:<file>'` prints one. A clone that lacks it
+fetches it with `git fetch origin <tree>` where a commit pushed to
+`origin` holds it, even once no ref there reaches that commit. A tree
+that no pushed commit holds fails that fetch with `not our ref`, and is
+read only where its objects are, as in the clone the run was made in.
+
 - **Baseline**, 2026-11-15: `$PROCESS` `2ef0de4`, no factor changed;
   Claude Code, the `reviewer` agent, Opus, effort `high`. PR
   btclib-org/ai-agents-process#317: miss. PR
   btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit.
   PR btclib-org/ai-agents-process#444, clean when run: one finding,
   which holds and moved the case to the defects.
-- **Candidate**, 2026-11-15: `$PROCESS` `466d803`, the factor changed
-  being the brief: *Local review*'s round rules of ISS
+- **Candidate**, 2026-11-15: `$PROCESS` `466d803`, tree
+  `ae2991e8a0a7037091e9dd03fd2e04e93145474f`, the factor changed being
+  the brief: *Local review*'s round rules of ISS
   btclib-org/ai-agents-process#461 and ISS
   btclib-org/ai-agents-process#464. The same client, model and effort.
   The same four results: miss, miss, hit, and the same finding on the
-  last. The change neither loses a hit nor adds a false finding on
-  these cases.
+  last. The change neither loses a hit nor adds a false finding on these
+  cases.
 
 Both runs withheld nothing: the reviewer read the head's own
 `REVIEWING.md`, which does not describe the defect of PR
@@ -253,8 +266,9 @@ defect, and that the pull request fixed in `d5dee25` before it landed.
   whole. PR btclib-org/ai-agents-process#317: miss. PR
   btclib-org/btclib-secp256k1#1331: miss, then miss on a repeat. PR
   btclib-org/ecc#484: hit. PR btclib-org/ai-agents-process#444: hit.
-- **Candidate**, 2026-11-15: `$PROCESS` `1ddae0d`, the factor changed
-  being the brief's files of ISS btclib-org/ai-agents-process#447: the
+- **Candidate**, 2026-11-15: `$PROCESS` `1ddae0d`, tree
+  `7ee14c3c7929570af22e0554910f0ef7627818f6`, the factor changed being
+  the brief's files of ISS btclib-org/ai-agents-process#447: the
   reviewer reads `every-session.md`, `every-role.md`, `local-review.md`
   and the sections of `writing.md` the map names, in place of
   `btclib-common.md` whole. The same client, model and effort. PR
@@ -263,7 +277,8 @@ defect, and that the pull request fixed in `d5dee25` before it landed.
   `CLEARED`: a call recorded as `reported` passes on any Valgrind error,
   whatever caused the exit `42`; then miss on a repeat. PR
   btclib-org/ecc#484: hit. PR btclib-org/ai-agents-process#444: hit.
-- **Candidate**, 2026-11-15: `$PROCESS` `2166200`, whose process files,
+- **Candidate**, 2026-11-15: `$PROCESS` `2166200`, tree
+  `0c74e2feb51248cf3c388b10bbf66006a9c6f0cd`, whose process files,
   `agents/` and `REVIEWING.md` are those of `1ddae0d`, the factor
   changed being the whole brief of ISS btclib-org/ai-agents-process#447:
   the split process files, the change's `agents/reviewer.md`, and for
@@ -329,18 +344,19 @@ hit on these cases and shows no gain.
   btclib-org/btclib-secp256k1#1331: miss, and miss on each repeat but
   one, which is void: its reviewer read the subject of the fix commit on
   a local branch. PR btclib-org/ecc#484: hit.
-- **Candidate**, 2026-11-15: `$PROCESS` `853aa9c`, the factor changed
-  being the reviewer's map entry of ISS
-  btclib-org/ai-agents-process#483: it gives `writing.md`'s *Writing
-  work* whole, in place of the checklist, *A rule stated more than
-  once*, *What the prose that lands may say*, *Citations and closing
-  keywords* and *Signed and signed off*, and adds the sections of the
-  skill the brief names. `agents/reviewer.md` and `REVIEWING.md` are
-  `main`'s. The same client, model, effort and briefs, one run per case.
-  PR btclib-org/ai-agents-process#317: miss, the defect named only in a
-  non-blocking finding judged as already on the base (*How a run is
-  scored*). PR btclib-org/ai-agents-process#444: hit. PR
-  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit.
+- **Candidate**, 2026-11-15: `$PROCESS` `853aa9c`, tree
+  `facb7eaf1e0ae989359a0f610f142e16102dd88e`, the factor changed being
+  the reviewer's map entry of ISS btclib-org/ai-agents-process#483: it
+  gives `writing.md`'s *Writing work* whole, in place of the checklist,
+  *A rule stated more than once*, *What the prose that lands may say*,
+  *Citations and closing keywords* and *Signed and signed off*, and adds
+  the sections of the skill the brief names. `agents/reviewer.md` and
+  `REVIEWING.md` are `main`'s. The same client, model, effort and
+  briefs, one run per case. PR btclib-org/ai-agents-process#317: miss,
+  the defect named only in a non-blocking finding judged as already on
+  the base (*How a run is scored*). PR btclib-org/ai-agents-process#444:
+  hit. PR btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484:
+  hit.
 
 Neither run made a false finding. Each brief had the reviewer read the
 process from a copy of its files at the run's sha without this file,
@@ -351,8 +367,9 @@ no hit and gains none. What it adds to the reviewer's reading, *The
 gates*, *Sourcery and CodeRabbit before a push* and *Committing and
 rebasing*, bears on checks no case of the set exercises.
 
-- **Candidate**, 2026-11-15: `$PROCESS` `86cc1ec`, the factor changed
-  being the brief: the item of ISS btclib-org/ai-agents-process#462 in
+- **Candidate**, 2026-11-15: `$PROCESS` `86cc1ec`, tree
+  `bb669fe1f9761677f194399770c630f802f3a980`, the factor changed being
+  the brief: the item of ISS btclib-org/ai-agents-process#462 in
   `local-review.md`'s *The verdict*, that each blocking finding names
   its trigger, its mechanism, its consequence and, where one is known,
   one correction that suffices. It is compared with the baseline at
@@ -362,13 +379,14 @@ rebasing*, bears on checks no case of the set exercises.
   btclib-org/btclib-secp256k1#1331: miss on each run. PR
   btclib-org/ecc#484: hit.
 - **Baseline and candidate**, 2026-11-15: `$PROCESS` `53b7a57` and
-  `86cc1ec`, as above, one run each on the cases PR
-  btclib-org/ai-agents-process#503 added. PR btclib-org/.github#2288,
-  the clean case: `CLEARED` in both, each with a non-blocking wording
-  finding that is not a defect. PR btclib-org/btclib-node#2516: miss in
-  both; the baseline names the defect only in a non-blocking finding,
-  and the candidate names the same overstatement only in the commit
-  message. PR btclib-org/ecc#580: hit in both.
+  `86cc1ec`, tree `bb669fe1f9761677f194399770c630f802f3a980`, as above,
+  one run each on the cases PR btclib-org/ai-agents-process#503 added.
+  PR btclib-org/.github#2288, the clean case: `CLEARED` in both, each
+  with a non-blocking wording finding that is not a defect. PR
+  btclib-org/btclib-node#2516: miss in both; the baseline names the
+  defect only in a non-blocking finding, and the candidate names the
+  same overstatement only in the commit message. PR btclib-org/ecc#580:
+  hit in both.
 
 PR btclib-org/btclib-secp256k1#1331, the one case where a gain was
 plausible, ran four more times in each configuration, and the baseline's
@@ -407,8 +425,9 @@ hit and loses none. By the rule recorded on ISS
 btclib-org/ai-agents-process#462 the result is inconclusive, and the
 item is not adopted.
 
-- **Candidate**, 2026-11-15: `$PROCESS` `cab9c97`, the factor changed
-  being the brief's prose rules of ISS btclib-org/ai-agents-process#415,
+- **Candidate**, 2026-11-15: `$PROCESS` `cab9c97`, tree
+  `39a87f84c7133c05199cda4b8d25bb8141f984ff`, the factor changed being
+  the brief's prose rules of ISS btclib-org/ai-agents-process#415,
   *Local review*'s new *A text to be posted* among them. Claude Code,
   the `reviewer` agent, Opus, effort `high`, one run per case. It is
   compared with the baseline at `53b7a57` above on all seven cases: the
@@ -449,8 +468,9 @@ btclib-org/ecc#580 ran tests of the branch as inputs to measure a
 finding; neither ran the suite as a gate.
 
 - **Baseline and candidate**, 2026-11-15: `$PROCESS` `e91f4c3` and
-  `9c5ada8`, the factor changed being the brief: the changelog bullet of
-  `writing.md`'s *What the prose that lands may say*, which PR
+  `9c5ada8`, tree `caf3c0374e5fe127aa7d28ec68b324a33bb3cc60`, the factor
+  changed being the brief: the changelog bullet of `writing.md`'s *What
+  the prose that lands may say*, which PR
   btclib-org/ai-agents-process#502 rewrites, and which alone `git diff
   e91f4c3 9c5ada8` changes. Claude Code, the `reviewer` agent, Opus,
   effort `high`, one run per case, and a second on PR
@@ -491,7 +511,8 @@ runs. The run shows no loss from the bullet, and cannot show a gain: no
 case's defect concerns a changelog entry.
 
 - **Baseline and candidate**, 2026-11-16: `$PROCESS` `9dd351e` and
-  `bd66221`, the factor changed being the brief: the sentence the change for ISS
+  `bd66221`, tree `217ea4c4d2a9aff74cc8f95e07caad5c9079487c`, the factor
+  changed being the brief: the sentence the change for ISS
   btclib-org/ai-agents-process#486 adds to `writing.md`'s bullet on an
   issue owed by several trees, which excepts a port of the standard from
   the switch to a closing keyword, and which alone `git diff 9dd351e
