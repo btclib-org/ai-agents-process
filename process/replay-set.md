@@ -62,9 +62,13 @@ The case's tree is built at a new path from a checkout that holds the
 head, named by its path, so that the fetch needs no network and the
 tree keeps no remote. The first command refuses a path that exists,
 since `git init` keeps the objects of a repository already there, and a
-refusal there stops the build. The fetch runs in the tree, so it makes
-the checkout's path absolute first: a relative one would be read from
-the tree. The three values are set first:
+refusal there stops the build. It sets `created` to the tree only where
+its `git init` succeeds, and the fetch and the checkout run only where
+`created` names the tree. So a paste that goes on past a refusal writes
+nothing: not in a repository at the path, nor in one above it, which
+`git -C` reaches from a directory that is no repository. The fetch runs
+in the tree, so it makes the checkout's path absolute first: a relative
+one would be read from the tree. The three values are set first:
 
 ```shell
 tree=<tree>
@@ -73,27 +77,29 @@ head=<head>
 ```
 
 ```shell
-[ ! -e "${tree:?}" ] && git init "$tree"
+created= && [ ! -e "${tree:?}" ] && git init "$tree" && created=$tree
 ```
 
 ```shell
-src=$(realpath "${checkout:?}") &&
-  git -C "${tree:?}" fetch "$src" "${head:?}"
+[ "${created:-}" = "${tree:?}" ] && src=$(realpath "${checkout:?}") &&
+  git -C "$tree" fetch "$src" "${head:?}"
 ```
 
 ```shell
-git -C "${tree:?}" checkout --detach FETCH_HEAD
+[ "${created:-}" = "${tree:?}" ] &&
+  git -C "$tree" checkout --detach FETCH_HEAD
 ```
 
 This prints `isolated` only where each read succeeds, the tree has no
-remote, it has a `HEAD`, and every commit its refs reach is the head or
-one of its ancestors:
+remote, its `HEAD` is the head, and every commit its refs reach is the
+head or one of its ancestors:
 
 ```shell
 remotes=$(git -C "${tree:?}" remote) &&
+  top=$(git -C "$tree" rev-parse HEAD) &&
   all=$(git -C "$tree" rev-list --all) &&
   ancestry=$(git -C "$tree" rev-list HEAD) &&
-  [ -z "$remotes" ] && [ -n "$ancestry" ] && [ "$all" = "$ancestry" ] &&
+  [ -z "$remotes" ] && [ "$top" = "${head:?}" ] && [ "$all" = "$ancestry" ] &&
   echo isolated
 ```
 
