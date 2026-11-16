@@ -761,6 +761,71 @@ and `bd66221` and hit in every other run above. The run shows no loss it
 can tie to the move, and cannot show a gain: no case's defect concerns
 the text that moved.
 
+- **Baseline and candidate**, 2026-11-16: `$PROCESS` `9f70ee0` and
+  `e49e295`, tree `8df46d6761dca32187e364bdb0820a5969a7a6bd`, the factor
+  changed being the brief: the change of ISS
+  btclib-org/ai-agents-process#548, which `git diff 9f70ee0 e49e295 --
+  process` makes. In `writing.md`'s *The gates*, an outside
+  contributor's gates run in a new worktree detached at the commit they
+  gate, never in the branch's worktree, each followed by a sandboxed
+  `git status` and a check from outside for a repository the gate left
+  there, and no git runs outside the sandbox in that worktree but its
+  removal; `every-role.md`'s *Clients* points the Codex reviewer's
+  inputs to that worktree's `.venv`. Claude Code, the `reviewer` agent,
+  Opus, effort `high`, one run per case, and a second in each
+  configuration on PR btclib-org/ecc#580, which alone decided the first
+  runs. In both: PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit. PR
+  btclib-org/.github#2288: miss. PR btclib-org/btclib-node#2516: miss.
+  PR btclib-org/ai-agents-process#526: miss. PR
+  btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with no
+  false finding. PR btclib-org/ecc#580: the baseline miss, then hit; the
+  candidate hit, then miss.
+
+On PR btclib-org/ai-agents-process#317 both block on "tied to the
+account", which holds. On PR btclib-org/ecc#484 the baseline also blocks
+on the rule being stated a second time in the review workflow's prompt,
+as earlier runs did, which was not measured false. On PR
+btclib-org/.github#2288 each names the single-space limit only as
+non-blocking, and on PR btclib-org/btclib-node#2516 both name "`i` sums
+the length fields" only as non-blocking wording (*How a run is scored*).
+On PR btclib-org/ai-agents-process#526 the baseline raises a nested
+bullet folded with no error, and the candidate a dash item after a
+paragraph that is never compared, each only as a question. On PR
+btclib-org/ecc#580 the baseline's first run blocks on a tuple subclass
+whose length overstates its items, outside the defect, and the
+candidate's repeat clears the head; neither names the comment over
+`_AFF_CALLS`. On PR btclib-org/ai-agents-process#522 each verdict says,
+as non-blocking, that "The skill" in `process/night-mode.md` names no
+file, and asks a question; neither is a defect. No finding of either
+configuration was measured false.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, and the case from a repository holding only the head
+and its ancestors (*What a case holds*). The brief forbade the network,
+the forge, any suite and any other checkout of the case's repository,
+and every reviewer reports that it ran no gate. A network outage failed
+six runs, which ran again on copies and case trees built again with this
+file's commands, from the same trees and heads. The reviewers of PR
+btclib-org/ai-agents-process#522 read the case tree's own copy of this
+file, for which the check of *A case's tree can hold this file* prints
+`unnamed`, and no verdict names another copy. Nothing was withheld: the
+change edits no `REVIEWING.md` and nothing in `agents/`. No brief named
+a skill, so the run left out the change's sentence in `/btclib-pr`'s
+*Landing*, and the change's edits to `orchestration.md` are outside the
+reviewer's map. A case's briefs differ only in the copy's path, the
+run's label and, for the runs made after the outage, the directory
+holding their inputs, and none names a configuration. The runs went in a
+shuffled order, the repeats last.
+
+The candidate has the baseline's hits and misses on eight cases. On the
+first runs PR btclib-org/ecc#580 alone decided the comparison, a hit for
+the candidate only, so it ran again in both (*One factor at a time*),
+and over two runs each configuration hits once. The run shows no loss it
+can tie to the change, and cannot show a gain: no case's defect concerns
+where an outside contributor's gates run.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
