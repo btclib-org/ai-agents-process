@@ -298,8 +298,8 @@ half, then answered one of three ways:
   reserved decision. It goes to the human or the maintainer, as
   `every-session.md`'s *When the human has to decide* says.
 
-Each item and its answer go in the findings record (the shared *The
-findings record*).
+Each item and its answer go in the findings record
+(`orchestration.md`'s *The findings record*).
 
 **A bot's finding, the review bot's, Codex's or CodeRabbit's, takes the
 first of these routes that fits**, measured on the head, unless it needs
@@ -404,9 +404,9 @@ them.
 ## Rebase and CI
 
 - **The reviewer reads the delta** from the sha it last read. A rebase
-  goes to a reviewer only where the shared *A rebase and the clearance*
-  sends it. A fresh reviewer's first read is the whole diff from its
-  parent.
+  goes to a reviewer only where `orchestration.md`'s *A rebase and the
+  clearance* sends it. A fresh reviewer's first read is the whole diff
+  from its parent.
 - **A pull request is rebased onto the default branch only where
   `CONTRIBUTING.md`'s *Landing it* says, or for a retarget.** An outside
   contributor's branch, or the agent's, is never rebased: *Outside
@@ -665,7 +665,7 @@ A change to this one changes that one too.
 Where it is absent, in these cases or another, the pull request is
 merged only once the latest fresh reviewer's `CLEARED` also names the
 head, or the dedicated reviewer's where the other client is unavailable
-(the shared *A pull request's rounds*):
+(`orchestration.md`'s *Where the other client is unavailable*):
 
 - the bot's run failed with a 429, its quota exhausted, matched as
   *Rebase and CI* says;
@@ -867,10 +867,12 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
 - [ ] the author is not the agent: `.author.login` is not `app/claude`.
       Whoever approves the agent's pull request reads every line
       (`CONTRIBUTING.md`'s *Working with an LLM*), so the human decides
-- [ ] the latest fresh reviewer's `CLEARED` names `<sha>`, or *A rebase
-      and the clearance* carries it to `<sha>`; where the other client
-      is unavailable, the dedicated reviewer's does (the shared *A pull
-      request's rounds*)
+- [ ] the latest fresh reviewer's `CLEARED` names `<sha>`, or
+      `orchestration.md`'s *A rebase and the clearance*, or
+      `local-review.md`'s *A merge of `main` and the clearance*, carries
+      it to `<sha>`; where the other client is unavailable, the
+      dedicated reviewer's does (`orchestration.md`'s *Where the other
+      client is unavailable*)
 - [ ] every check passed or was skipped, required or not:
       `gh pr checks <n> --repo <owner>/<repo> --json bucket --jq
       'length > 0 and all(.[]; .bucket == "pass" or .bucket ==
@@ -919,8 +921,8 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
 - [ ] a major move of a dependency, a hook or an action has the latest
       fresh reviewer's `CLEARED` answer the shared *The verdict*'s item
       on it, saying that nothing in the notes breaks the tree; where the
-      other client is unavailable, the dedicated reviewer's does (the
-      shared *A pull request's rounds*)
+      other client is unavailable, the dedicated reviewer's does
+      (`orchestration.md`'s *Where the other client is unavailable*)
 
 The first prints each file under `.github/` or any `.claude/`, any top-level
 `RELEASING.md`, `REPOSITORY.md` or `SECURITY.md`, and any `AGENTS.md`,
@@ -1411,9 +1413,10 @@ has, is put to the human before it lands through the bypass.
 Its issue stays theirs, and no competing branch is opened. The reviewer
 reviews it against `REVIEWING.md`. Its gates run in the sandbox of the
 shared *The gates*, whoever runs them, and so do the dedicated
-reviewer's inputs, which the session runs there for it. Where the shared
-*A pull request's rounds* has the body record something, the comment
-that section names records it instead.
+reviewer's inputs, which the session runs there for it. Where
+`orchestration.md`'s *Where the other client is unavailable* has the
+body record something, the comment that section names records it
+instead.
 
 **It is completed in place where `maintainerCanModify` is `true`**, with
 every fix the approval needs, blocking findings and nits alike, as the
@@ -1807,11 +1810,11 @@ has not reported yet.
   Of a pair that conflicts, the repair of a red `main` lands first, then
   the one approved on its head, since a push dismisses that approval,
   then the lower number. The other of the pair leaves the set and is
-  rebased once the first has landed. Each rebase goes as the shared *A
-  rebase and the clearance* says. Where a head is an outside
-  contributor's or the agent's, `main` comes in by its merge, not a
-  rebase (*Rebase and CI*). Where it is an outside contributor's,
-  *Outside contributors* says who decides the order.
+  rebased once the first has landed. Each rebase goes as
+  `orchestration.md`'s *A rebase and the clearance* says. Where a head
+  is an outside contributor's or the agent's, `main` comes in by its
+  merge, not a rebase (*Rebase and CI*). Where it is an outside
+  contributor's, *Outside contributors* says who decides the order.
 
   Where every run exits `0`, the octopus failed on its own, as it does
   on a file one head renames and another edits. Of the heads that change
@@ -1875,9 +1878,9 @@ has not reported yet.
   the report.
 
 - **Where `main` has moved past the sha the verdict read the prose on**,
-  the shared *A rebase and the clearance* says who re-reads the prose
-  before the branch lands, and what review a sentence found false there
-  needs.
+  `orchestration.md`'s *A rebase and the clearance* says who re-reads
+  the prose before the branch lands, and what review a sentence found
+  false there needs.
 - **The pin is the head as last pushed**, not the sha a verdict named.
 - **A stacked pull request lands like any other**: once its base has
   landed, it is rebased onto `main` as `CONTRIBUTING.md`'s *One subject,
@@ -2055,8 +2058,8 @@ has not reported yet.
   re-read when `main` changes it* says. Then read a landed line back
   where sessions read it: under `$PROCESS`, or through the link of the
   skill or agent it changed.
-- **The collateral goes back now** (the shared *Collateral*), before
-  anything new starts.
+- **The collateral goes back now** (`orchestration.md`'s *Closing
+  collateral*), before anything new starts.
 - **Remove the worktrees** — yours, and tell the writer to remove its
   own (*Debris goes when its work ends*).
 

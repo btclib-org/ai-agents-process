@@ -73,7 +73,9 @@ The process the btclib-org maintainers follow with the coding agents
   `port-check.py` must answer, run by the `test-port-check` hook.
 
 `process/every-role.md`'s opening says how these files divide the
-process, and its *Clients* says what differs between the two agents.
+process, and its *Clients*, with `process/orchestration.md`'s *Agents in
+each client* and *Starting the reviewer in the other client*, says what
+differs between the two agents.
 
 ## Prerequisites
 

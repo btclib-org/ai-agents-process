@@ -29,10 +29,10 @@ finds it in the file the table gives:
 | *Committing and rebasing* | `writing.md` |
 | *Local review* | `local-review.md` |
 | *The rounds* | `local-review.md` |
-| *The findings record* | `local-review.md` |
+| *The findings record* | `orchestration.md` |
 | *A pull request's rounds* | `local-review.md` |
 | *The verdict* | `local-review.md` |
-| *A rebase and the clearance* | `local-review.md` |
+| *A rebase and the clearance* | `orchestration.md` |
 | *Collateral* | `every-role.md` |
 | *Orchestration* | `orchestration.md` |
 | *Night mode* | `orchestration.md` |

@@ -247,7 +247,7 @@ not clean.
 ## How a run is scored
 
 **A hit names the defect's mechanism and its consequence** well enough
-to fix it, as *The findings record* in `local-review.md` matches two
+to fix it, as *The findings record* in `orchestration.md` matches two
 findings. A defect a run names only in a non-blocking finding is a miss.
 The orchestrator scores each verdict against the case's sentence, and
 the human scores where it cannot tell. The cases are chosen, not drawn
@@ -658,6 +658,102 @@ The candidate has the baseline's hits and misses on all seven cases, so
 no case decides the comparison alone and none was run again (*One factor
 at a time*). The run shows no loss from the change, and cannot show a
 gain: no case's defect concerns the test a fix adds or a major version.
+
+- **Baseline and candidate**, 2026-11-16: `$PROCESS` `aa06777` and
+  `25e8949`, tree `e2902b7f3615976e92dbf2d79f24cc6739e4bb53`, the factor
+  changed being the brief: the move of ISS
+  btclib-org/ai-agents-process#492, which
+  `git diff aa06777 25e8949 -- process` makes, of the text only the
+  orchestrator acts on from the reviewer's files to `orchestration.md`,
+  which the reviewer's map does not give it. Out of `every-role.md` go
+  starting and resuming an agent, how the session starts and prepares
+  the reviewer in the other client, the Codex escalation measurements,
+  undoing an accident in the primary checkout, where a session's memory
+  puts each fact, and closing collateral. Out of `local-review.md` go
+  the convergence check, a session restart, the classes carried forward,
+  the findings record, the other client being unavailable, the Codex
+  pass, the port check, and a rebase and the clearance. The reviewer
+  keeps what its sandbox lets it write, run and read, the human's answer
+  standing in for an input's result, how a finding quotes its lines, now
+  in *The verdict*, and the merge of `main` that resolved nothing, now
+  *A merge of `main` and the clearance*; its pointers to the moved text
+  name `orchestration.md`. Claude Code, the `reviewer` agent, Opus,
+  effort `high`, one run per case, and a second in each configuration on
+  PR btclib-org/.github#2288 and PR btclib-org/ecc#580, where the first
+  runs differed. In both: PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit. PR
+  btclib-org/btclib-node#2516: miss. PR btclib-org/.github#2288: the
+  baseline miss, then miss; the candidate hit, then hit. PR
+  btclib-org/ecc#580: the baseline hit, then hit; the candidate miss,
+  then hit.
+
+On PR btclib-org/ai-agents-process#317 both block on "tied to the
+account", which holds; the baseline names the exemption of the resumed
+run only in a non-blocking finding and the candidate puts it as
+collateral, both reading it as already in the base's text. On PR
+btclib-org/btclib-secp256k1#1331 the baseline blocks on another finding,
+that the step holds each call to a list in the workflow where the tree
+says it holds it to `SECURITY.md`'s record, and the candidate clears it;
+neither says that exit `42` answers for every memcheck error. On PR
+btclib-org/.github#2288 the baseline's first run lists the other
+spacings among the claims it tried as holding, and its repeat names the
+single-space limit only as a non-blocking refinement (*How a run is
+scored*). On PR btclib-org/ecc#580 the candidate's first run lists
+`add_var`, `require_on_curve` and `is_on_curve` in its own walk of the
+class and raises no finding on the comment over `_AFF_CALLS`. Outside
+the cases' defects, the baseline's first run on PR btclib-org/ecc#580
+also blocks on a tuple subclass whose length overstates its items, the
+candidate's on PR btclib-org/ecc#484 on the sentence describing the
+pattern, which it calls false for wrapped `#:` comment lines the tree
+holds, and the baseline's first on PR btclib-org/.github#2288 on the
+test's docstring, which it calls false for the row the branch adds. No
+finding of either configuration was measured false.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, built with this file's `git archive` command, and the
+case from a repository holding only the head and its ancestors (*What a
+case holds*). The reviewer's map is unchanged, so the candidate's
+reviewer read `every-session.md`, `every-role.md`, `local-review.md` and
+the sections of `writing.md` the map names, at `25e8949`, and not
+`orchestration.md`. The installed `reviewer` agent is `main`'s
+`agents/reviewer.md`, so the run left out the change's pointer edit
+there, and no brief named a skill, so it left out the change's pointer
+edits in `/btclib-pr` too. The brief forbade the network, the forge, any
+suite and any other checkout of the case's repository, and every
+reviewer reports that it ran no gate. A case's briefs differ only in the
+copy's path and the run's label, and none names a configuration. On PR
+btclib-org/btclib-secp256k1#1331 the baseline's reviewer ran the harness
+under Valgrind on aarch64 in a local container with no network, reading
+local clones of secp256k1-zkp and secp256k1 with `git archive`, and the
+candidate's read a local secp256k1-zkp clone with `git show` and
+`git archive` and built the pin in its scratch directory against a
+stand-in memcheck header. On PR btclib-org/btclib-node#2516 the
+baseline's reviewer loaded the lock's btclib from the uv cache, and the
+candidate's used a stand-in for btclib in its scratch directory. On PR
+btclib-org/.github#2288 both of the baseline's reviewers and the
+candidate's second ran the head's own `check_sign_off.py` with `GIT_DIR`
+set to the case's repository. On PR btclib-org/ecc#580 the candidate's
+first reviewer replaced `typing_extensions` with a stub and its second
+ran the test's body under a pytest stub; the removal of its exports was
+refused to the baseline's second, and they stay in its scratch
+directory. No verdict names this file. The runs went in a shuffled
+order, the repeats last.
+
+The candidate has the baseline's hits and misses on five cases. On the
+first runs each configuration hits on three cases, the candidate on PR
+btclib-org/.github#2288 and the baseline on PR btclib-org/ecc#580, so
+neither case alone decides the comparison, and *One factor at a time*
+asks for a repeat only where one does; both ran again all the same. Over
+two runs PR btclib-org/.github#2288 is a hit in neither for the baseline
+and in both for the candidate, and PR btclib-org/ecc#580 in both for the
+baseline and in one for the candidate. Each case has gone both ways
+before under configurations that differ in nothing it concerns: PR
+btclib-org/.github#2288 hit once in two runs in each configuration at
+`e91f4c3` and `9c5ada8`, and PR btclib-org/ecc#580 missed at `9dd351e`
+and `bd66221` and hit in every other run above. The run shows no loss it
+can tie to the move, and cannot show a gain: no case's defect concerns
+the text that moved.
 
 ## Cases
 

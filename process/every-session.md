@@ -86,7 +86,7 @@ two disagree.
     - **A text over a limit is not posted but returned cut**, unless a
       maintainer asked for exactly that detail.
     - **The findings record is a record, not a reply**
-      (`local-review.md`'s *The findings record*, read before keeping
+      (`orchestration.md`'s *The findings record*, read before keeping
       one): no limit on a comment's length, lists or headings binds it,
       and its first line is still the point.
 - **Parallelize as much as you can.** Reads, remote work, writers and
