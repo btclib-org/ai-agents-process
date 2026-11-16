@@ -22,8 +22,9 @@
 # config, hook or attribute that runs a program.
 #
 # The cases, each a <work> directory unless it says otherwise. Removed
-# means removed, its worktrees deregistered and their branches deleted;
-# refused means refused with its reason, nothing in it removed:
+# means removed, its worktrees deregistered and their branches deleted,
+# but for a branch the case says is kept; refused means refused with its
+# reason, nothing in it removed:
 #
 # - a clean worktree whose commit is on origin is removed;
 # - with --check, the same is printed and nothing is written, the index of
@@ -58,9 +59,11 @@
 # - a name with a space is removed, and so is a work directory holding a
 #   read-only directory;
 # - a path that does not exist is absent, and exits 0;
-# - a name with a newline inside, or a directory find cannot read, is
-#   refused; where find still reads a directory of mode 000, as for uid
-#   0, the unreadable directory case is skipped and the test says so;
+# - a name with a newline or \001 inside, a worktree's included, under
+#   --check and in the run, a directory whose path above it holds \001,
+#   and a directory find cannot read are refused; where find still reads
+#   a directory of mode 000, as for uid 0, the unreadable directory case
+#   is skipped and the test says so;
 # - a directory holding a repository that is not a linked worktree of the
 #   session's is refused, left as it was, and no git runs, under --check
 #   or in the run: a clone, a .git deeper than <work>/<e>, a clone inside
@@ -123,8 +126,34 @@
 #   worktree of its directory stays registered;
 # - a branch whose tip moves before its deletion is kept and printed, and
 #   the directory is removed;
-# - where git worktree remove fails half-way, the directory is refused
-#   and keeps .sweep-unfinished, and the next run refuses it;
+# - where a worktree is switched with --ignore-other-worktrees to main,
+#   which the repository's own checkout has checked out, main is kept and
+#   printed as kept, --check prints what the run does, line for line, and
+#   the directory is removed;
+# - where two worktrees of the directory have one branch checked out, the
+#   branch is deleted once, --check prints what the run does, line for
+#   line, and the directory is removed;
+# - where a worktree outside the directory has the branch checked out, and
+#   its path holds a newline followed by a line naming the removed
+#   worktree, the branch is kept and printed with ? for the newline,
+#   --check prints what the run does, line for line, and the directory is
+#   removed;
+# - where a worktree outside the directory has the branch checked out at
+#   a path holding a newline, and a symbolic link at that path with \001
+#   for the newline leads to the removed worktree, the branch is kept,
+#   --check prints what the run does, line for line, and the directory is
+#   removed;
+# - where a second worktree of the directory, whose .git file is gone,
+#   has the branch checked out, the branch is kept and printed naming it,
+#   --check prints what the run does, line for line, and the directory is
+#   removed;
+# - where two directories named in one run each hold a worktree on one
+#   branch, the first keeps the branch, the second deletes it, and
+#   --check prints what the run does, line for line;
+# - where git worktree remove fails on the third worktree of the
+#   directory, the branches of the first two stay and the refusal names
+#   them, the directory is refused and keeps .sweep-unfinished, and the
+#   next run refuses it;
 # - where rm cannot remove a file, the directory is refused (only where
 #   chflags exists and sets uchg; where it refuses, the case is skipped
 #   and the test says so);
@@ -332,6 +361,14 @@ foreign() {
   [ ! -s "$GITLOG" ] || fail "$1: git ran: $(cat "$GITLOG")"
 }
 kept() { [ -e "$2" ] || fail "$1: $2 was removed"; }
+
+# same <case>: --check printed, line for line, what the run did
+same() {
+  want=$(printf '%s\n' "$out" | sed -e 's/^deregistered:/would deregister:/' \
+    -e 's/^deleted branch:/would delete branch:/' \
+    -e 's/^kept branch:/would keep branch:/' -e 's/^removed:/would remove:/')
+  [ "$want" = "$outc" ] || fail "$1: --check printed: $outc / the run: $out"
+}
 
 # registered <case> yes|no <worktree>
 registered() {
@@ -662,8 +699,24 @@ cases() {
   mkdir -p "$sp/newline/a
 b"
   run "$base" work "$sp/newline"
-  expect newline 1 'holds a name with a newline'
+  expect newline 1 'holds a name with a newline or \001'
   kept newline "$sp/newline"
+
+  soh=$(printf '\001')
+  mkwork "$m" soh-name "a${soh}b"
+  run "$base" work "$w"
+  expect 'soh name' 1 'holds a name with a newline or \001'
+  case $outc in
+    *'holds a name with a newline or \001'*) ;;
+    *) fail "soh name: --check does not refuse it: $outc" ;;
+  esac
+  registered 'soh name' yes "$wt"
+  git -C "$m" worktree remove "$wt"
+  git -C "$m" branch -q -D "$br"
+  mkdir -p "$root/p${soh}q/sess/scratchpad/w"
+  run "$base" work "$root/p${soh}q/sess/scratchpad/w"
+  expect 'soh path' 1 'its path holds a newline or \001'
+  kept 'soh path' "$root/p${soh}q/sess/scratchpad/w"
 
   # chmod 000 hides nothing from uid 0, or from an account that may read
   # past permissions
@@ -976,23 +1029,126 @@ b"
   [ "$(git -C "$m" rev-parse -q --verify "refs/heads/$br")" = "$c" ] ||
     fail "moved: branch $br is not at $c"
 
+  mkwork "$m" checked-out
+  git -C "$wt" checkout -q --ignore-other-worktrees main
+  x=$(git -C "$m" rev-parse refs/heads/main)
+  run "$base" work "$w"
+  expect 'checked out' 0 "kept branch: refs/heads/main of $m/.git, checked out"
+  expect 'checked out' 0 "removed: $w"
+  case $outc in
+    *"would keep branch: refs/heads/main of $m/.git, checked out in $m"*) ;;
+    *) fail "checked out: --check does not keep main: $outc" ;;
+  esac
+  case $outc$out in
+    *'delete branch'* | *'deleted branch'*)
+      fail "checked out: a branch is deleted: $outc / $out"
+      ;;
+  esac
+  [ "$(git -C "$m" rev-parse -q --verify refs/heads/main)" = "$x" ] ||
+    fail 'checked out: branch main is not where it was'
+  registered 'checked out' no "$wt"
+  same 'checked out'
+
+  mkwork "$m" shared wt1
+  wt1=$wt br1=$br
+  git -C "$m" worktree add -q -f "$w/wt2" "$br1" 2> /dev/null ||
+    fail 'shared: no second worktree'
+  run "$base" work "$w"
+  expect shared 0 "deleted branch: refs/heads/$br1 of $m/.git"
+  expect shared 0 "removed: $w"
+  same shared
+  branch shared no "$br1"
+  registered shared no "$wt1"
+  registered shared no "$w/wt2"
+
+  mkwork "$m" far-newline
+  nl='
+'
+  far="$base/o${nl}worktree $wt"
+  git -C "$m" worktree add -q -f "$far" "$br" 2> /dev/null ||
+    fail 'far newline: no worktree'
+  run "$base" work "$w"
+  expect 'far newline' 0 "kept branch: refs/heads/$br of $m/.git, checked out"
+  expect 'far newline' 0 "checked out in $base/o?worktree $wt$nl"
+  expect 'far newline' 0 "removed: $w"
+  same 'far newline'
+  branch 'far newline' yes "$br"
+  git -C "$far" rev-parse -q --verify HEAD > /dev/null ||
+    fail 'far newline: the HEAD of the worktree outside does not resolve'
+  git -C "$m" worktree remove "$far"
+  git -C "$m" branch -q -D "$br" 2> /dev/null
+
+  mkwork "$m" soh-link
+  far="$base/s${nl}y"
+  git -C "$m" worktree add -q -f "$far" "$br" 2> /dev/null ||
+    fail 'soh link: no worktree'
+  ln -s "$wt" "$base/s${soh}y"
+  run "$base" work "$w"
+  expect 'soh link' 0 "kept branch: refs/heads/$br of $m/.git, checked out"
+  expect 'soh link' 0 "checked out in $base/s?y$nl"
+  expect 'soh link' 0 "removed: $w"
+  same 'soh link'
+  branch 'soh link' yes "$br"
+  git -C "$m" worktree remove "$far"
+  git -C "$m" branch -q -D "$br" 2> /dev/null
+
+  mkwork "$m" gone-git wa
+  brg=$br
+  git -C "$m" worktree add -q -f "$w/wb" "$brg" 2> /dev/null ||
+    fail 'gone .git: no second worktree'
+  rm "$w/wb/.git"
+  run "$base" work "$w"
+  expect 'gone .git' 0 "kept branch: refs/heads/$brg of $m/.git, checked out"
+  expect 'gone .git' 0 "checked out in $w/wb$nl"
+  expect 'gone .git' 0 "removed: $w"
+  same 'gone .git'
+  branch 'gone .git' yes "$brg"
+  git -C "$m" worktree prune
+  git -C "$m" branch -q -D "$brg" 2> /dev/null
+
+  mkwork "$m" pair-a
+  wa=$w bra=$br
+  git -C "$m" worktree add -q -f "$sp/pair-b/wt" "$bra" 2> /dev/null ||
+    fail 'pair: no second worktree'
+  run "$base" work "$wa" "$sp/pair-b"
+  expect pair 0 "kept branch: refs/heads/$bra of $m/.git, checked out in"
+  expect pair 0 "checked out in $sp/pair-b/wt$nl"
+  expect pair 0 "deleted branch: refs/heads/$bra of $m/.git"
+  expect pair 0 "removed: $sp/pair-b"
+  same pair
+  branch pair no "$bra"
+
   mkwork "$m" half wt1
-  wt1=$wt
   git -C "$m" worktree add -q -b "b-half2" "$w/wt2" origin/main 2> /dev/null
+  git -C "$m" worktree add -q -b "b-half3" "$w/wt3" origin/main 2> /dev/null
+  # the removal fails on the worktree removed third, in the order the
+  # script finds them
+  run "$base" work --check "$w"
+  ws=$(printf '%s\n' "$out" | sed -n 's/^would deregister: //p')
+  first=$(printf '%s\n' "$ws" | sed -n 1p)
+  second=$(printf '%s\n' "$ws" | sed -n 2p)
+  third=$(printf '%s\n' "$ws" | sed -n 3p)
+  fb1=$(git -C "$first" symbolic-ref -q HEAD) || fail 'half: no branch'
+  fb2=$(git -C "$second" symbolic-ref -q HEAD) || fail 'half: no branch'
   spath=$tmp/git-shim:$PATH
-  SHIM_FAIL=$w/wt2 nocheck=1
+  SHIM_FAIL=$third nocheck=1
   export SHIM_FAIL
   run "$base" work "$w"
   unset SHIM_FAIL
   nocheck=
   spath=$PATH
-  expect half 1 "git worktree remove $w/wt2 fails"
+  expect half 1 "git worktree remove $third fails"
+  expect half 1 "so do the branches $fb1 of $m/.git, $fb2 of $m/.git"
+  for fb in "$fb1" "$fb2"; do
+    git -C "$m" rev-parse -q --verify "$fb" > /dev/null ||
+      fail "half: branch $fb was deleted"
+  done
   [ -d "$w/.sweep-unfinished" ] || fail 'half: no .sweep-unfinished'
-  kept half "$w/wt2/f.txt"
-  echo new > "$w/wt2/new.txt"
+  kept half "$third/f.txt"
+  echo new > "$third/new.txt"
   run "$base" work "$w"
   expect 'half again' 1 'holds .sweep-unfinished'
-  kept 'half again' "$w/wt2/new.txt"
+  kept 'half again' "$third/new.txt"
   git -C "$m" worktree prune
 
   git -C "$m" worktree add -q -b wt-direct "$sp/wt-direct" origin/main \
