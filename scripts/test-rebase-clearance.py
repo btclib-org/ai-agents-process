@@ -10,9 +10,11 @@ cleared commit and its rebased counterpart in a bare repository with git
 plumbing, which writes commits without signing them, and runs the block
 with `sh` on the two. It checks that the two hashes are equal where the
 branch's added and removed lines are unchanged, and differ where they
-are not, an edit that lands in another file included. The fixtures' git
-calls run with none of the caller's `GIT_` variables and no global or
-system git configuration. The script prints each case that answers
+are not: an edit that lands in another file, and one that a line
+printing as another file's `---` and `+++` hides, included. The
+fixtures' git calls run with none of the caller's `GIT_` variables and
+no global or system git configuration; a case may set inert keys of the
+fixture repository's own. The script prints each case that answers
 wrongly, and exits 1 where there is one.
 """
 
@@ -104,7 +106,9 @@ class Case:
 
     `old` is the base the cleared commit was reviewed on and `new` the base
     it is rebased onto; `cleared` and `rebased` are the trees of the two
-    commits on top of them.
+    commits on top of them. `config` holds keys of the fixture repository's
+    own git configuration, as a reader's may set them: inert ones only, never
+    a key that names a program to run.
     """
 
     def __init__(
@@ -115,14 +119,21 @@ class Case:
         new: Files,
         rebased: Files,
         equal: bool,
+        config: tuple[tuple[str, str], ...] = (),
     ) -> None:
-        self.label, self.equal = label, equal
+        self.label, self.equal, self.config = label, equal, config
         self.old, self.cleared, self.new, self.rebased = old, cleared, new, rebased
 
 
 LINES = "a\nb\nc\nd\ne\nf\n"
 EDITED = "a\nb\nc\nD\ne\nf\n"
 BASE: Files = {"A.md": LINES, "B.md": LINES}
+# A.md holds a line that, removed and added, prints as B.md's `---` and
+# `+++` lines; the gaps keep its three edits in three hunks
+GAP = "g\n" * 8
+FORGE: Files = {"A.md": f"x\n{GAP}-- a/B.md\n{GAP}u\n", "B.md": "u\n"}
+IN_A: Files = {"A.md": f"y\n{GAP}++ b/B.md\n{GAP}v\n", "B.md": "u\n"}
+IN_A_AND_B: Files = {"A.md": f"y\n{GAP}-- a/B.md\n{GAP}u\n", "B.md": "v\n"}
 
 CASES = (
     Case(
@@ -150,6 +161,15 @@ CASES = (
         equal=False,
     ),
     Case(
+        "the edit changes a line it adds, under color.diff=always",
+        BASE,
+        {**BASE, "A.md": EDITED},
+        BASE,
+        {**BASE, "A.md": EDITED.replace("D", "X")},
+        equal=False,
+        config=(("color.diff", "always"), ("color.diff.meta", "")),
+    ),
+    Case(
         "the same edit lands in another file",
         BASE,
         {**BASE, "A.md": EDITED},
@@ -173,12 +193,46 @@ CASES = (
         {"A.md": LINES},
         equal=False,
     ),
+    Case(
+        "a new file, rebased as the same lines added to an empty file",
+        BASE,
+        {**BASE, "C.md": LINES},
+        {**BASE, "C.md": ""},
+        {**BASE, "C.md": LINES},
+        equal=False,
+    ),
+    Case(
+        "a deleted file, rebased as the same file emptied of its lines",
+        BASE,
+        {"B.md": LINES},
+        BASE,
+        {**BASE, "A.md": ""},
+        equal=False,
+    ),
+    Case(
+        "edits in A.md alone, rebased as edits in A.md and B.md",
+        FORGE,
+        IN_A,
+        FORGE,
+        IN_A_AND_B,
+        equal=False,
+    ),
+    Case(
+        "edits in A.md and B.md, rebased as edits in A.md alone",
+        FORGE,
+        IN_A_AND_B,
+        FORGE,
+        IN_A,
+        equal=False,
+    ),
 )
 
 
 def run(case: Case, block: str, root: Path) -> str | None:
     """Run the block on one case and return what it got wrong, or None."""
     repo = Repo(root / "repo")
+    for key, value in case.config:
+        repo.git("config", key, value)
     cleared = repo.commit(case.cleared, repo.commit(case.old))
     rebased = repo.commit(case.rebased, repo.commit(case.new))
     script = (
