@@ -1,8 +1,8 @@
 # The btclib-org process: writing
 
 `every-role.md`, beside this file, opens the process: its opening says
-which role reads this file, and where a section named here in italics
-with no file is.
+which role reads this file. A section named here in italics with no file
+is in one of the four files that opening names.
 
 ## Before starting
 
@@ -493,20 +493,19 @@ of the standard* says.
   gates, and every reviewer's inputs the session runs there, are done
   (*Debris goes when its work ends*).
 
-  The dedicated reviewer runs none of the branch's code. It runs in the
-  writer's client, whose commands have the session's network and
-  credentials, and a brief cannot make each command it writes take the
-  sandbox's form; the session already runs that form for the gates. Its
-  brief says the branch is an outside contributor's, and carries the
+  The dedicated reviewer runs none of the branch's code
+  (`local-review.md`'s *Every reviewer tries to break the change*). It
+  runs in the writer's client, whose commands have the session's network
+  and credentials, and a brief cannot make each command it writes take
+  the sandbox's form; the session already runs that form for the gates.
+  Its brief says the branch is an outside contributor's, and carries the
   session's sync and gate runs of this sandbox on the record. The
-  reviewer writes its inputs in its own directory and runs none (*Every
-  reviewer tries to break the change*). The session reads each, copies
-  it into `<sbx>`, and runs it as a gate, with `uv run` in place of `uv
-  sync --locked`, then resumes the reviewer with the results on the
-  record. An input a resumed verdict names as not run is run the same
-  way. Only a `CLEARED` that came after the results of every input, and
-  names none as not run, is the dedicated reviewer's `CLEARED` for *The
-  rounds*.
+  reviewer writes its inputs in its own directory. The session reads
+  each, copies it into `<sbx>`, and runs it as a gate, with `uv run` in
+  place of `uv sync --locked`, then resumes the reviewer with the
+  results on the record. An input a resumed verdict names as not run is
+  run the same way. `local-review.md`'s *The rounds* says which
+  `CLEARED` counts as the dedicated reviewer's.
 
   A gate or an input that fails in the sandbox for want of the network,
   or of a package, a version of one or a hook that the branch adds or
@@ -597,14 +596,13 @@ of the standard* says.
   `os-macos.yml` where macOS is in question. Which sweeps a tree has,
   and what its pull requests already cover, is read from
   `.github/workflows/` on `origin/main`.
-- **The gate lock.** Up to three workers gate at once, each holding one
-  of the lock's slots while it runs a heavy gate (`every-session.md`'s
-  *The machine is shared*). Sourcing the script sets
-  `GATE_LOCK_WORKERS`, the `-n` of a suite. Release the slot the moment
-  the gates finish. A slot is taken and released only through
-  `$PROCESS/scripts/gate-lock.sh`, sourced in the same background shell
-  call as the gates (*Long jobs run in the background*), never by a
-  hand-written `mkdir` or `rmdir`:
+- **The gate lock.** A worker holds one of the lock's slots while it
+  runs a heavy gate (`every-session.md`'s *The machine is shared*).
+  Sourcing the script sets `GATE_LOCK_WORKERS`, the `-n` of a suite.
+  Release the slot the moment the gates finish. A slot is taken and
+  released only through `$PROCESS/scripts/gate-lock.sh`, sourced in the
+  same background shell call as the gates (*Long jobs run in the
+  background*), never by a hand-written `mkdir` or `rmdir`:
 
   ```shell
   . "${PROCESS:?}/scripts/gate-lock.sh"

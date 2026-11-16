@@ -1,22 +1,23 @@
 # The btclib-org process: orchestration
 
 `every-role.md`, beside this file, opens the process: its opening says
-which role reads this file, and where a section named here in italics
-with no file is.
+which role reads this file. A section named here in italics with no file
+is in one of the four files that opening names.
 
 ## Orchestration
 
 - **Dispatching a writer**: the paths of the files under
-  `$PROCESS/process/` the map gives its role, `every-session.md`'s and
-  the skill's, and the sections of those files and the skill that are
-  its role's, the issue or pull request, the repository, the worktree
-  and scratch paths, the force-push grant, and the claims you measured.
-  The same for a reviewer and a designer, and for a designer the
+  `$PROCESS/process/` that `every-role.md`'s map gives its role,
+  `every-session.md`'s, and those of the skills that hold its role's
+  sections, and the sections of those files and skills that are its
+  role's, the issue or pull request, the repository, the worktree and
+  scratch paths, the force-push grant, and the claims you measured. The
+  same for a reviewer and a designer, and for a designer the
   `origin/main` sha it reads the tree at.
 - **Before dispatching, ask whether the issue is collateral of a pull
   request this session worked** (*Closing collateral*).
-- **The role map binds the brief.** A writer does not open pull requests;
-  do not ask it to.
+- **The maps of *Which sections are yours* bind the brief.** A writer
+  does not open pull requests; do not ask it to.
 - **Every claim in a brief carries its command, or the words saying it
   is unmeasured.** A writer writes a false premise into prose that lands.
   `ls -d` a path before naming it; a missing checkout is a question for
@@ -192,14 +193,14 @@ with no file is.
   of one in flight. So after a restart, the verdict file of a reviewer
   in the other client, `<name>.last.md` of a Codex one and `<name>.log`
   of a Claude Code one (*Starting the reviewer in the other client*), is
-  read first, and a whole verdict there (*The verdict*) is received.
-  Each review whose verdict was not received runs again on the latest
-  version, with a new reviewer. A reviewer that has a fix to read and
-  can no longer be resumed (*Agents in each client*, *Clients*) is
-  replaced by a new one whose brief carries its last verdict and the sha
-  that verdict named. Each new reviewer takes the lost one's place: for
-  *The rounds* it is the same reviewer, in the count of the convergence
-  check above too.
+  read first, and a whole verdict there (`local-review.md`'s *The
+  verdict*) is received. Each review whose verdict was not received runs
+  again on the latest version, with a new reviewer. A reviewer that has
+  a fix to read and can no longer be resumed (*Agents in each client*,
+  *Clients*) is replaced by a new one whose brief carries its last
+  verdict and the sha that verdict named. Each new reviewer takes the
+  lost one's place: for `local-review.md`'s *The rounds* it is the same
+  reviewer, in the count of the convergence check above too.
 - **The classes of defect found carry forward.** The findings record
   (*The findings record*) gives each finding its class: the shape of
   input or the step of reasoning it broke. The brief of each later
@@ -261,18 +262,19 @@ with no file is.
   approval review, is there whoever approves, and on a fork the approval
   goes to the human (`/btclib-pr`'s *Outside contributors*).
 - **Codex reads the branch locally before each round on the forge**
-  (*The rounds*): the whole head before the pull request is opened, and
-  before a later push the delta from the last head Codex read. It is a
-  Codex `reviewer`, started as *Starting the reviewer in the other
-  client* says, from Claude Code by its `codex exec` command. A
-  `CLEARED` of the head by a Codex reviewer of the rounds stands for it,
-  and so does the port check of the next bullet. A rebase that keeps the
-  `CLEARED` (*A rebase and the clearance*) asks for no new pass. The
-  pass's findings go in the findings record, answered as `/btclib-pr`'s
-  *Answering it* answers a bot's, and each is closed there before the
-  head goes to the forge. Where Codex refuses the run, the head goes
-  without it, the refusal judged and recorded as *Where the other client
-  is unavailable* says of the fresh reviewer's.
+  (`local-review.md`'s *The rounds*): the whole head before the pull
+  request is opened, and before a later push the delta from the last
+  head Codex read. It is a Codex `reviewer`, started as *Starting the
+  reviewer in the other client* says, from Claude Code by its
+  `codex exec` command. A `CLEARED` of the head by a Codex reviewer of
+  the rounds stands for it, and so does the port check of the next
+  bullet. A rebase that keeps the `CLEARED` (*A rebase and the
+  clearance*) asks for no new pass. The pass's findings go in the
+  findings record, answered as `/btclib-pr`'s *Answering it* answers a
+  bot's, and each is closed there before the head goes to the forge.
+  Where Codex refuses the run, the head goes without it, the refusal
+  judged and recorded as *Where the other client is unavailable* says of
+  the fresh reviewer's.
 - **A port of the standard goes to no local reviewer where
   `scripts/port-check.py` exits `0` on the head that lands, run again
   after each rebase or merge of `main` as the gates are, and no change
@@ -504,12 +506,13 @@ the gates, and push.
 
 **Where `main` has moved past the `origin/main` sha the verdict read the
 prose on**, the orchestrator re-reads the branch's added lines on the
-merge with the new `origin/main`, by the commands of *A pull request's
-rounds*, at the rebase or at `/btclib-pr`'s *Landing*. The `CLEARED`
-stands. A sentence the re-read finds false there is fixed in a new
-commit, or by amend before the pull request is open (*Committing and
-rebasing*). A fresh reviewer reviews that fix, and the branch is merged
-only after its `CLEARED`, which ends the rounds (*The rounds*).
+merge with the new `origin/main`, by the commands of `local-review.md`'s
+*A pull request's rounds*, at the rebase or at `/btclib-pr`'s *Landing*.
+The `CLEARED` stands. A sentence the re-read finds false there is fixed
+in a new commit, or by amend before the pull request is open
+(*Committing and rebasing*). A fresh reviewer reviews that fix, and the
+branch is merged only after its `CLEARED`, which ends the rounds
+(`local-review.md`'s *The rounds*).
 
 ## Agents in each client
 

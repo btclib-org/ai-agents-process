@@ -1,8 +1,8 @@
 # The btclib-org process: local review
 
 `every-role.md`, beside this file, opens the process: its opening says
-which role reads this file, and where a section named here in italics
-with no file is.
+which role reads this file. A section named here in italics with no file
+is in one of the four files that opening names.
 
 ## Local review
 
@@ -70,6 +70,9 @@ branch, or a text to be posted.
   them, or at the dedicated reviewer's `CLEARED` where the other client
   is unavailable (`orchestration.md`'s *Where the other client is
   unavailable*).
+- **On an outside contributor's branch, only a `CLEARED` that came after
+  the results of every input, and names none as not run, is the
+  dedicated reviewer's `CLEARED`.**
 - **From the sixth round of a branch's local review, a finding on a
   shape that no tree and no caller holds is filed as an issue and does
   not block.** Each verdict of a local reviewer is a round, so a head
@@ -454,7 +457,7 @@ got=$(gh api "gists/${gist:?}/${rev:?}" --jq .id) &&
       `CLEARED` defers nothing
 - [ ] `git status --porcelain` empty in the tree reviewed and in the
       primary checkout
-- [ ] collateral filed, with the body inline
+- [ ] collateral filed, as *Collateral* says
 
 **A finding quotes the lines it rests on**: the path, the first line's
 number, the sha they are read at, and the lines exactly as they read
