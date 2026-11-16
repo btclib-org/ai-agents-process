@@ -553,14 +553,15 @@ brief carries beside the draft:
 
 **Our texts of the last 7 days are those of the `gh` login**: the
 bodies and comments of issues and pull requests, its reviews, and its
-review comments, replies included. This writes them to `<file>`, one
-JSON object a line holding the text's `url` and `body`, and prints how
-many it wrote. Where a read fails, an answer carries `errors`, or a list
-comes back short or would be cut, it says why on stderr and prints
-`error`. The events API stops at 300 events and a search at 1000
-results, so the bodies and comments come from the login's own lists,
-newest first, which hold no such limit; a search finds only the pull
-requests the login reviewed, whose reviews it then reads:
+review comments, replies included, since a review comment belongs to a
+review by its own author. This writes them to `<file>`, one JSON object
+a line holding the text's `url` and `body`, and prints how many it
+wrote. Where a read fails, an answer carries `errors`, or a list comes
+back short or would be cut, it says why on stderr and prints `error`.
+The events API stops at 300 events and a search at 1000 results, so
+the bodies and comments come from the login's own lists, newest first,
+which hold no such limit; a search finds only the pull requests the
+login reviewed, whose reviews it then reads:
 
 ```shell
 out=<file>
