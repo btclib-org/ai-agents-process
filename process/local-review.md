@@ -129,10 +129,9 @@ branch, or a text to be posted.
   own, within the limits the sixth round (above) and a differential
   *Done when* (below) set; a claim of a branch's commit message, pull
   request body or reply is weighed as *Which prose is worth a round*
-  says. The fix of a blocking one adds the input as a test where the
-  tree tests that code. The verdict lists each claim tried, with the
-  inputs run against it and what they printed, and names the claims
-  left untried.
+  says. `writing.md`'s *Writing work* says what the fix of a blocking
+  one adds. The verdict lists each claim tried, with the inputs run
+  against it and what they printed, and names the claims left untried.
 - **Where an oracle is at hand, the inputs run through it**, rather than
   being read against a specification: a built reference implementation,
   such as Bitcoin Core or libsecp256k1, a second independent
@@ -715,8 +714,10 @@ got=$(gh api "gists/${gist:?}/${rev:?}" --jq .id) &&
       `origin/main`, whose sha it names (*A pull request's rounds*)
 - [ ] where the diff moves a dependency, a hook or an action to a new
       major version, the release notes or changelog read between the two
-      versions, and what they say of the tree (`/btclib-pr`'s *The
-      decision*)
+      versions, each named, and whether anything in them breaks the
+      tree. A major move is one where a version's first non-zero number
+      changes: a dependency's, a hook's `rev:` or its `# frozen:`
+      comment, an action's `# vX.Y.Z` comment
 - [ ] the coverage list: each file the diff touches, read before the
       first verdict and marked checked, and each other file the review
       read for it, marked checked or not read, with why; deferred names

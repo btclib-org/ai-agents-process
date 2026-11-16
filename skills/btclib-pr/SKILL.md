@@ -917,10 +917,10 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
       only move pins: the fifth command below prints nothing, and the
       sixth, where it runs, exits `0`
 - [ ] a major move of a dependency, a hook or an action has the latest
-      fresh reviewer's `CLEARED` name the release notes or changelog it
-      read between the two versions, and say that nothing in them breaks
-      the tree; where the other client is unavailable, the dedicated
-      reviewer's does (the shared *A pull request's rounds*)
+      fresh reviewer's `CLEARED` answer the shared *The verdict*'s item
+      on it, saying that nothing in the notes breaks the tree; where the
+      other client is unavailable, the dedicated reviewer's does (the
+      shared *A pull request's rounds*)
 
 The first prints each file under `.github/` or any `.claude/`, any top-level
 `RELEASING.md`, `REPOSITORY.md` or `SECURITY.md`, and any `AGENTS.md`,
@@ -1254,10 +1254,9 @@ clone=<clone dir>
 rm -rf "${clone:?}"
 ```
 
-A major move is one where a version's first non-zero number changes: a
-dependency's, a hook's `rev:` or its `# frozen:` comment, an action's
-`# vX.Y.Z` comment. Where the notes show a known problem, the item
-fails and the human decides (*Where it is not obvious*).
+The shared *The verdict* says what a major move is. Where the notes show
+a known problem, its item fails and the human decides (*Where it is not
+obvious*).
 
 **Where it is obvious, approve `<sha>`, pinned.** `gh pr review` cannot
 pin a commit, so the call is the API's:

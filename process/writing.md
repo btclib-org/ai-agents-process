@@ -132,6 +132,8 @@ The writer's section; the reviewer judges its result.
       than once* is in the report
 - [ ] where the change removes tests, each refusal they asserted that a
       public caller still reaches is asserted again through that caller
+- [ ] the fix of a blocking finding that rests on an input adds that
+      input as a test, where the tree tests that code
 - [ ] the report says what was **not** checked, and why
 
 ### A rule stated more than once
