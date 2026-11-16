@@ -490,6 +490,55 @@ and on PR btclib-org/.github#2288 each configuration hits once in two
 runs. The run shows no loss from the bullet, and cannot show a gain: no
 case's defect concerns a changelog entry.
 
+- **Baseline and candidate**, 2026-11-16: `$PROCESS` `9dd351e` and
+  `bd66221`, the factor changed being the brief: the sentence the change for ISS
+  btclib-org/ai-agents-process#486 adds to `writing.md`'s bullet on an
+  issue owed by several trees, which excepts a port of the standard from
+  the switch to a closing keyword, and which alone `git diff 9dd351e
+  bd66221 -- process` changes. Claude Code, the `reviewer` agent, Opus,
+  effort `high`, one run per case, and a second on PR
+  btclib-org/ai-agents-process#317, since its first two runs differed.
+  In both: PR btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/ecc#484: hit. PR btclib-org/btclib-secp256k1#1331: miss. PR
+  btclib-org/.github#2288: miss. PR btclib-org/btclib-node#2516: miss.
+  PR btclib-org/ecc#580: miss. PR btclib-org/ai-agents-process#317: the
+  baseline hit, then miss on the repeat; the candidate miss, then miss.
+
+On PR btclib-org/ai-agents-process#317 all four runs block on "tied to
+the account", which holds. The baseline's first run also blocks on the
+exemption of the resumed run; the other three read the same wait as
+already in the base's text and put it as collateral or as no finding.
+On PR btclib-org/.github#2288 both runs raise the lookbehind's single
+space as a non-blocking finding, the candidate's on the commit message
+alone, which is a miss (*How a run is scored*). On PR btclib-org/ecc#580
+neither names the comment over `_AFF_CALLS`. No finding of either
+configuration was measured false.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, and the case from a repository holding only the head
+and its ancestors (*What a case holds*). The brief forbade the network,
+the forge, any suite and any other checkout of the case's repository,
+and every reviewer reports that it ran no gate. On PR
+btclib-org/btclib-secp256k1#1331 the baseline's reviewer ran the harness
+under Valgrind in a local container with no network, reading the zkp pin
+from a local upstream clone, and the candidate's built it against a
+stand-in memcheck header. On PR btclib-org/ai-agents-process#444 the
+baseline's reviewer read the standard at the port's sha from the local
+clone of btclib-org/.github. On PR btclib-org/btclib-node#2516 the
+baseline's loaded btclib, read-only, from the uv cache. The baseline's
+first reviewer of PR btclib-org/ai-agents-process#317 reports that the
+process copy states the case's bullet in a later form, which answers its
+findings, and that it derived them from the head's text. The candidate's
+reviewer of PR btclib-org/ecc#580 wrote no verdict file, holding its
+definition over the brief, and its hand-back is the verdict. No
+verdict's coverage list named this file. The labels were random.
+
+The candidate has the baseline's hits and misses on six cases. On PR
+btclib-org/ai-agents-process#317 the baseline hits once in two runs and
+the candidate in neither, and the defect there does not concern a
+citation. The run shows no loss it can tie to the sentence, and cannot
+show a gain: no case's defect concerns how a port's issue closes.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
