@@ -301,8 +301,12 @@ embargoed fix's record stays in the file until its advisory is published
 file wins over `every-session.md`'s exemption (*Which file wins*) until
 the standard's *Write plainly* carries it, as btclib-org/.github#2306
 asks, and the tree takes the port. A text to be posted keeps its record
-in the file alone, `<work>/findings-<text file>.md`, where the hash
-`shasum -a 256 <text file>` prints for each version stands for a head.
+in the file alone, `findings-<text file>.md` in `<work>`, or, for a text
+that belongs to no issue yet, in the directory `every-role.md`'s *The
+scratchpad is shared* gives it. The hash `shasum -a 256 <text file>`
+prints for each version stands for a head. Where the files are read
+once `<work>` is swept, `every-role.md`'s *Debris goes when its work
+ends* says.
 
 **The record lists every round, local or on the forge, as *The rounds*
 counts them**: its head, each reviewer that read the head in that round

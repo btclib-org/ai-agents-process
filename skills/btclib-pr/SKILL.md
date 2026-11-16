@@ -2047,6 +2047,9 @@ has not reported yet.
   The head branch is left to the human and named in the report:
   deleting a remote branch is hard to undo.
 
+  Then the session sweeps the pull request's `<work>` where the shared
+  *Debris goes when its work ends* says.
+
   Then run this section's first bullet again: where the merge turned
   `main` red, its repair comes first.
 

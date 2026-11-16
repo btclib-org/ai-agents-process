@@ -148,6 +148,18 @@ or quotes, a copy of this file other than its case tree's own: one at
 the run's `$PROCESS` sha, on `main` or in another checkout. A verdict
 that lists this file as not read is not discarded for it.
 
+The tree goes once the run is recorded in *Runs*, since the sweep of
+`every-role.md`'s *Debris goes when its work ends* refuses a `<work>`
+that holds it:
+
+```shell
+tree=<tree>
+```
+
+```shell
+rm -rf "${tree:?}"
+```
+
 The copy the reviewer reads the process from
 (*The expected finding is kept out of the reviewer's input*) is built
 from a clone that holds the run's `$PROCESS` sha. The exclude pathspec

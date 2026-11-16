@@ -277,9 +277,19 @@ This section is in `every-session.md`, beside this file.
       directory, `<scratch>`, each file under a name that is its own
       (`msg-<branch>.txt`).
 
+  A role makes its `<scratch>` before the first file it writes there,
+  such as the base pin of *`refs/remotes/origin/main` is shared by every
+  worktree*:
+
+  ```shell
+  mkdir -p <work>/<role>
+  ```
+
   What the orchestrator keeps for the whole session belongs to no piece
   of work and stays in `<scratchpad>/orchestrator/`, as the sha of *The
-  process is re-read when `main` changes it* does.
+  process is re-read when `main` changes it* does. So do the files of a
+  text that belongs to no issue yet, as the draft of an issue still to
+  be filed and its findings record.
 
   **Read back from the repository what you wrote from a file**:
   `git show -s --format=%B HEAD` after a `-F`, the committed file after a
@@ -323,7 +333,88 @@ This section is in `every-session.md`, beside this file.
   uncommitted or unpushed work stays (*Before removing or discarding
   anything that could be work*). A gate's basetemp and build directories
   go once that branch's gates are done. A reviewer's worktree, exports,
-  clones and reports go before it hands back its verdict.
+  repositories and reports go before it hands back its verdict, and a
+  writer's clones as `writing.md` says where it makes them.
+
+  **A piece of work's `<work>` goes when the last pull request of its
+  issue lands or is closed**, or when the pull request that stands in for
+  the issue does. It is the last only where the searches of *Before
+  starting* find no other open pull request for the issue, and `<work>`
+  holds no worktree on another branch and no file named for one, as
+  `msg-<branch>.txt` or `findings-<branch>.md`. The orchestrator first
+  fetches origin in the repository of each linked worktree directly in
+  `<work>`, and there the head of each pull request opened from a branch
+  one of those worktrees holds. An issue ported to several trees has a
+  `<work>` for each (*Your own worktree*), so each fetches the pull
+  requests of its own repository, not only the one that ended. The
+  script counts a ref of origin only where the repository holds its
+  commit, and a landing's commit is made on the forge, as is a head that
+  a bot moved on or that was pushed from another clone; a worktree whose
+  head was not fetched is refused as holding an unpushed commit. The
+  default fetch does not bring `refs/pull/*`:
+
+  ```shell
+  git -C <checkout> fetch origin
+  ```
+
+  For each worktree `<wt>`, with `<owner>/<repo>` the repository its
+  origin names, the `gh` command prints the numbers of the pull requests,
+  open or not, of the branch the worktree holds, read from git rather
+  than typed, since a branch name may hold `;` or `>`. A detached
+  worktree holds no branch, so nothing is looked up for it and a commit
+  it holds that origin lacks leaves it refused. The lookup does not
+  filter on the head repository, so a fork's branch of the same name
+  adds a number too, which is harmless: the fetch reads origin's own
+  `refs/pull/<n>/head`, and a commit that ref reaches is on origin. The
+  fetch, run for each `<n>`, writes only `FETCH_HEAD` and objects:
+
+  ```shell
+  wt=<wt>
+  repo=<owner>/<repo>
+  ```
+
+  ```shell
+  branch=$(git -C "${wt:?}" branch --show-current)
+  [ -z "$branch" ] || gh pr list --repo "${repo:?}" --head "$branch" \
+    --state all --json number --jq '.[].number'
+  ```
+
+  ```shell
+  git -C <checkout> fetch origin refs/pull/<n>/head
+  ```
+
+  It then moves each findings record at the top of `<work>`,
+  `findings-*.md`, to `<scratchpad>/orchestrator/` under `<work>`'s name,
+  where `orchestration.md`'s *The findings record* reads it after the
+  landing. `mv -n` replaces no record already there, and the script
+  refuses a `<work>` that still holds one anywhere, so that a name taken
+  stops the sweep with both records kept:
+
+  ```shell
+  work=<work>
+  ```
+
+  ```shell
+  while [ "${work:?}" != "${work%/}" ]; do work=${work%/}; done &&
+    keep=${work%/*}/orchestrator/${work##*/} &&
+    mkdir -p "$keep" &&
+    find "$work" -maxdepth 1 -name 'findings-*.md' -exec mv -n {} "$keep"/ \;
+  ```
+
+  Last it runs `scripts/sweep.sh`, whose header says what it refuses, and
+  names each refusal in its report to the human. A `<work>` that holds
+  any other repository is refused and left for the human, since the
+  script runs git in no repository it cannot tell is a linked worktree of
+  the session's:
+
+  ```shell
+  work=<work>
+  ```
+
+  ```shell
+  sh "${PROCESS:?}/scripts/sweep.sh" work "${work:?}"
+  ```
+
 - **The orchestrator, never a writer, sweeps what a session that no
   longer runs left**, when the disk is short (*Before starting*). It
   removes only a worktree that is clean and pushed, and that session's
