@@ -63,7 +63,7 @@ check() {
 cat > "${d}/prs.graphql" <<'EOF_PRS'
 query($q: String!, $endCursor: String) {
   search(query: $q, type: ISSUE, first: 40, after: $endCursor) {
-    pageInfo { hasNextPage endCursor }
+    issueCount pageInfo { hasNextPage endCursor }
     nodes {
       ... on PullRequest {
         number title url isDraft additions deletions changedFiles
@@ -100,7 +100,7 @@ EOF_PRS
 cat > "${d}/issues.graphql" <<'EOF_ISSUES'
 query($q: String!, $endCursor: String) {
   search(query: $q, type: ISSUE, first: 100, after: $endCursor) {
-    pageInfo { hasNextPage endCursor }
+    issueCount pageInfo { hasNextPage endCursor }
     nodes {
       ... on Issue {
         number title url createdAt
@@ -145,16 +145,17 @@ exec sh "${d}/run.sh" "comments.${r}" gh api --paginate \
        .created_at] | @tsv"
 EOF_COMMENTS
 
-# merge.sh <repo>/<n>: the pull request's URL and mergeability
+# merge.sh <repo>/<n>: the pull request's URL, mergeability and head
 cat > "${d}/merge.sh" <<'EOF_MERGE'
 r=${1%/*} n=${1#*/}
 exec sh "${d}/run.sh" "merge.${r}.${n}" gh api graphql -f o="${o}" \
   -f r="${r}" -F n="${n}" -f query='
   query($o: String!, $r: String!, $n: Int!) {
     repository(owner: $o, name: $r) {
-      pullRequest(number: $n) { url mergeable }
+      pullRequest(number: $n) { url mergeable headRefOid }
     }
-  }' --jq '.data.repository.pullRequest | "\(.url)\t\(.mergeable)"'
+  }' --jq '.data.repository.pullRequest
+    | "\(.url)\t\(.mergeable)\t\(.headRefOid)"'
 EOF_MERGE
 
 # item.sh <repo>/<n>
@@ -195,7 +196,8 @@ def unanswered: .author.login as $a
     | select(human and .author.login != $a)]
   | length == 0;
 # the bot's verdict on the head, read as /btclib-pr's "The reviews on
-# GitHub" reads it with gh pr view: change both together
+# GitHub" reads it with gh pr view, but among the bot's latest reviews
+# only: change both together
 def ack: .headRefOid as $h
   | [.verdicts.nodes[] | ((.body // "") + "\n" | split("\n")[0])
     | select(test("^(ACK|CHANGES REQUESTED|NACK|NO VERDICT) " + $h + "(:|\\s|$)"))]
@@ -209,9 +211,10 @@ def age: if . == null then "?" else
 def balance: if kind == "PR" then " \(.changedFiles) file"
   + (if .changedFiles == 1 then "" else "s" end)
   + ", +\(.additions)/-\(.deletions)" else "" end;
+def link: "[\(kind) \(.repository.name)#\(.number)](\(.url))";
 def row($g; $t; $why; $mark): {g: $g, t: $t,
-  slug: "\(.repository.name)/\(.number)", line: ("- \($t | age) "
-  + "[\(kind) \(.repository.name)#\(.number)](\(.url))\(balance) — \($why)"
+  slug: "\(.repository.name)/\(.number)", link: link, line: ("- \($t | age) "
+  + "\(link)\(balance) — \($why)"
   + (if $mark and ($t // "") >= $since then " (new)" else "" end)
   + " — \(.title[:50] | gsub("[[:cntrl:]]"; " ")
     | gsub("(?<c>[\\\\`*_\\[\\]<>#|~&])"; "\\\(.c)"))")};
@@ -240,13 +243,14 @@ def row($g; $t; $why; $mark): {g: $g, t: $t,
     | $closed[] | select(. != null and .state != "OPEN")
     | $s["\(.repository.name)/\(.number)"] as $c
     | row(5; $c.t; "\($c.login) spoke last"; false)) ]
-# the groups, then one line of the slugs of unknown mergeability, or empty
+# the groups, then one line holding a JSON array of those of unknown
+# mergeability
 | (map(select(.g > 0)) | group_by(.g) | .[]
     | ["A person waits on an answer", "Asked of you", "Your review requested",
        "The bot's ACK, needs your approval",
        "A person spoke on a closed item"][.[0].g - 1] as $h
     | "**\($h)**", "", (sort_by(.t) | reverse | .[].line), ""),
-  (map(select(.g == 0) | .slug) | sort | join(" "))
+  (map(select(.g == 0) | {slug, link}) | sort_by(.slug) | tojson)
 EOF_ROWS
 
 sh "${d}/run.sh" me gh api user --jq .login
@@ -264,6 +268,22 @@ sh "${d}/run.sh" issues gh api graphql --paginate \
   xargs -n 1 -P 6 sh "${d}/comments.sh" < "${d}/repos.out" &
 wait
 check prs issues
+# a search with no count of matches, or cut short at GitHub's cap on
+# results, as SKILL.md says
+for n in prs issues; do
+  short=$(jq -nr '[inputs | .data.search]
+    | if length == 0 or any(.[]; .issueCount == null) then
+        "the search gave no count of matches"
+      else ([.[].issueCount] | max) as $c
+        | ([.[].nodes[] | .url // empty] | unique | length) as $r
+        | if $c > $r then
+            "the search was cut short: \($c) matches, \($r) returned"
+          else empty end end' "${d}/${n}.out") || exit 1
+  if [ -n "${short}" ]; then
+    printf 'error: %s: %s\n' "${n}" "${short}"
+    exit 1
+  fi
+done
 while read -r r; do
   check "comments.${r}"
 done < "${d}/repos.out"
@@ -296,11 +316,14 @@ rows() {
     --slurpfile open "${d}/open.json" --slurpfile spoke "${d}/spoke.json" \
     --slurpfile closed "${d}/closed.json" -f "${d}/rows.jq" \
     > "${d}/rows.md" || exit 1
-  tail -n 1 "${d}/rows.md" | tr ' ' '\n' | sed '/^$/d' > "${d}/unknown.keys"
+  tail -n 1 "${d}/rows.md" > "${d}/unknown.json"
+  jq -r '.[].slug' "${d}/unknown.json" > "${d}/unknown.keys" || exit 1
 }
 rows
 # GitHub computes a pull request's mergeability once it is asked for:
-# those still unknown are read once more, 5 s later, and no more
+# those still unknown are read once more, 5 s later, and no more. One
+# whose head moved in between keeps its unknown mergeability, since its
+# verdict and checks were read on the earlier head
 if [ -s "${d}/unknown.keys" ]; then
   sleep 5
   xargs -n 1 -P 6 sh "${d}/merge.sh" < "${d}/unknown.keys"
@@ -311,13 +334,14 @@ if [ -s "${d}/unknown.keys" ]; then
     cat "${d}/merge.${k%/*}.${k#*/}.out"
   done < "${d}/unknown.keys" > "${d}/merge.tsv"
   jq -c --rawfile m "${d}/merge.tsv" '([$m | split("\n")[] | select(. != "")
-      | split("\t") | {(.[0]): .[1]}] | add) as $m
-    | .data.search.nodes |= map(.mergeable = ($m[.url // ""] // .mergeable))' \
+      | split("\t") | {(.[0]): {mergeable: .[1], head: .[2]}}] | add) as $m
+    | .data.search.nodes |= map($m[.url // ""] as $r
+      | if $r != null and $r.head == .headRefOid
+        then .mergeable = $r.mergeable else . end)' \
     "${d}/open.json" > "${d}/open2.json" || exit 1
   mv "${d}/open2.json" "${d}/open.json"
   rows
 fi
 sed '$d' "${d}/rows.md"
-u=$(sed 's|\([^/]*\)/\([0-9]*\)|PR \1#\2|' "${d}/unknown.keys" | paste -sd, - |
-  sed 's/,/, /g')
+u=$(jq -r 'map(.link) | join(", ")' "${d}/unknown.json") || exit 1
 echo "since ${since}, read at ${at}${u:+; mergeability unknown: ${u}}"
