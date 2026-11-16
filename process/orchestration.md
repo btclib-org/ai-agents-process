@@ -477,35 +477,72 @@ It holds even where `main` already carried a hunk, which the rebased
 commit then lacks.
 
 **A rebase that applies without a conflict but replays other commits, or
-drops one, keeps the `CLEARED` only where the branch's own added and
-removed lines are unchanged, each in the same file.** Otherwise a fresh
-reviewer reads the whole branch. For a one-commit branch, "unchanged" is
-proved by comparing every added and removed line — bullets and blank
-lines included — and the lines that name each file, with explicit shas,
-each revision a separate argument. The `diff --git` line that opens each
+drops one, keeps the `CLEARED` only where the branch makes the same
+change to each file: the same lines added and removed, a binary file's
+as a text file's, and the same file added, deleted, renamed or given a
+new mode.** Otherwise a fresh reviewer reads the whole branch. For a
+one-commit branch, "the same" is proved by comparing the two diffs, with
+explicit shas, each revision a separate argument, less the lines that
+change with what surrounds the edit: the `index` line, which names the
+blobs, a renamed file's `similarity index`, each `@@` line, which
+numbers the lines, the context lines, which start with a space, and
+empty lines, which `diff.suppressBlankEmpty` prints for a blank context
+line. Every other line stays, among them each added and removed line
+(bullets and blank lines included), each `\ No newline at end of file`,
+and the headers that say what became of each file, as `new file mode`,
+`old mode` or `rename from`. The `diff --git` line that opens each
 file's diff is the boundary between files: every line of a hunk starts
 with a space, `+`, `-` or `\`, so no content prints one, where removing
-a line `-- a/B` from another file prints `--- a/B`. The `---` and `+++`
-lines say whether the file is added or deleted. The flags hold the
-output to that form whatever the reader's git configuration says: under
-`color.diff=always` the `grep` drops every colored line, so with the
-headers left uncolored two different edits compare equal:
+a line `-- a/B` from another file prints `--- a/B`.
+
+`--text` prints a binary file's change as lines of its bytes, in place
+of `Binary files … differ`, whatever the reader's attributes or
+`core.bigFileThreshold` say. A binary patch, which `--binary` prints,
+would not do: it can copy from the old blob, which only the dropped
+`index` line names, so two different changes can print the same patch. A
+binary file's bytes can hold a NUL, so `grep -a` keeps it and each diff
+reaches `shasum` through a pipe, since `sh` drops a NUL from what `$(…)`
+captures.
+
+`env -i PATH="$PATH"` hands each `grep` and `shasum` no variable of the
+environment but `PATH`. macOS `grep` reads options from `GREP_OPTIONS`,
+where `-m1` keeps only the first line, and `shasum` is a Perl script,
+which under `PERLIO=:crlf` drops each CR before an LF. Perl's variables
+that load code, as `PERL5OPT` and `PERL5LIB`, go with the rest; `PATH`,
+which says which programs run, stays the reader's.
+
+The other flags pin the keys of the reader's git configuration that
+would change which diffs compare equal, and
+`scripts/test-rebase-clearance.py` holds a case under each of these:
+under `color.diff=always` each `@@` line starts with a color code and
+stays, `diff.renames=false` prints a renamed file whole,
+`diff.renameLimit=1` prints two renamed and edited files whole,
+`diff.ignoreSubmodules=all` hides a submodule's move, and
+`diff.submodule=log` prints only its short ids. The prefixes keep the
+file names as quoted above under `diff.noPrefix`, which no case sets.
+`diff.external` and a `textconv` driver hand the patch, or a file's
+text, to a program, which the test does not run:
 
 ```shell
-before=$(git -C <wt> diff --no-color --no-ext-diff --no-textconv \
-           --src-prefix=a/ --dst-prefix=b/ '<cleared sha>^' '<cleared sha>' \
-           | grep -E '^(diff --git |[+-])')
-after=$(git -C <wt> diff --no-color --no-ext-diff --no-textconv \
-          --src-prefix=a/ --dst-prefix=b/ '<new tip>^' '<new tip>' \
-          | grep -E '^(diff --git |[+-])')
-printf '%s\n' "$before" | shasum
-printf '%s\n' "$after"  | shasum
-printf '%s\n' "$before" "$after" | grep -c .   # not zero
+change() {
+  { git -C <wt> diff --no-color --no-ext-diff --no-textconv --text \
+      --find-renames -l0 --ignore-submodules=none --submodule=short \
+      --src-prefix=a/ --dst-prefix=b/ "$1" "$2" ||
+      echo "git diff $1 $2 failed: $?"; } \
+    | env -i PATH="$PATH" grep -avE '^(index |similarity index |@@ | |$)'
+}
+change '<cleared sha>^' '<cleared sha>' | env -i PATH="$PATH" shasum
+change '<new tip>^' '<new tip>' | env -i PATH="$PATH" shasum
+{ change '<cleared sha>^' '<cleared sha>'; change '<new tip>^' '<new tip>'; } \
+  | env -i PATH="$PATH" grep -c .   # not zero
 ```
 
-Equal hashes over a non-empty stream, and the clearance stands. A
-branch of several commits is compared the same way over `<base>..<tip>`
-at both ends.
+Equal hashes over a non-empty stream, and the clearance stands. Where
+`git diff` fails, even after printing part of the diff, as on a
+`diff.<driver>.xfuncname` that is not a regular expression, `change`
+ends its stream with a line naming both revisions, so the hashes differ
+and a fresh reviewer reads the branch. A branch of several commits is
+compared the same way over `<base>..<tip>` at both ends.
 
 **A rebase that resolved a conflict goes to a fresh reviewer**, who
 reads the whole branch: the resolution is a change no reviewer has seen.
