@@ -558,6 +558,9 @@ This section is in `every-session.md`, beside this file.
 
   ```shell
   git -C <checkout> fetch origin
+  ```
+
+  ```shell
   git -C <checkout> fetch origin refs/pull/<n>/head
   ```
 
