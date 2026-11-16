@@ -536,10 +536,16 @@ of the standard* says.
   write and the tree's own `.gitignore` files name: `.venv/`,
   `__pycache__/`, `.coverage` and the tools' caches show there on every
   run (*A gate can leave the tree dirty*). Any other line is a change,
-  and so is a line of the check above. On the octopus, the files its
-  merge staged are listed too. Nothing the gate prints counts. A fixer's
-  change is read with `git diff`, run the same way, and made again in
-  `<wt>`.
+  and so is a line of the check above. Nothing the gate prints counts. A
+  fixer's change is read with `git diff`, run the same way, and made
+  again in `<wt>`.
+
+  On the octopus, `git status` lists the files the merge staged before
+  any gate runs. So the status block also runs once before the first
+  gate, with `<scratch>/<name>-base` in place of
+  `<scratch>/<name>-status`, and a line that file holds is no change. A
+  gate that writes a staged file changes that file's line, as
+  `scripts/test-gate-sandbox.sh` shows.
 
   A process the gate leaves running keeps the sandbox's limits, and can
   still write in `<gate wt>` and `<sbx>` after the check, as
@@ -585,12 +591,13 @@ of the standard* says.
   the sandbox does not keep the network and the credentials from the
   branch's code.
 
-  **No git command runs outside the sandbox in `<gate wt>` or `<sbx>`.**
-  A gate can leave a repository there, under a gitlink's directory, and
-  git outside the sandbox then reads that repository's configuration,
-  whose keys can name a program to run. `git status` reads it even with
-  `--ignore-submodules=all`, and so do a commit and a merge (ISS
-  btclib-org/ai-agents-process#548). The one exception is the removal,
+  **No git command runs outside the sandbox in `<gate wt>` or `<sbx>`
+  once a gate has run there.** A gate can leave a repository there,
+  under a gitlink's directory, and git outside the sandbox then reads
+  that repository's configuration, whose keys can name a program to run.
+  `git status` reads it even with `--ignore-submodules=all`, and so do a
+  commit and a merge (ISS btclib-org/ai-agents-process#548). The one
+  exception is the removal,
   `git -C <wt> worktree remove --force <gate wt>`. It parses no
   configuration the gate left under a gitlink's directory, as
   `scripts/test-gate-sandbox.sh` shows. It does read `<gate wt>/.git`,

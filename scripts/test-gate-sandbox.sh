@@ -6,6 +6,8 @@
 #   sh scripts/test-gate-sandbox.sh [<writing.md>]
 #
 # It runs on macOS, where sandbox-exec is, and needs uv, as the gates do.
+# Where sandbox-exec is not on the PATH, as on Linux, it prints `skip:`
+# and exits 0.
 # From <writing.md>, by default process/writing.md beside this script,
 # it takes the shell blocks of *The gates* that gate a commit, where they
 # are: the one that reads `<gate wt>`'s git directories, the one that
@@ -52,14 +54,22 @@
 #   length, with `* ident` in `$HOME/.config/git/attributes`, which git
 #   would collapse back. Each status file lists the change, as
 #   `!! hidden/`, ` M file`, `?? x` or ` M id`.
+# - octopus: `<gate wt>` merges two heads with `--no-commit`, which
+#   stages a change to `file` and a new file `new`, and the status block
+#   runs before the gate into a base file. With a gate that writes
+#   nothing, the base file lists both, and the status file holds no line
+#   the base file lacks. With a gate that writes `new`, the status file
+#   holds `AM new`, which the base file lacks.
 # - include: the repository's configuration includes `~/inc`, which is
 #   `<sbx>/home/inc` inside the sandbox, and the gate writes an inert
 #   key there. The status file holds `EXIT_status=0` and an `include:`
 #   line. With a line with a syntax error there instead, it holds an
 #   `EXIT_status=` other than 0: git status read the included file.
 #
-# Each line it prints starts `ok` or `FAIL`. It exits 1 where a check
-# failed.
+# Where it runs the checks, each line it prints starts `ok` or `FAIL`,
+# and it exits 1 where a check failed.
+command -v sandbox-exec > /dev/null ||
+  { echo "skip: no sandbox-exec on the PATH, so nothing is tested"; exit 0; }
 here=$(dirname "$0")
 doc=${1:-$here/../process/writing.md}
 proc=$(cd "$(dirname "$doc")/.." && pwd -P) || exit 1
@@ -69,7 +79,7 @@ trap 'rm -rf "${tmp:?}"' EXIT
 tmp=$(cd "$tmp" && pwd -P) || exit 1
 fail=0
 ok() { echo "ok: $1"; }
-no() { echo "FAIL: $1"; fail=1; }
+no() { echo "FAIL: $*"; fail=1; }
 
 GIT_CONFIG_GLOBAL=$tmp/gitconfig GIT_CONFIG_NOSYSTEM=1
 GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid
@@ -128,6 +138,9 @@ block '--git-common-dir >' > "$tmp/prep.sh"
 { block 'sandbox-exec -f'; block '^"[$]@" uv sync --locked'
   block 'porcelain'; } > "$tmp/gate-only.sh"
 block '^gwt=.*\nst=' > "$tmp/find.sh"
+{ block 'sandbox-exec -f'
+  block 'porcelain' | sed "s|$tmp/gate-status|$tmp/gate-base|g"; } \
+  > "$tmp/base.sh"
 cat "$tmp/gate-only.sh" "$tmp/find.sh" > "$tmp/block.sh"
 grep -q "sh $tmp/gate.sh" "$tmp/block.sh" ||
   { no "no gate block in $doc"; exit 1; }
@@ -258,6 +271,43 @@ for c in hidden crlf attributes ignore ident; do
     ok "$c: the status file lists '$want'"
   else no "$c: the status file does not list '$want':" \
     "$(tr "\n" " " 2>/dev/null < "$st")"; fi
+done
+
+# Two heads on the gated commit: one changes file, one adds new.
+mk() {
+  printf '%s\n' "$2" > "$tmp/blob" &&
+    b=$("$real" -C "$repo" hash-object -w "$tmp/blob") &&
+    t=$({ "$real" -C "$repo" ls-tree "$sha" | awk -F '\t' -v p="$1" '$2 != p'
+      printf '100644 blob %s\t%s\n' "$b" "$1"; } |
+      "$real" -C "$repo" mktree) &&
+    "$real" -C "$repo" commit-tree "$t" -p "$sha" -m "$1"
+}
+h1=$(mk file c) && h2=$(mk new n) || exit 1
+rm -f "$XDG_CONFIG_HOME/git/attributes"
+for c in quiet writer; do
+  case $c in
+    quiet) g=: ;;
+    writer) g="printf 'x\n' > new" ;;
+  esac
+  fresh
+  "$real" -C "$gwt" -c core.hooksPath=/dev/null \
+    merge -q --no-ff --no-commit "$h1" "$h2" > /dev/null 2>&1 ||
+    { no "octopus: the merge failed"; continue; }
+  rm -f "$tmp/gate-base"
+  sh "$tmp/base.sh" > "$tmp/octopus-base.log" 2>&1
+  printf '%s\n' "$g" > "$tmp/gate.sh"
+  sh "$tmp/block.sh" > "$tmp/octopus-$c.log" 2>&1
+  extra=$(grep -vxF -f "$tmp/gate-base" "$st" 2> /dev/null)
+  if ! grep -qxF 'M  file' "$tmp/gate-base" 2>/dev/null ||
+    ! grep -qxF 'A  new' "$tmp/gate-base"; then
+    no "octopus: the base file does not list the staged files:" \
+      "$(tr "\n" " " 2>/dev/null < "$tmp/gate-base")"
+  elif [ "$c" = quiet ] && [ -z "$extra" ] && [ -s "$st" ]; then
+    ok "octopus: a gate that writes nothing adds no line to the base file's"
+  elif [ "$c" = writer ] && [ "$extra" = 'AM new' ]; then
+    ok "octopus: a gate that writes a staged file adds '$extra'"
+  else no "octopus, $c: the lines the base file lacks are not as expected:" \
+    "$(printf '%s' "$extra" | tr "\n" " ")"; fi
 done
 
 inc=$(printf '%s/inc' '~')
