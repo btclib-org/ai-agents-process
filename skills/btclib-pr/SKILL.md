@@ -1547,35 +1547,51 @@ gh api "repos/${irepo:?}/issues/${issue:?}" --jq '[.assignees[].login]'
 ```
 
 Where it prints any login, the assignees it prints keep the issue. Where
-it prints none, the session looks for the next taker: the earliest
-opened of the open pull requests that cite the issue and pass the
-`Sign-off` check, in any repository of the organization, the same
-author's included. This lists the candidates, oldest first:
+it prints none, the session looks for the next taker: of the open pull
+requests that cite the issue, pass the `Sign-off` check and have an
+author GitHub can assign to the issue, in any repository of the
+organization, the same author's included, the first to pass it. This
+lists the candidates:
 
 ```shell
 gh search prs --owner btclib-org --state open "${issue:?} in:title,body" \
-  --sort created --order asc --limit 100 \
-  --json url,createdAt,author \
-  --jq '.[] | "\(.createdAt) \(.author.login) \(.url)"'
+  --limit 100 --json url,author \
+  --jq '.[] | "\(.author.login) \(.url)"'
 ```
 
 The search matches the number as a word, so the session reads each
-hit's title, body and `closingIssuesReferences`, oldest first, and takes
-the first that cites the issue, as `<issue repo>#<issue>`, by the
-issue's URL, or as a bare `#<issue>` in `<issue repo>` itself, and whose
-`Sign-off` check passes. This prints the bucket of a hit's `Sign-off`
-check, which is `pass` where it passes:
+hit's title, body and `closingIssuesReferences`, and keeps the hits
+that cite the issue, as `<issue repo>#<issue>`, by the issue's URL, or
+as a bare `#<issue>` in `<issue repo>` itself. This prints when the
+`Sign-off` check on a hit's head passed, and nothing where it does not
+pass:
 
 ```shell
 pr=<hit url>
 ```
 
 ```shell
-gh pr checks "${pr:?}" --json name,bucket \
-  --jq '.[] | select(.name | test("(^|/ )Sign-off$")) | .bucket'
+gh pr checks "${pr:?}" --json name,bucket,completedAt \
+  --jq '.[] | select(.name | test("(^|/ )Sign-off$"))
+    | select(.bucket == "pass") | .completedAt'
 ```
 
-The session assigns that pull request's author:
+GitHub assigns an outside login only to an issue it has commented on,
+as *Pull requests* says. This exits `0` where a hit's author can be
+assigned to the issue, and exits `1`, printing `User cannot be assigned
+to this issue. (HTTP 404)`, where they cannot:
+
+```shell
+author=<hit author login>
+```
+
+```shell
+gh api --silent "repos/${irepo:?}/issues/${issue:?}/assignees/${author:?}"
+```
+
+The taker is the author of the hit with the earliest time among those
+for whose author this call exits `0`. The session assigns them, then
+reads the issue's assignees back as after the removal:
 
 ```shell
 taker=<taker login>
@@ -1585,6 +1601,18 @@ taker=<taker login>
 gh issue edit "${issue:?}" --repo "${irepo:?}" --add-assignee "${taker:?}"
 ```
 
+Where the call exits `1` for every hit's author, the session assigns
+no one, and the retry below applies.
+
+**The retry.** Where no taker was assigned, the issue's comment asks
+each hit's author who could not be assigned to comment on the issue. On
+its next pass over one of their pull requests, the session reads the
+issue's assignees as after the removal and, where they hold no login,
+looks for the next taker again, as above, and assigns the one it finds.
+An assignee is never displaced: once a taker is assigned, a hit that
+passed earlier holds nothing, and its author's later comment changes
+nothing.
+
 The search returns at most 100 hits, and misses a pull request its index
 does not hold yet. Where it finds no taker, the issue stays unassigned
 and open to others, so a hit it missed costs that pull request's author
@@ -1593,7 +1621,8 @@ only the assignment, never the issue.
 The issue then gets a comment from a file, posted after these edits. It
 links the pull request, says it was closed for a missing sign-off, and
 says who holds the issue: the assignees that remain, the taker just
-assigned, or no one, in which case it is open to others:
+assigned, or no one, in which case it is open to others and the comment
+carries the retry's ask:
 
 ```shell
 note=<issue comment file>
@@ -1612,16 +1641,12 @@ decides whether it is reopened:
 gh pr reopen "${n:?}" --repo "${repo:?}"
 ```
 
-Once its `Sign-off` check passes, read as above, the reopened pull
-request may take back each issue it cites. Right before that, the
-session reads the issue's assignees with the command above. Where it
-prints a login other than the author's, that assignee keeps the issue.
-Otherwise the session says on the issue that the reopened pull request
-takes it, with a comment from a file as above, and assigns the author:
-
-```shell
-gh issue edit "${issue:?}" --repo "${irepo:?}" --add-assignee "${login:?}"
-```
+Once its `Sign-off` check passes, read as above, the session reads the
+assignees of each issue it cites as after the removal. Where they hold
+any login, those assignees keep the issue. Otherwise the session looks
+for the next taker as above, the reopened pull request among the hits,
+and says on the issue who holds it, with a comment from a file as
+above, which carries the retry's ask where no taker was assigned.
 
 On an issue labelled `good first issue`, the removal and the assignment
 are both edits the shared *Issues left to newcomers* leaves to the human,
