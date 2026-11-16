@@ -249,7 +249,12 @@ of the standard* says.
   request body) for every form of the three words next to a reference.
   The same sweep finds bare references with `perl -ne 'print if
   /(?<![\/A-Za-z0-9.\-])#[0-9]+/'`, whose `0-9` keeps
-  `btclib-org/btclib-secp256k1#N` from reading as bare. It lists the
+  `btclib-org/btclib-secp256k1#N` from reading as bare. It finds a
+  mention with `grep -nE '(^|[^][:alnum:]._+-])@[[:alnum:]]' -- <file>`,
+  which exits `1` where it finds none and `2` where it cannot read the
+  file. Its class skips an `@` after a letter, a digit, `]`, `.`, `_`,
+  `+` or `-`, as in `noreply@anthropic.com` and
+  `claude[bot]@users.noreply.github.com`. It lists the
   non-ASCII codepoints (Python, `ord(c) > 127`) of both texts, and of
   every other text posted on a forge, other than the em dash and the
   ellipsis this file uses: a CJK character mid-word is a generation
