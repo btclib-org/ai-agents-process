@@ -314,7 +314,9 @@ a decision:
   is worth a round* blocks on, or where the shared *The rounds* files
   it: it adds no text to the branch. A defect *The rounds* files is
   filed as the shared *Collateral* says, and the reply names its issue,
-  whether or not the branch adds the defect; any other finding of this
+  whether or not the branch adds the defect. A refinement of prose is
+  declined with its ground, not filed, since `REVIEWING.md`'s *What is
+  filed, and what is not* files no prose; any other finding of this
   route is filed the same way, or else declined with its ground.
   Repeated after the reply, it is answered by pointing to the first
   reply, and resolved.
