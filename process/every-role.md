@@ -358,20 +358,26 @@ This section is in `every-session.md`, beside this file.
   git -C <checkout> fetch origin
   ```
 
-  For each worktree, `<branch>` is what `git -C <wt> branch
-  --show-current` prints and `<owner>/<repo>` is the repository its
-  origin names. The `gh` command prints the numbers of that branch's pull
-  requests, open or not, and the fetch after it, run for each `<n>`,
-  writes only `FETCH_HEAD` and objects:
+  For each worktree `<wt>`, with `<owner>/<repo>` the repository its
+  origin names, the `gh` command prints the numbers of the pull requests,
+  open or not, of the branch the worktree holds, read from git rather
+  than typed, since a branch name may hold `;` or `>`. A detached
+  worktree holds no branch, so nothing is looked up for it and a commit
+  it holds that origin lacks leaves it refused. The lookup does not
+  filter on the head repository, so a fork's branch of the same name
+  adds a number too, which is harmless: the fetch reads origin's own
+  `refs/pull/<n>/head`, and a commit that ref reaches is on origin. The
+  fetch, run for each `<n>`, writes only `FETCH_HEAD` and objects:
 
   ```shell
+  wt=<wt>
   repo=<owner>/<repo>
-  branch=<branch>
   ```
 
   ```shell
-  gh pr list --repo "${repo:?}" --head "${branch:?}" --state all \
-    --json number --jq '.[].number'
+  branch=$(git -C "${wt:?}" branch --show-current)
+  [ -z "$branch" ] || gh pr list --repo "${repo:?}" --head "$branch" \
+    --state all --json number --jq '.[].number'
   ```
 
   ```shell

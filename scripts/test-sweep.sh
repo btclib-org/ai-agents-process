@@ -130,7 +130,11 @@
 # - after the cases, no repository holds a stale worktree entry;
 # - under an interactive zsh, where present, the two lines of
 #   process/every-role.md's *Debris goes when its work ends*, with a path
-#   for <work>, remove its directory.
+#   for <work>, remove its directory;
+# - under each shell, the lines of that section that look up a worktree's
+#   pull requests, run with a stand-in for gh, ask for the branch
+#   topic;>MARKER by that name and write nothing, and run no gh for a
+#   detached worktree.
 
 # a git variable the caller sets, as a hook run by git commit inherits,
 # would send the fixtures' git writes to the caller's repository
@@ -188,6 +192,26 @@ case $pullcmd in
     exit 1
     ;;
 esac
+# and the lines that look up a worktree's pull requests, with <wt> and
+# <owner>/<repo> as their first and second arguments
+# shellcheck disable=SC2016
+lookcmd=$(awk '
+  /^  ```shell$/ { b = ""; on = 1; next }
+  /^  ```$/ {
+    if (on && (b ~ /^wt=<wt>/ || b ~ /gh pr list/)) printf "%s", b
+    on = 0
+    next
+  }
+  on { sub(/^  /, ""); b = b $0 "\n" }' "$prose" |
+  sed 's/^wt=<wt>$/wt=$1/; s|^repo=<owner>/<repo>$|repo=$2|')
+# shellcheck disable=SC2016
+case $lookcmd in
+  'wt=$1'*'repo=$2'*'gh pr list'*) ;;
+  *)
+    echo "FAIL: no lines that look up a worktree's pull requests in $prose"
+    exit 1
+    ;;
+esac
 # shellcheck disable=SC2016
 case $movecmd in
   'work=$1'*) ;;
@@ -199,7 +223,13 @@ esac
 # removes that worktree's .git file and fails.
 REAL_GIT=$(command -v git)
 export REAL_GIT
-mkdir "$tmp/git-shim" "$tmp/id-shim"
+mkdir "$tmp/git-shim" "$tmp/id-shim" "$tmp/gh-shim"
+# the stand-in for gh writes its arguments to $GHLOG, one per line
+cat > "$tmp/gh-shim/gh" << 'EOF'
+#!/bin/sh
+printf '%s\n' "$@" > "$GHLOG"
+EOF
+chmod +x "$tmp/gh-shim/gh"
 cat > "$tmp/git-shim/git" << 'EOF'
 #!/bin/sh
 case " $* " in
@@ -338,6 +368,50 @@ newcommit() {
 commit() {
   newcommit "$@"
   git -C "$1" update-ref HEAD "$c" || fail "commit $2"
+}
+
+# lookup <case> <wt>: runs the lines that look up <wt>'s pull requests,
+# under $sh, in an empty directory, with the stand-in for gh
+lookup() {
+  ldir=$tmp/lookup-dir
+  rm -rf "$ldir" "$tmp/gh.log"
+  mkdir "$ldir"
+  rc=0
+  if [ "$sh" = zsh ]; then
+    (cd "$ldir" && PATH=$tmp/gh-shim:$PATH GHLOG=$tmp/gh.log \
+      zsh -f -i -c "$lookcmd" zsh "$2" own/repo < /dev/null > /dev/null \
+      2>&1) || rc=$?
+  else
+    (cd "$ldir" && PATH=$tmp/gh-shim:$PATH GHLOG=$tmp/gh.log \
+      "$sh" -c "$lookcmd" sh "$2" own/repo > /dev/null 2>&1) || rc=$?
+  fi
+  [ "$rc" = 0 ] || fail "$1: the lookup exits $rc"
+  [ -z "$(ls -A "$ldir")" ] || fail "$1: the lookup wrote $(ls -A "$ldir")"
+  rm -rf "$ldir"
+}
+
+# lookups: a worktree on the branch topic;>MARKER is looked up by that
+# name and nothing is written; a detached worktree is not looked up
+lookups() {
+  lw=$tmp/lookup-$sh
+  git -C "$m" worktree add -q -b 'topic;>MARKER' "$lw/named" origin/main \
+    2> /dev/null || fail 'lookup: no worktree'
+  lookup 'lookup named' "$lw/named"
+  [ "$(awk 'p { print; exit } $0 == "--head" { p = 1 }' "$tmp/gh.log" \
+    2> /dev/null)" = 'topic;>MARKER' ] ||
+    fail "lookup named ($sh): gh was not asked for the branch topic;>MARKER"
+  [ "$(awk 'p { print; exit } $0 == "--repo" { p = 1 }' "$tmp/gh.log" \
+    2> /dev/null)" = own/repo ] ||
+    fail "lookup named ($sh): gh was not asked for own/repo"
+  git -C "$m" worktree add -q --detach "$lw/detached" origin/main \
+    2> /dev/null || fail 'lookup: no detached worktree'
+  lookup 'lookup detached' "$lw/detached"
+  [ ! -e "$tmp/gh.log" ] ||
+    fail "lookup detached ($sh): gh was run for a worktree with no branch"
+  git -C "$m" worktree remove "$lw/named"
+  git -C "$m" worktree remove "$lw/detached"
+  git -C "$m" branch -q -D 'topic;>MARKER'
+  rm -rf "$lw" "$tmp/gh.log"
 }
 
 cases() {
@@ -950,6 +1024,7 @@ b"
     fail 'pull head ahead: the fetch fails'
   run "$base" work "$w"
   expect 'pull head ahead, fetched' 0 "removed: $w"
+  lookups
 
   for r in "$m" "$base/main2" "$base/main3" "$base/main4"; do
     s=$(git -C "$r" worktree prune -n -v 2>&1)
@@ -975,6 +1050,7 @@ sh "${PROCESS:?}/scripts/sweep.sh" work "${work:?}"' zsh "$sp/zsh paste" \
     < /dev/null 2>&1) || rc=$?
   expect 'zsh paste' 0 "removed: $sp/zsh paste"
   gone 'zsh paste' "$sp/zsh paste"
+  lookups
   shells="$shells zsh"
 fi
 
