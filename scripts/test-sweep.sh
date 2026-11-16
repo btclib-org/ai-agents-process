@@ -353,7 +353,11 @@ cases() {
   for ref in refs/heads/elsewhere refs/pull/7/head refs/tags/t; do
     mkwork "$m" "ref-${ref##*/}"
     commit "$wt" "$ref"
-    git -C "$wt" push -q "$o" "HEAD:$ref"
+    # origin takes the ref by a fetch, and stale drops its branch in origin:
+    # after a push to origin's path both setup checks failed on the forge's
+    # runner, and Apple Git 2.54.0 leaves the clone's remote-tracking refs
+    # untouched, so neither case depends on what that push does to them
+    git -C "$o" fetch -q "$wt" "HEAD:$ref"
     [ -n "$(git -C "$wt" rev-list -n 1 HEAD --not --remotes)" ] ||
       fail "$ref: a remote-tracking ref reaches the commit"
     run "$base" work "$w"
@@ -365,7 +369,7 @@ cases() {
   mkwork "$m" stale
   commit "$wt" stale
   git -C "$wt" push -q origin HEAD
-  git -C "$wt" push -q "$o" ":refs/heads/$br"
+  git -C "$o" update-ref -d "refs/heads/$br"
   git -C "$m" rev-parse -q --verify "refs/remotes/origin/$br" > /dev/null ||
     fail 'stale: no remote-tracking ref'
   run "$base" work "$w"
