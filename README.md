@@ -62,6 +62,11 @@ The process the btclib-org maintainers follow with the coding agents
   a repository under a gitlink's directory and forges the clean-tree
   check, and checks which git calls outside the sandbox read that
   repository and that the check refuses the forgery;
+- `scripts/sweep.sh` — the script that removes the directory of a piece
+  of work, which `process/every-role.md`'s *Debris goes when its work
+  ends* runs;
+- `scripts/test-sweep.sh` — the fixture directories `sweep.sh` must
+  remove and must refuse, run by the `test-sweep` hook;
 - `scripts/test-git-c-allow.py` — the commands `git-c-allow.py` must
   approve and must refuse, run by the `test-git-c-allow` hook;
 - `scripts/suite-reads.py` — where a tree's tests may read the files of
