@@ -103,20 +103,20 @@ to take lands there first, and reaches each other tree by a port.
     --limit 1000 --search '"travels with the next batch" in:comments'
   ```
 
-  Each tree's port cites the issue, and the session whose landing
-  closes it takes the label off (the shared *An issue owed by several
-  trees is closed by the last landing only*).
+  No port closes the issue, the last tree's included: each cites it as
+  *The subject that lands records the port* says, and section 11 of the
+  standard, *What a pull request says it is*, says which session closes
+  it by hand and with what measurement. That session also takes the
+  label off.
 - **The standard's alignment tests expect the drift.** The standard's
   pull request adds to `EXPECTED_DRIFT`, in `tests/verbatim_test.py`,
   each path it changes that section 14 compares and that has no entry
   yet, citing the issue. The entry's strict expected failure turns red
-  once every copy agrees. The session whose landing closes the issue an
-  entry cites then changes the entry, in a pull request of the standard.
-  Where the copies agree, it removes the entry. Where they still differ,
-  it points the entry at the issue of a change still waiting on that
-  path, or, where no change is waiting, at an issue it files in
-  btclib-org/.github for that drift. A removed entry would leave that
-  pull request red on the copies that differ.
+  once every copy agrees. The session that closes the issue an entry
+  cites (above) then changes the entry, in a pull request of the
+  standard. Where the copies still differ and another open issue holds
+  that drift, a change still waiting on the path among them, it points
+  the entry at that issue. Otherwise it removes the entry.
 - **A batch takes the standard's copies byte for byte**, rather than
   applying the delta, which can come up short. It takes them from
   `<S>`, the standard's `origin/main` when the batch starts. A file with
@@ -125,13 +125,13 @@ to take lands there first, and reaches each other tree by a port.
   says.
 - **The subject that lands records the port**: a batch's is
   `Port btclib-org/.github@<S>` alone, with neither the citations of the
-  shared *Citations and closing keywords* nor the pull request's number,
-  and its pull request's body cites each issue the batch advances on an
-  `Advances …` line. A round of its own takes a subject of its own, so
-  that the record does not pass the changes still waiting. Before the
-  first batch, no subject records one: the script below guesses it from
-  the copies, the writer checks each change it lists against the tree,
-  and the body names the guess.
+  shared *Citations and closing keywords* nor the pull request's number.
+  The body of every port's pull request, a round of its own included,
+  cites each issue the port advances on an `Advances …` line. A round of
+  its own takes a subject of its own, so that the record does not pass
+  the changes still waiting. Before the first batch, no subject records
+  one: the script below guesses it from the copies, the writer checks
+  each change it lists against the tree, and the body names the guess.
 - **`scripts/port-check.py` checks a batch against `<S>`.** Its
   docstring says which files it compares, what it prints and what each
   exit code means:
@@ -145,7 +145,7 @@ to take lands there first, and reaches each other tree by a port.
   python3 "${PROCESS:?}/scripts/port-check.py" "$std" "$s" "$tree" "$base" "$head"
   ```
 
-  The shared *A pull request's rounds* says what its exit decides.
+  `orchestration.md`'s *Running the rounds* says what its exit decides.
 
 ## What the issue still asks
 
@@ -231,13 +231,13 @@ The orchestrator's. **Before opening, and the last item once it is
 open:**
 
 - [ ] the latest fresh reviewer's `CLEARED` (the shared *Local review*)
-      names the branch's content, or *A rebase and the clearance*
-      carries it to the rebased branch; where the other client is
-      unavailable, the dedicated reviewer's does (the shared *A pull
-      request's rounds*)
+      names the branch's content, or `orchestration.md`'s *A rebase and
+      the clearance* carries it to the rebased branch; where the other
+      client is unavailable, the dedicated reviewer's does
+      (`orchestration.md`'s *Where the other client is unavailable*)
 - [ ] no conflict with `origin/main` (`/btclib-pr`'s *Rebase and CI*);
-      where there was one, rebased and the gates re-run (the shared *A
-      rebase and the clearance*)
+      where there was one, rebased and the gates re-run
+      (`orchestration.md`'s *A rebase and the clearance*)
 - [ ] the subject that lands carries the right citation (the shared
       *Citations and closing keywords*)
 - [ ] the closing block comes after the sections, as the bullet below

@@ -132,6 +132,8 @@ The writer's section; the reviewer judges its result.
       than once* is in the report
 - [ ] where the change removes tests, each refusal they asserted that a
       public caller still reaches is asserted again through that caller
+- [ ] the fix of a blocking finding that rests on an input adds that
+      input as a test, where the tree tests that code
 - [ ] the report says what was **not** checked, and why
 
 ### A rule stated more than once
@@ -225,7 +227,9 @@ of the standard* says.
   already cleared branch back to review, land it as cleared and close the
   issue by hand once it lands, with a comment listing every landing and
   the trees that needed nothing. Where the last tree goes back to review
-  anyway, switch it in the same amend.
+  anyway, switch it in the same amend. A port of the standard is the
+  exception: `/btclib-iss`'s *Ports of the standard* says how its issue
+  closes.
 - **An issue several pull requests of one repository advance is closed by
   the one that meets its *Done when*.** That pull request carries
   `(closes #N)`, even where each earlier one carried `(issue #N)`. Read
@@ -247,7 +251,14 @@ of the standard* says.
   request body) for every form of the three words next to a reference.
   The same sweep finds bare references with `perl -ne 'print if
   /(?<![\/A-Za-z0-9.\-])#[0-9]+/'`, whose `0-9` keeps
-  `btclib-org/btclib-secp256k1#N` from reading as bare. It lists the
+  `btclib-org/btclib-secp256k1#N` from reading as bare. It finds a
+  mention with
+  `grep -nE '(^|[^][:alnum:]._+-])_*@[[:alnum:]]' -- <file>`, which
+  exits `1` where it finds none and `2` where it cannot read the file.
+  It skips an `@` after a letter, a digit, `]`, `.`, `+` or `-`, or
+  after a run of `_` that follows one of these, as in
+  `noreply@anthropic.com` and `claude[bot]@users.noreply.github.com`,
+  and lists one after `_` elsewhere, as in `_@name_`. It lists the
   non-ASCII codepoints (Python, `ord(c) > 127`) of both texts, and of
   every other text posted on a forge, other than the em dash and the
   ellipsis this file uses: a CJK character mid-word is a generation
@@ -340,16 +351,17 @@ of the standard* says.
   ```
 
 - **A merge of `main` asks for no new local gate** where it resolved
-  nothing (*A rebase and the clearance*), brings in no file the branch
-  changes, and `main` is green: the latest completed push run of each of
-  its workflows succeeded, read when the session looks, with no wait for
-  a run in progress. CI gates the merged head. Each command below holds
-  only where it prints nothing and exits `0`. The first prints each file
-  both sides change, and `pipefail` makes a stage that fails fail it.
-  The second prints each workflow whose latest completed run did not
-  succeed, or `no runs` where none has completed. It reads the newest
-  200 completed push runs, so a workflow whose last run is older than
-  those, or that has no completed run, is not read:
+  nothing (`local-review.md`'s *A merge of `main` and the clearance*),
+  brings in no file the branch changes, and `main` is green: the latest
+  completed push run of each of its workflows succeeded, read when the
+  session looks, with no wait for a run in progress. CI gates the merged
+  head. Each command below holds only where it prints nothing and exits
+  `0`. The first prints each file both sides change, and `pipefail`
+  makes a stage that fails fail it. The second prints each workflow
+  whose latest completed run did not succeed, or `no runs` where none
+  has completed. It reads the newest 200 completed push runs, so a
+  workflow whose last run is older than those, or that has no completed
+  run, is not read:
 
   ```shell
   wt=<wt>
