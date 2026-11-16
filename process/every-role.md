@@ -485,9 +485,19 @@ This section is in `every-session.md`, beside this file.
       directory, `<scratch>`, each file under a name that is its own
       (`msg-<branch>.txt`).
 
+  A role makes its `<scratch>` before the first file it writes there, as
+  the base pin of *`refs/remotes/origin/main` is shared by every
+  worktree*:
+
+  ```shell
+  mkdir -p <work>/<role>
+  ```
+
   What the orchestrator keeps for the whole session belongs to no piece
   of work and stays in `<scratchpad>/orchestrator/`, as the sha of *The
-  process is re-read when `main` changes it* does.
+  process is re-read when `main` changes it* does. So do the files of a
+  text that belongs to no issue yet, as the draft of an issue still to
+  be filed and its findings record.
 
   **Read back from the repository what you wrote from a file**:
   `git show -s --format=%B HEAD` after a `-F`, the committed file after a
@@ -532,6 +542,33 @@ This section is in `every-session.md`, beside this file.
   anything that could be work*). A gate's basetemp and build directories
   go once that branch's gates are done. A reviewer's worktree, exports,
   clones and reports go before it hands back its verdict.
+
+  **A piece of work's `<work>` goes when the last pull request of its
+  issue lands or is closed**, or when the pull request that stands in for
+  the issue does. It is the last only where the searches of *Before
+  starting* find no other open pull request for the issue, and `<work>`
+  holds no worktree on another branch and no file named for one, as
+  `msg-<branch>.txt` or `findings-<branch>.md`. The orchestrator first
+  fetches origin, and the head of the pull request that ended, in the
+  repository of each worktree `<work>` holds. The script counts a ref of
+  origin only where the repository holds its commit, and a landing's
+  commit is made on the forge, as is a head that a bot moved on or that
+  was pushed from another clone. The default fetch does not bring
+  `refs/pull/*`; the second command writes only `FETCH_HEAD` and objects:
+
+  ```shell
+  git -C <checkout> fetch origin
+  git -C <checkout> fetch origin refs/pull/<n>/head
+  ```
+
+  It then runs `scripts/sweep.sh`, whose header says what it refuses, and
+  names each refusal in its report to the human:
+
+  ```shell
+  work=<work>
+  sh "${PROCESS:?}/scripts/sweep.sh" work "${work:?}"
+  ```
+
 - **The orchestrator, never a writer, sweeps what a session that no
   longer runs left**, when the disk is short (*Before starting*). It
   removes only a worktree that is clean and pushed, and that session's

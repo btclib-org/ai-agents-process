@@ -55,6 +55,11 @@ The process the btclib-org maintainers follow with the coding agents
 - `scripts/test-gate-lock.sh` — `sh scripts/test-gate-lock.sh` shows
   sessions taking that lock's slots, and waiting while every slot is
   held;
+- `scripts/sweep.sh` — the script that removes the directory of a piece
+  of work, which `process/every-role.md`'s *Debris goes when its work
+  ends* runs;
+- `scripts/test-sweep.sh` — the fixture directories `sweep.sh` must
+  remove and must refuse, run by the `test-sweep` hook;
 - `scripts/test-git-c-allow.py` — the commands `git-c-allow.py` must
   approve and must refuse, run by the `test-git-c-allow` hook;
 - `scripts/suite-reads.py` — where a tree's tests may read the files of
