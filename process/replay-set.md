@@ -189,11 +189,15 @@ gh api graphql -F owner="${repo%%/*}" -F repo="${repo#*/}" -F n="${n:?}" \
 ```
 
 The first read counts every review thread, any author, resolved or not.
-The second counts the lines of CodeRabbit's review bodies that mark a
-finding, which *The reviews on GitHub* does not read while ISS
-btclib-org/ai-agents-process#489 is open; it goes once that section
-reads them. A failed read prints `read-failed` or counts it, and any
-answer other than `0` is not clean.
+The second is a first screen: it counts the lines of CodeRabbit's
+review bodies, on every head, that carry one of its terms, so a count
+above `0` rules the pull request out, and `0` does not show it free of
+findings. A failed pre-merge check under *Prompt to fix all issues*, as
+on PR btclib-org/btclib-node#2531, carries none of the terms. So a
+clean case also has every CodeRabbit review body read as `/btclib-pr`'s
+*What was raised* reads them, with none holding a finding. A failed
+read prints `read-failed` or counts it, and any answer other than `0` is
+not clean.
 
 ## How a run is scored
 
