@@ -343,16 +343,35 @@ This section is in `every-session.md`, beside this file.
   starting* find no other open pull request for the issue, and `<work>`
   holds no worktree on another branch and no file named for one, as
   `msg-<branch>.txt` or `findings-<branch>.md`. The orchestrator first
-  fetches origin, and the head of the pull request that ended, in the
-  repository of each linked worktree directly in `<work>`. The script
-  counts a ref of origin only where the repository holds its commit, and
-  a landing's commit is made on the forge, as is a head that a bot moved
-  on or that was pushed from another clone. The default fetch does not
-  bring `refs/pull/*`; the second command writes only `FETCH_HEAD` and
-  objects:
+  fetches origin in the repository of each linked worktree directly in
+  `<work>`, and there the head of each pull request opened from a branch
+  one of those worktrees holds. An issue ported to several trees has a
+  `<work>` for each (*Your own worktree*), so each fetches the pull
+  requests of its own repository, not only the one that ended. The
+  script counts a ref of origin only where the repository holds its
+  commit, and a landing's commit is made on the forge, as is a head that
+  a bot moved on or that was pushed from another clone; a worktree whose
+  head was not fetched is refused as holding an unpushed commit. The
+  default fetch does not bring `refs/pull/*`:
 
   ```shell
   git -C <checkout> fetch origin
+  ```
+
+  For each worktree, `<branch>` is what `git -C <wt> branch
+  --show-current` prints and `<owner>/<repo>` is the repository its
+  origin names. The `gh` command prints the numbers of that branch's pull
+  requests, open or not, and the fetch after it, run for each `<n>`,
+  writes only `FETCH_HEAD` and objects:
+
+  ```shell
+  repo=<owner>/<repo>
+  branch=<branch>
+  ```
+
+  ```shell
+  gh pr list --repo "${repo:?}" --head "${branch:?}" --state all \
+    --json number --jq '.[].number'
   ```
 
   ```shell

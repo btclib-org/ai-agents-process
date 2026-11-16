@@ -59,8 +59,8 @@
 #   read-only directory;
 # - a path that does not exist is absent, and exits 0;
 # - a name with a newline inside, or a directory find cannot read, is
-#   refused; as uid 0, whom chmod 000 does not stop, the unreadable
-#   directory is skipped;
+#   refused; where find still reads a directory of mode 000, as for uid
+#   0, the unreadable directory case is skipped and the test says so;
 # - a directory holding a repository that is not a linked worktree of the
 #   session's is refused, left as it was, and no git runs, under --check
 #   or in the run: a clone, a .git deeper than <work>/<e>, a clone inside
@@ -120,8 +120,9 @@
 #   the directory is removed;
 # - where git worktree remove fails half-way, the directory is refused
 #   and keeps .sweep-unfinished, and the next run refuses it;
-# - where rm cannot remove a file, the directory is refused (with chflags
-#   only, where it exists);
+# - where rm cannot remove a file, the directory is refused (only where
+#   chflags exists and sets uchg; where it refuses, the case is skipped
+#   and the test says so);
 # - with GIT_DIR set to another repository, a clean directory is still
 #   removed and that repository is left as it was;
 # - an unknown mode, an unknown option and no directory exit 2 with the
@@ -139,8 +140,7 @@ script=${1:-$(dirname "$0")/sweep.sh}
 script=$(cd -P "$(dirname "$script")" && pwd -P)/${script##*/}
 [ -f "$script" ] || { echo "FAIL: no script $script"; exit 1; }
 tmp=$(mktemp -d) || exit 1
-asroot='' casefold=1
-[ "$(id -u)" != 0 ] || asroot=1
+readable='' noflag='' casefold=1
 # the fixtures include an unreadable directory and, with chflags, an
 # immutable file, which a plain rm -rf cannot remove; the EXIT trap calls
 # it
@@ -172,6 +172,22 @@ movecmd=$(awk '
   /^  ```$/ { if (on && b ~ /findings-/) printf "%s", b; on = 0; next }
   on { sub(/^  /, ""); b = b $0 "\n" }' "$prose" |
   sed 's/^work=<work>$/work=$1/')
+# and the line that fetches a pull request's head, with <checkout> and
+# <n> as its first and second arguments
+# shellcheck disable=SC2016
+pullcmd=$(awk '
+  /^  ```shell$/ { b = ""; on = 1; next }
+  /^  ```$/ { if (on && b ~ /refs\/pull\//) printf "%s", b; on = 0; next }
+  on { sub(/^  /, ""); b = b $0 "\n" }' "$prose" |
+  sed 's/<checkout>/"$1"/; s/<n>/$2/')
+# shellcheck disable=SC2016
+case $pullcmd in
+  *'"$1"'*'$2'*) ;;
+  *)
+    echo "FAIL: no line that fetches a pull request's head in $prose"
+    exit 1
+    ;;
+esac
 # shellcheck disable=SC2016
 case $movecmd in
   'work=$1'*) ;;
@@ -571,15 +587,19 @@ b"
   expect newline 1 'holds a name with a newline'
   kept newline "$sp/newline"
 
-  # chmod 000 hides nothing from uid 0
-  if [ -z "$asroot" ]; then
-    mkdir -p "$sp/unreadable-dir/d"
-    chmod 000 "$sp/unreadable-dir/d"
+  # chmod 000 hides nothing from uid 0, or from an account that may read
+  # past permissions
+  mkdir -p "$sp/unreadable-dir/d"
+  chmod 000 "$sp/unreadable-dir/d"
+  if find "$sp/unreadable-dir" > /dev/null 2>&1; then
+    readable=1
+    chmod 755 "$sp/unreadable-dir/d"
+    rm -rf "$sp/unreadable-dir"
+  else
     run "$base" work "$sp/unreadable-dir"
     chmod 755 "$sp/unreadable-dir/d"
     expect 'unreadable dir' 1 'find cannot read all of it'
     kept 'unreadable dir' "$sp/unreadable-dir/d"
-
   fi
   mkdir -p "$sp/broken/x"
   echo "gitdir: $base/nowhere" > "$sp/broken/x/.git"
@@ -873,12 +893,16 @@ b"
   if command -v chflags > /dev/null; then
     mkdir -p "$sp/immutable"
     echo x > "$sp/immutable/f"
-    chflags uchg "$sp/immutable/f"
-    nocheck=1
-    run "$base" work "$sp/immutable"
-    nocheck=
-    chflags nouchg "$sp/immutable/f"
-    expect immutable 1 'rm -rf fails'
+    if chflags uchg "$sp/immutable/f" 2> /dev/null; then
+      nocheck=1
+      run "$base" work "$sp/immutable"
+      nocheck=
+      chflags nouchg "$sp/immutable/f"
+      expect immutable 1 'rm -rf fails'
+    else
+      noflag=1
+      rm -rf "$sp/immutable"
+    fi
   fi
 
   mkwork "$m" git-dir
@@ -922,7 +946,8 @@ b"
   git -C "$base/main3" fetch -q origin
   run "$base" work "$w"
   expect 'pull head ahead' 1 'fetch origin'
-  git -C "$base/main3" fetch -q origin refs/pull/6/head
+  "$sh" -c "$pullcmd" sh "$base/main3" 6 2> /dev/null ||
+    fail 'pull head ahead: the fetch fails'
   run "$base" work "$w"
   expect 'pull head ahead, fetched' 0 "removed: $w"
 
@@ -955,7 +980,9 @@ fi
 
 [ -n "$casefold" ] ||
   echo 'the file system keeps letter case: the case-folding cases are skipped'
-[ -z "$asroot" ] ||
-  echo 'as uid 0, the unreadable directory case is skipped'
+[ -z "$readable" ] ||
+  echo 'find reads a directory of mode 000: the unreadable case is skipped'
+[ -z "$noflag" ] ||
+  echo 'chflags uchg was refused: the immutable file case is skipped'
 [ "$status" = 0 ] && echo "sweep.sh answers as expected under:$shells"
 exit "$status"
