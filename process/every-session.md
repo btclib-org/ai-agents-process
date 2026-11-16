@@ -95,13 +95,13 @@ two disagree.
   starting*, read before starting work in parallel).
 - **The machine is shared.** Heavy local work — a suite, the hooks
   except where `writing.md`'s *The gates* says, a docs build — runs
-  under the gate lock, up to three workers at once, as `writing.md`'s
-  *The gate lock* says, read before running a gate. Everything else runs
-  in parallel with the gates. Targeted test runs use `-n 0` or `-n 2`,
-  never `-n auto`. The whole suite runs as the tree's gate says; where
-  the tree runs it under pytest-xdist, with `-n "$GATE_LOCK_WORKERS"`
-  (`writing.md`'s *The gate lock*), which overrides an `-n auto` in its
-  `addopts`. Other sessions' processes are not yours to kill.
+  under the gate lock, as `writing.md`'s *The gate lock* says, read
+  before running a gate. Everything else runs in parallel with the
+  gates. Targeted test runs use `-n 0` or `-n 2`, never `-n auto`. The
+  whole suite runs as the tree's gate says; where the tree runs it under
+  pytest-xdist, with `-n "$GATE_LOCK_WORKERS"` (`writing.md`'s *The gate
+  lock*), which overrides an `-n auto` in its `addopts`. Other sessions'
+  processes are not yours to kill.
 - **The forge's quota is shared.** Every session and agent on this
   machine calls the forge through the same `gh` login, and so draws on
   the same hourly quotas: `core` for REST, `graphql` for what `gh pr

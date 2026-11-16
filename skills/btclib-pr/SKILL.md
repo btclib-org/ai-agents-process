@@ -825,7 +825,7 @@ head=<head>
 ## The decision
 
 **The session's approval is the human's** (`every-role.md`'s *Three
-roles this file names*). Their standing instruction covers an obvious
+roles the process names*). Their standing instruction covers an obvious
 approval, as defined below, and nothing else. Every other approval is
 theirs to give.
 
@@ -1357,7 +1357,7 @@ saying it follows the human's decision. At night it is a deferred item
 ### The human's own pull request
 
 **Where the human is a bypass actor of an active ruleset, and is the
-maintainer (the shared *Three roles this file names*) or runs `--land`
+maintainer (the shared *Three roles the process names*) or runs `--land`
 (*Landing*), the session lands it through the bypass, and requests no
 owner's review.** It lands once every item above holds but those on the
 author, the repository, the files in the list, `pyproject.toml` and

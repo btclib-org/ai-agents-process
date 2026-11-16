@@ -45,12 +45,13 @@ repository's own file that has drifted from the standard in
 `btclib-org/.github` is a defect, tracked there, and the standard wins
 until it is brought in line. The process, a repository's own files
 included, wins over the generic agents, except that on the model and its
-effort the agent definition is the more specific text (*Models*), and
-each agent's *What holds whatever the process* holds as its heading
-says. A brief never overrides the process. Any other contradiction is
-still a defect, and it is fixed in the more general file.
+effort the agent definition is the more specific text
+(`orchestration.md`'s *Models*), and each agent's *What holds whatever
+the process* holds as its heading says. A brief never overrides the
+process. Any other contradiction is still a defect, and it is fixed in
+the more general file.
 
-**Three roles this file names.** *The human* is whoever runs the
+**Three roles the process names.** *The human* is whoever runs the
 session: they answer its questions and receive its reports, and the
 session acts through their `gh` login and their signing key. *The
 author* of a pull request is the login that opened it. *The maintainer*
@@ -107,18 +108,16 @@ to another repository is qualified*.
 
 ## What binds every role
 
-These bind every role alike.
-
 ### Clients
 
 The process runs in Claude Code and in Codex. `$PROCESS` is the path of
-this repository's clone, exported as `README.md`'s *Setup* says, and
-the process names its own files by their path under it. Claude Code's
-`~/.claude` in this file is `$CLAUDE_CONFIG_DIR` where that is set.
+this repository's clone, exported as `README.md`'s *Setup* says. Claude
+Code's `~/.claude` in the process is `$CLAUDE_CONFIG_DIR` where that is
+set.
 
 - **Skills.** Claude Code reads them from `~/.claude/skills/`, Codex
   from `~/.agents/skills/`. Claude Code runs one as `/btclib-iss`, Codex
-  as `$btclib-iss`; this text writes the first form. Claude Code puts
+  as `$btclib-iss`; the process writes the first form. Claude Code puts
   the words after the skill's name in place of `$ARGUMENTS`. Codex
   leaves `$ARGUMENTS` as written, and it means the same words.
 - **The reviewer in the other client** (*A pull request's rounds*) is
