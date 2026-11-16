@@ -55,6 +55,13 @@ The process the btclib-org maintainers follow with the coding agents
 - `scripts/test-gate-lock.sh` — `sh scripts/test-gate-lock.sh` shows
   sessions taking that lock's slots, and waiting while every slot is
   held;
+- `scripts/gate-sandbox.sb` — the sandbox an outside contributor's gates
+  run in, as `process/writing.md`'s *The gates* says;
+- `scripts/test-gate-sandbox.sh` — `sh scripts/test-gate-sandbox.sh`
+  runs the gate blocks of *The gates* on macOS, with a gate that writes
+  a repository under a gitlink's directory and forges the clean-tree
+  check, and checks which git calls outside the sandbox read that
+  repository and that the check refuses the forgery;
 - `scripts/test-git-c-allow.py` — the commands `git-c-allow.py` must
   approve and must refuse, run by the `test-git-c-allow` hook;
 - `scripts/suite-reads.py` — where a tree's tests may read the files of

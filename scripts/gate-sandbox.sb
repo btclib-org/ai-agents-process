@@ -1,9 +1,10 @@
 ; The sandbox macOS's sandbox-exec runs an outside contributor's gates
 ; in, as process/writing.md's *The gates* says. Its parameters: WT,
-; the worktree; SBX, the directory that holds the gates' caches, HOME
-; and TMPDIR; HOME, the user's home; UV_PYTHON, what `uv python dir`
-; prints; GIT_DIR and GIT_COMMON_DIR, what `git -C <wt> rev-parse
-; --path-format=absolute` prints for --git-dir and --git-common-dir.
+; the worktree the gates run in; SBX, the directory that holds the
+; gates' caches, HOME and TMPDIR; HOME, the user's home; UV_PYTHON, what
+; `uv python dir` prints; GIT_DIR and GIT_COMMON_DIR, what `git -C
+; <gate wt> rev-parse --path-format=absolute` prints for --git-dir and
+; --git-common-dir.
 (version 1)
 (allow default)
 
@@ -25,8 +26,11 @@
 
 ; Writes go to the worktree and to SBX only, and never to a git
 ; directory: a configuration or a hook written there would run when
-; git runs outside the sandbox. WT/.git is the git directory of a clone,
-; and the file that names it in a worktree.
+; git runs outside the sandbox, in a worktree that shares it. WT/.git is
+; the git directory of a clone, and the file that names it in a
+; worktree. A repository written elsewhere in WT, as under a gitlink's
+; directory, is read by git run in WT, which is why none runs there
+; outside the sandbox.
 (deny file-write*)
 (allow file-write*
   (subpath (param "WT"))

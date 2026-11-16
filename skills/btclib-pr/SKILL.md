@@ -1835,7 +1835,10 @@ has not reported yet.
   exits `128` where an octopus stopped before its last head and left
   nothing to abort. The worktree then goes (the shared *Debris goes when
   its work ends*). Where a fixer left changes, the abort can exit `128`
-  too, and the worktree goes with `--force`.
+  too, and the worktree goes with `--force`. Where any head is an
+  outside contributor's and a gate has run, no abort runs, and the
+  worktree goes with `git -C <checkout> worktree remove --force <wt>`
+  (the shared *The gates*).
 
   The test covers those heads on that `main`, and nothing that lands
   from outside the set afterwards.
