@@ -5,16 +5,17 @@ lands: those where the local rounds cleared a defect that a later review
 found. A clean one, where no review found any, belongs there too (*What
 a case holds*).
 
-**A change to the reviewer's model, its effort or its tools, or a
-change to the files of its brief that adds, alters or removes a rule it
-applies in judging a branch, is run on every case here first**, and its
-pull request adds the run to *Runs* and names it in `## Evidence`. The
-model and the effort are those `orchestration.md`'s *Models* gives. The
-tools are those the `tools` key of `agents/reviewer.md`'s frontmatter
-gives a Claude Code reviewer; the generated `.toml` carries no such key.
-The brief's part this repository holds is the files and sections
-`every-role.md`'s map gives the reviewer under *Everybody* and
-*The reviewer*, the reviewer's sections of the skill the brief names,
+**A change to the reviewer's model, its effort or its tools, or a change
+to the files of its brief that adds, alters or removes a rule it applies
+in judging a branch, is run on every case here first**, but one that *A
+case's tree can hold this file* leaves out, and its pull request adds
+the run to *Runs* and names it in `## Evidence`. The model and the
+effort are those `orchestration.md`'s *Models* gives. The tools are
+those the `tools` key of `agents/reviewer.md`'s frontmatter gives a
+Claude Code reviewer; the generated `.toml` carries no such key. The
+brief's part this repository holds is the files and sections
+`every-role.md`'s map gives the reviewer under *Everybody* and *The
+reviewer*, the reviewer's sections of the skill the brief names,
 `agents/reviewer.md` with its generated `.toml`, and this tree's
 `REVIEWING.md`; another tree's `REVIEWING.md` and the review bot's
 prompt, which the brief also carries, change in their own trees. Without
@@ -41,22 +42,21 @@ pull request. Its brief names neither this file nor anything posted
 after the head, since both state the defect. The reviewer cannot reach
 the fix either: the case's tree is a repository that holds only the head
 and its ancestors, since a worktree reads every branch of the checkout
-it was added from, and one of those may hold the fix. A run whose
-verdict's coverage list names this file is discarded and run again. The
-process it is briefed with is the configuration under test, at the
-`$PROCESS` sha the run records. The reviewer reads that process from a
-copy that leaves this file out, so the discard of a run whose coverage
-list names this file is the backstop, not the only guard. The reviewer
-reads the prose at the head itself, not on the merge with `origin/main`
-that *A pull request's rounds* asks for, since `main` has moved past the
-case, a defect's fix included. Where the run changes this tree's
-`REVIEWING.md`, a reviewer of this repository's cases reads the changed
-file in place of the head's, without the sentences that describe a
-case's defect, such as PR btclib-org/ai-agents-process#317's in its
-*This repository in particular*. The run records what it withheld. Where
-the change under test rewrites such a sentence, its case is recorded as
-unable to evaluate the change, beside a case that tests the instruction
-without stating its answer, where one is needed.
+it was added from, and one of those may hold the fix. The process it is
+briefed with is the configuration under test, at the `$PROCESS` sha the
+run records. The reviewer reads that process from a copy that leaves
+this file out, and the discard of *A case's tree can hold this file* is
+the backstop. The reviewer reads the prose at the head itself, not on
+the merge with `origin/main` that *A pull request's rounds* asks for,
+since `main` has moved past the case, a defect's fix included. Where the
+run changes this tree's `REVIEWING.md`, a reviewer of this repository's
+cases reads the changed file in place of the head's, without the
+sentences that describe a case's defect, such as PR
+btclib-org/ai-agents-process#317's in its *This repository in
+particular*. The run records what it withheld. Where the change under
+test rewrites such a sentence, its case is recorded as unable to
+evaluate the change, beside a case that tests the instruction without
+stating its answer, where one is needed.
 
 The case's tree is built at a new path from a checkout that holds the
 head, named by its path, so that the fetch needs no network and the
@@ -96,6 +96,51 @@ remotes=$(git -C "${tree:?}" remote) &&
   [ -z "$remotes" ] && [ -n "$ancestry" ] && [ "$all" = "$ancestry" ] &&
   echo isolated
 ```
+
+**A case's tree can hold this file**: a case of this repository whose
+head descends from `2ef0de4`, which added it, holds it at its head. That
+copy is the head's own, and `REVIEWING.md`'s last bullet sends a
+reviewer of this repository to it, so the reviewer reads it as any file
+of the head. A version of it, at the head or at any commit of the tree,
+can state a case's finding: its entry under *Cases*, a score or a
+finding under *Runs*, or the paragraph that makes it a clean case. This
+lists each commit of the tree whose version of this file names the case,
+as `<repo>#<n>` or `<repo>/pull/<n>`, with or without its owner, and
+prints `unnamed` only where each read succeeds and none does. It refuses
+an `n` that is not a number and a `repo` that is not one owner and one
+name. `-F` reads the reference as a literal, `-w` keeps `#31` from
+matching `#317`, and the `printf` splits the commits into words in `zsh`
+too, which does not split a variable. `git grep` exits `1` on a blob it
+cannot read, so the block also requires that it wrote no error:
+
+```shell
+repo=<owner>/<repo>
+n=<n>
+```
+
+```shell
+case ${n:?} in *[!0-9]*) false ;; esac &&
+  case ${repo:?} in */*/* | *[!A-Za-z0-9._/-]*) false ;; ?*/?*) ;;
+    *) false ;; esac && name=${repo#*/} &&
+  revs=$(git -C "${tree:?}" log --format=%H HEAD) && [ -n "$revs" ] &&
+  { rc=0; err=$(git -C "$tree" grep -l -w -F -e "${name}#${n}" \
+    -e "${name}/pull/${n}" $(printf '%s\n' "$revs") \
+    -- process/replay-set.md 2>&1 1>&3 3>&-) || rc=$?; } 3>&1 &&
+  printf '%s' "$err" >&2 && [ -z "$err" ] && [ "$rc" -le 1 ] &&
+  { [ "$rc" -eq 0 ] || echo unnamed; }
+```
+
+The check finds a case only by its reference and reads no other file of
+the tree, so a version that states a finding without naming its case
+passes it. The orchestrator reads the sentences that name the case in
+each version the check lists. The case is left out of the run only where
+one of them states the case's finding, its score or that it is clean; a
+sentence that names it only as the change a run tested states none of
+them. The run's entry names the versions read and why the case stays or
+goes. A run is discarded and run again where its verdict lists as read,
+or quotes, a copy of this file other than its case tree's own: one at
+the run's `$PROCESS` sha, on `main` or in another checkout. A verdict
+that lists this file as not read is not discarded for it.
 
 The copy the reviewer reads the process from
 (*The expected finding is kept out of the reviewer's input*) is built
@@ -221,7 +266,8 @@ that only that change differs, and the baseline's entry names that sha.
 
 Each run is an entry: the date, the `$PROCESS` sha, the factor changed
 and its value, the client, the model and the effort, a hit or a miss for
-each defect, and each false finding on any case apart.
+each defect or why its case was left out (*A case's tree can hold this
+file*), and each false finding on any case apart.
 
 **An entry whose `$PROCESS` sha is not on `main` also records the tree
 the copy is built from**, which `git rev-parse '<sha>:process'` prints.
