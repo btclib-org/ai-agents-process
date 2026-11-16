@@ -48,16 +48,23 @@
 # repository's config and runs its hooks, and a gate's code, or a
 # reviewer's inputs, can write a repository anywhere below <work> but in
 # a worktree's own .git file. So, before any git command, find lists
-# each .git and each HEAD below <work>, and plain file reads decide. A
-# linked worktree of the session's is a directory directly in <work>,
-# <work>/<e>, whose .git is a regular file, not a link, whose first line
-# is gitdir: naming a directory outside <work>; that directory is
-# worktrees/<id> of a repository outside, as its commondir file says,
-# and its gitdir file names that .git back. Every other .git, and every
-# HEAD beside objects and refs or beside commondir, is a repository the
-# script cannot tell is the session's: it refuses the directory, names
-# that repository, and runs no git at all. A HEAD with neither beside it
-# is not one git opens, and is passed over.
+# each name below <work> that is .git in any letter case, and each
+# directory, and plain file reads decide. A linked worktree of the
+# session's is a directory directly in <work>, <work>/<e>, whose .git,
+# spelled so, is a regular file with one link, not a symbolic link,
+# whose first line is gitdir: naming a directory outside <work>; that
+# directory is worktrees/<id> of a repository outside, as its commondir
+# file says, and its gitdir file names that .git back. Every other .git,
+# and every directory holding a HEAD beside objects and refs or beside
+# commondir, is a repository the script cannot tell is the session's: it
+# refuses the directory, names that repository, and runs no git at all.
+# HEAD, objects, refs and commondir are tested through the file system,
+# so that they fold as they fold for git. Of the other spellings of .git
+# tried on APFS, with a dotless or dotted I, fullwidth letters, or a
+# zero-width joiner, non-joiner or byte order mark inside, none is read
+# as .git; find -iname matched the dotted I under one locale and not
+# another, and where it does, it is refused too. A HEAD with neither
+# beside it is not one git opens, and is passed over.
 #
 # Nothing is removed before every check of the directory has passed. Then
 # the script makes the directory <work>/.sweep-unfinished with mkdir,
@@ -134,7 +141,8 @@ here=$(env pwd -P)
 list=$(mktemp) || exit 2
 todo=$(mktemp) || exit 2
 owns=$(mktemp) || exit 2
-trap 'rm -f "${list:?}" "${todo:?}" "${owns:?}"' EXIT
+dirs=$(mktemp) || exit 2
+trap 'rm -f "${list:?}" "${todo:?}" "${owns:?}" "${dirs:?}"' EXIT
 trap 'exit 1' INT TERM
 nl='
 '
@@ -292,29 +300,28 @@ foreign() {
   alien="$alien linked worktree of the session's"
 }
 
-# scan: the decision, by file reads alone, of each .git and HEAD find
-# listed; the session's worktrees go in $owns, the first other one in
-# $alien, and the scan reads the whole list either way
+# scan: the decision, by file reads alone, of each .git find listed in
+# any letter case, and of each directory; the session's worktrees go in
+# $owns, the first other repository in $alien, and the scan reads both
+# lists whole either way
 scan() {
   alien=
   : > "$owns"
   while IFS= read -r p <&3; do
-    case $p in
-      */HEAD)
-        d=${p%/HEAD}
-        if { there "$d/objects" && there "$d/refs"; } || there "$d/commondir"
-        then
-          foreign "$d" "a git directory's layout"
-        fi
-        continue
-        ;;
-    esac
+    if [ "${p##*/}" != .git ]; then
+      foreign "$p" 'a .git spelled in another case'
+      continue
+    fi
     e=${p%/.git}
     case ${e#"$r"/} in
       "$e" | */*) foreign "$p" 'a .git not at <work>/<e>'; continue ;;
     esac
     if [ -L "$p" ]; then foreign "$p" 'a symbolic link'; continue; fi
     if [ ! -f "$p" ]; then foreign "$p" 'not a regular file'; continue; fi
+    if [ -n "$(find "$p" -prune -links +1)" ]; then
+      foreign "$p" 'a .git with more than one link'
+      continue
+    fi
     if ! line "$p" || [ "${line#gitdir: }" = "$line" ]; then
       foreign "$p" 'no gitdir: line'
       continue
@@ -351,6 +358,15 @@ scan() {
     fi
     printf '%s\n' "$e" >> "$owns"
   done 3< "$list"
+  # objects, refs and commondir are tested through the file system, which
+  # folds their names as it folds them for git
+  while IFS= read -r d <&3; do
+    if there "$d/HEAD" &&
+      { { there "$d/objects" && there "$d/refs"; } || there "$d/commondir"; }
+    then
+      foreign "$d" "a git directory's layout"
+    fi
+  done 3< "$dirs"
 }
 
 # remove: the removal of $r, once its checks have passed
@@ -421,19 +437,15 @@ sweep() {
     refuse 'holds .sweep-unfinished, left by a removal that stopped'
     return
   fi
-  if ! find "$r" \( -name .git -print -prune \) -o \
-    \( -name HEAD -print \) -o \( -name "*$nl*" -print \) > "$list"
-  then
+  # each name that is .git in any letter case, then each directory, which
+  # the scan asks the file system about, as git asks it
+  if ! odd=$(find "$r" -name "*$nl*" -print) ||
+    ! find "$r" -iname .git -print -prune > "$list" ||
+    ! find "$r" \( -iname .git -prune \) -o -type d -print > "$dirs"; then
     refuse 'find cannot read all of it'
     return
   fi
-  # a name with a newline prints a line that ends in neither /.git nor /HEAD
-  while IFS= read -r p <&3; do
-    case $p in
-      */.git | */HEAD) ;;
-      *) refuse 'holds a name with a newline'; return ;;
-    esac
-  done 3< "$list"
+  if [ -n "$odd" ]; then refuse 'holds a name with a newline'; return; fi
   scan
   if [ -n "$alien" ]; then
     refuse "$alien"

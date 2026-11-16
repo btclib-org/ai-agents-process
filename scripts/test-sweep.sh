@@ -72,7 +72,13 @@
 #   one whose git directory's commondir names another repository, a
 #   worktree moved by hand, which its repository does not name, a work
 #   directory that is itself a worktree, and one whose top holds an empty
-#   .git, or a HEAD beside objects and refs;
+#   .git, or a HEAD beside objects and refs; so are a .git file with a
+#   second hard link and a .git that is a FIFO; where the file system
+#   ignores letter case, so are a clone in a worktree whose .git and HEAD
+#   are spelled .GIT and Head, a gitlink's .GIT file naming a git
+#   directory whose HEAD is spelled head, and a bare repository whose
+#   HEAD is spelled Head, and a file system that keeps case skips them
+#   and says so;
 # - a directory holding a lone file named HEAD, notes alone, or a
 #   reviewer's directory without a repository is removed, and no git
 #   runs; one holding two worktrees is removed with both;
@@ -117,7 +123,7 @@ script=${1:-$(dirname "$0")/sweep.sh}
 script=$(cd -P "$(dirname "$script")" && pwd -P)/${script##*/}
 [ -f "$script" ] || { echo "FAIL: no script $script"; exit 1; }
 tmp=$(mktemp -d) || exit 1
-asroot=
+asroot='' casefold=1
 [ "$(id -u)" != 0 ] || asroot=1
 # the fixtures include an unreadable directory and, with chflags, an
 # immutable file, which a plain rm -rf cannot remove; the EXIT trap calls
@@ -592,6 +598,43 @@ b"
   rm "$wt/.git"
   mv "$base/f-link-gitfile" "$wt/.git"
 
+  mkwork "$m" f-hard
+  mkdir "$w/e2"
+  ln "$wt/.git" "$w/e2/.git"
+  foreign 'hard link' "$w" 'a .git with more than one link'
+  rm "$w/e2/.git"
+  mkdir -p "$sp/f-fifo/e"
+  mkfifo "$sp/f-fifo/e/.git"
+  foreign 'fifo' "$sp/f-fifo" "$sp/f-fifo/e/.git: not a regular file"
+  if [ -d "$tmp/case-$sh" ]; then
+    mkwork "$m" f-case
+    git clone -q "$o" "$wt/ignored/inner"
+    newcommit "$wt/ignored/inner" f-case
+    git -C "$wt/ignored/inner" update-ref refs/heads/side "$c"
+    mv "$wt/ignored/inner/.git" "$wt/ignored/inner/.GIT"
+    mv "$wt/ignored/inner/.GIT/HEAD" "$wt/ignored/inner/.GIT/Head"
+    [ "$(git -C "$wt/ignored/inner" rev-parse -q --verify refs/heads/side)" \
+      = "$c" ] || fail 'case nested: git does not read it'
+    foreign 'case nested' "$w" "$wt/ignored/inner/.GIT: a .git spelled in"
+    kept 'case nested' "$wt/ignored/inner/.GIT/Head"
+    mkwork "$m" f-case-sub
+    git -C "$wt" update-index --add --cacheinfo "160000,$c,sub"
+    c=$(git -C "$wt" commit-tree -p HEAD -m f-case-sub \
+      "$(git -C "$wt" write-tree)" < /dev/null)
+    git -C "$wt" update-ref HEAD "$c"
+    git -C "$wt" push -q origin HEAD
+    mkdir -p "$wt/sub" "$w/evil/objects" "$w/evil/refs"
+    echo 'ref: refs/heads/main' > "$w/evil/head"
+    echo '[[[' > "$w/evil/config"
+    echo "gitdir: $w/evil" > "$wt/sub/.GIT"
+    foreign 'case gitlink' "$w" "$wt/sub/.GIT: a .git spelled in"
+    git clone -q --bare "$o" "$sp/f-head-case/b.git"
+    mv "$sp/f-head-case/b.git/HEAD" "$sp/f-head-case/b.git/Head"
+    foreign 'case HEAD' "$sp/f-head-case" \
+      "$sp/f-head-case/b.git: a git directory's layout"
+  else
+    casefold=
+  fi
   mkdir -p "$base/fake/worktrees/x" "$sp/f-fake/e"
   echo 'ref: refs/heads/main' > "$base/fake/worktrees/x/HEAD"
   echo "$m/.git" > "$base/fake/worktrees/x/commondir"
@@ -806,6 +849,8 @@ sh "${PROCESS:?}/scripts/sweep.sh" work "${work:?}"' zsh "$sp/zsh paste" \
   shells="$shells zsh"
 fi
 
+[ -n "$casefold" ] ||
+  echo 'the file system keeps letter case: the case-folding cases are skipped'
 [ -z "$asroot" ] ||
   echo 'as uid 0, the unreadable directory case is skipped'
 [ "$status" = 0 ] && echo "sweep.sh answers as expected under:$shells"
