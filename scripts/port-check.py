@@ -55,13 +55,16 @@ cannot place.
 
 A bullet of section 14's list is a line starting `- `, and each line
 after it indented by two spaces continues it, as section 14's test reads
-them. A bullet ends at a line that is not blank, not a bullet and not
-indented by two spaces, so a marker indented after such a line continues
-nothing. That test reads on past such a line, joining each later line
-indented by two spaces to the last bullet. Any other line that opens
-with a list marker after up to three spaces, as `* `, `+ `, `1. ` and
-` - ` do, is a section 14 it cannot read, since that test would compare
-no copy for it. Every other line is prose.
+them. A paragraph ends a bullet: a line that follows a blank line and is
+not blank, not a bullet and not indented by two spaces. Such a line
+right after a bullet or its continuation, with no blank line between, is
+a section 14 it cannot read: Markdown can read it as part of the bullet,
+and that test drops it. A marker indented after a paragraph continues
+nothing, though that test goes on joining each line indented by two
+spaces to the last bullet. Any other line that opens with a list marker
+after up to three spaces, as `* `, `+ `, `1. ` and ` - ` do, is a
+section 14 it cannot read, since that test would compare no copy for it.
+Every other line is prose.
 
 It exits 0 only where every file is equal, 1 where one differs, and 2
 where it cannot tell: a git call that fails, a section 14 it cannot
@@ -210,7 +213,7 @@ def obligations(std: str, at: str, tree: str, head: str) -> dict[str, str]:
         msg = "section 14's list is not found once in README.md"
         raise Unknown(msg)
     bullets: list[str] = []
-    within = False
+    within = blank = False
     for line in lines[starts[0] + 1 : ends[0]]:
         if line.startswith("- "):
             bullets.append(line)
@@ -220,8 +223,12 @@ def obligations(std: str, at: str, tree: str, head: str) -> dict[str, str]:
         elif ITEM.match(line):
             msg = f"a line of section 14's list is not a dash bullet: {line!r}"
             raise Unknown(msg)
+        elif line.strip() and within and not blank:
+            msg = f"a line of section 14's list is not indented: {line!r}"
+            raise Unknown(msg)
         elif line.strip():
             within = False
+        blank = not line.strip()
     empty = git(tree, "hash-object", "-t", "tree", "/dev/null").decode().strip()
     owed: dict[str, str] = {}
     for bullet in bullets:
