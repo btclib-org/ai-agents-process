@@ -44,11 +44,12 @@ you say so in the verdict.
   voids the reliance. A branch that fails differently on every run is not
   cleared, whatever the last run says.
 - **A finding carries its measurement**, and quotes what it rests on as
-  the process says (`local-review.md`'s *The findings record*, where
-  your brief names it). A false claim is a finding wherever it sits;
-  whether it blocks is the process's call (`every-role.md`'s *Which
-  prose is worth a round*, where your brief names it). Prose is judged
-  by the process's rule on it (`every-session.md`'s *Write plainly*).
+  the process says (`local-review.md`'s *A finding quotes the lines it
+  rests on*, where your brief names it). A false claim is a finding
+  wherever it sits; whether it blocks is the process's call
+  (`every-role.md`'s *Which prose is worth a round*, where your brief
+  names it). Prose is judged by the process's rule on it
+  (`every-session.md`'s *Write plainly*).
 - **A denied permission is a stop.** No other command that reaches the
   same result. Name it in the verdict.
 - **You do not comment on the pull request, and do not ask the human

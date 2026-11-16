@@ -53,6 +53,13 @@ line of its own after a newline, ending in LF; a copy holding it
 otherwise, at its first byte or ending in CRLF, has a boundary this
 cannot place.
 
+A bullet of section 14's list is a line starting `- `, and each line
+after it indented by two spaces continues it, as section 14's test reads
+them. Any other line that opens with a list marker after up to three
+spaces, as `* `, `+ `, `1. ` and ` - ` do, is a section 14 it cannot
+read, since that test would compare no copy for it. Every other line is
+prose.
+
 It exits 0 only where every file is equal, 1 where one differs, and 2
 where it cannot tell: a git call that fails, a section 14 it cannot
 read, a path that is not UTF-8, a boundary it cannot place, a refused
@@ -75,6 +82,7 @@ HEADING = re.compile(rb"(?m)^## This repository in particular\r?$")
 RECORD = re.compile(r"^Port btclib-org/\.github@([0-9a-f]{7,40})(?:[ (].*)?$")
 OPENING = "**The same file in every repository**"
 CLOSING = "**Decided per repository**"
+ITEM = re.compile(r"^ {0,3}(?:[-*+]|[0-9]{1,9}[.)])(?:[ \t]|$)")
 SUBJECT = re.compile(r"^- `([^`]+)` — (.+)")
 EVERYWHERE = re.compile(r"^owed by every repository(?=[,;:.]|$)")
 CONDITIONAL = re.compile(r"^owed where `([^`]+)`(?=[,;:.]|$)")
@@ -188,8 +196,9 @@ def entry(repo: str, rev: str, path: str) -> tuple[str, bytes] | None:
 def obligations(std: str, at: str, tree: str, head: str) -> dict[str, str]:
     """Read section 14's compared paths the tree owes, each against its source.
 
-    :raises Unknown: where the list is not found once, a bullet has no
-        subject, or a clause is one this does not read.
+    :raises Unknown: where the list is not found once, a list item is not
+        a dash bullet, a bullet has no subject, or a clause is one this
+        does not read.
     """
     lines = git(std, "cat-file", "blob", f"{at}:README.md").decode().splitlines()
     starts = [i for i, line in enumerate(lines) if OPENING in line]
@@ -203,6 +212,9 @@ def obligations(std: str, at: str, tree: str, head: str) -> dict[str, str]:
             bullets.append(line)
         elif line.startswith("  ") and bullets:
             bullets[-1] += f" {line.strip()}"
+        elif ITEM.match(line):
+            msg = f"a line of section 14's list is not a dash bullet: {line!r}"
+            raise Unknown(msg)
     empty = git(tree, "hash-object", "-t", "tree", "/dev/null").decode().strip()
     owed: dict[str, str] = {}
     for bullet in bullets:

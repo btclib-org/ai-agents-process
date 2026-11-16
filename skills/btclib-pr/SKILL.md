@@ -219,6 +219,24 @@ where a page comes back full.
 - **Reviews**, each with its state, author, body and the commit it
   names: `gh pr view <n> --repo <owner>/<repo> --json reviews`. The
   bot's review from `claude-review.yml` is one of them.
+
+  CodeRabbit's reviews, on every head of the pull request, are printed
+  by this, each body after a line naming its review, the commit it
+  reviewed and its link. It prints nothing where CodeRabbit left no
+  review, and `error` where the read failed:
+
+  ```shell
+  repo=<owner>/<repo>
+  n=<n>
+  : "${repo:?}" "${n:?}"
+  { gh api --paginate "repos/${repo:?}/pulls/${n:?}/reviews?per_page=100" ||
+      echo '"read-failed"'
+  } | jq -r 'if type != "array" then "error"
+    else .[] | select(.user.login == "coderabbitai[bot]")
+      | "review \(.id) \(.state) \(.commit_id) \(.html_url)", .body, ""
+    end'
+  ```
+
 - **Review threads**, inline, with whether each is resolved:
 
   ```shell
@@ -255,21 +273,33 @@ outdated or not. So is a review or comment from anybody but the human
 that asks something, where nobody has answered it or it came after the
 human's last comment and last push. A resolved thread is done.
 
+**Each finding in a CodeRabbit review body is an item too, on whichever
+head the review names, wherever in the body it sits**: under
+*Additional comments* on PR btclib-org/ai-agents-process#472, under
+*Outside diff range comments* on PR btclib-org/.github#2309, or as a
+failed pre-merge check under *Prompt to fix all issues* on PR
+btclib-org/btclib-node#2531. The session reads each body the command
+above prints, and no command decides what in it is a finding. A review
+covers only the commits since CodeRabbit's last one, so a later push
+does not repeat an earlier finding. The item is done once the comment
+of *Answering it* answers it; until then it holds the landing as an
+open thread does, across pushes (*The reviews on GitHub*).
+
 ## Answering it
 
-**Each item is re-measured first** (the shared *Orchestration*), then
-answered one of three ways:
+**Each item is re-measured first**, the whole of it, not its cheap
+half, then answered one of three ways:
 
-- **accept**: fixed in a new signed commit on top (the shared
-  *Committing and rebasing*).
+- **accept**: fixed as the shared *Committing and rebasing* says, and
+  the answer says what changed.
 - **decline**: with the measurement that refutes it, or that shows it a
   refinement (below).
 - **decision**: a choice the tree does not settle — design, scope, a
   reserved decision. It goes to the human or the maintainer, as
   `every-session.md`'s *When the human has to decide* says.
 
-Each item and its answer go in the findings record (the shared *The
-findings record*).
+Each item and its answer go in the findings record
+(`orchestration.md`'s *The findings record*).
 
 **A bot's finding, the review bot's, Codex's or CodeRabbit's, takes the
 first of these routes that fits**, measured on the head, unless it needs
@@ -281,13 +311,15 @@ a decision:
   taste (`REVIEWING.md`'s *The standard an ack is given against*).
 - **filed or declined, never accepted, where it is a refinement**, which
   names no defect on any input and no sentence the shared *Which prose
-  is worth a round* blocks on, or where the shared *The rounds* files
-  it: it adds no text to the branch. A defect *The rounds* files is
-  filed as the shared *Collateral* says, and the reply names its issue,
-  whether or not the branch adds the defect; any other finding of this
-  route is filed the same way, or else declined with its ground.
-  Repeated after the reply, it is answered by pointing to the first
-  reply, and resolved.
+  is worth a round* blocks on, or where the shared *The rounds* keeps it
+  off the branch: it adds no text to the branch. A defect *The rounds*
+  keeps off the branch is filed as the shared *Collateral* says, and the
+  reply names its issue, whether or not the branch adds the defect. A
+  refinement of prose is declined with its ground, not filed, since
+  `REVIEWING.md`'s *What is filed, and what is not* files no prose; any
+  other finding of this route is filed the same way, or else declined
+  with its ground. Repeated after the reply, it is answered by pointing
+  to the first reply, and resolved.
 - **accepted** where it is the branch's own: a defect or a false
   sentence its diff or its pull request body adds, or anything else the
   shared *Collateral* counts as the branch's subject (the shared *A pull
@@ -340,7 +372,8 @@ gh api graphql -F t=<thread id> -f query='
 
 A review or comment outside a thread is answered in one comment on the
 pull request, which meets `every-session.md`'s *What is posted on a
-forge*.
+forge*. For a CodeRabbit review body, that comment links the review and
+answers each finding in it.
 
 **Codex's state on the head changes only when Codex reads it again**: a
 reply and a resolved thread leave it in findings. A push can start that
@@ -371,9 +404,9 @@ them.
 ## Rebase and CI
 
 - **The reviewer reads the delta** from the sha it last read. A rebase
-  goes to a reviewer only where the shared *A rebase and the clearance*
-  sends it. A fresh reviewer's first read is the whole diff from its
-  parent.
+  goes to a reviewer only where `orchestration.md`'s *A rebase and the
+  clearance* sends it. A fresh reviewer's first read is the whole diff
+  from its parent.
 - **A pull request is rebased onto the default branch only where
   `CONTRIBUTING.md`'s *Landing it* says, or for a retarget.** An outside
   contributor's branch, or the agent's, is never rebased: *Outside
@@ -624,13 +657,15 @@ gh pr view <n> --repo <owner>/<repo> --json headRefOid,reviews \
     elif last | startswith("ACK ") then "ack" else "findings" end'
 ```
 
-`skills/btclib-inbox/measure.sh` makes the same read in GraphQL, in its
-`ack`, so a change to this one changes that one too.
+`skills/btclib-inbox/measure.sh` reads the verdict line the same way in
+GraphQL, in its `ack`, but only among the bot's latest reviews, as
+`skills/btclib-inbox/SKILL.md` says, where this command reads them all.
+A change to this one changes that one too.
 
 Where it is absent, in these cases or another, the pull request is
 merged only once the latest fresh reviewer's `CLEARED` also names the
 head, or the dedicated reviewer's where the other client is unavailable
-(the shared *A pull request's rounds*):
+(`orchestration.md`'s *Where the other client is unavailable*):
 
 - the bot's run failed with a 429, its quota exhausted, matched as
   *Rebase and CI* says;
@@ -729,14 +764,23 @@ pilot
 that turns its approvals on in btclib-org/ai-agents-process: its
 `CodeRabbit` check passes once it has read the head, findings or not.
 Until the pilot reports, its states are these, there too. Findings is one of
-its threads open, read as *What was raised* reads them. Its ACK on the
-head is a pass of the latest run of its check whose `details_url` names
-this pull request, since another can share the head, with none of its
-threads open. It is running while a run of that check has not completed,
-and absent otherwise, as where the check was skipped, its comment saying
-why (`Review skipped`, `Reviews paused`).
+its threads open, read as *What was raised* reads them, or a finding in
+one of its review bodies, on any head of the pull request, that no
+comment of *Answering it* answers. Its ACK on the head is a pass of the
+latest run of its check whose `details_url` names this pull request,
+since another can share the head, with none of its threads open and
+every finding in its review bodies answered. It is running while a run
+of that check has not completed, and absent otherwise, as where the
+check was skipped, its comment saying why (`Review skipped`,
+`Reviews paused`).
 This prints `ack`, `findings`, `running`, `absent`, or `error` where a
-read failed:
+read failed. It reads the check and the threads, not the bodies: its
+`ack` is CodeRabbit's ACK only where the session read the bodies, as
+*What was raised* says, after every run of that check on the head had
+completed, and every finding in them is answered. A read made earlier
+can miss a review: on PR btclib-org/ai-agents-process#472, CodeRabbit
+posted the review holding its finding 9 seconds before its check
+completed:
 
 ```shell
 repo=<owner>/<repo>
@@ -823,10 +867,12 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
 - [ ] the author is not the agent: `.author.login` is not `app/claude`.
       Whoever approves the agent's pull request reads every line
       (`CONTRIBUTING.md`'s *Working with an LLM*), so the human decides
-- [ ] the latest fresh reviewer's `CLEARED` names `<sha>`, or *A rebase
-      and the clearance* carries it to `<sha>`; where the other client
-      is unavailable, the dedicated reviewer's does (the shared *A pull
-      request's rounds*)
+- [ ] the latest fresh reviewer's `CLEARED` names `<sha>`, or
+      `orchestration.md`'s *A rebase and the clearance*, or
+      `local-review.md`'s *A merge of `main` and the clearance*, carries
+      it to `<sha>`; where the other client is unavailable, the
+      dedicated reviewer's does (`orchestration.md`'s *Where the other
+      client is unavailable*)
 - [ ] every check passed or was skipped, required or not:
       `gh pr checks <n> --repo <owner>/<repo> --json bucket --jq
       'length > 0 and all(.[]; .bucket == "pass" or .bucket ==
@@ -873,10 +919,10 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
       only move pins: the fifth command below prints nothing, and the
       sixth, where it runs, exits `0`
 - [ ] a major move of a dependency, a hook or an action has the latest
-      fresh reviewer's `CLEARED` name the release notes or changelog it
-      read between the two versions, and say that nothing in them breaks
-      the tree; where the other client is unavailable, the dedicated
-      reviewer's does (the shared *A pull request's rounds*)
+      fresh reviewer's `CLEARED` answer the shared *The verdict*'s item
+      on it, saying that nothing in the notes breaks the tree; where the
+      other client is unavailable, the dedicated reviewer's does
+      (`orchestration.md`'s *Where the other client is unavailable*)
 
 The first prints each file under `.github/` or any `.claude/`, any top-level
 `RELEASING.md`, `REPOSITORY.md` or `SECURITY.md`, and any `AGENTS.md`,
@@ -1210,10 +1256,9 @@ clone=<clone dir>
 rm -rf "${clone:?}"
 ```
 
-A major move is one where a version's first non-zero number changes: a
-dependency's, a hook's `rev:` or its `# frozen:` comment, an action's
-`# vX.Y.Z` comment. Where the notes show a known problem, the item
-fails and the human decides (*Where it is not obvious*).
+The shared *The verdict* says what a major move is. Where the notes show
+a known problem, its item fails and the human decides (*Where it is not
+obvious*).
 
 **Where it is obvious, approve `<sha>`, pinned.** `gh pr review` cannot
 pin a commit, so the call is the API's:
@@ -1368,9 +1413,10 @@ has, is put to the human before it lands through the bypass.
 Its issue stays theirs, and no competing branch is opened. The reviewer
 reviews it against `REVIEWING.md`. Its gates run in the sandbox of the
 shared *The gates*, whoever runs them, and so do the dedicated
-reviewer's inputs, which the session runs there for it. Where the shared
-*A pull request's rounds* has the body record something, the comment
-that section names records it instead.
+reviewer's inputs, which the session runs there for it. Where
+`orchestration.md`'s *Where the other client is unavailable* has the
+body record something, the comment that section names records it
+instead.
 
 **It is completed in place where `maintainerCanModify` is `true`**, with
 every fix the approval needs, blocking findings and nits alike, as the
@@ -1764,11 +1810,11 @@ has not reported yet.
   Of a pair that conflicts, the repair of a red `main` lands first, then
   the one approved on its head, since a push dismisses that approval,
   then the lower number. The other of the pair leaves the set and is
-  rebased once the first has landed. Each rebase goes as the shared *A
-  rebase and the clearance* says. Where a head is an outside
-  contributor's or the agent's, `main` comes in by its merge, not a
-  rebase (*Rebase and CI*). Where it is an outside contributor's,
-  *Outside contributors* says who decides the order.
+  rebased once the first has landed. Each rebase goes as
+  `orchestration.md`'s *A rebase and the clearance* says. Where a head
+  is an outside contributor's or the agent's, `main` comes in by its
+  merge, not a rebase (*Rebase and CI*). Where it is an outside
+  contributor's, *Outside contributors* says who decides the order.
 
   Where every run exits `0`, the octopus failed on its own, as it does
   on a file one head renames and another edits. Of the heads that change
@@ -1832,9 +1878,9 @@ has not reported yet.
   the report.
 
 - **Where `main` has moved past the sha the verdict read the prose on**,
-  the shared *A rebase and the clearance* says who re-reads the prose
-  before the branch lands, and what review a sentence found false there
-  needs.
+  `orchestration.md`'s *A rebase and the clearance* says who re-reads
+  the prose before the branch lands, and what review a sentence found
+  false there needs.
 - **The pin is the head as last pushed**, not the sha a verdict named.
 - **A stacked pull request lands like any other**: once its base has
   landed, it is rebased onto `main` as `CONTRIBUTING.md`'s *One subject,
@@ -2012,8 +2058,8 @@ has not reported yet.
   re-read when `main` changes it* says. Then read a landed line back
   where sessions read it: under `$PROCESS`, or through the link of the
   skill or agent it changed.
-- **The collateral goes back now** (the shared *Collateral*), before
-  anything new starts.
+- **The collateral goes back now** (`orchestration.md`'s *Closing
+  collateral*), before anything new starts.
 - **Remove the worktrees** — yours, and tell the writer to remove its
   own (*Debris goes when its work ends*).
 

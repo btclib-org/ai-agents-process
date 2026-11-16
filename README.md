@@ -15,6 +15,10 @@ The process the btclib-org maintainers follow with the coding agents
   which only reads;
 - `skills/btclib-inbox/measure.sh` — the script `/btclib-inbox` runs to
   read them;
+- `scripts/test-inbox-measure.sh` — `sh scripts/test-inbox-measure.sh`
+  checks what `skills/btclib-inbox/measure.sh` prints on answers a
+  stand-in for `gh` serves; it needs `jq` on the `PATH`, as
+  `measure.sh` does;
 - `skills/btclib-table/SKILL.md` — the `/btclib-table` skill, one table
   of every repository of the organization, which only reads;
 - `skills/btclib-table/measure.sh` — the script `/btclib-table` runs to
@@ -69,7 +73,9 @@ The process the btclib-org maintainers follow with the coding agents
   `port-check.py` must answer, run by the `test-port-check` hook.
 
 `process/every-role.md`'s opening says how these files divide the
-process, and its *Clients* says what differs between the two agents.
+process, and its *Clients*, with `process/orchestration.md`'s *Agents in
+each client* and *Starting the reviewer in the other client*, says what
+differs between the two agents.
 
 ## Prerequisites
 
@@ -315,12 +321,14 @@ archived: open issues, open pull requests, CI and README badge status,
 the last release, and whether a new one is due. It only reads.
 
 ```text
-/night-mode on|off|status
+/night-mode [on|off|status]
 ```
 
 turns night mode on or off, in any session, or says whether it is on,
-since when, and what it has deferred so far. `process/night-mode.md`
-says what the night does.
+since when, and what it has deferred so far.
+`skills/night-mode/SKILL.md` says what each word does, and what the
+command does with none; `process/night-mode.md` says what the night
+does.
 
 In Codex each starts with `$` instead of `/`: `$btclib-iss`.
 

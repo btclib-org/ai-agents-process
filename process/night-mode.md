@@ -5,11 +5,12 @@ it runs or none; in `/btclib-iss` and `/btclib-pr` that is the
 orchestrator. A section named here in italics with no file is in
 `every-session.md`, beside this file.
 
-**The human turns night mode on** with `/night-mode on`, with `--night`
-in a skill's arguments, or in words, **and off** with `/night-mode off`
-or in words, at any point. Where night mode is turned on while it is on,
-or off while it is off, the session says so, and the night stays as it
-is. The session reads this file whole when night mode is turned on.
+**The human turns night mode on and off** at any point, with
+`/night-mode` or in words, and turns it on with `--night` in a skill's
+arguments too. The skill says what `/night-mode` does with each word and
+with none. Where night mode is turned on while it is on, or off while it
+is off, the session says so, and the night stays as it is. The session
+reads this file whole when night mode is turned on.
 
 **Night mode has no ceiling and no duration**: it lasts until the human
 turns it off.
@@ -83,9 +84,9 @@ reserve stops that branch.
   morning report may be given then.
 
 **The morning report** is a message to the human. A copy in
-`<scratchpad>/night-report-<date>.md` is a convenience, since the
-scratchpad may not outlive the session. The record is that message and
-the comments on the issues. It holds:
+`<scratchpad>/orchestrator/night-report-<date>.md` is a convenience,
+since the scratchpad may not outlive the session. The record is that
+message and the comments on the issues. It holds:
 
 - what was opened, approved and landed, with links, and each landing's
   verification;

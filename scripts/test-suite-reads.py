@@ -1281,7 +1281,7 @@ ROUND_F: list[tuple[str, dict[str, str], list[str], bool]] = [
         "inert-shutil-rmtree",
         {"tests/test_read.py": "import shutil\nreader = shutil.rmtree\n"},
         ["docs/guide.md"],
-        False,
+        True,
     ),
     (
         "inert-shutil-which",
@@ -1307,7 +1307,7 @@ ROUND_F: list[tuple[str, dict[str, str], list[str], bool]] = [
         "rmtree-alias",
         {"tests/test_read.py": "import shutil\nreader = shutil.rmtree\n"},
         ["docs/guide.md"],
-        False,
+        True,
     ),
     (
         "shell-chain",

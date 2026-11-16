@@ -132,6 +132,8 @@ The writer's section; the reviewer judges its result.
       than once* is in the report
 - [ ] where the change removes tests, each refusal they asserted that a
       public caller still reaches is asserted again through that caller
+- [ ] the fix of a blocking finding that rests on an input adds that
+      input as a test, where the tree tests that code
 - [ ] the report says what was **not** checked, and why
 
 ### A rule stated more than once
@@ -169,14 +171,15 @@ btclib-org/.github's tracker as collateral (*Collateral*).
 
 ### What the prose that lands may say
 
-- **No entry in `CHANGELOG.md` or `RELEASE_NOTES.md`.** The changelog
-  is written at release time (btclib-org/.github#1622). A tree's
-  `CONTRIBUTING.md` that still asks for an entry is a drifted copy, and
-  the standard wins (*Which file wins*). An entry found on a branch is
-  dropped. A release's own pull request writes that release's section,
-  and so does the pull request that moves an entry left in
-  `changelog/next/` into it, as section 9 of the organization's standard
-  says.
+- **No entry in `CHANGELOG.md` or `RELEASE_NOTES.md`.** In a tree that
+  publishes, section 9 of the organization's standard (*`CHANGELOG.md`
+  and `RELEASE_NOTES.md`*) says which pull request adds an entry under
+  `changelog/next/`, and what the entry holds. A tree's
+  `CONTRIBUTING.md` that still asks for an entry in either file is a
+  drifted copy, and the standard wins (*Which file wins*). An entry in
+  either file found on a branch is dropped. A release's own pull request
+  writes that release's section, and so does the pull request that moves
+  an entry left in `changelog/next/` into it, as section 9 says.
 - **Backward compatibility is not a constraint.** Choose the most
   rational design and document what it breaks in the commit message and
   the pull request body.
@@ -224,7 +227,9 @@ of the standard* says.
   already cleared branch back to review, land it as cleared and close the
   issue by hand once it lands, with a comment listing every landing and
   the trees that needed nothing. Where the last tree goes back to review
-  anyway, switch it in the same amend.
+  anyway, switch it in the same amend. A port of the standard is the
+  exception: `/btclib-iss`'s *Ports of the standard* says how its issue
+  closes.
 - **An issue several pull requests of one repository advance is closed by
   the one that meets its *Done when*.** That pull request carries
   `(closes #N)`, even where each earlier one carried `(issue #N)`. Read
@@ -246,7 +251,14 @@ of the standard* says.
   request body) for every form of the three words next to a reference.
   The same sweep finds bare references with `perl -ne 'print if
   /(?<![\/A-Za-z0-9.\-])#[0-9]+/'`, whose `0-9` keeps
-  `btclib-org/btclib-secp256k1#N` from reading as bare. It lists the
+  `btclib-org/btclib-secp256k1#N` from reading as bare. It finds a
+  mention with
+  `grep -nE '(^|[^][:alnum:]._+-])_*@[[:alnum:]]' -- <file>`, which
+  exits `1` where it finds none and `2` where it cannot read the file.
+  It skips an `@` after a letter, a digit, `]`, `.`, `+` or `-`, or
+  after a run of `_` that follows one of these, as in
+  `noreply@anthropic.com` and `claude[bot]@users.noreply.github.com`,
+  and lists one after `_` elsewhere, as in `_@name_`. It lists the
   non-ASCII codepoints (Python, `ord(c) > 127`) of both texts, and of
   every other text posted on a forge, other than the em dash and the
   ellipsis this file uses: a CJK character mid-word is a generation
@@ -339,16 +351,17 @@ of the standard* says.
   ```
 
 - **A merge of `main` asks for no new local gate** where it resolved
-  nothing (*A rebase and the clearance*), brings in no file the branch
-  changes, and `main` is green: the latest completed push run of each of
-  its workflows succeeded, read when the session looks, with no wait for
-  a run in progress. CI gates the merged head. Each command below holds
-  only where it prints nothing and exits `0`. The first prints each file
-  both sides change, and `pipefail` makes a stage that fails fail it.
-  The second prints each workflow whose latest completed run did not
-  succeed, or `no runs` where none has completed. It reads the newest
-  200 completed push runs, so a workflow whose last run is older than
-  those, or that has no completed run, is not read:
+  nothing (`local-review.md`'s *A merge of `main` and the clearance*),
+  brings in no file the branch changes, and `main` is green: the latest
+  completed push run of each of its workflows succeeded, read when the
+  session looks, with no wait for a run in progress. CI gates the merged
+  head. Each command below holds only where it prints nothing and exits
+  `0`. The first prints each file both sides change, and `pipefail`
+  makes a stage that fails fail it. The second prints each workflow
+  whose latest completed run did not succeed, or `no runs` where none
+  has completed. It reads the newest 200 completed push runs, so a
+  workflow whose last run is older than those, or that has no completed
+  run, is not read:
 
   ```shell
   wt=<wt>
@@ -564,14 +577,14 @@ of the standard* says.
   the load, the memory and the disk admit a gate, as the header comment
   of `$PROCESS/scripts/gate-lock.sh` says, and prints the readings the
   report copies.
-- **`--basetemp=<scratchpad>/pytest-<repo>-<branch>`**, outside the
-  worktree, the same name on every run of that branch, removed once the branch's
-  gates are done (*Debris goes when its work ends*). A teardown
-  `OSError` or `FileNotFoundError` on `popen-gw*` is a neighbour's run on
-  a shared path (`ps` shows it), not a failing test.
+- **`--basetemp=<work>/pytest-<branch>`** (*The scratchpad is shared*),
+  outside the worktree, the same name on every run of that branch,
+  removed once the branch's gates are done (*Debris goes when its work
+  ends*). A teardown `OSError` or `FileNotFoundError` on `popen-gw*` is a
+  neighbour's run on a shared path (`ps` shows it), not a failing test.
 - **Build artefacts outside the worktree** (`uv build --out-dir
-  <scratchpad>/…`): an untracked file inside it fails `check-sdist`
-  while `git status` reads clean.
+  <scratch>/…`): an untracked file inside it fails `check-sdist` while
+  `git status` reads clean.
 - **A workflow change is dispatched on the branch**: `gh workflow run
   <file>.yml --ref <branch>`. A workflow that has never landed on the
   default branch is exercised first by the pull request's own run, which
@@ -632,8 +645,8 @@ of the standard* says.
 
 ### Sourcery and CodeRabbit before a push
 
-The findings of these local runs are answered as a reviewer's are
-(*Orchestration*), and the writer's report lists each with its answer.
+The findings of these local runs are answered as `/btclib-pr`'s
+*Answering it* says, and the writer's report lists each with its answer.
 
 - **Sourcery reads each commit before it is pushed**, in a tree that runs
   the `sourcery` check, from a clone of the worktree in the scratch

@@ -66,8 +66,10 @@ gives the type `User`, not a bot:
    the bot's latest 5 reviews, the latest verdict naming the head is
    `ACK`, read as `/btclib-pr`'s *The reviews on GitHub* reads it. Aged
    from the head commit. A pull request whose mergeability GitHub has
-   not yet computed is read once more, 5 s later; one still unknown is
-   named at the end of the last line, after `; mergeability unknown:`.
+   not yet computed is read once more, with its head, 5 s later. One
+   still unknown is linked at the end of the last line, after
+   `; mergeability unknown:`, and so is one whose head moved in between,
+   whose verdict and checks were read on the earlier head.
 1. **A person spoke on a closed item.** A closed issue or pull request
    whose latest comment by a person, among those created since the
    `--since` time, is another login's. Aged from that comment.
@@ -77,7 +79,10 @@ latest 20 label and review-request events, shows as `?`. A call that
 fails, or prints anything on stderr, prints `error:`, the call's name
 and its message, and the script exits `1`: a failed read never shows as
 a group with no rows. An item with over 100 labels or review requests
-does the same, with its URL, since the script reads 100 of each.
+does the same, with its URL, since the script reads 100 of each. So does
+a search that gives no count of matches, or whose count exceeds the
+items it returned: GitHub stops a search at its cap on results, with no
+error.
 
 ## Mail
 
