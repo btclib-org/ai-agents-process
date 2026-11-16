@@ -446,8 +446,9 @@ got=$(gh api "gists/${gist:?}/${rev:?}" --jq .id) &&
       major version, the release notes or changelog read between the two
       versions, each named, and whether anything in them breaks the
       tree. A major move is one where a version's first non-zero number
-      changes: a dependency's, a hook's `rev:` or its `# frozen:`
-      comment, an action's `# vX.Y.Z` comment
+      changes in value or in place, as from `0.1.0` to `1.0.0`: a
+      dependency's, a hook's `rev:` or its `# frozen:` comment, an
+      action's `# vX.Y.Z` comment
 - [ ] the coverage list: each file the diff touches, read before the
       first verdict and marked checked, and each other file the review
       read for it, marked checked or not read, with why; deferred names
