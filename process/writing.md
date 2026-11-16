@@ -464,8 +464,8 @@ of the standard* says.
   git -C "${wt:?}" merge-base origin/main HEAD
   ```
 
-  The hooks gate there names the diff's files with `--files`, in place
-  of `--from-ref` and `--to-ref`. Given neither `--files` nor
+  In the sandbox, the hooks gate names the diff's files with `--files`,
+  in place of `--from-ref` and `--to-ref`. Given neither `--files` nor
   `--all-files`, pre-commit first stashes the unstaged changes, and its
   stash runs `git write-tree`, which takes `index.lock` in the git
   directory the profile keeps read-only: the run exits `3` before any
@@ -473,8 +473,11 @@ of the standard* says.
   pre-commit's own `--from-ref` skips too. Where the diff only deletes,
   the list is empty, and an empty `--files` stashes again, so the hooks
   run with `--all-files` instead. The paths are read NUL-terminated,
-  never as shell text, and pre-commit runs once, so the exit is its own;
-  where git fails, it exits `2`:
+  never as shell text. Each is passed as `./<path>`, so that a name
+  starting with `-` is not read as one of pre-commit's options, as `-h`
+  would print its help and exit `0`; pre-commit turns it back into the
+  path. pre-commit runs once, so the exit is its own; where git fails,
+  it exits `2`:
 
   ```shell
   wt=<wt>
@@ -488,7 +491,7 @@ of the standard* says.
     rc=2
   else
     while IFS= read -r -d '' name; do
-      files+=("$name")
+      files+=("./$name")
     done < "$list"
     if [ "${#files[@]}" -eq 0 ]; then
       files=(--all-files)
