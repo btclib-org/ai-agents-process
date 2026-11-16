@@ -831,8 +831,7 @@ The findings of these local runs are answered as `/btclib-pr`'s
   `c1786962edc1~1..c1786962edc1` for `<base>..`, exits `1`. A failed
   fetch pipes an empty script, which exits `0`. The clone goes once the
   control has run, since the sweep of *Debris goes when its work ends*
-  reads no repository it cannot tell is a linked worktree of the
-  session's:
+  refuses a `<work>` that holds it:
 
   ```shell
   clone=<clone>

@@ -98,8 +98,8 @@ remotes=$(git -C "${tree:?}" remote) &&
 ```
 
 The tree goes once the run is recorded in *Runs*, since the sweep of
-`every-role.md`'s *Debris goes when its work ends* reads no repository it
-cannot tell is a linked worktree of the session's:
+`every-role.md`'s *Debris goes when its work ends* refuses a `<work>`
+that holds it:
 
 ```shell
 tree=<tree>
