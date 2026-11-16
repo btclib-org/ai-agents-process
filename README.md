@@ -15,6 +15,10 @@ The process the btclib-org maintainers follow with the coding agents
   which only reads;
 - `skills/btclib-inbox/measure.sh` — the script `/btclib-inbox` runs to
   read them;
+- `scripts/test-inbox-measure.sh` — `sh scripts/test-inbox-measure.sh`
+  checks what `skills/btclib-inbox/measure.sh` prints on answers a
+  stand-in for `gh` serves; it needs `jq` on the `PATH`, as
+  `measure.sh` does;
 - `skills/btclib-table/SKILL.md` — the `/btclib-table` skill, one table
   of every repository of the organization, which only reads;
 - `skills/btclib-table/measure.sh` — the script `/btclib-table` runs to
