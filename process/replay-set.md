@@ -97,6 +97,15 @@ remotes=$(git -C "${tree:?}" remote) &&
   echo isolated
 ```
 
+The tree goes once the run is recorded in *Runs*, since the sweep of
+`every-role.md`'s *Debris goes when its work ends* reads no repository it
+cannot tell is a linked worktree of the session's:
+
+```shell
+tree=<tree>
+rm -rf "${tree:?}"
+```
+
 The copy the reviewer reads the process from
 (*The expected finding is kept out of the reviewer's input*) is built
 from a clone that holds the run's `$PROCESS` sha. The exclude pathspec

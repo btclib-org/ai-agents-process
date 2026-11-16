@@ -541,7 +541,8 @@ This section is in `every-session.md`, beside this file.
   uncommitted or unpushed work stays (*Before removing or discarding
   anything that could be work*). A gate's basetemp and build directories
   go once that branch's gates are done. A reviewer's worktree, exports,
-  clones and reports go before it hands back its verdict.
+  repositories and reports go before it hands back its verdict, and a
+  writer's clones as `writing.md` says where it makes them.
 
   **A piece of work's `<work>` goes when the last pull request of its
   issue lands or is closed**, or when the pull request that stands in for
@@ -550,11 +551,12 @@ This section is in `every-session.md`, beside this file.
   holds no worktree on another branch and no file named for one, as
   `msg-<branch>.txt` or `findings-<branch>.md`. The orchestrator first
   fetches origin, and the head of the pull request that ended, in the
-  repository of each worktree `<work>` holds. The script counts a ref of
-  origin only where the repository holds its commit, and a landing's
-  commit is made on the forge, as is a head that a bot moved on or that
-  was pushed from another clone. The default fetch does not bring
-  `refs/pull/*`; the second command writes only `FETCH_HEAD` and objects:
+  repository of each linked worktree directly in `<work>`. The script
+  counts a ref of origin only where the repository holds its commit, and
+  a landing's commit is made on the forge, as is a head that a bot moved
+  on or that was pushed from another clone. The default fetch does not
+  bring `refs/pull/*`; the second command writes only `FETCH_HEAD` and
+  objects:
 
   ```shell
   git -C <checkout> fetch origin
@@ -565,7 +567,10 @@ This section is in `every-session.md`, beside this file.
   ```
 
   It then runs `scripts/sweep.sh`, whose header says what it refuses, and
-  names each refusal in its report to the human:
+  names each refusal in its report to the human. A `<work>` that holds
+  any other repository is refused and left for the human, since the
+  script runs git in no repository it cannot tell is a linked worktree of
+  the session's:
 
   ```shell
   work=<work>
