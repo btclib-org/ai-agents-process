@@ -107,6 +107,8 @@
 #   worktree whose git directory holds modules is refused by --check and by
 #   the run, and so is one whose repository has no remote named origin,
 #   where a bundle named origin in the worktree lists its commit;
+# - a detached worktree whose commit is on origin is removed, no branch
+#   is deleted, and neither --check nor the run names a branch;
 # - a worktree whose HEAD is a symbolic ref to a tag is refused, and the
 #   tag kept;
 # - a worktree whose gitlink path is a symbolic link is refused by
@@ -904,6 +906,29 @@ b"
   else
     noorphan=1
   fi
+
+  # a detached worktree has a commit at HEAD and no branch
+  w=$sp/detached wt=$sp/detached/wt
+  mkdir -p "$w/writer"
+  echo note > "$w/writer/msg.txt"
+  git -C "$m" worktree add -q --detach "$wt" origin/main 2> /dev/null ||
+    fail 'detached: no worktree'
+  heads=$(git -C "$m" for-each-ref refs/heads)
+  run "$base" work "$w"
+  expect detached 0 "removed: $w"
+  registered detached no "$wt"
+  case $outc in
+    *"would deregister: $wt"*) ;;
+    *) fail "detached: --check names no worktree: $outc" ;;
+  esac
+  case $outc in
+    *'would delete branch:'*) fail "detached: --check names a branch: $outc" ;;
+  esac
+  case $out in
+    *'branch:'*) fail "detached: the run names a branch: $out" ;;
+  esac
+  [ "$(git -C "$m" for-each-ref refs/heads)" = "$heads" ] ||
+    fail 'detached: a branch was deleted'
 
   mkwork "$m" missing-parent
   p=0000000000000000000000000000000000000001
