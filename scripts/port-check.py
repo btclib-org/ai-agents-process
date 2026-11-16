@@ -55,10 +55,13 @@ cannot place.
 
 A bullet of section 14's list is a line starting `- `, and each line
 after it indented by two spaces continues it, as section 14's test reads
-them, until a line of prose closes the list. Any other line that opens with a list marker after up to three
-spaces, as `* `, `+ `, `1. ` and ` - ` do, is a section 14 it cannot
-read, since that test would compare no copy for it. Every other line is
-prose.
+them. A bullet ends at a line that is not blank, not a bullet and not
+indented by two spaces, so a marker indented after such a line continues
+nothing. That test reads on past such a line, joining each later line
+indented by two spaces to the last bullet. Any other line that opens
+with a list marker after up to three spaces, as `* `, `+ `, `1. ` and
+` - ` do, is a section 14 it cannot read, since that test would compare
+no copy for it. Every other line is prose.
 
 It exits 0 only where every file is equal, 1 where one differs, and 2
 where it cannot tell: a git call that fails, a section 14 it cannot
@@ -195,10 +198,6 @@ def entry(repo: str, rev: str, path: str) -> tuple[str, bytes] | None:
 
 def obligations(std: str, at: str, tree: str, head: str) -> dict[str, str]:
     """Read section 14's compared paths the tree owes, each against its source.
-
-    A line indented two spaces continues the bullet above it until a line
-    that is not blank, not a bullet and not indented closes the list, so a
-    marker indented after such a line is a list item, not a continuation.
 
     :raises Unknown: where the list is not found once, a list item is not
         a dash bullet, a bullet has no subject, or a clause is one this
