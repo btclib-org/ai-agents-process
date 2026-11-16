@@ -225,7 +225,9 @@ of the standard* says.
   already cleared branch back to review, land it as cleared and close the
   issue by hand once it lands, with a comment listing every landing and
   the trees that needed nothing. Where the last tree goes back to review
-  anyway, switch it in the same amend.
+  anyway, switch it in the same amend. A port of the standard is the
+  exception: `/btclib-iss`'s *Ports of the standard* says how its issue
+  closes.
 - **An issue several pull requests of one repository advance is closed by
   the one that meets its *Done when*.** That pull request carries
   `(closes #N)`, even where each earlier one carried `(issue #N)`. Read
