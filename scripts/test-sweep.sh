@@ -12,13 +12,14 @@
 # /tmp/claude-<uid> (SWEEP_ROOT), a scratchpad in it, a bare repository
 # as origin, and a clone of it whose worktrees sit in the scratchpad's
 # <work> directories. A commit is made with git commit-tree on a stand-in
-# identity, and a tag with git mktag: neither signs unless asked, and the
-# stand-in gpg.program makes a fixture that ever asks fail instead of
+# identity, which does not sign unless asked, and the stand-in
+# gpg.program makes a fixture that ever asks fail instead of
 # reaching a real key. Each commit message names its case, so that no two
 # cases make the same commit. Stand-ins for git and id, first on the PATH
 # of the cases that need them, move a branch or fail a step at a set
-# moment, and make the caller another user: the test cannot make a
-# directory that another user owns.
+# moment, log each git call, and make the caller another user: the test
+# cannot make a directory that another user owns. No fixture holds a git
+# config, hook or attribute that runs a program.
 #
 # The cases, each a <work> directory unless it says otherwise. Removed
 # means removed, its worktrees deregistered and their branches deleted;
@@ -35,11 +36,8 @@
 #   origin holds, and no remote-tracking ref reaches, is removed;
 # - one whose commit only a remote-tracking ref reaches, the branch being
 #   gone from origin, is refused; so is one whose origin cannot be read;
-# - a clone whose commit only a lightweight or an annotated tag, refs/stash,
-#   refs/wip/x or refs/notes/commits holds is refused; one whose commit
-#   only a tag of origin holds is removed; one with a ref to a tree is
-#   refused; a linked worktree whose commit only refs/worktree/keep holds
-#   is refused;
+# - a worktree with a ref to a tree is refused, and so is one whose commit
+#   only refs/worktree/keep holds;
 # - a directory not directly under <root>/<project>/<session>/scratchpad,
 #   deeper or shallower, a scratchpad outside SWEEP_ROOT, and the
 #   scratchpad itself are refused;
@@ -61,34 +59,29 @@
 #   read-only directory;
 # - a path that does not exist is absent, and exits 0;
 # - a name with a newline inside, or a directory find cannot read, is
+#   refused; as uid 0, whom chmod 000 does not stop, the unreadable
+#   directory is skipped;
+# - a directory holding a repository that is not a linked worktree of the
+#   session's is refused, left as it was, and no git runs, under --check
+#   or in the run: a clone, a .git deeper than <work>/<e>, a clone inside
+#   an ignored directory of a worktree, a submodule's .git file there, a
+#   bare repository, one whose HEAD is a symbolic link, a HEAD beside a
+#   commondir file, a clone whose .git file names a git directory inside
+#   the directory or one outside that is no worktrees entry, a worktree's
+#   .git that is a symbolic link, a .git whose gitdir does not resolve,
+#   one whose git directory's commondir names another repository, a
+#   worktree moved by hand, which its repository does not name, a work
+#   directory that is itself a worktree, and one whose top holds an empty
+#   .git, or a HEAD beside objects and refs;
+# - a directory holding a lone file named HEAD, notes alone, or a
+#   reviewer's directory without a repository is removed, and no git
+#   runs; one holding two worktrees is removed with both;
+# - a work directory holding .sweep-unfinished as a file, a symbolic
+#   link, a dangling one, whose target is not created, or a directory, is
 #   refused;
-# - a clone with a modified file is refused;
-# - a clone with an unpushed branch, and a bare repository with one, are
-#   refused; a clean bare clone is one --check would remove;
-# - a clone with a worktree outside the directory is refused, and so is
-#   a bare repository whose worktree outside sits below a directory that
-#   cannot be entered; an entry whose worktree, or the directory above
-#   it, is gone is stale and swept. As uid 0, whom chmod 000 does not
-#   stop, the unreadable directory and that hidden worktree are skipped;
-# - a commit that only a branch of the repository holds is refused, in a
-#   bare repository whose HEAD is a symbolic link, a clone whose .git is a
-#   symbolic link, a clone whose .git file names a git directory inside
-#   the work directory, and a clone inside an ignored directory of a clean
-#   clone; a clone whose .git file names a git directory outside it is
-#   refused too;
-# - a work directory that is itself a worktree is refused and left clean;
-#   so is one holding .sweep-unfinished as a file, a symbolic link, a
-#   dangling one, whose target is not created, or a directory;
 # - where origin has moved on to a commit the repository has not fetched,
 #   a commit it reaches is refused, with fetch named, and removed once
 #   origin is fetched;
-# - a commit only a split repository holds is refused, its git directory
-#   naming its store in commondir, inside the directory and at its top,
-#   and so is a git directory whose worktree is outside, and a HEAD beside
-#   a commondir file git does not open; a bare repository
-#   with a linked worktree inside the directory is removed;
-# - a directory with an empty .git, or a HEAD beside objects and refs that
-#   git does not open, at its top is refused;
 # - where the pull request's head on origin is a child of the worktree's
 #   pushed commit, and its branch was squashed and deleted, the directory
 #   is refused after a fetch of origin and removed after a fetch of the
@@ -97,13 +90,10 @@
 #   system ignores case, the name orchestrator is refused;
 # - for each case a run decides, --check exits as the run does, except
 #   where a stand-in fails a step only the run takes;
-# - a .git that git cannot read, a worktree whose index git cannot read, a
-#   .git directory or a bare repository's layout that git reads as part of
-#   an enclosing clone, and a commit whose parent is missing, are refused;
+# - a worktree whose index or HEAD git cannot read, and one whose
+#   commit's parent is missing, are refused;
 # - a locked worktree is refused by --check and by a run, and the other
 #   worktree of its directory stays registered;
-# - a worktree moved by hand, which its repository does not list where it
-#   is, is refused;
 # - a branch whose tip moves before its deletion is kept and printed, and
 #   the directory is removed;
 # - where git worktree remove fails half-way, the directory is refused
@@ -176,6 +166,17 @@ case " $* " in
 esac
 exec "$REAL_GIT" "$@"
 EOF
+# The stand-in for git that logs each call, its working directory and its
+# arguments, to $GITLOG, and runs git.
+mkdir "$tmp/log-shim"
+GITLOG=$tmp/git.log
+export GITLOG
+cat > "$tmp/log-shim/git" << 'EOF'
+#!/bin/sh
+printf '%s | %s\n' "$PWD" "$*" >> "$GITLOG"
+exec "$REAL_GIT" "$@"
+EOF
+chmod +x "$tmp/log-shim/git"
 # The stand-in for id, a caller that is another user.
 cat > "$tmp/id-shim/id" << 'EOF'
 #!/bin/sh
@@ -227,6 +228,21 @@ expect() {
 }
 
 gone() { [ ! -e "$2" ] && [ ! -L "$2" ] || fail "$1: $2 is still there"; }
+
+# foreign <case> <dir> <text>: <dir> is refused, with <text>, as holding a
+# repository the script cannot tell is the session's; it is left as it
+# was, and git ran nowhere, under --check or in the run
+foreign() {
+  : > "$GITLOG"
+  names=$(find "$2" | sort | cksum)
+  spath=$tmp/log-shim:$PATH
+  run "$base" work "$2"
+  spath=$PATH
+  expect "$1" 1 "$3"
+  expect "$1" 1 'the script reads no repository it cannot tell is a'
+  [ "$(find "$2" | sort | cksum)" = "$names" ] || fail "$1: $2 changed"
+  [ ! -s "$GITLOG" ] || fail "$1: git ran: $(cat "$GITLOG")"
+}
 kept() { [ -e "$2" ] || fail "$1: $2 was removed"; }
 
 # registered <case> yes|no <worktree>
@@ -268,12 +284,6 @@ newcommit() {
 commit() {
   newcommit "$@"
   git -C "$1" update-ref HEAD "$c" || fail "commit $2"
-}
-
-# mkclone <name>: $sp/<name>/c, a clone of origin; sets $w and $cl
-mkclone() {
-  w=$sp/$1 cl=$sp/$1/c
-  git clone -q "$o" "$cl" || fail "mkclone $1"
 }
 
 cases() {
@@ -392,31 +402,10 @@ cases() {
   expect unreadable 1 "cannot be read"
   kept unreadable "$wt/f.txt"
 
-  for ref in refs/tags/v9 refs/tags/a9 refs/stash refs/wip/x \
-    refs/notes/commits; do
-    mkclone "clone-$(printf '%s' "${ref#refs/}" | tr / -)"
-    newcommit "$cl" "$ref"
-    if [ "$ref" = refs/tags/a9 ]; then
-      c=$(printf 'object %s\ntype commit\ntag a9\ntagger %s\n\na9\n' "$c" \
-        'Fixture <fixture@example.invalid> 0 +0000' | git -C "$cl" mktag)
-    fi
-    git -C "$cl" update-ref "$ref" "$c"
-    run "$base" work "$w"
-    expect "$ref" 1 "of $cl: no ref of origin"
-    kept "$ref" "$cl/f.txt"
-  done
-
-  mkclone remote-tag
-  newcommit "$cl" remote-tag
-  git -C "$cl" update-ref refs/tags/rt "$c"
-  git -C "$cl" push -q origin refs/tags/rt
+  mkwork "$m" tree-ref
+  git -C "$wt" update-ref refs/worktree/tree "$t"
   run "$base" work "$w"
-  expect 'remote tag' 0 "removed: $w"
-
-  mkclone tree-ref
-  git -C "$cl" update-ref refs/tags/tree "$t"
-  run "$base" work "$w"
-  expect 'tree ref' 1 "ref refs/tags/tree of $cl holds no commit"
+  expect 'tree ref' 1 "ref refs/worktree/tree of $wt holds no commit"
 
   mkwork "$m" worktree-ref
   newcommit "$wt" worktree-ref
@@ -553,136 +542,11 @@ b"
     expect 'unreadable dir' 1 'find cannot read all of it'
     kept 'unreadable dir' "$sp/unreadable-dir/d"
 
-    git clone -q --bare "$o" "$sp/hidden/b.git"
-    mkdir -m 700 "$base/hid"
-    git -C "$sp/hidden/b.git" worktree add -q --detach "$base/hid/wt" main \
-      2> /dev/null
-    chmod 000 "$base/hid"
-    run "$base" work "$sp/hidden"
-    chmod 700 "$base/hid"
-    expect 'hidden worktree' 1 "worktree that cannot be resolved: $base/hid/wt"
-    kept 'hidden worktree' "$sp/hidden/b.git/HEAD"
-    git -C "$base/hid/wt" rev-parse -q --verify HEAD > /dev/null ||
-      fail 'hidden worktree: git no longer reads it'
   fi
-  for d in "$base/stale-wt" "$base/gone-parent/wt"; do
-    rm -rf "$sp/bare-stale"
-    git clone -q --bare "$o" "$sp/bare-stale/b.git"
-    git -C "$sp/bare-stale/b.git" worktree add -q --detach "$d" main \
-      2> /dev/null
-    rm -rf "${d%/wt}"
-    run "$base" work "$sp/bare-stale"
-    expect "stale entry $d" 0 "removed: $sp/bare-stale"
-  done
-
-  mkclone clone
-  git -C "$cl" branch -q side
-  newcommit "$cl" clone
-  git -C "$cl" update-ref refs/heads/side "$c"
-  run "$base" work "$w"
-  expect clone 1 "of $cl: no ref of origin"
-  kept clone "$cl/f.txt"
-  mkclone clone-modified
-  echo more >> "$cl/f.txt"
-  run "$base" work "$w"
-  expect 'clone modified' 1 "uncommitted change or untracked file in $cl"
-  kept 'clone modified' "$cl/f.txt"
-
-  git clone -q --bare "$o" "$sp/bare/b.git"
-  run "$base" work --check "$sp/bare"
-  expect 'clean bare' 0 "would remove: $sp/bare"
-  c=$(git -C "$sp/bare/b.git" commit-tree -p HEAD -m bare "$t" < /dev/null)
-  git -C "$sp/bare/b.git" update-ref refs/heads/x "$c"
-  run "$base" work "$sp/bare"
-  expect bare 1 "of $sp/bare/b.git: no ref of origin"
-  kept bare "$sp/bare/b.git/HEAD"
-  git clone -q --bare "$o" "$sp/bare-link/b.git"
-  c=$(git -C "$sp/bare-link/b.git" commit-tree -p HEAD -m bare-link "$t" \
-    < /dev/null)
-  git -C "$sp/bare-link/b.git" update-ref refs/heads/x "$c"
-  rm "$sp/bare-link/b.git/HEAD"
-  ln -s refs/heads/main "$sp/bare-link/b.git/HEAD"
-  [ "$(git -C "$sp/bare-link/b.git" rev-parse --is-bare-repository)" = true ] ||
-    fail 'bare with a linked HEAD: git does not read it'
-  run "$base" work "$sp/bare-link"
-  expect 'bare with a linked HEAD' 1 "of $sp/bare-link/b.git: no ref of origin"
-  kept 'bare with a linked HEAD' "$sp/bare-link/b.git/objects"
-
-  mkclone git-link
-  mv "$cl/.git" "$w/gd"
-  ln -s ../gd "$cl/.git"
-  newcommit "$cl" git-link
-  git -C "$cl" update-ref refs/heads/side "$c"
-  run "$base" work "$w"
-  expect '.git link' 1 "refused: $w: "
-  kept '.git link' "$w/gd/HEAD"
-  w=$sp/gitfile cl=$sp/gitfile/c
-  git clone -q --separate-git-dir="$w/gd" "$o" "$cl"
-  newcommit "$cl" gitfile
-  git -C "$cl" update-ref refs/heads/side "$c"
-  run "$base" work "$w"
-  expect gitfile 1 "refused: $w: "
-  kept gitfile "$w/gd/HEAD"
-  w=$sp/gitfile-out cl=$sp/gitfile-out/c
-  git clone -q --separate-git-dir="$base/gd-out" "$o" "$cl"
-  newcommit "$cl" gitfile-out
-  git -C "$cl" update-ref refs/heads/side "$c"
-  run "$base" work "$w"
-  expect 'gitfile out' 1 "refused: $w: "
-  kept 'gitfile out' "$cl/f.txt"
-  mkclone ignored-repo
-  git clone -q "$o" "$cl/ignored/inner"
-  newcommit "$cl/ignored/inner" ignored-repo
-  git -C "$cl/ignored/inner" update-ref refs/heads/side "$c"
-  [ -z "$(git -C "$cl" status --porcelain)" ] ||
-    fail 'ignored repo: the outer clone is not clean'
-  run "$base" work "$w"
-  expect 'ignored repo' 1 "of $cl/ignored/inner: no ref of origin"
-  kept 'ignored repo' "$cl/ignored/inner/f.txt"
-  for d in "$sp/split" "$sp/split-top"; do
-    git clone -q --bare "$o" "$d/store"
-    c=$(git -C "$d/store" commit-tree -p HEAD -m split "$t" < /dev/null)
-    git -C "$d/store" update-ref refs/heads/x "$c"
-  done
-  mkdir "$sp/split/repo"
-  mv "$sp/split/store/HEAD" "$sp/split/repo/HEAD"
-  echo ../store > "$sp/split/repo/commondir"
-  mv "$sp/split-top/store/HEAD" "$sp/split-top/HEAD"
-  echo store > "$sp/split-top/commondir"
-  for g in "$sp/split/repo" "$sp/split-top"; do
-    d=${g%/repo}
-    [ -n "$(git --git-dir="$g" rev-parse -q --verify 'HEAD^{commit}')" ] ||
-      fail "split $d: git does not read it"
-    run "$base" work "$d"
-    expect "split $d" 1 'is the git directory of a worktree of'
-    kept "split $d" "$d/store/objects"
-  done
-  mkdir "$sp/sep"
-  git clone -q --separate-git-dir="$sp/sep/gd" "$o" "$base/sep-wt"
-  run "$base" work "$sp/sep"
-  expect 'git directory, worktree out' 1 'whose worktree is not found'
-  kept 'git directory, worktree out' "$sp/sep/gd/HEAD"
-  mkdir -p "$sp/bad-commondir/g"
-  echo 'ref: refs/heads/main' > "$sp/bad-commondir/g/HEAD"
-  echo ../none > "$sp/bad-commondir/g/commondir"
-  run "$base" work "$sp/bad-commondir"
-  expect 'commondir git does not open' 1 "git cannot read $sp/bad-commondir/g"
-  git clone -q --bare "$o" "$sp/bare-wt/b.git"
-  git -C "$sp/bare-wt/b.git" worktree add -q --detach "$sp/bare-wt/wt" main \
-    2> /dev/null
-  run "$base" work "$sp/bare-wt"
-  expect 'bare with a worktree' 0 "removed: $sp/bare-wt"
-
-  mkclone wt-out
-  git -C "$cl" worktree add -q -b out "$base/out" 2> /dev/null
-  run "$base" work "$w"
-  expect 'worktree outside' 1 "has a worktree outside it: $base/out"
-  kept 'worktree outside' "$cl/f.txt"
-
   mkdir -p "$sp/broken/x"
   echo "gitdir: $base/nowhere" > "$sp/broken/x/.git"
-  run "$base" work "$sp/broken"
-  expect broken 1 "git cannot read $sp/broken/x"
+  foreign broken "$sp/broken" 'its gitdir does not resolve'
+  expect broken 1 "$sp/broken/x/.git: its gitdir does not resolve"
   kept broken "$sp/broken/x/.git"
 
   mkwork "$m" bad-index
@@ -692,28 +556,92 @@ b"
   expect 'bad index' 1 "git status fails in $wt"
   kept 'bad index' "$wt/f.txt"
 
-  mkclone enclosed-git
-  mkdir -p "$cl/ignored/x/.git"
-  run "$base" work "$w"
-  expect 'enclosed .git' 1 "git cannot read $cl/ignored/x"
-  kept 'enclosed .git' "$cl/f.txt"
-  mkclone enclosed-bare
-  mkdir -p "$cl/ignored/x/objects" "$cl/ignored/x/refs"
-  echo garbage > "$cl/ignored/x/HEAD"
-  run "$base" work "$w"
-  expect 'enclosed bare' 1 "git cannot read $cl/ignored/x"
-  kept 'enclosed bare' "$cl/f.txt"
+  git clone -q "$o" "$sp/f-clone/c"
+  foreign 'clone' "$sp/f-clone" "$sp/f-clone/c/.git: not a regular file"
+  git init -q "$sp/f-deep/x/y"
+  foreign 'deeper .git' "$sp/f-deep" "$sp/f-deep/x/y/.git: a .git not at"
+  mkwork "$m" f-nested
+  git clone -q "$o" "$wt/ignored/inner"
+  [ -z "$(git -C "$wt" status --porcelain)" ] ||
+    fail 'nested: the worktree is not clean'
+  foreign 'nested' "$w" "$wt/ignored/inner/.git: a .git not at"
+  registered 'nested' yes "$wt"
+  mkwork "$m" f-sub
+  mkdir -p "$wt/ignored/sub"
+  echo "gitdir: $m/.git/modules/sub" > "$wt/ignored/sub/.git"
+  foreign 'submodule' "$w" "$wt/ignored/sub/.git: a .git not at"
+  git clone -q --bare "$o" "$sp/f-bare/b.git"
+  foreign 'bare' "$sp/f-bare" "$sp/f-bare/b.git: a git directory's layout"
+  git clone -q --bare "$o" "$sp/f-bare-link/b.git"
+  rm "$sp/f-bare-link/b.git/HEAD"
+  ln -s refs/heads/main "$sp/f-bare-link/b.git/HEAD"
+  foreign 'bare, linked HEAD' "$sp/f-bare-link" \
+    "$sp/f-bare-link/b.git: a git directory's layout"
+  mkdir -p "$sp/f-split/g"
+  echo 'ref: refs/heads/main' > "$sp/f-split/g/HEAD"
+  echo "$m/.git" > "$sp/f-split/g/commondir"
+  foreign 'commondir' "$sp/f-split" "$sp/f-split/g: a git directory's layout"
+  git clone -q --separate-git-dir="$sp/f-gitfile/gd" "$o" "$sp/f-gitfile/c"
+  foreign 'gitfile inside' "$sp/f-gitfile" "$sp/f-gitfile/"
+  git clone -q --separate-git-dir="$base/gd-out" "$o" "$sp/f-gitfile-out/c"
+  foreign 'gitfile out' "$sp/f-gitfile-out" 'is in no worktrees directory'
+  mkwork "$m" f-link c
+  mv "$wt/.git" "$base/f-link-gitfile"
+  ln -s "$base/f-link-gitfile" "$wt/.git"
+  foreign '.git link' "$w" "$wt/.git: a symbolic link"
+  rm "$wt/.git"
+  mv "$base/f-link-gitfile" "$wt/.git"
 
-  mkclone missing-parent
+  mkdir -p "$base/fake/worktrees/x" "$sp/f-fake/e"
+  echo 'ref: refs/heads/main' > "$base/fake/worktrees/x/HEAD"
+  echo "$m/.git" > "$base/fake/worktrees/x/commondir"
+  echo "$sp/f-fake/e/.git" > "$base/fake/worktrees/x/gitdir"
+  echo "gitdir: $base/fake/worktrees/x" > "$sp/f-fake/e/.git"
+  foreign 'commondir elsewhere' "$sp/f-fake" \
+    "$base/fake/worktrees/x/commondir does not name the repository"
+  mkwork "$m" unreadable-head
+  head=$(git -C "$wt" rev-parse --path-format=absolute --git-dir)/HEAD
+  cp "$head" "$base/head-copy"
+  echo garbage > "$head"
+  run "$base" work "$w"
+  cp "$base/head-copy" "$head"
+  expect 'unreadable HEAD' 1 "git cannot read $wt"
+  kept 'unreadable HEAD' "$wt/f.txt"
+
+  mkdir -p "$sp/lone-head/notes" "$sp/notes-only/writer" "$sp/rev/codex-1"
+  echo 'ref: refs/heads/main' > "$sp/lone-head/notes/HEAD"
+  echo note > "$sp/notes-only/writer/msg.txt"
+  echo report > "$sp/rev/codex-1/report.md"
+  for d in "$sp/lone-head" "$sp/notes-only" "$sp/rev"; do
+    : > "$GITLOG"
+    spath=$tmp/log-shim:$PATH
+    run "$base" work "$d"
+    spath=$PATH
+    expect "no repository $d" 0 "removed: $d"
+    [ ! -s "$GITLOG" ] || fail "no repository $d: git ran: $(cat "$GITLOG")"
+  done
+  mkwork "$m" several wt1
+  wt1=$wt br1=$br
+  git -C "$m" worktree add -q -b b-several2 "$w/wt2" origin/main 2> /dev/null
+  : > "$GITLOG"
+  spath=$tmp/log-shim:$PATH
+  run "$base" work "$w"
+  spath=$PATH
+  expect several 0 "removed: $w"
+  registered several no "$wt1"
+  registered several no "$w/wt2"
+  [ -s "$GITLOG" ] || fail 'several: the logging stand-in logged nothing'
+
+  mkwork "$m" missing-parent
   p=0000000000000000000000000000000000000001
   c=$(printf 'tree %s\nparent %s\nauthor %s\ncommitter %s\n\nx\n' "$t" "$p" \
     'Fixture <fixture@example.invalid> 0 +0000' \
     'Fixture <fixture@example.invalid> 0 +0000' |
-    git -C "$cl" hash-object -t commit -w --stdin --literally)
-  git -C "$cl" update-ref refs/heads/side "$c"
+    git -C "$wt" hash-object -t commit -w --stdin --literally)
+  git -C "$wt" update-ref refs/worktree/side "$c"
   run "$base" work "$w"
-  expect 'missing parent' 1 "git cannot list the commits of $cl"
-  kept 'missing parent' "$cl/f.txt"
+  expect 'missing parent' 1 "git cannot list the commits of $wt"
+  kept 'missing parent' "$wt/f.txt"
 
   mkwork "$m" locked wt1
   wt1=$wt br1=$br
@@ -731,8 +659,8 @@ b"
   mkwork "$m" mv-from
   mkdir "$sp/mv-to"
   mv "$wt" "$sp/mv-to/wt"
-  run "$base" work "$sp/mv-to"
-  expect 'moved worktree' 1 "does not list the worktree $sp/mv-to/wt"
+  foreign 'moved worktree' "$sp/mv-to" 'gitdir does not name it'
+  expect 'moved worktree' 1 "$sp/mv-to/wt/.git: "
   kept 'moved worktree' "$sp/mv-to/wt/f.txt"
   gone 'moved worktree' "$sp/mv-to/.sweep-unfinished"
   git -C "$m" worktree prune
@@ -771,18 +699,15 @@ b"
 
   git -C "$m" worktree add -q -b wt-direct "$sp/wt-direct" origin/main \
     2> /dev/null
-  run "$base" work "$sp/wt-direct"
-  expect 'work that is a worktree' 1 'a .git, or a HEAD beside objects'
+  foreign 'work that is a worktree' "$sp/wt-direct" 'a .git not at <work>/<e>'
   registered 'work that is a worktree' yes "$sp/wt-direct"
   [ -z "$(git -C "$sp/wt-direct" status --porcelain)" ] ||
     fail 'work that is a worktree: it was dirtied'
   echo x > "$base/marker-target"
   mkdir -p "$sp/top-git/.git" "$sp/top-head/objects" "$sp/top-head/refs"
   echo x > "$sp/top-head/HEAD"
-  for d in "$sp/top-git" "$sp/top-head"; do
-    run "$base" work "$d"
-    expect "top $d" 1 'a .git, or a HEAD beside objects and refs, at its top'
-  done
+  foreign 'top .git' "$sp/top-git" 'a .git not at <work>/<e>'
+  foreign 'top HEAD' "$sp/top-head" "$sp/top-head: a git directory's layout"
   for kind in file link dangling directory; do
     mkwork "$m" "marker-$kind"
     mk=$w/.sweep-unfinished
@@ -854,7 +779,7 @@ b"
   run "$base" work "$w"
   expect 'pull head ahead, fetched' 0 "removed: $w"
 
-  for r in "$m" "$base/main2" "$base/main3" "$sp/wt-out/c"; do
+  for r in "$m" "$base/main2" "$base/main3"; do
     s=$(git -C "$r" worktree prune -n -v 2>&1)
     [ -z "$s" ] || fail "stale worktree entries in $r: $s"
   done
@@ -882,6 +807,6 @@ sh "${PROCESS:?}/scripts/sweep.sh" work "${work:?}"' zsh "$sp/zsh paste" \
 fi
 
 [ -z "$asroot" ] ||
-  echo 'as uid 0, the unreadable directory and hidden worktree are skipped'
+  echo 'as uid 0, the unreadable directory case is skipped'
 [ "$status" = 0 ] && echo "sweep.sh answers as expected under:$shells"
 exit "$status"

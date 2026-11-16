@@ -22,13 +22,12 @@
 # - it is its scratchpad's `orchestrator`, which holds the session's own
 #   files;
 # - it is the caller's current directory or holds it;
-# - it has a .git, or a HEAD beside objects and refs, at its top, as a
-#   worktree or a repository would: a piece of work's repositories sit
-#   inside it;
+# - it holds a repository that is not a linked worktree of the session's
+#   (below);
 # - it holds .sweep-unfinished, of any kind, which a failed
 #   `git worktree remove` leaves (below);
 # - find cannot read all of it, or it holds a name with a newline;
-# - it holds a git repository that git cannot read as one;
+# - git cannot read one of its worktrees;
 # - it holds a worktree with an uncommitted change, an untracked file that
 #   is not ignored, or a file marked assume-unchanged or skip-worktree,
 #   whose change git status does not show;
@@ -37,27 +36,28 @@
 #   read while it holds a commit at all. A ref whose commit the repository
 #   does not hold proves nothing, as where origin moved on to a commit
 #   made elsewhere, and a remote-tracking ref proves nothing, since it
-#   outlives the branch. The commits read are, for a clone or a bare
-#   repository, HEAD and every ref but the remote-tracking ones; for a
-#   linked worktree, HEAD and its own refs, refs/worktree, refs/bisect and
-#   refs/rewritten, the others being its repository's. A commit that only
-#   a reflog or a pseudo-ref such as ORIG_HEAD holds is not read;
+#   outlives the branch. The commits read are each worktree's HEAD and its
+#   own refs, refs/worktree, refs/bisect and refs/rewritten, the others
+#   being its repository's, outside. A commit that only a reflog or a
+#   pseudo-ref such as ORIG_HEAD holds is not read;
 # - one of those refs holds an object that is not a commit or a tag of one;
-# - it holds a repository with a worktree outside the directory, or one
-#   whose path cannot be resolved where it is not known to be gone: an
-#   entry is stale only where the deepest directory above its path that
-#   can be entered holds no such name;
-# - it holds a git directory that is neither named .git nor bare, as a
-#   clone's made with --separate-git-dir, whose worktree the script does
-#   not look for, or a linked worktree's git directory that is not in the
-#   worktrees directory of a bare repository it holds;
 # - one of its linked worktrees is locked, or its repository does not list
 #   it.
 #
-# The repositories read are found by each .git, of any kind, and each
-# HEAD, of any kind, that `git --git-dir` opens as a git directory. A
-# HEAD git does not open is passed over, unless objects and refs, or a
-# commondir file, sit beside it.
+# git runs only in a linked worktree of the session's: git reads a
+# repository's config and runs its hooks, and a gate's code, or a
+# reviewer's inputs, can write a repository anywhere below <work> but in
+# a worktree's own .git file. So, before any git command, find lists
+# each .git and each HEAD below <work>, and plain file reads decide. A
+# linked worktree of the session's is a directory directly in <work>,
+# <work>/<e>, whose .git is a regular file, not a link, whose first line
+# is gitdir: naming a directory outside <work>; that directory is
+# worktrees/<id> of a repository outside, as its commondir file says,
+# and its gitdir file names that .git back. Every other .git, and every
+# HEAD beside objects and refs or beside commondir, is a repository the
+# script cannot tell is the session's: it refuses the directory, names
+# that repository, and runs no git at all. A HEAD with neither beside it
+# is not one git opens, and is passed over.
 #
 # Nothing is removed before every check of the directory has passed. Then
 # the script makes the directory <work>/.sweep-unfinished with mkdir,
@@ -110,19 +110,18 @@ export GIT_TERMINAL_PROMPT GIT_OPTIONAL_LOCKS
 # real <dir>: its path, every symbolic link resolved, each name spelled as
 # the file system holds it; the shells' own pwd prints the case as typed
 real() { (cd -P -- "$1" 2> /dev/null && env pwd -P); }
-# gone <absolute path>: the deepest directory above it that can be
-# entered holds no name on the way to it
-gone() {
-  q=$1
-  while [ "${q%/*}" != "$q" ]; do
-    up=${q%/*}
-    if (cd -P -- "${up:-/}" 2> /dev/null); then
-      [ ! -e "$q" ] && [ ! -L "$q" ]
-      return
-    fi
-    q=$up
-  done
-  return 1
+# there <path>: something, a dangling link included, is at <path>
+there() { [ -e "$1" ] || [ -L "$1" ]; }
+# line <file>: its first line, read as text, in $line
+line() { line=; { IFS= read -r line || [ -n "$line" ]; } < "$1"; }
+# from <dir> <path>: <path> resolved, in $u, a relative one read from
+# <dir>, as git reads it; fails where it does not resolve
+from() {
+  case $2 in
+    /*) u=$2 ;;
+    *) u=$1/$2 ;;
+  esac
+  u=$(real "$u")
 }
 
 root=${SWEEP_ROOT:-/tmp/claude-$(id -u)}
@@ -134,7 +133,8 @@ fi
 here=$(env pwd -P)
 list=$(mktemp) || exit 2
 todo=$(mktemp) || exit 2
-trap 'rm -f "${list:?}" "${todo:?}"' EXIT
+owns=$(mktemp) || exit 2
+trap 'rm -f "${list:?}" "${todo:?}" "${owns:?}"' EXIT
 trap 'exit 1' INT TERM
 nl='
 '
@@ -217,39 +217,9 @@ held() {
   tips="$h $tips"
 }
 
-# own <repo>: the checks of a repository that is not a linked worktree
-own() {
-  o=$1
-  if ! wl=$(git -C "$o" worktree list --porcelain); then
-    refuse "git cannot read $o"
-    return 1
-  fi
-  while IFS= read -r l; do
-    case $l in
-      'worktree '*) p=${l#worktree } ;;
-      *) continue ;;
-    esac
-    # a worktree whose directory is gone leaves only a stale entry
-    if ! rp=$(real "$p"); then
-      gone "$p" && continue
-      refuse "$o has a worktree that cannot be resolved: $p"
-      return 1
-    fi
-    case $rp/ in
-      "$r"/*) ;;
-      *) refuse "$o has a worktree outside it: $rp"; return 1 ;;
-    esac
-  done << EOF
-$wl
-EOF
-  held "$o" || return 1
-  # word splitting of $tips is meant: one commit per word
-  # shellcheck disable=SC2086
-  pushed "$o" $tips
-}
-
-# tree <dir>: the checks of the worktree that <dir>/.git makes <dir>; a
-# linked one goes in $todo, to be removed with git worktree remove
+# tree <dir>: the checks of the linked worktree <dir>, which the scan
+# found to be the session's; it goes in $todo, to be removed with git
+# worktree remove
 tree() {
   t=$1
   if ! top=$(git -C "$t" rev-parse --show-toplevel 2> /dev/null) ||
@@ -261,7 +231,7 @@ tree() {
     return 1
   fi
   if ! s=$(git -C "$t" status --porcelain --untracked-files=normal \
-    --ignore-submodules=none); then
+    --ignore-submodules=all); then
     refuse "git status fails in $t"
     return 1
   fi
@@ -280,8 +250,8 @@ tree() {
     return 1
   fi
   if [ "$gd" -ef "$cd_" ]; then
-    own "$t"
-    return
+    refuse "git reads $t as no linked worktree"
+    return 1
   fi
   if ! wl=$(git --git-dir="$cd_" worktree list --porcelain); then
     refuse "git cannot read $cd_"
@@ -312,6 +282,75 @@ EOF
   pushed "$t" $tips || return 1
   b=$(git -C "$t" symbolic-ref -q HEAD) || b=
   printf '%s\n%s\n%s\n%s\n' "$t" "$cd_" "$b" "$h" >> "$todo"
+}
+
+# foreign <path> <why>: the refusal of a repository the scan cannot tell
+# is the session's
+foreign() {
+  [ -z "$alien" ] || return 0
+  alien="$1: $2; the script reads no repository it cannot tell is a"
+  alien="$alien linked worktree of the session's"
+}
+
+# scan: the decision, by file reads alone, of each .git and HEAD find
+# listed; the session's worktrees go in $owns, the first other one in
+# $alien, and the scan reads the whole list either way
+scan() {
+  alien=
+  : > "$owns"
+  while IFS= read -r p <&3; do
+    case $p in
+      */HEAD)
+        d=${p%/HEAD}
+        if { there "$d/objects" && there "$d/refs"; } || there "$d/commondir"
+        then
+          foreign "$d" "a git directory's layout"
+        fi
+        continue
+        ;;
+    esac
+    e=${p%/.git}
+    case ${e#"$r"/} in
+      "$e" | */*) foreign "$p" 'a .git not at <work>/<e>'; continue ;;
+    esac
+    if [ -L "$p" ]; then foreign "$p" 'a symbolic link'; continue; fi
+    if [ ! -f "$p" ]; then foreign "$p" 'not a regular file'; continue; fi
+    if ! line "$p" || [ "${line#gitdir: }" = "$line" ]; then
+      foreign "$p" 'no gitdir: line'
+      continue
+    fi
+    if ! from "$e" "${line#gitdir: }"; then
+      foreign "$p" "its gitdir does not resolve"
+      continue
+    fi
+    g=$u
+    case $g/ in
+      "$r"/*) foreign "$p" "its gitdir $g is inside <work>"; continue ;;
+    esac
+    case ${g%/*} in
+      */worktrees) ;;
+      *)
+        foreign "$p" "its gitdir $g is in no worktrees directory"
+        continue
+        ;;
+    esac
+    if [ -L "$g/commondir" ] || [ ! -f "$g/commondir" ] ||
+      ! line "$g/commondir" || ! from "$g" "$line" ||
+      [ ! "$u/worktrees/${g##*/}" -ef "$g" ]; then
+      foreign "$p" "$g/commondir does not name the repository of $g"
+      continue
+    fi
+    case $u/ in
+      "$r"/*) foreign "$p" "its repository $u is inside <work>"; continue ;;
+    esac
+    if [ -L "$g/gitdir" ] || [ ! -f "$g/gitdir" ] || ! line "$g/gitdir" ||
+      ! { case $line in /*) [ "$line" -ef "$p" ] ;;
+        *) [ "$g/$line" -ef "$p" ] ;; esac; }; then
+      foreign "$p" "$g/gitdir does not name it"
+      continue
+    fi
+    printf '%s\n' "$e" >> "$owns"
+  done 3< "$list"
 }
 
 # remove: the removal of $r, once its checks have passed
@@ -395,54 +434,15 @@ sweep() {
       *) refuse 'holds a name with a newline'; return ;;
     esac
   done 3< "$list"
+  scan
+  if [ -n "$alien" ]; then
+    refuse "$alien"
+    return
+  fi
   : > "$todo"
-  while IFS= read -r p <&3; do
-    case $p in
-      "$r/.git" | "$r/HEAD")
-        if [ "$p" = "$r/.git" ] || { [ -d "$r/objects" ] && [ -d "$r/refs" ]; }
-        then
-          refuse 'a .git, or a HEAD beside objects and refs, at its top'
-          return
-        fi
-        ;;
-    esac
-    case $p in
-      */.git) tree "${p%/.git}" || return ;;
-      */HEAD)
-        d=${p%/HEAD}
-        # a git directory outside any .git, which find pruned above
-        if ! g=$(git --git-dir="$d" rev-parse --absolute-git-dir \
-          2> /dev/null); then
-          if [ -d "$d/objects" ] && [ -d "$d/refs" ] ||
-            [ -e "$d/commondir" ]; then
-            refuse "git cannot read $d"
-            return
-          fi
-          continue
-        fi
-        if [ ! "$g" -ef "$d" ] || ! c=$(git --git-dir="$d" rev-parse \
-          --path-format=absolute --git-common-dir) || ! bare=$(git \
-          --git-dir="$d" rev-parse --is-bare-repository); then
-          refuse "git cannot read $d"
-          return
-        fi
-        if [ ! "$c" -ef "$d" ]; then
-          # covered where its repository, bare and held here, is read
-          case ${d%/worktrees/*}/ in
-            "$r"/*) [ "${d%/worktrees/*}" -ef "$c" ] && [ -e "$c/HEAD" ] &&
-              continue ;;
-          esac
-          refuse "$d is the git directory of a worktree of $c"
-          return
-        fi
-        if [ "$bare" != true ]; then
-          refuse "$d is a git directory whose worktree is not found"
-          return
-        fi
-        own "$d" || return
-        ;;
-    esac
-  done 3< "$list"
+  while IFS= read -r e <&3; do
+    tree "$e" || return
+  done 3< "$owns"
   if [ -z "$check" ]; then
     remove
     return
