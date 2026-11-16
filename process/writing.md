@@ -464,6 +464,53 @@ of the standard* says.
   git -C "${wt:?}" merge-base origin/main HEAD
   ```
 
+  The hooks gate there names the diff's files with `--files`, in place
+  of `--from-ref` and `--to-ref`. Given neither `--files` nor
+  `--all-files`, pre-commit first stashes the unstaged changes, and its
+  stash runs `git write-tree`, which takes `index.lock` in the git
+  directory the profile keeps read-only: the run exits `3` before any
+  hook runs. `--diff-filter=d` leaves out a deleted file, which
+  pre-commit's own `--from-ref` skips too. Where the diff only deletes,
+  the list is empty, and an empty `--files` stashes again, so the hooks
+  run with `--all-files` instead. The paths are read NUL-terminated,
+  never as shell text, and pre-commit runs once, so the exit is its own;
+  where git fails, it exits `2`:
+
+  ```shell
+  wt=<wt>
+  sbx=<sbx>
+  base=<base>
+  rc=0
+  files=()
+  list=$(mktemp)
+  if ! git -C "${wt:?}" diff -z --name-only --diff-filter=d \
+    "${base:?}...HEAD" > "$list"; then
+    rc=2
+  else
+    while IFS= read -r -d '' name; do
+      files+=("$name")
+    done < "$list"
+    if [ "${#files[@]}" -eq 0 ]; then
+      files=(--all-files)
+    else
+      files=(--files "${files[@]}")
+    fi
+    env -i -C "$wt" HOME="${sbx:?}/home" PATH="$PATH" TMPDIR="$sbx/tmp" \
+      UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR="$sbx/uv-cache" \
+      PRE_COMMIT_HOME="$sbx/pre-commit" UV_OFFLINE=1 \
+      sandbox-exec -f "${PROCESS:?}/scripts/gate-sandbox.sb" \
+      -D WT="$(realpath "$wt")" -D SBX="$(realpath "$sbx")" \
+      -D HOME="$(realpath "$HOME")" -D UV_PYTHON="$(uv python dir)" \
+      -D GIT_DIR="$(git -C "$wt" rev-parse --path-format=absolute \
+        --git-dir)" \
+      -D GIT_COMMON_DIR="$(git -C "$wt" rev-parse --path-format=absolute \
+        --git-common-dir)" \
+      uv run pre-commit run "${files[@]}" || rc=$?
+  fi
+  rm -f "$list"
+  (exit "$rc")
+  ```
+
   `scripts/gate-sandbox.sb` says what the sandbox allows, and why the
   paths go through `realpath`. It reads no file under `$HOME` but uv's
   interpreters, `<wt>`, `<sbx>` and the worktree's git directories, so
