@@ -96,6 +96,11 @@
 #   system ignores case, the name orchestrator is refused;
 # - for each case a run decides, --check exits as the run does, except
 #   where a stand-in fails a step only the run takes;
+# - a worktree whose gitlink path is a symbolic link is refused by
+#   --check and by the run, as git worktree remove would refuse it,
+#   and leaves no .sweep-unfinished; where the file system
+#   ignores letter case, a worktree its repository lists under .GIT is
+#   refused;
 # - a worktree whose index or HEAD git cannot read, and one whose
 #   commit's parent is missing, are refused;
 # - a locked worktree is refused by --check and by a run, and the other
@@ -628,6 +633,14 @@ b"
     echo '[[[' > "$w/evil/config"
     echo "gitdir: $w/evil" > "$wt/sub/.GIT"
     foreign 'case gitlink' "$w" "$wt/sub/.GIT: a .git spelled in"
+    mkwork "$m" listed-case
+    admin=$(git -C "$wt" rev-parse --path-format=absolute --git-dir)
+    cp "$admin/gitdir" "$base/gitdir-copy"
+    echo "$wt/.GIT" > "$admin/gitdir"
+    run "$base" work "$w"
+    cp "$base/gitdir-copy" "$admin/gitdir"
+    expect 'listed under another case' 1 "does not list the worktree $wt"
+    registered 'listed under another case' yes "$wt"
     git clone -q --bare "$o" "$sp/f-head-case/b.git"
     mv "$sp/f-head-case/b.git/HEAD" "$sp/f-head-case/b.git/Head"
     foreign 'case HEAD' "$sp/f-head-case" \
@@ -674,6 +687,19 @@ b"
   registered several no "$wt1"
   registered several no "$w/wt2"
   [ -s "$GITLOG" ] || fail 'several: the logging stand-in logged nothing'
+
+  mkwork "$m" gitlink-link
+  git -C "$wt" update-index --add --cacheinfo "160000,$t,sub"
+  c=$(git -C "$wt" commit-tree -p HEAD -m gitlink-link \
+    "$(git -C "$wt" write-tree)" < /dev/null)
+  git -C "$wt" update-ref HEAD "$c"
+  git -C "$wt" push -q origin HEAD
+  rm -rf "$wt/sub"
+  ln -s ../f.txt "$wt/sub"
+  run "$base" work "$w"
+  expect 'gitlink link' 1 "git status fails in $wt"
+  kept 'gitlink link' "$wt/f.txt"
+  gone 'gitlink link' "$w/.sweep-unfinished"
 
   mkwork "$m" missing-parent
   p=0000000000000000000000000000000000000001

@@ -48,23 +48,20 @@
 # repository's config and runs its hooks, and a gate's code, or a
 # reviewer's inputs, can write a repository anywhere below <work> but in
 # a worktree's own .git file. So, before any git command, find lists
-# each name below <work> that is .git in any letter case, and each
-# directory, and plain file reads decide. A linked worktree of the
-# session's is a directory directly in <work>, <work>/<e>, whose .git,
-# spelled so, is a regular file with one link, not a symbolic link,
-# whose first line is gitdir: naming a directory outside <work>; that
-# directory is worktrees/<id> of a repository outside, as its commondir
-# file says, and its gitdir file names that .git back. Every other .git,
-# and every directory holding a HEAD beside objects and refs or beside
-# commondir, is a repository the script cannot tell is the session's: it
-# refuses the directory, names that repository, and runs no git at all.
-# HEAD, objects, refs and commondir are tested through the file system,
-# so that they fold as they fold for git. Of the other spellings of .git
-# tried on APFS, with a dotless or dotted I, fullwidth letters, or a
-# zero-width joiner, non-joiner or byte order mark inside, none is read
-# as .git; find -iname matched the dotted I under one locale and not
-# another, and where it does, it is refused too. A HEAD with neither
-# beside it is not one git opens, and is passed over.
+# each name below <work> that is .git in any letter case, and each other
+# directory not below such a name, and plain file reads decide. A linked
+# worktree of the session's is a directory directly in <work>,
+# <work>/<e>, whose .git, spelled so, is a regular file with one link,
+# not a symbolic link, whose first line is gitdir: naming a directory
+# outside <work>; that directory is worktrees/<id> of a repository
+# outside, as its commondir file says, and its gitdir file names that
+# .git back. Every other .git, and every directory holding a HEAD beside
+# objects and refs or beside commondir, is a repository the script
+# cannot tell is the session's: it refuses the directory, names that
+# repository, and runs no git at all. HEAD, objects, refs and commondir
+# are tested through the file system, so that they fold as they fold for
+# git. A HEAD with neither beside it is not one git opens, and is passed
+# over.
 #
 # Nothing is removed before every check of the directory has passed. Then
 # the script makes the directory <work>/.sweep-unfinished with mkdir,
@@ -238,8 +235,10 @@ tree() {
     refuse "git cannot read $t"
     return 1
   fi
+  # submodules as git worktree remove reads them, whose own status the
+  # run would otherwise fail; the scan has refused every .git inside
   if ! s=$(git -C "$t" status --porcelain --untracked-files=normal \
-    --ignore-submodules=all); then
+    --ignore-submodules=none); then
     refuse "git status fails in $t"
     return 1
   fi
@@ -437,8 +436,8 @@ sweep() {
     refuse 'holds .sweep-unfinished, left by a removal that stopped'
     return
   fi
-  # each name that is .git in any letter case, then each directory, which
-  # the scan asks the file system about, as git asks it
+  # each name that is .git in any letter case, then each other directory
+  # not below one, which the scan asks the file system about, as git asks
   if ! odd=$(find "$r" -name "*$nl*" -print) ||
     ! find "$r" -iname .git -print -prune > "$list" ||
     ! find "$r" \( -iname .git -prune \) -o -type d -print > "$dirs"; then
