@@ -649,7 +649,7 @@ texts=<texts>
 uv run --isolated --no-config --no-project --python 3.15 python -I -c '
 import json, re, sys
 def words(t):
-    return re.findall(r"[\w\x27-]+", t.lower())
+    return re.findall(r"[^\W_][\w\x27-]*(?<![_\x27-])", t.lower())
 texts, used = [], {}
 for line in open(sys.argv[2]):
     t = json.loads(line)
