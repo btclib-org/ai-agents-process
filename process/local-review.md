@@ -90,8 +90,8 @@ branch, or a text to be posted.
   case, a false sentence or a crash is fixed on the branch.** A round on
   the forge is a head the reviews on GitHub read (`/btclib-pr`'s *The
   reviews on GitHub*): the head the pull request is opened on, then each
-  push to it. Every other finding stays off the branch, filed or
-  declined as `/btclib-pr`'s *Answering it* says.
+  push to it. Every other finding stays off the branch, answered as
+  `/btclib-pr`'s *Answering it* says.
 - **A session restart replaces each reviewer it lost.** A restart can
   lose the reviewers the session started, and the rounds keep no record
   of one in flight. So after a restart, the verdict file of a reviewer
