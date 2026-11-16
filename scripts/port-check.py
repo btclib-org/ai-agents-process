@@ -55,7 +55,7 @@ cannot place.
 
 A bullet of section 14's list is a line starting `- `, and each line
 after it indented by two spaces continues it, as section 14's test reads
-them. Any other line that opens with a list marker after up to three
+them, until a line of prose closes the list. Any other line that opens with a list marker after up to three
 spaces, as `* `, `+ `, `1. ` and ` - ` do, is a section 14 it cannot
 read, since that test would compare no copy for it. Every other line is
 prose.
@@ -196,6 +196,10 @@ def entry(repo: str, rev: str, path: str) -> tuple[str, bytes] | None:
 def obligations(std: str, at: str, tree: str, head: str) -> dict[str, str]:
     """Read section 14's compared paths the tree owes, each against its source.
 
+    A line indented two spaces continues the bullet above it until a line
+    that is not blank, not a bullet and not indented closes the list, so a
+    marker indented after such a line is a list item, not a continuation.
+
     :raises Unknown: where the list is not found once, a list item is not
         a dash bullet, a bullet has no subject, or a clause is one this
         does not read.
@@ -207,14 +211,18 @@ def obligations(std: str, at: str, tree: str, head: str) -> dict[str, str]:
         msg = "section 14's list is not found once in README.md"
         raise Unknown(msg)
     bullets: list[str] = []
+    within = False
     for line in lines[starts[0] + 1 : ends[0]]:
         if line.startswith("- "):
             bullets.append(line)
-        elif line.startswith("  ") and bullets:
+            within = True
+        elif line.startswith("  ") and within:
             bullets[-1] += f" {line.strip()}"
         elif ITEM.match(line):
             msg = f"a line of section 14's list is not a dash bullet: {line!r}"
             raise Unknown(msg)
+        elif line.strip():
+            within = False
     empty = git(tree, "hash-object", "-t", "tree", "/dev/null").decode().strip()
     owed: dict[str, str] = {}
     for bullet in bullets:
