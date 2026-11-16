@@ -114,9 +114,13 @@ to take lands there first, and reaches each other tree by a port.
   yet, citing the issue. The entry's strict expected failure turns red
   once every copy agrees. The session that closes the issue an entry
   cites (above) then changes the entry, in a pull request of the
-  standard. Where the copies still differ and another open issue holds
-  that drift, a change still waiting on the path among them, it points
-  the entry at that issue. Otherwise it removes the entry.
+  standard. Where the copies agree, it removes the entry. Where they
+  still differ and another open issue holds that drift, a change still
+  waiting on the path among them, it points the entry at that issue.
+  Where they differ and no open issue holds that drift, it files one in
+  btclib-org/.github and points the entry at the issue it filed. A
+  removed entry would leave that pull request red on the copies that
+  differ.
 - **A batch takes the standard's copies byte for byte**, rather than
   applying the delta, which can come up short. It takes them from
   `<S>`, the standard's `origin/main` when the batch starts. A file with
