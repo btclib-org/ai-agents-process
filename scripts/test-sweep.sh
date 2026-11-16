@@ -65,7 +65,11 @@
 # - a clone with a modified file is refused;
 # - a clone with an unpushed branch, and a bare repository with one, are
 #   refused; a clean bare clone is one --check would remove;
-# - a clone with a worktree outside the directory is refused;
+# - a clone with a worktree outside the directory is refused, and so is
+#   a bare repository whose worktree outside sits below a directory that
+#   cannot be entered; an entry whose worktree, or the directory above
+#   it, is gone is stale and swept. As uid 0, whom chmod 000 does not
+#   stop, the unreadable directory and that hidden worktree are skipped;
 # - a commit that only a branch of the repository holds is refused, in a
 #   bare repository whose HEAD is a symbolic link, a clone whose .git is a
 #   symbolic link, a clone whose .git file names a git directory inside
@@ -123,6 +127,8 @@ script=${1:-$(dirname "$0")/sweep.sh}
 script=$(cd -P "$(dirname "$script")" && pwd -P)/${script##*/}
 [ -f "$script" ] || { echo "FAIL: no script $script"; exit 1; }
 tmp=$(mktemp -d) || exit 1
+asroot=
+[ "$(id -u)" != 0 ] || asroot=1
 # the fixtures include an unreadable directory and, with chflags, an
 # immutable file, which a plain rm -rf cannot remove; the EXIT trap calls
 # it
@@ -538,12 +544,36 @@ b"
   expect newline 1 'holds a name with a newline'
   kept newline "$sp/newline"
 
-  mkdir -p "$sp/unreadable-dir/d"
-  chmod 000 "$sp/unreadable-dir/d"
-  run "$base" work "$sp/unreadable-dir"
-  chmod 755 "$sp/unreadable-dir/d"
-  expect 'unreadable dir' 1 'find cannot read all of it'
-  kept 'unreadable dir' "$sp/unreadable-dir/d"
+  # chmod 000 hides nothing from uid 0
+  if [ -z "$asroot" ]; then
+    mkdir -p "$sp/unreadable-dir/d"
+    chmod 000 "$sp/unreadable-dir/d"
+    run "$base" work "$sp/unreadable-dir"
+    chmod 755 "$sp/unreadable-dir/d"
+    expect 'unreadable dir' 1 'find cannot read all of it'
+    kept 'unreadable dir' "$sp/unreadable-dir/d"
+
+    git clone -q --bare "$o" "$sp/hidden/b.git"
+    mkdir -m 700 "$base/hid"
+    git -C "$sp/hidden/b.git" worktree add -q --detach "$base/hid/wt" main \
+      2> /dev/null
+    chmod 000 "$base/hid"
+    run "$base" work "$sp/hidden"
+    chmod 700 "$base/hid"
+    expect 'hidden worktree' 1 "worktree that cannot be resolved: $base/hid/wt"
+    kept 'hidden worktree' "$sp/hidden/b.git/HEAD"
+    git -C "$base/hid/wt" rev-parse -q --verify HEAD > /dev/null ||
+      fail 'hidden worktree: git no longer reads it'
+  fi
+  for d in "$base/stale-wt" "$base/gone-parent/wt"; do
+    rm -rf "$sp/bare-stale"
+    git clone -q --bare "$o" "$sp/bare-stale/b.git"
+    git -C "$sp/bare-stale/b.git" worktree add -q --detach "$d" main \
+      2> /dev/null
+    rm -rf "${d%/wt}"
+    run "$base" work "$sp/bare-stale"
+    expect "stale entry $d" 0 "removed: $sp/bare-stale"
+  done
 
   mkclone clone
   git -C "$cl" branch -q side
@@ -851,5 +881,7 @@ sh "${PROCESS:?}/scripts/sweep.sh" work "${work:?}"' zsh "$sp/zsh paste" \
   shells="$shells zsh"
 fi
 
+[ -z "$asroot" ] ||
+  echo 'as uid 0, the unreadable directory and hidden worktree are skipped'
 [ "$status" = 0 ] && echo "sweep.sh answers as expected under:$shells"
 exit "$status"

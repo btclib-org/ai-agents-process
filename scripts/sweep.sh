@@ -43,7 +43,10 @@
 #   refs/rewritten, the others being its repository's. A commit that only
 #   a reflog or a pseudo-ref such as ORIG_HEAD holds is not read;
 # - one of those refs holds an object that is not a commit or a tag of one;
-# - it holds a repository with a worktree outside the directory;
+# - it holds a repository with a worktree outside the directory, or one
+#   whose path cannot be resolved where it is not known to be gone: an
+#   entry is stale only where the deepest directory above its path that
+#   can be entered holds no such name;
 # - it holds a git directory that is neither named .git nor bare, as a
 #   clone's made with --separate-git-dir, whose worktree the script does
 #   not look for, or a linked worktree's git directory that is not in the
@@ -107,6 +110,20 @@ export GIT_TERMINAL_PROMPT GIT_OPTIONAL_LOCKS
 # real <dir>: its path, every symbolic link resolved, each name spelled as
 # the file system holds it; the shells' own pwd prints the case as typed
 real() { (cd -P -- "$1" 2> /dev/null && env pwd -P); }
+# gone <absolute path>: the deepest directory above it that can be
+# entered holds no name on the way to it
+gone() {
+  q=$1
+  while [ "${q%/*}" != "$q" ]; do
+    up=${q%/*}
+    if (cd -P -- "${up:-/}" 2> /dev/null); then
+      [ ! -e "$q" ] && [ ! -L "$q" ]
+      return
+    fi
+    q=$up
+  done
+  return 1
+}
 
 root=${SWEEP_ROOT:-/tmp/claude-$(id -u)}
 # resolved, and owned by the caller: find prints it only then
@@ -213,7 +230,11 @@ own() {
       *) continue ;;
     esac
     # a worktree whose directory is gone leaves only a stale entry
-    rp=$(real "$p") || continue
+    if ! rp=$(real "$p"); then
+      gone "$p" && continue
+      refuse "$o has a worktree that cannot be resolved: $p"
+      return 1
+    fi
     case $rp/ in
       "$r"/*) ;;
       *) refuse "$o has a worktree outside it: $rp"; return 1 ;;
