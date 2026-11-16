@@ -361,14 +361,17 @@ This section is in `every-session.md`, beside this file.
 
   It then moves each findings record at the top of `<work>`,
   `findings-*.md`, to `<scratchpad>/orchestrator/` under `<work>`'s name,
-  where `orchestration.md`'s *The findings record* still reads it after
-  the landing; the script refuses a `<work>` that holds one:
+  where `orchestration.md`'s *The findings record* reads it after the
+  landing. `mv -n` replaces no record already there, and the script
+  refuses a `<work>` that still holds one anywhere, so that a name taken
+  stops the sweep with both records kept:
 
   ```shell
   work=<work>
+  while [ "${work%/}" != "$work" ]; do work=${work%/}; done
   keep=${work%/*}/orchestrator/${work##*/}
   mkdir -p "$keep" && find "${work:?}" -maxdepth 1 -name 'findings-*.md' \
-    -exec mv {} "$keep"/ \;
+    -exec mv -n {} "$keep"/ \;
   ```
 
   Last it runs `scripts/sweep.sh`, whose header says what it refuses, and

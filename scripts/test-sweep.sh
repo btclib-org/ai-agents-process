@@ -96,9 +96,14 @@
 #   system ignores case, the name orchestrator is refused;
 # - for each case a run decides, --check exits as the run does, except
 #   where a stand-in fails a step only the run takes;
-# - a directory holding a findings record, findings-*.md, is refused, and
-#   removed once the record is moved to the orchestrator's directory as
-#   process/every-role.md says; a worktree whose git directory holds
+# - a directory holding a findings record, findings-*.md, at its top or
+#   below, is refused; once the lines of process/every-role.md that move
+#   the records have run, given <work> with a trailing slash, it is
+#   removed and the record kept in the orchestrator's directory; where a
+#   record of that name is there already, both are kept and the
+#   directory is refused; an orphan worktree with no commit, in a
+#   repository with no remote named origin, is removed; a worktree whose
+#   git directory holds
 #   modules is refused by --check and by the run, and so is one whose
 #   repository has no remote named origin, where a bundle named origin
 #   in the worktree lists its commit;
@@ -156,6 +161,22 @@ GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=gpg.program GIT_CONFIG_VALUE_0=$tmp/gpg
 export GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
 export GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
 status=0
+
+# the lines of process/every-role.md's *Debris goes when its work ends*
+# that move the findings records, run with <work> as their first argument;
+# the $1 in quotes is the text those lines get
+prose=$(cd -P "$(dirname "$0")/.." && pwd -P)/process/every-role.md
+# shellcheck disable=SC2016
+movecmd=$(awk '
+  /^  ```shell$/ { b = ""; on = 1; next }
+  /^  ```$/ { if (on && b ~ /findings-/) printf "%s", b; on = 0; next }
+  on { sub(/^  /, ""); b = b $0 "\n" }' "$prose" |
+  sed 's/^work=<work>$/work=$1/')
+# shellcheck disable=SC2016
+case $movecmd in
+  'work=$1'*) ;;
+  *) echo "FAIL: no lines that move the findings records in $prose"; exit 1 ;;
+esac
 
 # The stand-in for git. Before `update-ref -d` it moves $SHIM_MOVE_REF of
 # $SHIM_GIT_DIR to $SHIM_MOVE_TO; at `worktree remove` of $SHIM_FAIL, it
@@ -710,14 +731,25 @@ b"
   mkwork "$m" findings
   echo record > "$w/findings-$br.md"
   run "$base" work "$w"
-  expect findings 1 "holds findings-$br.md, which goes to $sp/orchestrator/"
-  kept findings "$w/findings-$br.md"
-  keep=$sp/orchestrator/findings
-  mkdir -p "$keep" &&
-    find "$w" -maxdepth 1 -name 'findings-*.md' -exec mv {} "$keep"/ \;
+  expect findings 1 "holds the findings record $w/findings-$br.md"
+  "$sh" -c "$movecmd" sh "$w/" || fail 'findings: the move fails'
   run "$base" work "$w"
   expect 'findings moved' 0 "removed: $w"
-  kept 'findings moved' "$keep/findings-$br.md"
+  [ "$(cat "$sp/orchestrator/findings/findings-$br.md")" = record ] ||
+    fail 'findings moved: the record is not in the orchestrator directory'
+  mkwork "$m" collide
+  mkdir -p "$sp/orchestrator/collide"
+  echo old > "$sp/orchestrator/collide/findings-x.md"
+  echo new > "$w/findings-x.md"
+  "$sh" -c "$movecmd" sh "$w" || fail 'collide: the move fails'
+  run "$base" work "$w"
+  expect collide 1 "holds the findings record $w/findings-x.md"
+  [ "$(cat "$sp/orchestrator/collide/findings-x.md")" = old ] &&
+    [ "$(cat "$w/findings-x.md")" = new ] || fail 'collide: a record was lost'
+  mkwork "$m" findings-below
+  echo record > "$w/writer/findings-y.md"
+  run "$base" work "$w"
+  expect 'findings below' 1 "holds the findings record $w/writer/findings-y.md"
 
   mkwork "$m" modules
   gd=$(git -C "$wt" rev-parse --path-format=absolute --git-dir)
@@ -741,6 +773,11 @@ b"
   kept 'no origin' "$wt/f.txt"
   [ "$(git -C "$base/main4" rev-parse -q --verify "refs/heads/$br")" = "$c" ] ||
     fail "no origin: branch $br is not at $c"
+
+  git -C "$base/main4" worktree add -q --orphan -b orphan "$sp/orphan/wt" \
+    2> /dev/null || fail 'orphan: no worktree'
+  run "$base" work "$sp/orphan"
+  expect 'orphan, no origin' 0 "removed: $sp/orphan"
 
   mkwork "$m" missing-parent
   p=0000000000000000000000000000000000000001

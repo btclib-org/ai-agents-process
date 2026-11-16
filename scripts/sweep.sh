@@ -24,13 +24,14 @@
 # - it is the caller's current directory or holds it;
 # - it holds a repository that is not a linked worktree of the session's
 #   (below);
-# - it holds a findings record, findings-*.md, at its top, which goes to
-#   the scratchpad's orchestrator/ first (every-role.md);
+# - it holds a findings record, findings-*.md, anywhere below it, which
+#   process/every-role.md's *Debris goes when its work ends* moves first;
 # - it holds .sweep-unfinished, of any kind, which a failed
 #   `git worktree remove` leaves (below);
 # - find cannot read all of it, or it holds a name with a newline;
-# - git cannot read one of its worktrees, its repository has no remote
-#   named origin, or its git directory holds modules;
+# - git cannot read one of its worktrees, or its git directory holds
+#   modules, or it holds a commit and its repository has no remote named
+#   origin;
 # - it holds a worktree with an uncommitted change, an untracked file that
 #   is not ignored, or a file marked assume-unchanged or skip-worktree,
 #   whose change git status does not show;
@@ -445,12 +446,6 @@ sweep() {
     [ -n "$a" ] || a=/
   done
   if [ -n "$a" ]; then refuse 'the current directory, or holds it'; return; fi
-  for f in "$r"/findings-*.md; do
-    if there "$f"; then
-      refuse "holds ${f##*/}, which goes to ${r%/*}/orchestrator/${r##*/}/"
-      return
-    fi
-  done
   if [ -e "$r/.sweep-unfinished" ] || [ -L "$r/.sweep-unfinished" ]; then
     refuse 'holds .sweep-unfinished, left by a removal that stopped'
     return
@@ -458,12 +453,17 @@ sweep() {
   # each name that is .git in any letter case, then each other directory
   # not below one, which the scan asks the file system about, as git asks
   if ! odd=$(find "$r" -name "*$nl*" -print) ||
+    ! kept=$(find "$r" -name 'findings-*.md' -print) ||
     ! find "$r" -iname .git -print -prune > "$list" ||
     ! find "$r" \( -iname .git -prune \) -o -type d -print > "$dirs"; then
     refuse 'find cannot read all of it'
     return
   fi
   if [ -n "$odd" ]; then refuse 'holds a name with a newline'; return; fi
+  if [ -n "$kept" ]; then
+    refuse "holds the findings record ${kept%%"$nl"*}, kept elsewhere first"
+    return
+  fi
   scan
   if [ -n "$alien" ]; then
     refuse "$alien"
