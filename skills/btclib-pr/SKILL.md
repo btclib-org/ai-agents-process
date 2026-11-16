@@ -1503,10 +1503,6 @@ and how to resolve it. Completing it:
   gh issue edit <issue> --repo <owner>/<repo> --add-assignee <login>
   ```
 
-  On an issue labelled `good first issue`, the removal and the
-  assignment are both edits the shared *Issues left to newcomers* leaves
-  to the human, asked for that issue.
-
 - **Push to their fork as a fast-forward only**: `git push <fork url>
   HEAD:refs/heads/<their branch>`, never with any `--force`. Before
   every push, `git ls-remote <fork url> refs/heads/<their branch>` must

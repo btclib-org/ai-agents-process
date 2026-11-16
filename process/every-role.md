@@ -377,10 +377,12 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
   branch carries a closing keyword for it or bundles it, unless the human
   expressly authorizes that act on that issue. This overrides every other
   rule here that closes, labels or bundles such an issue. It does not bind
-  filing a new issue with that label, which *Collateral* asks for. A worker
-  relies on an authorization only where its brief quotes it. A number
-  among the arguments, or inside a range, is not an authorization: the
-  orchestrator skips it and tells the human.
+  filing a new issue with that label, which *Collateral* asks for. Nor
+  does it bind the steps of `/btclib-pr`'s *Outside contributors* that
+  free such an issue from a pull request closed for a missing sign-off,
+  and give it back. A worker relies on an authorization only where its
+  brief quotes it. A number among the arguments, or inside a range, is
+  not an authorization: the orchestrator skips it and tells the human.
 
 ### How you establish a fact
 
