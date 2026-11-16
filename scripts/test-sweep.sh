@@ -96,6 +96,12 @@
 #   system ignores case, the name orchestrator is refused;
 # - for each case a run decides, --check exits as the run does, except
 #   where a stand-in fails a step only the run takes;
+# - a directory holding a findings record, findings-*.md, is refused, and
+#   removed once the record is moved to the orchestrator's directory as
+#   process/every-role.md says; a worktree whose git directory holds
+#   modules is refused by --check and by the run, and so is one whose
+#   repository has no remote named origin, where a bundle named origin
+#   in the worktree lists its commit;
 # - a worktree whose gitlink path is a symbolic link is refused by
 #   --check and by the run, as git worktree remove would refuse it,
 #   and leaves no .sweep-unfinished; where the file system
@@ -701,6 +707,41 @@ b"
   kept 'gitlink link' "$wt/f.txt"
   gone 'gitlink link' "$w/.sweep-unfinished"
 
+  mkwork "$m" findings
+  echo record > "$w/findings-$br.md"
+  run "$base" work "$w"
+  expect findings 1 "holds findings-$br.md, which goes to $sp/orchestrator/"
+  kept findings "$w/findings-$br.md"
+  keep=$sp/orchestrator/findings
+  mkdir -p "$keep" &&
+    find "$w" -maxdepth 1 -name 'findings-*.md' -exec mv {} "$keep"/ \;
+  run "$base" work "$w"
+  expect 'findings moved' 0 "removed: $w"
+  kept 'findings moved' "$keep/findings-$br.md"
+
+  mkwork "$m" modules
+  gd=$(git -C "$wt" rev-parse --path-format=absolute --git-dir)
+  mkdir "$gd/modules"
+  run "$base" work "$w"
+  rmdir "$gd/modules"
+  expect modules 1 "$gd holds modules, which git worktree remove refuses"
+  kept modules "$wt/f.txt"
+  gone modules "$w/.sweep-unfinished"
+
+  git clone -q "$o" "$base/main4"
+  mkwork "$base/main4" no-origin
+  commit "$wt" no-origin
+  echo origin >> "$base/main4/.git/info/exclude"
+  git -C "$base/main4" remote rename origin upstream
+  git -C "$wt" bundle create -q "$wt/origin" "$br" 2> /dev/null
+  [ -n "$(git -C "$wt" ls-remote origin 2> /dev/null)" ] ||
+    fail 'no origin: the bundle lists nothing'
+  run "$base" work "$w"
+  expect 'no origin' 1 "$wt has no remote named origin"
+  kept 'no origin' "$wt/f.txt"
+  [ "$(git -C "$base/main4" rev-parse -q --verify "refs/heads/$br")" = "$c" ] ||
+    fail "no origin: branch $br is not at $c"
+
   mkwork "$m" missing-parent
   p=0000000000000000000000000000000000000001
   c=$(printf 'tree %s\nparent %s\nauthor %s\ncommitter %s\n\nx\n' "$t" "$p" \
@@ -848,7 +889,7 @@ b"
   run "$base" work "$w"
   expect 'pull head ahead, fetched' 0 "removed: $w"
 
-  for r in "$m" "$base/main2" "$base/main3"; do
+  for r in "$m" "$base/main2" "$base/main3" "$base/main4"; do
     s=$(git -C "$r" worktree prune -n -v 2>&1)
     [ -z "$s" ] || fail "stale worktree entries in $r: $s"
   done

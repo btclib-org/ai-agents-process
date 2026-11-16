@@ -278,8 +278,8 @@ This section is in `every-session.md`, beside this file.
       directory, `<scratch>`, each file under a name that is its own
       (`msg-<branch>.txt`).
 
-  A role makes its `<scratch>` before the first file it writes there, as
-  the base pin of *`refs/remotes/origin/main` is shared by every
+  A role makes its `<scratch>` before the first file it writes there,
+  such as the base pin of *`refs/remotes/origin/main` is shared by every
   worktree*:
 
   ```shell
@@ -359,7 +359,19 @@ This section is in `every-session.md`, beside this file.
   git -C <checkout> fetch origin refs/pull/<n>/head
   ```
 
-  It then runs `scripts/sweep.sh`, whose header says what it refuses, and
+  It then moves each findings record at the top of `<work>`,
+  `findings-*.md`, to `<scratchpad>/orchestrator/` under `<work>`'s name,
+  where `orchestration.md`'s *The findings record* still reads it after
+  the landing; the script refuses a `<work>` that holds one:
+
+  ```shell
+  work=<work>
+  keep=${work%/*}/orchestrator/${work##*/}
+  mkdir -p "$keep" && find "${work:?}" -maxdepth 1 -name 'findings-*.md' \
+    -exec mv {} "$keep"/ \;
+  ```
+
+  Last it runs `scripts/sweep.sh`, whose header says what it refuses, and
   names each refusal in its report to the human. A `<work>` that holds
   any other repository is refused and left for the human, since the
   script runs git in no repository it cannot tell is a linked worktree of

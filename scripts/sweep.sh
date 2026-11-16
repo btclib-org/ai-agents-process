@@ -24,10 +24,13 @@
 # - it is the caller's current directory or holds it;
 # - it holds a repository that is not a linked worktree of the session's
 #   (below);
+# - it holds a findings record, findings-*.md, at its top, which goes to
+#   the scratchpad's orchestrator/ first (every-role.md);
 # - it holds .sweep-unfinished, of any kind, which a failed
 #   `git worktree remove` leaves (below);
 # - find cannot read all of it, or it holds a name with a newline;
-# - git cannot read one of its worktrees;
+# - git cannot read one of its worktrees, its repository has no remote
+#   named origin, or its git directory holds modules;
 # - it holds a worktree with an uncommitted change, an untracked file that
 #   is not ignored, or a file marked assume-unchanged or skip-worktree,
 #   whose change git status does not show;
@@ -176,6 +179,11 @@ pushed() {
   o=$1
   shift
   [ $# -gt 0 ] || return 0
+  # with no remote named origin, ls-remote would read a path origin
+  if [ -z "$(git -C "$o" config --get remote.origin.url)" ]; then
+    refuse "$o has no remote named origin"
+    return 1
+  fi
   if ! heads=$(git -C "$o" ls-remote origin < /dev/null 2> /dev/null); then
     refuse "the origin of $o cannot be read"
     return 1
@@ -235,8 +243,13 @@ tree() {
     refuse "git cannot read $t"
     return 1
   fi
-  # submodules as git worktree remove reads them, whose own status the
-  # run would otherwise fail; the scan has refused every .git inside
+  # git worktree remove refuses a worktree whose git directory holds
+  # modules, and one whose submodules git status, reading them, fails
+  # on; the scan has refused every .git inside
+  if there "$gd/modules"; then
+    refuse "$gd holds modules, which git worktree remove refuses"
+    return 1
+  fi
   if ! s=$(git -C "$t" status --porcelain --untracked-files=normal \
     --ignore-submodules=none); then
     refuse "git status fails in $t"
@@ -432,6 +445,12 @@ sweep() {
     [ -n "$a" ] || a=/
   done
   if [ -n "$a" ]; then refuse 'the current directory, or holds it'; return; fi
+  for f in "$r"/findings-*.md; do
+    if there "$f"; then
+      refuse "holds ${f##*/}, which goes to ${r%/*}/orchestrator/${r##*/}/"
+      return
+    fi
+  done
   if [ -e "$r/.sweep-unfinished" ] || [ -L "$r/.sweep-unfinished" ]; then
     refuse 'holds .sweep-unfinished, left by a removal that stopped'
     return
