@@ -560,6 +560,59 @@ the candidate in neither, and the defect there does not concern a
 citation. The run shows no loss it can tie to the sentence, and cannot
 show a gain: no case's defect concerns how a port's issue closes.
 
+- **Baseline and candidate**, 2026-11-16: `$PROCESS` `2854831` and
+  `8990d03`, tree `cc159c93aae1249432875cf0b844206277de6121`, the factor
+  changed being the brief: the sentences the change for ISS
+  btclib-org/ai-agents-process#495 moves, which alone `git diff 2854831
+  8990d03 -- process` changes. In `local-review.md`, *Every reviewer
+  tries to break the change* points to `writing.md`'s *Writing work* for
+  what the fix of a blocking finding adds, and the item of *The verdict*
+  on a new major version asks for the notes, each named, and whether
+  anything in them breaks the tree, and says what a major move is. In
+  `writing.md`'s *Writing work*, a new item has the fix of a blocking
+  finding that rests on an input add that input as a test. Claude Code,
+  the `reviewer` agent, Opus, effort `high`, one run per case. In both:
+  PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit. PR
+  btclib-org/.github#2288: miss. PR btclib-org/btclib-node#2516: miss.
+  PR btclib-org/ecc#580: hit.
+
+On PR btclib-org/ai-agents-process#317 both block on "tied to the
+account", which holds, and put the exemption of the resumed run as
+collateral. On PR btclib-org/btclib-secp256k1#1331 the baseline names
+the hold to exit code `42` as a non-blocking finding, and the candidate
+raises none on it. On PR btclib-org/.github#2288 the baseline raises the
+lookbehind's single space as a non-blocking finding, and the candidate
+lists the other spacings only among the claims it tried. On PR
+btclib-org/btclib-node#2516 both name "`i` sums the length fields" as
+non-blocking wording. On PR btclib-org/ecc#484 the baseline also blocks
+on the rule being stated a second time in the review workflow's prompt,
+as the candidates at `cab9c97` and `9c5ada8` did, which was not measured
+false.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, and the case from a repository holding only the head
+and its ancestors (*What a case holds*). A first candidate copy, built
+at `f5d2025`, before the change's fixes, was discarded before any
+reviewer read it. The brief forbade the network, the forge, any suite
+and any other checkout of the case's repository, and every reviewer
+reports that it ran no gate. On PR btclib-org/btclib-secp256k1#1331 the
+baseline's reviewer could not read the zkp source and left its coverage
+claim as a question, and the candidate's read local clones of
+secp256k1-zkp and secp256k1 with `git show`, `git ls-tree` and `git
+archive`, and built the harness against a stand-in memcheck header. On
+PR btclib-org/btclib-node#2516 the baseline's loaded btclib 2026.11.10
+from another repository's environment, not the lock's 2026.11.12, and
+the candidate's loaded the lock's version in an environment it built
+offline from the uv cache in its scratch directory. No verdict names
+this file. The order of the runs and their labels were random.
+
+The candidate has the baseline's hits and misses on all seven cases, so
+no case decides the comparison alone and none was run again (*One factor
+at a time*). The run shows no loss from the change, and cannot show a
+gain: no case's defect concerns the test a fix adds or a major version.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
