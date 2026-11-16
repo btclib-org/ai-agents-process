@@ -202,7 +202,7 @@ not clean.
 ## How a run is scored
 
 **A hit names the defect's mechanism and its consequence** well enough
-to fix it, as *The findings record* in `local-review.md` matches two
+to fix it, as *The findings record* in `orchestration.md` matches two
 findings. A defect a run names only in a non-blocking finding is a miss.
 The orchestrator scores each verdict against the case's sentence, and
 the human scores where it cannot tell. The cases are chosen, not drawn

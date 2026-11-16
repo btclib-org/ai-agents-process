@@ -121,28 +121,21 @@ the process names its own files by their path under it. Claude Code's
   as `$btclib-iss`; this text writes the first form. Claude Code puts
   the words after the skill's name in place of `$ARGUMENTS`. Codex
   leaves `$ARGUMENTS` as written, and it means the same words.
-- **Agents.** Claude Code reads them from `~/.claude/agents/*.md`. It
-  starts one with the `Agent` tool, naming the agent, and resumes one
-  with `SendMessage` to its id. That id is taken from the notification
-  whose summary names the agent's task, never from the dispatch several
-  turns back: a resume sent to the wrong id is a brief for another task.
-  Codex reads them from `~/.codex/agents/*.toml`. It starts one when
-  asked to spawn the custom agent of that name, and resumes one by a
-  follow-up to its agent thread. Starting always makes a new agent.
 - **The reviewer in the other client** (*A pull request's rounds*) is
-  started from the shell, and reviews a detached worktree at the sha.
-  Its brief holds what a fresh reviewer's brief holds, the bot's prompt
+  started from the shell (`orchestration.md`'s *Starting the reviewer in
+  the other client*), and reviews a detached worktree at the sha. Its
+  brief holds what a fresh reviewer's brief holds, the bot's prompt
   included. A new run of the same command, whose brief adds its last
   verdict and the sha that verdict named, is how it is resumed: for *The
-  rounds* it is the same reviewer, though a new process. A run that times
-  out exits `124`.
+  rounds* it is the same reviewer, though a new process. A run that
+  times out exits `124`.
 
   In Codex it runs under `workspace-write` with one writable root: its
   own directory, `<work>/<name>`, which is also its working directory.
   There it writes the inputs of *Every reviewer tries to break the
-  change* and runs them offline. Where the worktree holds a
-  `uv.lock`, they run with `uv run --project <wt>`, from the worktree's
-  `.venv`, which the session syncs, and from a `UV_CACHE_DIR` inside the
+  change* and runs them offline. Where the worktree holds a `uv.lock`,
+  they run with `uv run --project <wt>`, from the worktree's `.venv`,
+  which the session syncs, and from a `UV_CACHE_DIR` inside the
   reviewer's directory, which holds what that sync had to download.
   Otherwise they run with `uv run --no-project`, on the standard library
   alone. An input that needs a package these do not hold is named in the
@@ -153,19 +146,11 @@ the process names its own files by their path under it. Claude Code's
   `git fetch` and `git merge-tree --write-tree`, which write in the git
   directory, and a heredoc in the `zsh` Codex runs commands in, which
   puts its temporary file under `/tmp`. `git log --format=%G?` reads a
-  signed commit as `N`, and the network is off (below). So the session
-  that starts it first runs, outside the reviewer's sandbox,
-  `git fetch origin`, the `merge-tree` of *A pull request's rounds*, the
-  checks of *Signed and signed off* with the sign-off control,
-  `uv sync --locked` where the worktree holds a `uv.lock`, and the gates
-  where no run on the sha is on the record, the last two in the sandbox
-  of *The gates* on an outside contributor's branch. The brief carries
-  them as runs on the record, the merge's tree sha included, names the
-  worktree, and asks for no heredoc. The reviewer relies on them, says
-  so, and reads the worktree with `git -C <wt> show` and
-  `git -C <wt> diff` at shas, which the sandbox allows. The session
-  removes the reviewer's directory once that reviewer's rounds end
-  (*Debris goes when its work ends*).
+  signed commit as `N`, and the network is off (`orchestration.md`'s
+  *Starting the reviewer in the other client*). The reviewer relies on
+  the runs its brief carries on the record, says so, and reads the
+  worktree with `git -C <wt> show` and `git -C <wt> diff` at shas, which
+  the sandbox allows.
 
   An input a reviewer names as not run may be one the session cannot run
   either. The branch then goes to the human as one decision
@@ -176,156 +161,18 @@ the process names its own files by their path under it. Claude Code's
   reviewer's input. The branch is held as `every-session.md`'s *A hold
   is recorded* says. The human's answer stands in for the input's
   result: the reviewer's resumed run, or the dedicated reviewer that
-  takes over from it (*A pull request's rounds*), gets the answer on the
-  record in its place. The pull request body records the decision and
-  the answer.
+  takes over from it (`orchestration.md`'s *Where the other client is
+  unavailable*), gets the answer on the record in its place. The pull
+  request body records the decision and the answer.
 
-  Claude Code starts a Codex reviewer with `codex exec`. That spawns no
-  custom agent by name, so the brief's first sentence says to read
-  `~/.codex/agents/reviewer.toml` and follow it. `-o` writes its last
-  message, the verdict, to a file. `-m` and `model_reasoning_effort` set
-  the model and the effort *Models* names. The other `-c` settings
-  replace any
-  `writable_roots` of `config.toml` with the reviewer's directory, turn
-  off the network, which `config.toml` may turn on, and drop `/tmp` and
-  `$TMPDIR`, which `workspace-write` otherwise makes writable, a
-  worktree under `/tmp` included. `--ignore-rules` keeps out the user's
-  `.rules` files, whose allowed commands run outside the sandbox (*Git
-  writes under Codex*). `env -i` passes it only `HOME`, where Codex finds its
-  login, `PATH`, `UV_CACHE_DIR`, `UV_OFFLINE` and a `TMPDIR` inside the
-  reviewer's directory, where `mktemp` writes, so the variables of the
-  session that starts it, its tokens included, do not reach what the
-  reviewer runs.
-
-  The network is off because an input runs the branch's code, and the
-  sandbox still reads credentials such as `~/.codex/auth.json` and
-  `~/.gnupg`. With the network on, it could send them to any host, and
-  it could read the keychain too, through `gh auth token` and
-  `git credential fill`.
-
-  The session creates the reviewer's directory, syncs the worktree where
-  it holds a `uv.lock`, removes the verdict file, and starts the
-  reviewer. `-o` does not empty that file when a run starts. So a
-  resumed run's brief takes the last verdict from the file first, and a
-  verdict found there is the latest run's (*The rounds*). The `-u` keeps
-  the sync in the worktree's `.venv`, where the reviewer's `uv run`
-  looks for it. On an outside contributor's branch the sync is the
-  sandboxed one of *The gates* instead of the second command:
-
-  ```shell
-  mkdir -p <work>/<name>/tmp
-  ```
-
-  ```shell
-  env -C <wt> -u UV_PROJECT_ENVIRONMENT \
-    UV_CACHE_DIR=<work>/<name>/uv-cache uv sync --locked
-  ```
-
-  ```shell
-  rm -f <work>/<name>.last.md
-  ```
-
-  ```shell
-  env -i -C <work>/<name> HOME="$HOME" PATH="$PATH" \
-    UV_CACHE_DIR=<work>/<name>/uv-cache UV_OFFLINE=1 \
-    TMPDIR=<work>/<name>/tmp \
-    timeout 900 codex exec -s workspace-write --skip-git-repo-check \
-    --ignore-rules -m gpt-6.1-sol -c model_reasoning_effort=high \
-    -c 'sandbox_workspace_write.writable_roots=["<work>/<name>"]' \
-    -c sandbox_workspace_write.network_access=false \
-    -c sandbox_workspace_write.exclude_slash_tmp=true \
-    -c sandbox_workspace_write.exclude_tmpdir_env_var=true \
-    -o <work>/<name>.last.md - \
-    < <work>/<name>-brief.txt > <work>/<name>.log 2>&1
-  ```
-
-  Codex starts a Claude Code reviewer with `claude -p --agent reviewer`,
-  outside its sandbox through an escalation request, as it does a git
-  write (*Git writes under Codex*). The brief goes on stdin, because
-  `--allowedTools` takes every argument after it, a trailing prompt
-  included.
-
-  Its Bash commands run in Claude Code's own sandbox, so that the inputs
-  it writes and runs are held as a Codex reviewer's are, for the same
-  reason: they write only in the reviewer's directory, which is its
-  working directory, and in a temporary directory of the run's own, and
-  reach no host. The session prepares the reviewer and its brief, and
-  removes its directory, as it does for a Codex reviewer. The reviewer
-  reads the worktree and runs its inputs with `uv run` the same way. An
-  input that needs a package neither the worktree's `.venv` nor the
-  standard library holds is handled as a Codex reviewer's is, above.
-
-  The flags make this hold whatever the user's settings say.
-  `--setting-sources project` loads no user settings, because the sandbox
-  makes each directory their `additionalDirectories` names writable. The
-  reviewer agent is then found through a link in the reviewer's
-  directory. `--settings` turns the sandbox on, refuses every host, and
-  runs no command outside the sandbox, even where it cannot start.
-  `--permission-mode dontAsk` refuses a call that would otherwise wait
-  for an answer.
-
-  The sandbox also makes Claude Code's temporary directory writable. On
-  macOS that is `/tmp/claude-<uid>`, which holds Claude Code sessions'
-  scratchpads and the worktrees in them. So each run moves it to a new
-  directory with `CLAUDE_CODE_TMPDIR`, on a short path: past some length
-  Claude Code falls back to the default for sandboxed commands. `env -i`
-  passes only `PATH`, `CLAUDE_CODE_TMPDIR`, `ZDOTDIR`, the two `UV_`
-  variables, and what `claude` needs to find its login: `HOME`, `USER`,
-  and `CLAUDE_CONFIG_DIR` where it is set. On macOS, `claude` starts two
-  `zsh` shells outside the sandbox, and the reviewer's commands run in
-  `zsh` inside it. Each reads its startup files from `ZDOTDIR`, or from
-  `HOME` where that is unset. `ZDOTDIR` is `/var/empty`, which macOS
-  ships empty and owned by root, so neither the user's `~/.zshenv` nor a
-  file the reviewer writes is read. One it wrote in its own directory
-  would run outside the sandbox at the next run, a resumed one included.
-  The session's variables, its tokens included, then do not reach what
-  the reviewer runs.
-
-  The login the run finds is the one `claude auth login` saves. `env -i`
-  drops `ANTHROPIC_API_KEY` and `CLAUDE_CODE_OAUTH_TOKEN`, and
-  `--setting-sources project` drops an `apiKeyHelper` in the user's
-  settings. Without a saved login the run prints `Not logged in · Please
-  run /login` and exits `1`.
-
-  The session creates the reviewer's directory, links the agent into it,
-  and makes the run's temporary directory. `mktemp` prints its path,
-  which stands for `<tmp>` in the two blocks after it. The session then
-  starts the reviewer, and removes the temporary directory once the run
-  ends. The run starts `claude` only where `CLAUDE_CODE_TMPDIR` names a
-  directory, so an empty or missing value stops it:
-
-  ```shell
-  mkdir -p <work>/<name>/.claude/agents
-  ```
-
-  ```shell
-  ln -s "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/reviewer.md" \
-    <work>/<name>/.claude/agents/reviewer.md
-  ```
-
-  ```shell
-  mktemp -d /tmp/rv.XXXXXX
-  ```
-
-  ```shell
-  sbx='{"sandbox":{"enabled":true,"failIfUnavailable":true,'
-  sbx="${sbx}"'"allowUnsandboxedCommands":false,'
-  sbx="${sbx}"'"network":{"strictAllowlist":true}}}'
-  env -i -C <work>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
-    ${CLAUDE_CONFIG_DIR:+"CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"} \
-    CLAUDE_CODE_TMPDIR=<tmp> UV_CACHE_DIR=<work>/<name>/uv-cache \
-    UV_OFFLINE=1 ZDOTDIR=/var/empty \
-    sh -c 'test -d "${CLAUDE_CODE_TMPDIR:?}" && exec "$@"' sh timeout 1800 \
-    claude -p --agent reviewer --effort high --max-turns 80 \
-    --output-format text \
-    --setting-sources project --permission-mode dontAsk \
-    --settings "${sbx:?}" --allowedTools Bash,Read,Grep,Glob \
-    < <work>/<name>-brief.txt > <work>/<name>.log 2>&1
-  ```
-
-  ```shell
-  rm -rf <tmp>
-  ```
+  A Claude Code reviewer's Bash commands run in Claude Code's own
+  sandbox, so that the inputs it writes and runs are held as a Codex
+  reviewer's are, for the same reason: they write only in the reviewer's
+  directory, which is its working directory, and in a temporary
+  directory of the run's own, and reach no host. The reviewer reads the
+  worktree and runs its inputs with `uv run` the same way. An input that
+  needs a package neither the worktree's `.venv` nor the standard
+  library holds is handled as a Codex reviewer's is, above.
 
 - **Hooks.** Claude Code reads them from `~/.claude/settings.json`,
   Codex from `~/.codex/hooks.json`. Both run `scripts/git-c-allow.py`.
@@ -355,59 +202,11 @@ the process names its own files by their path under it. Claude Code's
 
 - **Git writes under Codex.** Its `workspace-write` sandbox keeps each
   writable root's `.git`, and the git directory it points to, read-only,
-  and `~/.gnupg` outside the workspace. Each
-  git write — `worktree add` and `remove`, a commit, an amend, a rebase,
-  a push — runs outside the sandbox, through an escalation request or a
-  `.rules` entry that allows it (below), and never with signing turned
-  off (*Signed and signed off*).
-
-  Under the approval policy `never`, which `~/.codex/config.toml` may
-  set, Codex makes no escalation request: its instructions then read
-  "Approval policy is currently never. Do not provide the
-  `sandbox_permissions` for any reason, commands will be rejected."
-  In Codex 0.163.0, the runs of `codex exec` measured ran under these
-  policies. `--approve-for-me`, which refuses `-s`, ran it under
-  `on-request` whatever `approval_policy` said. Without it,
-  `-c approvals_reviewer="auto_review"`, an automatic reviewer of the
-  requests, ran it under `on-request` where `approval_policy` was
-  `on-request` or set nowhere, and under `never` where it was `never`,
-  in `config.toml` or in a `-c`. With `approvals_reviewer` left at
-  `user`, it ran under `never`, `-c approval_policy="on-request"`
-  included. An `-a` before `exec` did not reach it. These are the
-  settings measured, not every one.
-
-  Interactive sessions in Codex 0.167.2 were measured with a `touch`
-  outside every writable root, which the sandbox refused, each started
-  with `-C` on a scratch directory, so the target was outside the
-  session's own directory, which is a writable root
-  ([ISS ai-agents-process#278](https://github.com/btclib-org/ai-agents-process/issues/278)).
-  Under `never` it made no request; the model said the session forbids
-  them.
-  Started with `-a on-request` it asked, and ran the command once the
-  human approved. Started with `--approve-for-me` it asked, and the
-  automatic reviewer approved. So an interactive session that has to
-  escalate starts with `-a on-request` or `--approve-for-me`.
-
-  A command a `.rules` entry allows runs outside the sandbox with no
-  request in an interactive session under `never` and `on-request`, and
-  in `codex exec` under `never`. A rule allowing `git` makes every git write
-  above run that way, and an interactive session has no
-  `--ignore-rules` to set it aside.
-
-  Each run records its policy in its rollout, with credits or without,
-  so this re-checks a setting before an escalation is relied on. It runs
-  as one block, since Codex later compresses a rollout to `.jsonl.zst`,
-  which the glob does not match. `<settings>` are the flags under test,
-  `-s workspace-write` among them except with `--approve-for-me`:
-
-  ```shell
-  set -- <settings>
-  id=$(codex exec --json --skip-git-repo-check "$@" 'Reply ok.' < /dev/null |
-    jq -r 'select(.type == "thread.started") | .thread_id')
-  jq -c 'select(.type == "turn_context") | .payload
-    | {approval_policy, approvals_reviewer}' \
-    ~/.codex/sessions/*/*/*/rollout-*-"${id:?}".jsonl
-  ```
+  and `~/.gnupg` outside the workspace. Each git write — `worktree add`
+  and `remove`, a commit, an amend, a rebase, a push — runs outside the
+  sandbox, through an escalation request or a `.rules` entry that allows
+  it (`orchestration.md`'s *Escalation under Codex*), and never with
+  signing turned off (*Signed and signed off*).
 
 ### Shell, checkouts and prose
 
@@ -438,16 +237,8 @@ This section is in `every-session.md`, beside this file.
   to your own branch instead.
 - **The primary checkout is not written — except the fast-forward that
   brings it forward (`every-session.md`'s *Shell, checkouts and prose*)
-  — and an accident in it is undone only where it is provably yours.**
-  The orchestrator checks `git status --porcelain` there between rounds.
-  Where it is dirty, diff it against the worktree that should have held
-  the change. Where the dirty content is byte-identical to that
-  worktree's own version — its uncommitted change or the blob on its
-  branch — and nothing is staged or committed in the checkout, undo it
-  and report it: a modified path with `git -C <checkout> restore --
-  <paths>`, an untracked stray file by removing it by name. Anything
-  else — a path no worktree explains, a difference of one byte, a staged
-  or committed change — is reported and left for the human.
+  — and an accident in it is undone only where it is provably yours**,
+  as `orchestration.md`'s *Orchestration* says.
 - **Every command that writes carries an explicit absolute path.** Shell
   state does not survive between calls (`every-session.md`'s *Never open
   a command with `cd`*), so `WT=…` in one call is empty in the next. A
@@ -471,15 +262,17 @@ This section is in `every-session.md`, beside this file.
   worktree*). The exception is a temporary file or directory that
   `mktemp` makes and that goes as soon as the command using it ends, as
   `writing.md`'s docs-build list does and as `<tmp>` does, which
-  *Clients* keeps on a short path for a Claude Code reviewer's run and
-  the session removes once that run ends. `<work>` holds:
+  `orchestration.md`'s *Starting the reviewer in the other client* keeps
+  on a short path for a Claude Code reviewer's run and the session
+  removes once that run ends. `<work>` holds:
 
     - each worktree, under the whole name *Your own worktree* gives it;
     - each reviewer's directory in the other client (*Clients*), under a
       `<name>` that no role and no other reviewer in `<work>` uses, and
-      the files *Clients* puts beside it;
+      the files `orchestration.md`'s *Starting the reviewer in the other
+      client* puts beside it;
     - the gate's basetemp (*The gates*) and the findings record's file
-      (`local-review.md`'s *The findings record*);
+      (`orchestration.md`'s *The findings record*);
     - everything else a role writes, in its own directory,
       `<work>/<role>/`, which the process calls that role's scratch
       directory, `<scratch>`, each file under a name that is its own
@@ -755,25 +548,6 @@ This section is in `every-session.md`, beside this file.
 
 ### What a session's memory holds
 
-**A client's persistent memory, as Claude Code's file-based memory, is
-read only by that client's sessions on the maintainer's machine.** The
-other client, the agent of `claude-implement.yml` and a contributor's
-agent do not read it. So nothing another agent or a contributor must
-follow lives only there, and each kind of fact goes where its readers
-find it:
-
-- how work is done, a technical lesson included, goes in the process,
-  proposed as *Wrap-up* says;
-- a decision about one issue or pull request goes on that issue or pull
-  request, as `every-session.md`'s *When the human has to decide* and
-  *A hold is recorded* say;
-- the maintainer's standing permissions and preferences, and a
-  permission given for a limited time, go in the memory of each client
-  whose sessions are to follow them.
-
-**A permission given for a limited time carries its end in memory**, and
-is deleted once that end has passed.
-
 **A memory note is not the maintainer's instruction for another
 session's work** unless it says so.
 
@@ -854,16 +628,3 @@ an amend where the branch is amended anyway, and otherwise in the squash
   named* says, followed by a very short description.
 - **The reviewer files with the body inline**; where it cannot file,
   the body goes verbatim in its report.
-- **Collateral is closed within the same session**, whoever filed it —
-  writer, reviewer or orchestrator — and is worked as `/btclib-iss`
-  says. What was filed while a pull request was worked goes, once the
-  session is done with that pull request, to the same writer/reviewer
-  pair; what was filed outside any, to a new pair. Each is taken to an
-  open pull request or closed with the measurement that refutes it. The
-  only exceptions are an issue in another repository or labelled
-  `upstream-report`, one the maintainer suspended, one a `BACKLOG` row or
-  an `EXPECTED_DRIFT` entry already points at, and one labelled `good
-  first issue`; each is named in the report with its reason.
-- **The session is not done while an issue it opened has no pull
-  request** outside those exceptions. One that waits on the human is a
-  question, or at night a deferred item, never a silent leftover.
