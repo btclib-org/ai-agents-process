@@ -132,6 +132,8 @@ The writer's section; the reviewer judges its result.
       than once* is in the report
 - [ ] where the change removes tests, each refusal they asserted that a
       public caller still reaches is asserted again through that caller
+- [ ] the fix of a blocking finding that rests on an input adds that
+      input as a test, where the tree tests that code
 - [ ] the report says what was **not** checked, and why
 
 ### A rule stated more than once
@@ -349,16 +351,17 @@ of the standard* says.
   ```
 
 - **A merge of `main` asks for no new local gate** where it resolved
-  nothing (*A rebase and the clearance*), brings in no file the branch
-  changes, and `main` is green: the latest completed push run of each of
-  its workflows succeeded, read when the session looks, with no wait for
-  a run in progress. CI gates the merged head. Each command below holds
-  only where it prints nothing and exits `0`. The first prints each file
-  both sides change, and `pipefail` makes a stage that fails fail it.
-  The second prints each workflow whose latest completed run did not
-  succeed, or `no runs` where none has completed. It reads the newest
-  200 completed push runs, so a workflow whose last run is older than
-  those, or that has no completed run, is not read:
+  nothing (`local-review.md`'s *A merge of `main` and the clearance*),
+  brings in no file the branch changes, and `main` is green: the latest
+  completed push run of each of its workflows succeeded, read when the
+  session looks, with no wait for a run in progress. CI gates the merged
+  head. Each command below holds only where it prints nothing and exits
+  `0`. The first prints each file both sides change, and `pipefail`
+  makes a stage that fails fail it. The second prints each workflow
+  whose latest completed run did not succeed, or `no runs` where none
+  has completed. It reads the newest 200 completed push runs, so a
+  workflow whose last run is older than those, or that has no completed
+  run, is not read:
 
   ```shell
   wt=<wt>

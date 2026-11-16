@@ -145,7 +145,7 @@ to take lands there first, and reaches each other tree by a port.
   python3 "${PROCESS:?}/scripts/port-check.py" "$std" "$s" "$tree" "$base" "$head"
   ```
 
-  The shared *A pull request's rounds* says what its exit decides.
+  `orchestration.md`'s *Running the rounds* says what its exit decides.
 
 ## What the issue still asks
 
@@ -231,13 +231,13 @@ The orchestrator's. **Before opening, and the last item once it is
 open:**
 
 - [ ] the latest fresh reviewer's `CLEARED` (the shared *Local review*)
-      names the branch's content, or *A rebase and the clearance*
-      carries it to the rebased branch; where the other client is
-      unavailable, the dedicated reviewer's does (the shared *A pull
-      request's rounds*)
+      names the branch's content, or `orchestration.md`'s *A rebase and
+      the clearance* carries it to the rebased branch; where the other
+      client is unavailable, the dedicated reviewer's does
+      (`orchestration.md`'s *Where the other client is unavailable*)
 - [ ] no conflict with `origin/main` (`/btclib-pr`'s *Rebase and CI*);
-      where there was one, rebased and the gates re-run (the shared *A
-      rebase and the clearance*)
+      where there was one, rebased and the gates re-run
+      (`orchestration.md`'s *A rebase and the clearance*)
 - [ ] the subject that lands carries the right citation (the shared
       *Citations and closing keywords*)
 - [ ] the closing block comes after the sections, as the bullet below
