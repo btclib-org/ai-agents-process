@@ -1433,80 +1433,6 @@ and how to resolve it. Completing it:
   comes in by a signed merge, not a rebase, run with hooks off as the
   shared *The gates* says. The fixes are a signed commit of ours on top,
   signed off by us.
-- **Their sign-off is theirs to add.** A commit of theirs without the
-  trailer is not ours to fix: a sign-off we add for them is not their
-  attestation. Ask them, before we push anything to their branch, to
-  run the command the `Sign-off` check's failure prints and force-push,
-  and warn of the closing the tree's `CONTRIBUTING.md` gives in *Pull
-  requests*, naming its day.
-- **A pull request still lacking a sign-off is closed when the tree's
-  `CONTRIBUTING.md` says in *Pull requests***, which is what the
-  contributor reads. The request that rule counts from is the first
-  comment on the pull request that asks for the trailer and warns of the
-  closing, by a maintainer, a session or a job; where none does, it is
-  the session's ask above. This lists every comment with its
-  `createdAt`, author and URL, and the session reads each to find it:
-
-  ```shell
-  gh pr view <n> --repo <owner>/<repo> --json comments \
-    --jq '.comments[] | "\(.createdAt) \(.author.login) \(.url)"'
-  ```
-
-  On the day that rule gives, the session reads the head's commits: the
-  `Sign-off` check on the head, or, where it did not run, the shared
-  *Signed and signed off*'s script on those commits. Where a commit
-  still lacks the trailer, the session closes the pull request with a
-  comment, from a file. The comment thanks them, names the commits still
-  lacking the trailer, links the request, and gives the commands the
-  check or the script printed. It points to *Pull requests* for how the
-  pull request comes back, and says that the issue it held is now open
-  to others:
-
-  ```shell
-  n=<n>
-  repo=<owner>/<repo>
-  comment=<comment file>
-  gh pr close "${n:?}" --repo "${repo:?}" --comment "$(cat "${comment:?}")"
-  ```
-
-  Each issue it held then gets a comment: those its
-  `closingIssuesReferences` lists, and any its title or body says it is
-  for. The comment links the pull request, says it was closed for a
-  missing sign-off, and says that the first pull request whose commits
-  are all signed off takes the issue. The session removes the pull
-  request's author from that issue's assignees:
-
-  ```shell
-  gh issue edit <issue> --repo <owner>/<repo> --remove-assignee <login>
-  ```
-
-  On the contributor's comment asking for a reopen, the session reopens
-  the pull request in the order *Pull requests* gives. Where another
-  pull request has taken an issue it held meanwhile, the human decides
-  whether it is reopened:
-
-  ```shell
-  gh pr reopen <n> --repo <owner>/<repo>
-  ```
-
-  Once its commits all carry the trailer, read as above, the reopened
-  pull request may take back each issue it held. Right before that, the
-  session reads again who holds the issue: its assignees, and the open
-  pull requests citing it, found as the shared *Before starting* finds
-  them. Where another pull request holds it, the first of them whose
-  commits were all signed off keeps it, and a conflict between them goes
-  to the human. Otherwise the session says on the issue that the
-  reopened pull request takes it, and assigns the author again where it
-  removed them:
-
-  ```shell
-  gh issue edit <issue> --repo <owner>/<repo> --add-assignee <login>
-  ```
-
-  On an issue labelled `good first issue`, the removal and the
-  assignment are both edits the shared *Issues left to newcomers* leaves
-  to the human, asked for that issue.
-
 - **Push to their fork as a fast-forward only**: `git push <fork url>
   HEAD:refs/heads/<their branch>`, never with any `--force`. Before
   every push, `git ls-remote <fork url> refs/heads/<their branch>` must
@@ -1529,6 +1455,104 @@ and how to resolve it. Completing it:
 
 Both thanks, the findings' first line and the comment of its own, bind
 btclib-org only.
+
+**Their sign-off is theirs to add, whether the session completes the
+pull request or waits.** A commit of theirs without the trailer is not
+ours to fix: a sign-off we add for them is not their attestation. Ask
+them, with the findings, and before we push anything to their branch, to
+run the command the `Sign-off` check's failure prints and force-push.
+The ask warns of the closing the tree's `CONTRIBUTING.md` gives in *Pull
+requests*, naming its day.
+
+**A pull request still lacking a sign-off is closed when the tree's
+`CONTRIBUTING.md` says in *Pull requests***, which is what the
+contributor reads. The request that rule counts from is the first
+comment on the pull request that asks for the trailer and warns of the
+closing, by a maintainer, a session or a job; where none does, it is the
+session's ask above. This lists every comment, every page read, with its
+`createdAt`, author and URL, and the session reads each to find it:
+
+```shell
+n=<n>
+repo=<owner>/<repo>
+```
+
+```shell
+gh api --paginate "repos/${repo:?}/issues/${n:?}/comments" \
+  --jq '.[] | "\(.created_at) \(.user.login) \(.html_url)"'
+```
+
+On the day that rule gives, the session reads the head's commits: the
+`Sign-off` check on the head, or, where it did not run, the shared
+*Signed and signed off*'s script on those commits. Where a commit still
+lacks the trailer, the session closes the pull request with a comment,
+from a file. The comment thanks them, names the commits still lacking
+the trailer, links the request, and gives the commands the check or the
+script printed. It points to *Pull requests* for how the pull request
+comes back, and says that the issue it held is now open to others:
+
+```shell
+comment=<comment file>
+```
+
+```shell
+gh pr close "${n:?}" --repo "${repo:?}" --comment "$(cat "${comment:?}")"
+```
+
+Each issue it held then gets a comment: those its
+`closingIssuesReferences` lists, and any its title or body says it is
+for. The comment links the pull request, says it was closed for a
+missing sign-off, and says that the first pull request whose commits are
+all signed off takes the issue. The session posts it and removes the
+pull request's author from that issue's assignees:
+
+```shell
+issue=<issue>
+login=<author login>
+note=<issue comment file>
+```
+
+```shell
+gh issue comment "${issue:?}" --repo "${repo:?}" --body-file "${note:?}"
+```
+
+```shell
+gh issue edit "${issue:?}" --repo "${repo:?}" --remove-assignee "${login:?}"
+```
+
+On the contributor's comment asking for a reopen, the session reopens
+the pull request in the order *Pull requests* gives. Where another pull
+request has taken an issue it held meanwhile, the human decides whether
+it is reopened:
+
+```shell
+gh pr reopen "${n:?}" --repo "${repo:?}"
+```
+
+Once its commits all carry the trailer, read as above, the reopened pull
+request may take back each issue it held. Right before that, the session
+reads again who holds the issue: its assignees, which this prints, and
+the open pull requests citing it, found as the shared *Before starting*
+finds them:
+
+```shell
+gh api "repos/${repo:?}/issues/${issue:?}" --jq '[.assignees[].login]'
+```
+
+Where another pull request holds it, the first of them whose commits
+were all signed off keeps it, and a conflict between them goes to the
+human. An assignee other than the author, with no pull request, is a
+conflict for the human too. Otherwise the session says on the issue that
+the reopened pull request takes it, with a comment from a file as above,
+and assigns the author again where it removed them:
+
+```shell
+gh issue edit "${issue:?}" --repo "${repo:?}" --add-assignee "${login:?}"
+```
+
+On an issue labelled `good first issue`, the removal and the assignment
+are both edits the shared *Issues left to newcomers* leaves to the human,
+asked for that issue.
 
 Where the bot's review does not run — a fork's pull request, and any
 other where `gh pr checks` shows no review — that review is absent (*The
