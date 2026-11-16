@@ -189,6 +189,34 @@ def standard_adds(marker: str) -> Build:
     return build
 
 
+def after_paragraph(marker: str) -> Build:
+    """List a `D.md` the tree lacks, indented under `marker` after a paragraph."""
+
+    def build(std: Repo, tree: Repo) -> tuple[str, str, str]:
+        item = f"  {marker}`D.md` — owed by every repository.\n\n"
+        readme = README.replace(
+            "\n\n**Decided", f"\n\nA paragraph closes the list.\n\n{item}**Decided"
+        )
+        s = std_at(std, {"D.md": "added\n"}, readme)
+        return (s, *batch(tree, OLD, NEW))
+
+    return build
+
+
+def unindented(std: Repo, tree: Repo) -> tuple[str, str, str]:
+    """List a `D.md` the tree lacks, a line under its bullet not indented."""
+    item = "- `D.md` — owed by every repository\nA line.\n  that ships a wheel.\n"
+    readme = README.replace("- `C.toml`", f"{item}- `C.toml`")
+    s = std_at(std, {"D.md": "added\n"}, readme)
+    return (s, *batch(tree, OLD, NEW))
+
+
+def nested(std: Repo, tree: Repo) -> tuple[str, str, str]:
+    readme = README.replace("second line.\n", "second line.\n  * a nested note.\n")
+    s = std_at(std, readme=readme)
+    return (s, *batch(tree, OLD, NEW))
+
+
 def standard_renames(std: Repo, tree: Repo) -> tuple[str, str, str]:
     readme = README.replace("`B.md`", "`E.md`")
     old = std.commit({"README.md": readme, "A.md": "old\n", "E.md": "same\n"})
@@ -548,6 +576,24 @@ CASES = [
         )
         for marker in ("* ", "+ ", "1. ", " - ")
     ),
+    *(
+        Case(
+            f"<S> adds a file under {marker!r} after a paragraph",
+            after_paragraph(marker),
+            2,
+            ("FAILED: a line of section 14's list is not a dash bullet",),
+            ("DIFFERS",),
+        )
+        for marker in ("* ", "- ", "1. ")
+    ),
+    Case(
+        "<S> adds a file whose bullet holds a line not indented",
+        unindented,
+        2,
+        ("FAILED: a line of section 14's list is not indented",),
+        ("DIFFERS",),
+    ),
+    Case("a marker nested under a bullet", nested, 0, ("equal B.md",)),
     Case(
         "<S> renames a file",
         standard_renames,
