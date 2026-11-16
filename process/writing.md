@@ -838,6 +838,9 @@ The findings of these local runs are answered as `/btclib-pr`'s
 
   ```shell
   clone=<clone>
+  ```
+
+  ```shell
   rm -rf "${clone:?}"
   ```
 

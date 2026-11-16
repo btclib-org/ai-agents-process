@@ -393,10 +393,13 @@ This section is in `every-session.md`, beside this file.
 
   ```shell
   work=<work>
-  while [ "${work%/}" != "$work" ]; do work=${work%/}; done
-  keep=${work%/*}/orchestrator/${work##*/}
-  mkdir -p "$keep" && find "${work:?}" -maxdepth 1 -name 'findings-*.md' \
-    -exec mv -n {} "$keep"/ \;
+  ```
+
+  ```shell
+  while [ "${work:?}" != "${work%/}" ]; do work=${work%/}; done &&
+    keep=${work%/*}/orchestrator/${work##*/} &&
+    mkdir -p "$keep" &&
+    find "$work" -maxdepth 1 -name 'findings-*.md' -exec mv -n {} "$keep"/ \;
   ```
 
   Last it runs `scripts/sweep.sh`, whose header says what it refuses, and
@@ -407,6 +410,9 @@ This section is in `every-session.md`, beside this file.
 
   ```shell
   work=<work>
+  ```
+
+  ```shell
   sh "${PROCESS:?}/scripts/sweep.sh" work "${work:?}"
   ```
 

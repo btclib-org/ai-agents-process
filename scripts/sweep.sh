@@ -31,7 +31,8 @@
 # - find cannot read all of it, or it holds a name with a newline;
 # - git cannot read one of its worktrees, or its git directory holds
 #   modules, or it holds a commit and its repository has no remote named
-#   origin;
+#   origin, or its HEAD is a symbolic ref to anything but a branch,
+#   refs/heads/*, which the removal would delete;
 # - it holds a worktree with an uncommitted change, an untracked file that
 #   is not ignored, or a file marked assume-unchanged or skip-worktree,
 #   whose change git status does not show;
@@ -302,6 +303,14 @@ EOF
   # shellcheck disable=SC2086
   pushed "$t" $tips || return 1
   b=$(git -C "$t" symbolic-ref -q HEAD) || b=
+  # what HEAD names is deleted with the worktree, so it must be a branch
+  case $b in
+    '' | refs/heads/*) ;;
+    *)
+      refuse "the HEAD of $t names $b, which is not a branch"
+      return 1
+      ;;
+  esac
   printf '%s\n%s\n%s\n%s\n' "$t" "$cd_" "$b" "$h" >> "$todo"
 }
 

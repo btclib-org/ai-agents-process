@@ -148,6 +148,9 @@ that holds it:
 
 ```shell
 tree=<tree>
+```
+
+```shell
 rm -rf "${tree:?}"
 ```
 

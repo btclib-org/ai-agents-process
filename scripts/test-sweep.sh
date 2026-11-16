@@ -102,14 +102,18 @@
 #   removed and the record kept in the orchestrator's directory; where a
 #   record of that name is there already, both are kept and the
 #   directory is refused; an orphan worktree with no commit, in a
-#   repository with no remote named origin, is removed; a worktree whose
-#   git directory holds
-#   modules is refused by --check and by the run, and so is one whose
+#   repository with no remote named origin, is removed (where git
+#   worktree add --orphan works; otherwise the test says it skipped
+#   it); a worktree whose git directory holds modules is refused by
+#   --check and by the run, and so is one whose
 #   repository has no remote named origin, where a bundle named origin
 #   in the worktree lists its commit;
+# - a worktree whose HEAD is a symbolic ref to a tag is refused, and the
+#   tag kept;
 # - a worktree whose gitlink path is a symbolic link is refused by
 #   --check and by the run, as git worktree remove would refuse it,
-#   and leaves no .sweep-unfinished; where the file system
+#   whether git status fails on it or reports a change, which it does
+#   on git 2.43, and leaves no .sweep-unfinished; where the file system
 #   ignores letter case, a worktree its repository lists under .GIT is
 #   refused;
 # - a worktree whose index or HEAD git cannot read, and one whose
@@ -144,7 +148,7 @@ script=${1:-$(dirname "$0")/sweep.sh}
 script=$(cd -P "$(dirname "$script")" && pwd -P)/${script##*/}
 [ -f "$script" ] || { echo "FAIL: no script $script"; exit 1; }
 tmp=$(mktemp -d) || exit 1
-readable='' noflag='' casefold=1
+readable='' noflag='' noorphan='' casefold=1
 # the fixtures include an unreadable directory and, with chflags, an
 # immutable file, which a plain rm -rf cannot remove; the EXIT trap calls
 # it
@@ -167,15 +171,15 @@ export GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
 status=0
 
 # the lines of process/every-role.md's *Debris goes when its work ends*
-# that move the findings records, run with <work> as their first argument;
-# the $1 in quotes is the text those lines get
+# that move the findings records, run after work=$1, with <work> as their
+# first argument; the $1 in quotes is the text those lines get
 prose=$(cd -P "$(dirname "$0")/.." && pwd -P)/process/every-role.md
 # shellcheck disable=SC2016
-movecmd=$(awk '
+movecmd='work=$1
+'$(awk '
   /^  ```shell$/ { b = ""; on = 1; next }
   /^  ```$/ { if (on && b ~ /findings-/) printf "%s", b; on = 0; next }
-  on { sub(/^  /, ""); b = b $0 "\n" }' "$prose" |
-  sed 's/^work=<work>$/work=$1/')
+  on { sub(/^  /, ""); b = b $0 "\n" }' "$prose")
 # and the line that fetches a pull request's head, with <checkout> and
 # <n> as its first and second arguments
 # shellcheck disable=SC2016
@@ -212,9 +216,8 @@ case $lookcmd in
     exit 1
     ;;
 esac
-# shellcheck disable=SC2016
 case $movecmd in
-  'work=$1'*) ;;
+  *'findings-'*) ;;
   *) echo "FAIL: no lines that move the findings records in $prose"; exit 1 ;;
 esac
 
@@ -818,9 +821,26 @@ b"
   rm -rf "$wt/sub"
   ln -s ../f.txt "$wt/sub"
   run "$base" work "$w"
-  expect 'gitlink link' 1 "git status fails in $wt"
+  # git 2.54 fails status here and git 2.43 reports a change: both refuse
+  [ "$rc" = 1 ] || fail "gitlink link: exit $rc, not 1: $out"
+  case $out in
+    *"git status fails in $wt"*) ;;
+    *"uncommitted change or untracked file in $wt"*) ;;
+    *) fail "gitlink link: no refusal of $wt in: $out" ;;
+  esac
   kept 'gitlink link' "$wt/f.txt"
   gone 'gitlink link' "$w/.sweep-unfinished"
+
+  mkwork "$m" tag-head
+  x=$(git -C "$m" rev-parse origin/main)
+  git -C "$m" update-ref refs/tags/valuable "$x"
+  git -C "$wt" symbolic-ref HEAD refs/tags/valuable
+  run "$base" work "$w"
+  expect 'tag head' 1 \
+    "the HEAD of $wt names refs/tags/valuable, which is not a branch"
+  kept 'tag head' "$wt/f.txt"
+  [ "$(git -C "$m" rev-parse -q --verify refs/tags/valuable)" = "$x" ] ||
+    fail 'tag head: the tag refs/tags/valuable is gone'
 
   mkwork "$m" findings
   echo record > "$w/findings-$br.md"
@@ -868,10 +888,14 @@ b"
   [ "$(git -C "$base/main4" rev-parse -q --verify "refs/heads/$br")" = "$c" ] ||
     fail "no origin: branch $br is not at $c"
 
-  git -C "$base/main4" worktree add -q --orphan -b orphan "$sp/orphan/wt" \
-    2> /dev/null || fail 'orphan: no worktree'
-  run "$base" work "$sp/orphan"
-  expect 'orphan, no origin' 0 "removed: $sp/orphan"
+  # git worktree add --orphan is git 2.42's
+  if git -C "$base/main4" worktree add -q --orphan -b orphan \
+    "$sp/orphan/wt" 2> /dev/null; then
+    run "$base" work "$sp/orphan"
+    expect 'orphan, no origin' 0 "removed: $sp/orphan"
+  else
+    noorphan=1
+  fi
 
   mkwork "$m" missing-parent
   p=0000000000000000000000000000000000000001
@@ -1060,5 +1084,7 @@ fi
   echo 'find reads a directory of mode 000: the unreadable case is skipped'
 [ -z "$noflag" ] ||
   echo 'chflags uchg was refused: the immutable file case is skipped'
+[ -z "$noorphan" ] ||
+  echo 'git worktree add --orphan fails: the orphan case is skipped'
 [ "$status" = 0 ] && echo "sweep.sh answers as expected under:$shells"
 exit "$status"

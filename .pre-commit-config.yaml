@@ -113,7 +113,7 @@ repos:
         name: sweep.sh answers as its test expects
         language: unsupported_script
         entry: scripts/test-sweep.sh
-        files: ^scripts/(test-)?sweep\.sh$
+        files: ^(scripts/(test-)?sweep\.sh|process/every-role\.md)$
         pass_filenames: false
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
