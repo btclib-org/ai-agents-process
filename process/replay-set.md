@@ -829,7 +829,14 @@ a skill, so the run left out the change's sentence in `/btclib-pr`'s
 reviewer's map. A case's briefs differ only in the copy's path, the
 run's label and, for the runs made after the outage, the directory
 holding their inputs, and none names a configuration. The runs went in a
-shuffled order, the repeats last.
+shuffled order, the repeats last. After the run the branch merged `main`
+at `6445b63` in `f17978c`, which brought to the reviewer's files a wider
+definition of a major move in `local-review.md`, the sweep of a piece of
+work's directory in `every-role.md`, and in `writing.md` the removal of
+the Sign-off control's clone, which that sweep refuses. The change's own
+lines are unchanged: with `-- process agents skills REVIEWING.md`, `git
+diff 6445b63 f17978c` adds and removes the lines `git diff 9f70ee0
+659524d` does.
 
 The candidate has the baseline's hits and misses on eight cases. On the
 first runs PR btclib-org/ecc#580 alone decided the comparison, a hit for
