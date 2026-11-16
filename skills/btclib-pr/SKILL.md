@@ -1484,12 +1484,13 @@ gh api --paginate "repos/${repo:?}/issues/${n:?}/comments" \
 
 On the day that rule gives, the session reads the head's commits: the
 `Sign-off` check on the head, or, where it did not run, the shared
-*Signed and signed off*'s script on those commits. Where a commit still
-lacks the trailer, the session closes the pull request with a comment,
-from a file. The comment thanks them, names the commits still lacking
-the trailer, links the request, and gives the commands the check or the
-script printed. It points to *Pull requests* for how the pull request
-comes back, and says that the issue it held is now open to others:
+*Signed and signed off*'s script on those commits. Where the check, or
+the script where the check did not run, refuses a commit, the session
+closes the pull request with a comment, from a file. The comment thanks
+them, names the commits refused, links the request, and gives the
+commands the check or the script printed. It points to *Pull requests*
+for how the pull request comes back, and says that the issue it held is
+now open to others:
 
 ```shell
 comment=<comment file>
@@ -1502,9 +1503,9 @@ gh pr close "${n:?}" --repo "${repo:?}" --comment "$(cat "${comment:?}")"
 Each issue it held then gets a comment: those its
 `closingIssuesReferences` lists, and any its title or body says it is
 for. The comment links the pull request, says it was closed for a
-missing sign-off, and says that the first pull request whose commits are
-all signed off takes the issue. The session posts it and removes the
-pull request's author from that issue's assignees:
+missing sign-off, and says that the first pull request whose `Sign-off`
+check passes takes the issue. The session posts it and removes the pull
+request's author from that issue's assignees:
 
 ```shell
 issue=<issue>
@@ -1529,7 +1530,7 @@ it is reopened:
 gh pr reopen "${n:?}" --repo "${repo:?}"
 ```
 
-Once its commits all carry the trailer, read as above, the reopened pull
+Once its `Sign-off` check passes, read as above, the reopened pull
 request may take back each issue it held. Right before that, the session
 reads again who holds the issue: its assignees, which this prints, and
 the open pull requests citing it, found as the shared *Before starting*
@@ -1539,12 +1540,12 @@ finds them:
 gh api "repos/${repo:?}/issues/${issue:?}" --jq '[.assignees[].login]'
 ```
 
-Where another pull request holds it, the first of them whose commits
-were all signed off keeps it, and a conflict between them goes to the
-human. An assignee other than the author, with no pull request, is a
-conflict for the human too. Otherwise the session says on the issue that
-the reopened pull request takes it, with a comment from a file as above,
-and assigns the author again where it removed them:
+Where another pull request holds it, the first of them whose `Sign-off`
+check passed keeps it, and a conflict between them goes to the human. An
+assignee other than the author, with no pull request, is a conflict for
+the human too. Otherwise the session says on the issue that the reopened
+pull request takes it, with a comment from a file as above, and assigns
+the author again where it removed them:
 
 ```shell
 gh issue edit "${issue:?}" --repo "${repo:?}" --add-assignee "${login:?}"
