@@ -474,18 +474,15 @@ commit then lacks.
 
 **A rebase that applies without a conflict but replays other commits, or
 drops one, keeps the `CLEARED` only where the branch's own added and
-removed lines are unchanged.** Otherwise a fresh reviewer reads the
-whole branch. For a one-commit branch, "unchanged" is proved by
-comparing every added and removed line — bullets and blank lines
-included, headers dropped — with explicit shas, each revision a separate
-argument:
+removed lines are unchanged, each in the same file.** Otherwise a fresh
+reviewer reads the whole branch. For a one-commit branch, "unchanged" is
+proved by comparing every added and removed line — bullets and blank
+lines included, and the `---` and `+++` lines that name each file — with
+explicit shas, each revision a separate argument:
 
 ```shell
-hdr='^(diff --git |index |@@ |--- (a/|/dev/null)|\+\+\+ (b/|/dev/null))'
-before=$(git -C <wt> diff '<cleared sha>^' '<cleared sha>' \
-           | grep -vE "$hdr" | grep -E '^[+-]')
-after=$(git -C <wt> diff '<new tip>^' '<new tip>' \
-          | grep -vE "$hdr" | grep -E '^[+-]')
+before=$(git -C <wt> diff '<cleared sha>^' '<cleared sha>' | grep -E '^[+-]')
+after=$(git -C <wt> diff '<new tip>^' '<new tip>' | grep -E '^[+-]')
 printf '%s\n' "$before" | shasum
 printf '%s\n' "$after"  | shasum
 printf '%s\n' "$before" "$after" | grep -c .   # not zero
