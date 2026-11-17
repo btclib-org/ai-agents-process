@@ -565,9 +565,11 @@ worktree under `/tmp` included. `--ignore-rules` keeps out the user's
 `.rules` files, whose allowed commands run outside the sandbox
 (*Escalation under Codex*). `env -i` passes it only `HOME`, where Codex
 finds its login, `PATH`, `UV_CACHE_DIR`, `UV_OFFLINE` and a `TMPDIR`
-inside the reviewer's directory, where `mktemp` writes, so the variables
-of the session that starts it, its tokens included, do not reach what
-the reviewer runs.
+inside the reviewer's directory, so the variables of the session that
+starts it, its tokens included, do not reach what the reviewer runs.
+`mktemp` writes in that `TMPDIR` only when its template is under
+`$TMPDIR`, as in `mktemp -d "${TMPDIR:-/tmp}/x.XXXXXX"`: macOS's
+`mktemp` without a template writes in its own user directory instead.
 
 The network is off because an input runs the branch's code, and the
 sandbox still reads credentials such as `~/.codex/auth.json` and
