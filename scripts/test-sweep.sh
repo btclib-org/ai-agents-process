@@ -148,7 +148,7 @@ unset GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE
 script=${1:-$(dirname "$0")/sweep.sh}
 script=$(cd -P "$(dirname "$script")" && pwd -P)/${script##*/}
 [ -f "$script" ] || { echo "FAIL: no script $script"; exit 1; }
-tmp=$(mktemp -d) || exit 1
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-sweep.XXXXXX") || exit 1
 readable='' noflag='' noorphan='' casefold=1
 # the fixtures include an unreadable directory and, with chflags, an
 # immutable file, which a plain rm -rf cannot remove; the EXIT trap calls
