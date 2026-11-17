@@ -7,7 +7,8 @@
 #
 # It runs on macOS, where sandbox-exec is, and needs uv, as the gates do.
 # Where sandbox-exec is not on the PATH, as on Linux, it prints `skip:`
-# and exits 0.
+# and exits 0. Where a trivial sandbox-exec fails, as inside the gate's
+# own sandbox, which does not let it nest, it prints `skip:` and exits 0.
 # From <writing.md>, by default process/writing.md beside this script,
 # it takes the shell blocks of *The gates* that gate a commit, where they
 # are: the one that reads `<gate wt>`'s git directories, the one that
@@ -78,11 +79,16 @@
 # and it exits 1 where a check failed.
 command -v sandbox-exec > /dev/null ||
   { echo "skip: no sandbox-exec on the PATH, so nothing is tested"; exit 0; }
+sandbox-exec -p '(version 1) (allow default)' true > /dev/null 2>&1 || {
+  echo "skip: sandbox-exec cannot run here, as inside a sandbox," \
+    "so nothing is tested"
+  exit 0
+}
 here=$(dirname "$0")
 doc=${1:-$here/../process/writing.md}
 proc=$(cd "$(dirname "$doc")/.." && pwd -P) || exit 1
 real=$(command -v git) || { echo "FAIL: no git on the PATH"; exit 1; }
-tmp=$(mktemp -d) || exit 1
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-gate-sandbox.XXXXXX") || exit 1
 trap 'rm -rf "${tmp:?}"' EXIT
 tmp=$(cd "$tmp" && pwd -P) || exit 1
 fail=0

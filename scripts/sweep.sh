@@ -140,10 +140,11 @@ if ! rroot=$(real "$root") ||
   rroot=
 fi
 here=$(env pwd -P)
-list=$(mktemp) || exit 2
-todo=$(mktemp) || exit 2
-owns=$(mktemp) || exit 2
-dirs=$(mktemp) || exit 2
+# a template under $TMPDIR: macOS's mktemp without one ignores it
+list=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
+todo=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
+owns=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
+dirs=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
 trap 'rm -f "${list:?}" "${todo:?}" "${owns:?}" "${dirs:?}"' EXIT
 trap 'exit 1' INT TERM
 nl='
