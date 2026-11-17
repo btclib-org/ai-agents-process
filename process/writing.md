@@ -418,7 +418,7 @@ of the standard* says.
   run code nobody in btclib-org wrote: `uv sync` builds the branch's
   project with the backend its `[build-system]` names, and the suite and
   the hooks run its code. Outside the sandbox the session fetches only
-  what `main` locks and installs, from a new detached worktree at
+  what `main` names and installs, from a new detached worktree at
   `origin/main` and one at the branch's merge base (below), into a new
   directory `<sbx>` in the scratch directory.
   The fetch and every gate take the same variables, so that pre-commit
@@ -431,8 +431,23 @@ of the standard* says.
   ```shell
   env -i -C <main wt> HOME=<sbx>/home PATH="$PATH" TMPDIR=<sbx>/tmp \
     UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR=<sbx>/uv-cache \
-    PRE_COMMIT_HOME=<sbx>/pre-commit \
+    UV_TOOL_DIR=<sbx>/uv-tools PRE_COMMIT_HOME=<sbx>/pre-commit \
     sh -c 'uv sync --locked --all-groups && uv run pre-commit install-hooks'
+  ```
+
+  A tree with no uv project, with no `pyproject.toml` as in this
+  repository, has nothing to sync. Its fetch takes pre-commit with
+  `uvx`, at its newest release since nothing locks it, and the hooks
+  `main`'s `.pre-commit-config.yaml` pins. It runs from the same
+  worktrees, never from the branch: the install builds what the
+  branch's `.pre-commit-config.yaml` names, and would run the
+  contributor's code with the network on:
+
+  ```shell
+  env -i -C <main wt> HOME=<sbx>/home PATH="$PATH" TMPDIR=<sbx>/tmp \
+    UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR=<sbx>/uv-cache \
+    UV_TOOL_DIR=<sbx>/uv-tools PRE_COMMIT_HOME=<sbx>/pre-commit \
+    uvx pre-commit install-hooks
   ```
 
   Then each gate runs offline, under `sandbox-exec`, in `<gate wt>`,
@@ -464,7 +479,7 @@ of the standard* says.
   { read -r gd && read -r gc; } < <scratch>/<name>-git-dirs &&
   set -- env -i -C <gate wt> HOME=<sbx>/home PATH="$PATH" TMPDIR=<sbx>/tmp \
     UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR=<sbx>/uv-cache \
-    PRE_COMMIT_HOME=<sbx>/pre-commit UV_OFFLINE=1 \
+    UV_TOOL_DIR=<sbx>/uv-tools PRE_COMMIT_HOME=<sbx>/pre-commit UV_OFFLINE=1 \
     sandbox-exec -f "${PROCESS:?}/scripts/gate-sandbox.sb" \
     -D WT="$(realpath <gate wt>)" -D SBX="$(realpath <sbx>)" \
     -D HOME="$(realpath "$HOME")" -D UV_PYTHON="$(uv python dir)" \
@@ -477,6 +492,9 @@ of the standard* says.
   ```shell
   "$@" uv sync --locked
   ```
+
+  A tree with no uv project has no sync gate, and its hooks gate below
+  runs `uvx pre-commit run` in place of `uv run pre-commit run`.
 
   Once the gate's call has returned, `git status --porcelain` runs as a
   sandboxed call of its own. Its output goes to a file of the scratch
@@ -563,12 +581,14 @@ of the standard* says.
   A branch's lock can be an older `main`'s, as on PR
   btclib-org/btclib#3079, whose head locked a build backend `main` had
   since bumped: the offline `uv sync --locked` then wants a version that
-  fetch did not bring and the branch did not add. So the fetch runs a
-  second time, into the same `<sbx>`, from a new detached worktree at
-  the branch's merge base with `origin/main`, which this prints,
-  wherever that is not `origin/main` itself. The merge base is a commit
-  of `main`, so nothing it locks is the contributor's; where the branch
-  has merged `main`, it is that `main`:
+  fetch did not bring and the branch did not add. In a tree with no uv
+  project, the branch's `.pre-commit-config.yaml` can pin an older
+  `main`'s hooks the same way. So the fetch runs a second time, into the
+  same `<sbx>`, from a new detached worktree at the branch's merge base
+  with `origin/main`, which this prints, wherever that is not
+  `origin/main` itself. The merge base is a commit of `main`, so nothing
+  it names is the contributor's; where the branch has merged `main`, it is
+  that `main`:
 
   ```shell
   wt=<wt>
