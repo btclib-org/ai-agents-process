@@ -55,6 +55,13 @@ The process the btclib-org maintainers follow with the coding agents
 - `scripts/test-gate-lock.sh` — `sh scripts/test-gate-lock.sh` shows
   sessions taking that lock's slots, and waiting while every slot is
   held;
+- `scripts/gate-sandbox.sb` — the sandbox an outside contributor's gates
+  run in, as `process/writing.md`'s *The gates* says;
+- `scripts/test-gate-sandbox.sh` — the gate blocks of *The gates* on
+  macOS, with a gate that writes a repository under a gitlink's
+  directory and forges the clean-tree check: which git calls outside the
+  sandbox read that repository, and whether the check refuses the
+  forgery, run by the `test-gate-sandbox` hook;
 - `scripts/sweep.sh` — the script that removes the directory of a piece
   of work, which `process/every-role.md`'s *Debris goes when its work
   ends* runs;

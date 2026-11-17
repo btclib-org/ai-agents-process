@@ -545,11 +545,13 @@ reviewer's sandbox, `git fetch origin`, the `merge-tree` of *A pull
 request's rounds*, the checks of *Signed and signed off* with the
 sign-off control, `uv sync --locked` where the worktree holds a
 `uv.lock`, and the gates where no run on the sha is on the record, the
-last two in the sandbox of *The gates* on an outside contributor's
-branch. The brief carries them as runs on the record, the merge's tree
-sha included, names the worktree, and asks for no heredoc. The session
-removes the reviewer's directory once that reviewer's rounds end
-(*Debris goes when its work ends*).
+last two in `<gate wt>` and the sandbox of *The gates* on an outside
+contributor's branch. The brief carries them as runs on the record, the
+merge's tree sha included, names the worktree, and asks for no heredoc.
+On an outside contributor's branch it also names `<gate wt>`, as the
+worktree whose `.venv` the inputs run from (`every-role.md`'s
+*Clients*). The session removes the reviewer's directory once that
+reviewer's rounds end (*Debris goes when its work ends*).
 
 Claude Code starts a Codex reviewer with `codex exec`. That spawns no
 custom agent by name, so the brief's first sentence says to read
@@ -580,7 +582,8 @@ resumed run's brief takes the last verdict from the file first, and a
 verdict found there is the latest run's (*The rounds*). The `-u` keeps
 the sync in the worktree's `.venv`, where the reviewer's `uv run`
 looks for it. On an outside contributor's branch the sync is the
-sandboxed one of *The gates* instead of the second command:
+sandboxed one of *The gates*, in `<gate wt>`, instead of the second
+command:
 
 ```shell
 mkdir -p <work>/<name>/tmp

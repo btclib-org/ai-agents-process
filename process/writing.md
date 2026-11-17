@@ -114,7 +114,8 @@ The writer's section; the reviewer judges its result.
       with exit code `0`, as it says
 - [ ] *Sourcery and CodeRabbit before a push* holds
 - [ ] `git status --porcelain` is empty in the worktree, checked after
-      the last gate
+      the last gate, and on an outside contributor's branch in the
+      status file of each gate too (*The gates*)
 - [ ] the subject that lands carries the right citation, and the body
       carries no stray closing keyword
 - [ ] the commit message was re-read, not carried by `--no-edit`
@@ -404,7 +405,9 @@ of the standard* says.
   `/btclib-pr`'s *Rebase and CI* says, and a sandbox with the network
   off by design is the case of *An outside contributor's branch*.
 - **A gate can leave the tree dirty**: in-place fixers exit having
-  modified files. Check `git status --porcelain` afterwards.
+  modified files. Check `git status --porcelain` afterwards. On an
+  outside contributor's branch it runs in a sandboxed call of its own,
+  as *An outside contributor's branch* says.
 - **An install that Aikido Device Protection refuses is a stop.**
   Nothing goes around it: no build from a clone or a `git archive`, no
   other index, no wheel fetched by hand, no TLS change, no `aikidoctl
@@ -432,22 +435,130 @@ of the standard* says.
     sh -c 'uv sync --locked --all-groups && uv run pre-commit install-hooks'
   ```
 
-  Then each gate runs in the branch's worktree, offline, under
-  `sandbox-exec`, with its command in place of the `uv sync --locked`
-  that runs first:
+  Then each gate runs offline, under `sandbox-exec`, in `<gate wt>`,
+  never in `<wt>`, the branch's worktree where the session commits.
+  `<gate wt>` is a new worktree detached at `<sha>`, the commit it
+  gates, named as *Your own worktree* says with `gate-<short sha>` for
+  its role; for the octopus it is the worktree that merges the heads.
+  Its git directories, its gitlinks' paths and its configuration are
+  read before its first gate, into files of the scratch directory
+  outside `<sbx>`, where the gate cannot write:
 
   ```shell
-  env -i -C <wt> HOME=<sbx>/home PATH="$PATH" TMPDIR=<sbx>/tmp \
+  git -C <wt> worktree add --detach <gate wt> <sha>
+  ```
+
+  ```shell
+  gwt=<gate wt>
+  git -C "${gwt:?}" rev-parse --path-format=absolute --git-dir \
+    --git-common-dir > <scratch>/<name>-git-dirs &&
+  git -C "${gwt:?}" ls-files -s |
+    awk -F '\t' '$1 ~ /^160000 / { print $2 }' > <scratch>/<name>-gitlinks &&
+  git -C "${gwt:?}" config --list --show-scope --no-includes \
+    > <scratch>/<name>-config
+  ```
+
+  The shell that runs the gates sets the sandbox's command first:
+
+  ```shell
+  { read -r gd && read -r gc; } < <scratch>/<name>-git-dirs &&
+  set -- env -i -C <gate wt> HOME=<sbx>/home PATH="$PATH" TMPDIR=<sbx>/tmp \
     UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR=<sbx>/uv-cache \
     PRE_COMMIT_HOME=<sbx>/pre-commit UV_OFFLINE=1 \
     sandbox-exec -f "${PROCESS:?}/scripts/gate-sandbox.sb" \
-    -D WT="$(realpath <wt>)" -D SBX="$(realpath <sbx>)" \
+    -D WT="$(realpath <gate wt>)" -D SBX="$(realpath <sbx>)" \
     -D HOME="$(realpath "$HOME")" -D UV_PYTHON="$(uv python dir)" \
-    -D GIT_DIR="$(git -C <wt> rev-parse --path-format=absolute --git-dir)" \
-    -D GIT_COMMON_DIR="$(git -C <wt> rev-parse --path-format=absolute \
-      --git-common-dir)" \
-    uv sync --locked
+    -D GIT_DIR="${gd:?}" -D GIT_COMMON_DIR="${gc:?}"
   ```
+
+  Each gate is `"$@"` followed by its command, the first `uv sync
+  --locked`:
+
+  ```shell
+  "$@" uv sync --locked
+  ```
+
+  Once the gate's call has returned, `git status --porcelain` runs as a
+  sandboxed call of its own. Its output goes to a file of the scratch
+  directory outside `<sbx>`, which the sandbox lets no process open for
+  writing, and the shell outside opens it and appends the exit, so no
+  process the gate left holds it. It reads no file the gate can write
+  but the tree itself, and a file an `include` or `includeIf` of the
+  repository's configuration names, which can lie under `<sbx>/home`:
+
+    - `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_NOSYSTEM` leave it the
+      repository's own configuration, where `<sbx>/home/.gitconfig` is
+      the gate's to write;
+    - `core.attributesFile` and `core.excludesFile` drop the attributes
+      and the ignore rules git reads by default under
+      `<sbx>/home/.config/git/`, which the first two leave in place;
+    - `--ignore-submodules=all` starts no `git status` inside a
+      gitlink's directory, which would read the configuration of a
+      repository the gate left there, and through its `core.worktree`
+      could report a directory of its choosing;
+    - `core.fsmonitor=false` leaves no file-system monitor to tell git
+      which files changed;
+    - `--ignored` lists an ignored file too, as one a `.gitignore` the
+      gate wrote hides.
+
+  ```shell
+  "$@" env GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 \
+    git -c core.attributesFile=/dev/null -c core.excludesFile=/dev/null \
+    -c core.fsmonitor=false status --porcelain --ignored \
+    --ignore-submodules=all > <scratch>/<name>-status
+  echo "EXIT_status=$?" >> <scratch>/<name>-status
+  ```
+
+  What a gitlink's directory holds is then read by the shell outside,
+  with `find` and no git. It adds a line to the same file for each
+  `.git` below `<gate wt>` but its own, file, directory or link, in any
+  case, since macOS's file system may ignore case; for each gitlink whose
+  path is not an empty directory; where `find` or `ls` fails; and for
+  each `include` the repository's configuration held before the gate:
+
+  ```shell
+  gwt=<gate wt>
+  st=<scratch>/<name>-status
+  find "${gwt:?}" -mindepth 1 -iname .git ! -path "${gwt:?}/.git" \
+    -exec printf 'nested: %s\n' {} + >> "${st:?}" ||
+    echo "EXIT_find=$?" >> "${st:?}"
+  while IFS= read -r p; do
+    d=${gwt:?}/$p
+    { [ -d "$d" ] && [ ! -L "$d" ] && [ -z "$(ls -A "$d" 2>&1)" ]; } ||
+      printf 'gitlink: %s\n' "$p" >> "${st:?}"
+  done < <scratch>/<name>-gitlinks
+  grep -iE '^(local|worktree)[[:space:]]+include' <scratch>/<name>-config |
+    sed 's/^/include: /' >> "${st:?}"
+  ```
+
+  The gate left the tree clean only where that file holds
+  `EXIT_status=0` and no other line but a `!!` line for what the gates
+  write and the tree's own `.gitignore` files name: `.venv/`,
+  `__pycache__/`, `.coverage` and the tools' caches show there on every
+  run (*A gate can leave the tree dirty*). Any other line is a change,
+  and so is a line of the check above. Nothing the gate prints counts. A
+  fixer's change is read with `git diff`, run the same way, and made
+  again in `<wt>`.
+
+  On the octopus, `git status` lists the files the merge staged before
+  any gate runs. So the status block also runs once before the first
+  gate, with `<scratch>/<name>-base` in place of
+  `<scratch>/<name>-status`, and a line that file holds is no change. A
+  gate that writes a staged file changes that file's line, as
+  `scripts/test-gate-sandbox.sh` shows.
+
+  A process the gate leaves running keeps the sandbox's limits, and can
+  still write in `<gate wt>` and `<sbx>` after the check, as
+  `scripts/test-gate-sandbox.sh` shows. The process does not bound it:
+  the check says what the gate had changed when it ran.
+
+  A change the check does not see stays in `<gate wt>` and goes with it:
+  nothing of `<gate wt>` reaches `<wt>` but a fixer's change the session
+  reads and makes again.
+  A gate that passes is no proof that it tested the committed files
+  unchanged, since the branch's code runs in it and the check shows only
+  what git sees. The session reads the gate's result with the status
+  file, and reports both.
 
   A branch's lock can be an older `main`'s, as on PR
   btclib-org/btclib#3079, whose head locked a build backend `main` had
@@ -477,17 +588,20 @@ of the standard* says.
   starting with `-` is not read as one of pre-commit's options, as `-h`
   would print its help and exit `0`; pre-commit turns it back into the
   path. pre-commit runs once, so the exit is its own; where git fails,
-  it exits `2`:
+  it exits `2`. It runs in the shell that set the sandbox's command, as
+  `"$@"` followed by pre-commit, and git reads the list in `<wt>`. On
+  the octopus `<sha>` is the `main` its worktree was added at, so the
+  list is empty and the hooks read the whole merge:
 
   ```shell
   wt=<wt>
-  sbx=<sbx>
+  sha=<sha>
   base=<base>
   rc=0
   files=()
   list=$(mktemp)
   if ! git -C "${wt:?}" diff -z --name-only --diff-filter=d \
-    "${base:?}...HEAD" > "$list"; then
+    "${base:?}...${sha:?}" > "$list"; then
     rc=2
   else
     while IFS= read -r -d '' name; do
@@ -498,17 +612,7 @@ of the standard* says.
     else
       files=(--files "${files[@]}")
     fi
-    env -i -C "$wt" HOME="${sbx:?}/home" PATH="$PATH" TMPDIR="$sbx/tmp" \
-      UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR="$sbx/uv-cache" \
-      PRE_COMMIT_HOME="$sbx/pre-commit" UV_OFFLINE=1 \
-      sandbox-exec -f "${PROCESS:?}/scripts/gate-sandbox.sb" \
-      -D WT="$(realpath "$wt")" -D SBX="$(realpath "$sbx")" \
-      -D HOME="$(realpath "$HOME")" -D UV_PYTHON="$(uv python dir)" \
-      -D GIT_DIR="$(git -C "$wt" rev-parse --path-format=absolute \
-        --git-dir)" \
-      -D GIT_COMMON_DIR="$(git -C "$wt" rev-parse --path-format=absolute \
-        --git-common-dir)" \
-      uv run pre-commit run "${files[@]}" || rc=$?
+    "$@" uv run pre-commit run "${files[@]}" || rc=$?
   fi
   rm -f "$list"
   (exit "$rc")
@@ -516,12 +620,12 @@ of the standard* says.
 
   `scripts/gate-sandbox.sb` says what the sandbox allows, and why the
   paths go through `realpath`. It reads no file under `$HOME` but uv's
-  interpreters, `<wt>`, `<sbx>` and the worktree's git directories, so
-  the keychain and `git credential fill` fail inside it, and `~/.gnupg`
-  and the tokens of `gh` and Codex cannot be read; files outside `$HOME`
-  are read, other sessions' scratch directories included. It writes in
-  `<wt>` and `<sbx>` only, never in a git directory, and signals only its
-  own processes.
+  interpreters, `<gate wt>`, `<sbx>` and the worktree's git directories,
+  so the keychain and `git credential fill` fail inside it, and
+  `~/.gnupg` and the tokens of `gh` and Codex cannot be read; files
+  outside `$HOME` are read, other sessions' scratch directories
+  included. It writes in `<gate wt>` and `<sbx>` only, never in a git
+  directory, and signals only its own processes.
 
   Apple Events still leave it, so code inside can drive any application
   the session's host application holds Automation permission for:
@@ -530,18 +634,33 @@ of the standard* says.
   the sandbox does not keep the network and the credentials from the
   branch's code.
 
-  Nothing in `<wt>` or `<sbx>` runs outside the sandbox, except the
-  Codex reviewer's inputs, which run from `<wt>`'s `.venv` in its own
-  sandbox (*Clients*). That one has the network off too, though it reads
-  `~/.codex/auth.json` and `~/.gnupg`. `<sbx>` is new for each head's
-  fetches. The Sign-off check runs as *Signed and signed off* says. A
-  commit or a merge in that tree runs with `git -c
+  **No git command runs outside the sandbox in `<gate wt>` or `<sbx>`
+  once a gate has run there.** A gate can leave a repository there,
+  under a gitlink's directory, and git outside the sandbox then reads
+  that repository's configuration, whose keys can name a program to run.
+  `git status` reads it even with `--ignore-submodules=all`, and so do a
+  commit and a merge (ISS btclib-org/ai-agents-process#548). The one
+  exception is the removal,
+  `git -C <wt> worktree remove --force <gate wt>`. It parses no
+  configuration the gate left under a gitlink's directory, as
+  `scripts/test-gate-sandbox.sh` shows. It does read `<gate wt>/.git`,
+  the file that names the git directory, and exits `128` where that file
+  is not valid; the sandbox denies the gate writing it. A commit, a
+  merge of `main`, a push, the Sign-off check and the CodeRabbit CLI run
+  in `<wt>`, where no gate runs.
+
+  Nothing in `<wt>`, `<gate wt>` or `<sbx>` runs outside the sandbox,
+  except the Codex reviewer's inputs, which run from `<gate wt>`'s
+  `.venv` in its own sandbox (*Clients*). That one has the network off
+  too, though it reads `~/.codex/auth.json` and `~/.gnupg`. `<sbx>` and
+  `<gate wt>` are new for each head. The Sign-off check runs as *Signed
+  and signed off* says. A commit or a merge in `<wt>` runs with `git -c
   core.hooksPath=/dev/null`, which runs no hook, where `git commit
   --no-verify` still lets `prepare-commit-msg` and `post-commit` run,
-  and with no path under `<wt>` or `<sbx>` on `PATH`. `<sbx>` and the
-  worktrees at `origin/main` and at the merge base go once the branch's
-  gates, and every reviewer's inputs the session runs there, are done
-  (*Debris goes when its work ends*).
+  and with no path under `<wt>`, `<gate wt>` or `<sbx>` on `PATH`.
+  `<gate wt>`, `<sbx>` and the worktrees at `origin/main` and at the
+  merge base go once the head's gates, and every reviewer's inputs the
+  session runs there, are done (*Debris goes when its work ends*).
 
   The dedicated reviewer runs none of the branch's code
   (`local-review.md`'s *Every reviewer tries to break the change*). It

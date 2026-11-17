@@ -137,19 +137,22 @@ set.
   which the session syncs, and from a `UV_CACHE_DIR` inside the
   reviewer's directory, which holds what that sync had to download.
   Otherwise they run with `uv run --no-project`, on the standard library
-  alone. An input that needs a package these do not hold is named in the
-  verdict as not run. The session runs it after reading it, where and as
-  it runs the gates (*The gates*), and resumes the reviewer with its
-  result on the record (*The rounds*). A write anywhere else fails with
-  `Operation not permitted`, the worktree it reviews included, and so do
-  `git fetch` and `git merge-tree --write-tree`, which write in the git
-  directory, and a heredoc in the `zsh` Codex runs commands in, which
-  puts its temporary file under `/tmp`. `git log --format=%G?` reads a
-  signed commit as `N`, and the network is off (`orchestration.md`'s
-  *Starting the reviewer in the other client*). The reviewer relies on
-  the runs its brief carries on the record, says so, and reads the
-  worktree with `git -C <wt> show` and `git -C <wt> diff` at shas, which
-  the sandbox allows.
+  alone. On an outside contributor's branch `--project` names
+  `<gate wt>`, whose `.venv` the sandbox of *The gates* synced, and the
+  reviewer runs no git there (*The gates*). An input that needs a
+  package these do not hold is named in the verdict as not run. The
+  session runs it after reading it, where and as it runs the gates
+  (*The gates*), and resumes the reviewer with its result on the record
+  (*The rounds*). A write anywhere else fails with `Operation not
+  permitted`, the worktree it reviews included, and so do `git fetch`
+  and `git merge-tree --write-tree`, which write in the git directory,
+  and a heredoc in the `zsh` Codex runs commands in, which puts its
+  temporary file under `/tmp`. `git log --format=%G?` reads a signed
+  commit as `N`, and the network is off (`orchestration.md`'s *Starting
+  the reviewer in the other client*). The reviewer relies on the runs
+  its brief carries on the record, says so, and reads the worktree with
+  `git -C <wt> show` and `git -C <wt> diff` at shas, which the sandbox
+  allows.
 
   An input a reviewer names as not run may be one the session cannot run
   either. The branch then goes to the human as one decision

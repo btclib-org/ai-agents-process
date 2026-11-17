@@ -123,6 +123,16 @@ repos:
         entry: scripts/test-sweep.sh
         files: ^(scripts/(test-)?sweep\.sh|process/every-role\.md)$
         pass_filenames: false
+      # the gate blocks of process/writing.md under the sandbox; the
+      # script skips where sandbox-exec is absent, as on lint.yml's
+      # Ubuntu runner, and verbose shows that it did
+      - id: test-gate-sandbox
+        name: writing.md's sandboxed gate blocks pass their test
+        language: unsupported_script
+        entry: scripts/test-gate-sandbox.sh
+        files: ^(scripts/(test-gate-sandbox\.sh|gate-sandbox\.sb)|process/writing\.md)$
+        pass_filenames: false
+        verbose: true
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
