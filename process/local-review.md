@@ -276,6 +276,9 @@ brief carries beside the draft:
 
 - every number and sha against the evidence, and that each gist
   revision cited exists;
+- every link, opened, and the passage it points at read: it says what
+  the text claims, at the same generality. A link on GitHub opens
+  through `gh`, and one that does not open is named as not checked;
 - the non-ASCII list of *Citations and closing keywords*;
 - every phrase of three words or more already used in those texts of
   the last 7 days, reworded where it reads as a formula;
