@@ -25,6 +25,9 @@ The process the btclib-org maintainers follow with the coding agents
   read that table;
 - `skills/night-mode/SKILL.md` — the `/night-mode` skill, which turns
   night mode on or off in any session, or says whether it is on;
+- `skills/funds-recovery/SKILL.md` — the `/funds-recovery` skill, which
+  helps somebody find the funds of a mnemonic with `seed-scan`, working
+  on its public bundle alone and never on the mnemonic;
 - `process/every-session.md` — the rules every session follows; its
   opening says when it is read;
 - `process/every-role.md` — what binds every role of `/btclib-iss` and
@@ -164,6 +167,10 @@ ln -s "${PROCESS:?}/skills/night-mode" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skil
 ```
 
 ```shell
+ln -s "${PROCESS:?}/skills/funds-recovery" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/funds-recovery"
+```
+
+```shell
 ln -s "${PROCESS:?}/agents/writer.md" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/writer.md"
 ```
 
@@ -200,10 +207,10 @@ have it. Claude Code runs them before every Bash call:
 ```
 
 Check it in a new session: `echo "$PROCESS"` prints the clone's path,
-`/btclib-iss`, `/btclib-pr`, `/btclib-inbox`, `/btclib-table` and
-`/night-mode` are listed among the skills, `/agents` lists `writer`,
-`reviewer` and `designer`, `/hooks` lists the `PreToolUse` hooks, and
-the command `cd /` is refused.
+`/btclib-iss`, `/btclib-pr`, `/btclib-inbox`, `/btclib-table`,
+`/night-mode` and `/funds-recovery` are listed among the skills,
+`/agents` lists `writer`, `reviewer` and `designer`, `/hooks` lists the
+`PreToolUse` hooks, and the command `cd /` is refused.
 
 ### Codex
 
@@ -229,6 +236,10 @@ ln -s "${PROCESS:?}/skills/btclib-table" ~/.agents/skills/btclib-table
 
 ```shell
 ln -s "${PROCESS:?}/skills/night-mode" ~/.agents/skills/night-mode
+```
+
+```shell
+ln -s "${PROCESS:?}/skills/funds-recovery" ~/.agents/skills/funds-recovery
 ```
 
 ```shell
@@ -263,10 +274,10 @@ printf 'Work in a btclib-org repository follows %s, read whole first.\n' \
 
 Check it in a new session: `echo "$PROCESS"` prints the clone's path,
 `/skills` lists `btclib-iss`, `btclib-pr`, `btclib-inbox`,
-`btclib-table` and `night-mode`, Codex names `writer`, `reviewer` and
-`designer` when asked which custom agents it can spawn, and `/hooks`
-lists the `PermissionRequest` hook. Codex runs a hook only once you have
-trusted it there.
+`btclib-table`, `night-mode` and `funds-recovery`, Codex names
+`writer`, `reviewer` and `designer` when asked which custom agents it
+can spawn, and `/hooks` lists the `PermissionRequest` hook. Codex runs a
+hook only once you have trusted it there.
 
 ### A machine set up before the skills
 
@@ -341,6 +352,16 @@ since when, and what it has deferred so far.
 `skills/night-mode/SKILL.md` says what each word does, and what the
 command does with none; `process/night-mode.md` says what the night
 does.
+
+```text
+/funds-recovery [the bundle's path]
+```
+
+helps somebody find the funds of a mnemonic with `seed-scan`. They run
+`seed-scan identify` in a terminal of their own, and the session works
+on the public bundle it writes, never on the mnemonic.
+`skills/funds-recovery/SKILL.md` says what the session refuses, and what
+its answer states.
 
 In Codex each starts with `$` instead of `/`: `$btclib-iss`.
 
