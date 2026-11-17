@@ -53,18 +53,11 @@ line of its own after a newline, ending in LF; a copy holding it
 otherwise, at its first byte or ending in CRLF, has a boundary this
 cannot place.
 
-A bullet of section 14's list is a line starting `- `, and each line
-after it indented by two spaces continues it, as section 14's test reads
-them. A paragraph ends a bullet: a line that follows a blank line and is
-not blank, not a bullet and not indented by two spaces. Such a line
-right after a bullet or its continuation, with no blank line between, is
-a section 14 it cannot read: Markdown can read it as part of the bullet,
-and that test drops it. A marker indented after a paragraph continues
-nothing, though that test goes on joining each line indented by two
-spaces to the last bullet. Any other line that opens with a list marker
-after up to three spaces, as `* `, `+ `, `1. ` and ` - ` do, is a
-section 14 it cannot read, since that test would compare no copy for it.
-Every other line is prose.
+Section 14's list is read as its own test reads it, by `bulleted` in
+btclib-org/.github's `tests/__init__.py`. `bulleted` below is a port of
+it, and says which lines it joins to a bullet, which it passes over as a
+paragraph's, and which it refuses. A line it refuses is a section 14 it
+cannot read.
 
 It exits 0 only where every file is equal, 1 where one differs, and 2
 where it cannot tell: a git call that fails, a section 14 it cannot
@@ -77,6 +70,7 @@ as an absent or empty file.
 
 from __future__ import annotations
 
+import itertools
 import os
 import re
 import subprocess
@@ -88,12 +82,58 @@ HEADING = re.compile(rb"(?m)^## This repository in particular\r?$")
 RECORD = re.compile(r"^Port btclib-org/\.github@([0-9a-f]{7,40})(?:[ (].*)?$")
 OPENING = "**The same file in every repository**"
 CLOSING = "**Decided per repository**"
-ITEM = re.compile(r"^ {0,3}(?:[-*+]|[0-9]{1,9}[.)])(?:[ \t]|$)")
 SUBJECT = re.compile(r"^- `([^`]+)` — (.+)")
 EVERYWHERE = re.compile(r"^owed by every repository(?=[,;:.]|$)")
 CONDITIONAL = re.compile(r"^owed where `([^`]+)`(?=[,;:.]|$)")
 SOURCE = re.compile(r"the source is this repository's `([^`]+)`")
 SECTION = re.compile(r"from `(#{1,6} [^`]+)`")
+
+ITEM = re.compile(r"^[ \t]*(?:[-*+]|[0-9]{1,9}[.)])(?:[ \t]|$)")
+"""A line that may open a list item, whatever its marker and its indent.
+
+CommonMark's markers. A thematic break such as `* * *`, a wrapped line
+opening `14. ` and a marker inside a fenced block match too, though
+Markdown reads none of them as an item: `bulleted` then refuses a line
+it could have passed over, which is the safe side to be wrong on.
+"""
+
+QUOTE = re.compile(r"^[ \t]*>")
+"""A line that opens a block quote, which may hold a list of its own."""
+
+SPACE = " \t"
+"""Markdown's whitespace, the only characters an indent or a blank line holds.
+
+`str.strip` with no argument also removes a no-break space, which
+Markdown reads as a character, so a line holding one is not blank.
+"""
+
+OPENER = re.compile(
+    r"[ \t]|#{1,6}(?:[ \t]|$)|\||:?-+:?[ \t]*\||<|`{3}|~{3}"
+    r"|(?:[-*_][ \t]*){3,}$|(?:=+|-+)[ \t]*$"
+)
+"""A line that opens a block which is no paragraph's.
+
+An indent, a heading, a table's row or its delimiter row, HTML, a fence
+of backticks or tildes, a thematic break and a setext underline. With
+`DEFINITION`, `QUOTE` and `ITEM` these are the blocks CommonMark and
+GitHub's tables and footnotes start. `bulleted` matches a line outside
+a bullet as it stands, so an indent there is refused, and a line inside
+one after its indent, and reads any other line that is not blank as a
+paragraph's. A paragraph opening with an autolink's `<` or a `|` is
+refused with the block it looks like, the safe side to be wrong on.
+"""
+
+DEFINITION = re.compile(r"\[(?:[^\\\[\]]|\\.)+\]:", re.DOTALL)
+"""The definition of a link reference or a footnote, from its first line.
+
+It is matched, the indent removed, against the lines from there to the
+next blank one, since CommonMark lets a label wrap. A label is what lies
+between `[` and `]:`, and holds no bracket that a backslash does not
+escape. A definition that wraps its destination or its title onto later
+lines is refused at its first line all the same. A label CommonMark
+rejects for its length, or for holding only whitespace, is refused too,
+the safe side.
+"""
 
 
 class Unknown(Exception):
@@ -199,36 +239,103 @@ def entry(repo: str, rev: str, path: str) -> tuple[str, bytes] | None:
     return None
 
 
+def unplaced(line: str, *, inside: bool, lazy: bool, block: bool) -> str:
+    """Say why `bulleted` refuses a line it does not join to a bullet.
+
+    :param line: the line, which is not blank and opens no bullet.
+    :param inside: whether it is indented under a bullet.
+    :param lazy: whether it follows a bullet's line with no blank line
+        between them.
+    :param block: whether it opens a block `OPENER` or `DEFINITION`
+        names, after its indent.
+    :returns: what the refusal says of it, empty where it is a
+        paragraph's.
+    """
+    if QUOTE.match(line):
+        return "opens a block quote"
+    if ITEM.match(line):
+        return "opens an item, not a bullet"
+    if inside:
+        return "opens a block inside a bullet"
+    if lazy:
+        return "continues a bullet unindented"
+    return "is no bullet and no paragraph" if OPENER.match(line) or block else ""
+
+
+def bulleted(lines: list[str], start: int, end: int) -> list[str]:
+    """Read section 14's list between two lines, one string per bullet.
+
+    A bullet is a line starting `- ` and every line indented by two
+    spaces or a tab after it, joined by a space. A paragraph's line opens
+    none of the blocks `OPENER`, `DEFINITION`, `QUOTE` and `ITEM` name,
+    and one after a blank line ends a bullet.
+
+    Every other line that is not blank is refused rather than passed
+    over, since a copy whose item is dropped is a copy nothing compares.
+    Among them are a list item other than a bullet, as `* `, `+ `, `1. `,
+    ` - `, an item nested under a bullet and an indented marker after a
+    paragraph; a block quote, which may hold a list; a line under a
+    bullet that opens any other block after its indent, as a footnote,
+    which may hold a list too; and a line of prose not indented right
+    after a bullet, which Markdown reads as part of that bullet.
+
+    :param lines: README.md's lines, split where Markdown splits them.
+    :param start: the index of the line the list follows.
+    :param end: the index of the line the list stops at.
+    :returns: the bullets, in the order the list gives them.
+    :raises Unknown: where a line between the two is one this refuses.
+    """
+    bullets: list[str] = []
+    within = blank = False
+    for number, line in enumerate(lines[start + 1 : end], start + 2):
+        if not line.strip(SPACE):
+            blank = True
+            continue
+        inside = within and line.startswith(("  ", "\t"))
+        inner = ITEM.match(line) or QUOTE.match(line)
+        paragraph = itertools.takewhile(
+            lambda text: text.strip(SPACE), lines[number - 1 : end]
+        )
+        block = bool(
+            OPENER.match(line.lstrip(SPACE))
+            or DEFINITION.match("\n".join(paragraph).lstrip(SPACE))
+        )
+        if line.startswith("- "):
+            bullets.append(line)
+            within = True
+        elif inside and not (inner or block):
+            bullets[-1] += f" {line.strip(SPACE)}"
+        elif refusal := unplaced(
+            line, inside=inside, lazy=within and not blank, block=block
+        ):
+            msg = f"README.md:{number} {refusal}: {line!r}"
+            raise Unknown(msg)
+        else:
+            within = False
+        blank = False
+    return bullets
+
+
 def obligations(std: str, at: str, tree: str, head: str) -> dict[str, str]:
     """Read section 14's compared paths the tree owes, each against its source.
 
-    :raises Unknown: where the list is not found once, a list item is not
-        a dash bullet, a bullet has no subject, or a clause is one this
+    README.md's lines end where Markdown's do, as section 14's test splits
+    them: at a line feed, at a carriage return before one, and at a
+    carriage return alone. `splitlines` would also end one at U+2028 and
+    the other separators Markdown keeps inside a line.
+
+    :raises Unknown: where the list is not found once, `bulleted` refuses
+        a line of it, a bullet has no subject, or a clause is one this
         does not read.
     """
-    lines = git(std, "cat-file", "blob", f"{at}:README.md").decode().splitlines()
+    text = git(std, "cat-file", "blob", f"{at}:README.md").decode()
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     starts = [i for i, line in enumerate(lines) if OPENING in line]
     ends = [i for i, line in enumerate(lines) if CLOSING in line]
     if len(starts) != 1 or len(ends) != 1 or ends[0] < starts[0]:
         msg = "section 14's list is not found once in README.md"
         raise Unknown(msg)
-    bullets: list[str] = []
-    within = blank = False
-    for line in lines[starts[0] + 1 : ends[0]]:
-        if line.startswith("- "):
-            bullets.append(line)
-            within = True
-        elif line.startswith("  ") and within:
-            bullets[-1] += f" {line.strip()}"
-        elif ITEM.match(line):
-            msg = f"a line of section 14's list is not a dash bullet: {line!r}"
-            raise Unknown(msg)
-        elif line.strip() and within and not blank:
-            msg = f"a line of section 14's list is not indented: {line!r}"
-            raise Unknown(msg)
-        elif line.strip():
-            within = False
-        blank = not line.strip()
+    bullets = bulleted(lines, starts[0], ends[0])
     empty = git(tree, "hash-object", "-t", "tree", "/dev/null").decode().strip()
     owed: dict[str, str] = {}
     for bullet in bullets:

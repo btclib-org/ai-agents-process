@@ -217,6 +217,113 @@ def nested(std: Repo, tree: Repo) -> tuple[str, str, str]:
     return (s, *batch(tree, OLD, NEW))
 
 
+ITEM = "`D.md` — owed by every repository."
+"""What a line planted in the list says after its marker, of a `D.md` the tree lacks."""
+
+PARAGRAPH = ["", "A paragraph closes the list above.", ""]
+
+NBSP = "\u00a0"
+"""A no-break space, which Markdown reads as a character, not as space."""
+
+
+def listed(lines: list[str], newline: str = "\n") -> Build:
+    """Plant lines after the list's last bullet, the standard carrying a `D.md`.
+
+    That bullet wraps onto a second line, and a blank line follows the
+    lines planted, as in `tests/bulleted_test.py` of btclib-org/.github,
+    whose inputs these are. A newline inside a line wraps it. `newline`
+    ends each line of the standard's `README.md`.
+    """
+
+    def build(std: Repo, tree: Repo) -> tuple[str, str, str]:
+        last = "repository's `shared/RELEASING.md`.\n"
+        readme = README.replace(last, last + "".join(f"{line}\n" for line in lines))
+        s = std_at(std, {"D.md": "added\n"}, readme.replace("\n", newline))
+        return (s, *batch(tree, OLD, NEW))
+
+    return build
+
+
+AN_ITEM = ("FAILED: README.md:", " opens an item, not a bullet: ")
+UNREAD = ("FAILED: README.md:", " is no bullet and no paragraph: ")
+INSIDE = ("FAILED: README.md:", " opens a block inside a bullet: ")
+QUOTED = ("FAILED: README.md:", " opens a block quote: ")
+LAZY = ("FAILED: README.md:", " continues a bullet unindented: ")
+
+NESTED = {
+    "dash nested under the bullet": [f"  - {ITEM}"],
+    "dot nested by four spaces": [f"    1. {ITEM}"],
+    "dot nested by a tab after a blank line": ["", f"\t1. {ITEM}"],
+}
+"""An item nested under the last bullet, which Markdown renders as an item."""
+
+OPENED = {
+    "indented line": "  more.",
+    "heading": "# Heading",
+    "table row": "| a | b |",
+    "table delimiter row": "--- | ---",
+    "html": "<div>",
+    "backtick fence": "```",
+    "tilde fence": "~~~",
+    "thematic break of asterisks": "***",
+    "thematic break of underscores": "___",
+    "setext underline": "===",
+    "footnote": f"[^1]: - {ITEM}",
+    "footnote with an escaped bracket": f"[^a\\]b]: - {ITEM}",
+    "link reference definition": "[ref]: https://example.org",
+    "link reference definition with an escaped bracket": "[a\\]b]: /url",
+    "link reference definition with a wrapped label": "[a\nb]: /url",
+    "link reference definition with a wrapped destination": "[ref]:\n/url",
+    "link reference definition with a wrapped title": '[ref]: /url\n"title"',
+    "footnote whose label holds line separators": f"[^a\u2028\u2028b]: - {ITEM}",
+}
+"""A line opening a block that is no paragraph's, put after a paragraph."""
+
+UNPLACED: dict[str, tuple[list[str], tuple[str, ...]]] = {
+    "block quote after a paragraph": ([*PARAGRAPH, f"> - {ITEM}"], QUOTED),
+    "block quote under the bullet": ([f"  > - {ITEM}"], QUOTED),
+    **{
+        f"{name} after a paragraph": ([*PARAGRAPH, line], UNREAD)
+        for name, line in OPENED.items()
+    },
+    "footnote under the bullet": ([f"  [^b]: - {ITEM}"], INSIDE),
+    **{
+        f"{name} under the bullet": (
+            ["", *(f"  {part}" for part in line.split("\n"))],
+            INSIDE,
+        )
+        for name, line in OPENED.items()
+        if name != "indented line"
+    },
+    "definition across a line of a no-break space": (
+        [*PARAGRAPH, "[a", NBSP, "b]: /url"],
+        UNREAD,
+    ),
+    "line of a no-break space after the bullet": ([NBSP], LAZY),
+}
+"""Each line the list cannot place, against what the script says of it."""
+
+PROSE = {
+    "an em dash": "— This remains optional.",
+    "a colon": ": This remains optional.",
+    "a digit": "15's loop is what checks it.",
+    "a non-ASCII letter": "Élan is a word.",
+    "a link": "[A link](https://example.org) opens it.",
+    "emphasis": "**Bold** opens it, and _this_ too.",
+    "code": "`code` opens it.",
+    "a link wrapped over two lines": "[A link\nthat wraps](/url) opens it.",
+    "an escaped closing bracket": "[a\\]: is no label, its bracket escaped.",
+    "a bracket inside a label": "[a[b]: is no label, it holds a bracket.",
+    "a label cut by a blank line": "[a\n\nb]: /url is no definition.",
+}
+"""Paragraph openings the list passes over, alone, after a paragraph and within one."""
+
+
+def wrapped(space: str) -> list[str]:
+    """Plant a `D.md` bullet whose clause ends on a line after a blank line."""
+    return ["- `D.md` — owed by every", "", f"{space}repository."]
+
+
 def standard_renames(std: Repo, tree: Repo) -> tuple[str, str, str]:
     readme = README.replace("`B.md`", "`E.md`")
     old = std.commit({"README.md": readme, "A.md": "old\n", "E.md": "same\n"})
@@ -571,17 +678,17 @@ CASES = [
             f"<S> adds a file under {marker!r}",
             standard_adds(marker),
             2,
-            ("FAILED: a line of section 14's list is not a dash bullet",),
+            AN_ITEM,
             ("DIFFERS",),
         )
-        for marker in ("* ", "+ ", "1. ", " - ")
+        for marker in ("* ", "+ ", "1. ", "1) ", " - ")
     ),
     *(
         Case(
             f"<S> adds a file under {marker!r} after a paragraph",
             after_paragraph(marker),
             2,
-            ("FAILED: a line of section 14's list is not a dash bullet",),
+            AN_ITEM,
             ("DIFFERS",),
         )
         for marker in ("* ", "- ", "1. ")
@@ -590,10 +697,65 @@ CASES = [
         "<S> adds a file whose bullet holds a line not indented",
         unindented,
         2,
-        ("FAILED: a line of section 14's list is not indented",),
+        LAZY,
         ("DIFFERS",),
     ),
-    Case("a marker nested under a bullet", nested, 0, ("equal B.md",)),
+    Case("a marker nested under a bullet", nested, 2, AN_ITEM, ("equal",)),
+    *(
+        Case(f"<S> adds a file as a {name}", listed(lines), 2, AN_ITEM, ("equal",))
+        for name, lines in NESTED.items()
+    ),
+    *(
+        Case(f"{name}, refused", listed(lines), 2, refusal, ("equal",))
+        for name, (lines, refusal) in UNPLACED.items()
+    ),
+    *(
+        Case(
+            f"a paragraph that opens with {name}",
+            listed(["", line, *PARAGRAPH, line, *PARAGRAPH[:2], line]),
+            0,
+            ("equal A.md",),
+            ("D.md",),
+        )
+        for name, line in PROSE.items()
+    ),
+    *(
+        Case(
+            f"a line of {name} is a blank line",
+            listed([space, f"- {ITEM}", space, *PARAGRAPH[1:2], space]),
+            1,
+            ("DIFFERS D.md: missing in the tree",),
+        )
+        for name, space in (("a space", " "), ("a tab", "\t"), ("both", "  \t "))
+    ),
+    *(
+        Case(
+            f"a bullet wrapped by {name} after a blank line",
+            listed(wrapped(space)),
+            1,
+            ("DIFFERS D.md: missing in the tree",),
+        )
+        for name, space in (("a tab", "\t"), ("two spaces", "  "))
+    ),
+    *(
+        Case(
+            f"a README.md in {name}",
+            listed([f"- {ITEM}", "  wrapped."], newline),
+            1,
+            ("DIFFERS D.md: missing in the tree", "equal A.md"),
+        )
+        for name, newline in (("CRLF", "\r\n"), ("CR", "\r"))
+    ),
+    *(
+        Case(
+            f"a line right after a bullet in {name}, refused",
+            listed([f"- {ITEM}", "A line."], newline),
+            2,
+            LAZY,
+            ("equal",),
+        )
+        for name, newline in (("CRLF", "\r\n"), ("CR", "\r"))
+    ),
     Case(
         "<S> renames a file",
         standard_renames,
