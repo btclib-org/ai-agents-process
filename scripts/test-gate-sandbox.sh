@@ -25,6 +25,9 @@
 # `bad config`. The blocks' `env -i` drops the variable it records under,
 # so it records no call inside the sandbox. The cases, in order:
 #
+# - fetch: each fetch block, `uv sync` and `uvx pre-commit
+#   install-hooks`, starts `env -i -C <main wt>` and assigns the names
+#   the sandbox block assigns, `UV_OFFLINE` aside.
 # - fixer: the gate writes a file. The status file holds `?? fixed`,
 #   then `EXIT_status=0`.
 # - forged: the gate tries to overwrite `.git`, makes `sub/.git` a
@@ -155,6 +158,23 @@ grep -q "sh $tmp/hooks.sh" "$tmp/hooks-gate.sh" ||
 cat "$tmp/gate-only.sh" "$tmp/find.sh" > "$tmp/block.sh"
 grep -q "sh $tmp/gate.sh" "$tmp/block.sh" ||
   { no "no gate block in $doc"; exit 1; }
+
+# The names a block assigns, UV_OFFLINE and sandbox-exec's -D aside.
+names() {
+  sed 's/-D [A-Z_]*=//g' | grep -oE '(^|[[:space:]])[A-Z_]+=' |
+    tr -d ' =' | grep -vx UV_OFFLINE | sort -u
+}
+want=$(block 'sandbox-exec -f' | names)
+for re in 'uv sync --locked --all-groups' 'uvx pre-commit install-hooks'; do
+  b=$(block "$re")
+  if [ -z "$b" ]; then no "fetch: no block runs '$re'"
+  elif [ "$(printf '%s\n' "$b" | head -n 1 | cut -d " " -f 1-5)" != \
+    'env -i -C <main wt>' ]; then
+    no "fetch: '$re' does not start env -i -C <main wt>"
+  elif [ "$(printf '%s\n' "$b" | names)" != "$want" ]; then
+    no "fetch: '$re' sets" "$(printf '%s\n' "$b" | names | tr '\n' ' ')"
+  else ok "fetch: '$re' runs from <main wt> with the gates' variables"; fi
+done
 
 # A new <gate wt>, its git directories read as the blocks read them.
 fresh() {
