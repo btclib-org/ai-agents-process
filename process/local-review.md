@@ -224,10 +224,22 @@ says.
   In `btclib-org/.github`, whose call is local, the prompt is the sha's
   own file: `git -C <wt> show <sha>:.github/workflows/reusable-claude-review.yml`.
 
-  The brief also carries the `path_instructions` of the sha's
-  `.coderabbit.yaml`, which CodeRabbit's review on GitHub applies, and
-  asks the reviewer to apply each to the files its `path` matches,
-  reading what the instruction links to. This prints the file:
+  The brief gives the branch and the sha to review, which on an open
+  pull request is not pushed yet: the reviewer reads that sha, not the
+  pull request's head. Where no pull request is open, the commit
+  message stands for the title and description. Whatever the bot's
+  prompt says about gates, the fresh reviewer follows *The gates are the
+  writer's* instead. It posts nothing; its verdict is as *The verdict*
+  says.
+- **Every local reviewer's brief carries what CodeRabbit's review on
+  GitHub applies**, the dedicated reviewer's as the fresh one's. It
+  holds the `path_instructions` of the sha's `.coderabbit.yaml`, and
+  asks the reviewer to apply each to the files its `path` matches. A
+  reviewer has no network (*Clients*), so the brief also holds the text
+  each instruction links to. The session reads it from a checkout of
+  `btclib-org/.github` brought forward (`every-session.md`'s *Shell,
+  checkouts and prose*): a link to that repository with an anchor is the
+  section of its `README.md` the anchor names. This prints the file:
 
   ```shell
   git -C <wt> show <sha>:.coderabbit.yaml
@@ -247,14 +259,6 @@ says.
       included;
     - a boundary the tests do not isolate, so that a mutant of the
       comparison at that edge survives every test.
-
-  The brief gives the branch and the sha to review, which on an open
-  pull request is not pushed yet: the reviewer reads that sha, not the
-  pull request's head. Where no pull request is open, the commit
-  message stands for the title and description. Whatever the bot's
-  prompt says about gates, the fresh reviewer follows *The gates are the
-  writer's* instead. It posts nothing; its verdict is as *The verdict*
-  says.
 - The bot's commands are `gh pr view`, `gh pr diff`, `gh issue view`,
   `gh-get` (which reads a blob or a file from GitHub), and what the
   tree's `claude-review.yml` adds as `extra-allowed-tools`. Where a
@@ -295,9 +299,16 @@ says.
   finding with its draft reply and the route taken, and names
   `/btclib-pr`'s *Answering it*, whose routes the reply is judged by.
   Each reviewer tries the reply's ground as it tries a claim of the
-  change. A ground that is false on an input the text applies to is a
-  finding of these rounds, and so is a reply that declines a finding for
-  which *filed* is the first route that fits.
+  change, and checks the reply as *A text to be posted* says. A reviewer
+  has no network (*Clients*), so beside what that section's brief
+  carries, the brief holds the text of each link the reply gives. A
+  ground that is false on an input the text applies to is a finding of
+  these rounds, and so is a reply that declines a finding which the
+  first route that fits files: *filed*, or a defect *The rounds* keeps
+  off the branch. Such a finding holds back the reply, not the branch:
+  it does not send a cleared branch back, as *Which prose is worth a
+  round* says of a sentence outside the tree, and the reply is posted
+  only once the reviewer has read its fix.
 
 ### A text to be posted
 

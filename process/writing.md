@@ -894,10 +894,14 @@ The findings of these local runs are answered as `/btclib-pr`'s
   included review left. Otherwise it is skipped. Where it is skipped or
   shows no read, the pull request body's `## Evidence` says so. It
   stands in for no reviewer of *The rounds*, and it is not CodeRabbit's
-  review on GitHub either: that review reads the base file through the
-  diff and the issues the branch cites, which the CLI does not reach,
-  and applies the tree's `.coderabbit.yaml`. So a CLI read with no
-  finding leaves that review owed, and the fresh reviewer looks for
+  review on GitHub either. On PR btclib-org/ecc#598, read at one sha,
+  that review reached the base file through the diff and the issues the
+  branch cites, and applied the tree's `path_instructions`, while the
+  CLI reached neither the base file nor the issues (the table of
+  ISS btclib-org/ai-agents-process#587). Whether the CLI applies
+  `.coderabbit.yaml` is not measured; its `-c` takes the file as added
+  instructions (`coderabbit review --help`). So a CLI read with no
+  finding leaves that review owed, and every local reviewer looks for
   what it finds, as `local-review.md`'s *A pull request's rounds* says.
 
 ### Committing and rebasing
