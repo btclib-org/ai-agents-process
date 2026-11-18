@@ -9,9 +9,11 @@ generator runs at a time, as the comment above `gate_take_all` in
 
 While `gate_take_all` waits for the rest of the slots, it holds those it
 has. That wait is at least (`GATE_LOCK_SLOTS` − 1) × `GATE_LOCK_STAGGER`
-seconds, 30 seconds by default. Each take queues with a fresh ticket, so
-gates that queue meanwhile take the next free slots before it, and it may
-hold the slots it has for longer.
+seconds, 30 seconds by default, rising to (`GATE_LOCK_SLOTS` − 1) ×
+`GATE_LOCK_SETTLE` seconds, 120 by default, while less than
+`GATE_LOCK_FREE` plus `GATE_LOCK_MARGIN` percent of memory is free. Each
+take queues with a fresh ticket, so gates that queue meanwhile take the
+next free slots before it, and it may hold the slots it has for longer.
 
 The session that runs it starts at most one single-threaded process per
 free core: the cores times the idle fraction on the last line

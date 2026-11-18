@@ -91,8 +91,9 @@ two disagree.
       and its first line is still the point.
 - **Parallelize as much as you can.** Reads, remote work, writers and
   reviewers run side by side, within the machine's CPU load, memory
-  pressure and free disk (`writing.md`'s *The gates* and *Before
-  starting*, read before starting work in parallel).
+  pressure and free disk (*The machine is shared*, below, and
+  `writing.md`'s *The gates* and *Before starting*, read before starting
+  work in parallel).
 - **The machine is shared.** Heavy local work — a suite, the hooks
   except where `writing.md`'s *The gates* says, a docs build — runs
   under the gate lock, as `writing.md`'s *The gate lock* says, read
@@ -102,6 +103,17 @@ two disagree.
   pytest-xdist, with `-n "$GATE_LOCK_WORKERS"` (`writing.md`'s *The gate
   lock*), which overrides an `-n auto` in its `addopts`. Other sessions'
   processes are not yours to kill.
+
+  A job that takes no slot and weighs on memory — an agent, a local
+  Codex run, a targeted test run, a build — starts only at memory
+  pressure level 1 (`sysctl -n kern.memorystatus_vm_pressure_level`),
+  and only where the share of memory free
+  (`memory_pressure -Q | tail -1`) stays above about 35% once the job's
+  peak is added. Otherwise it waits. While any job waits, the session
+  reads again every 120 seconds, and whenever one of its jobs ends.
+  Where the level cannot be read, as in Codex's sandbox, the share free
+  decides alone. The readings decide how many jobs run, never a fixed
+  count.
 - **The forge's quota is shared.** Every session and agent on this
   machine calls the forge through the same `gh` login, and so draws on
   the same hourly quotas: `core` for REST, `graphql` for what `gh pr

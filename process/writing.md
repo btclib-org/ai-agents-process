@@ -822,10 +822,10 @@ of the standard* says.
   session removes a slot any other way: a failed `mkdir` or an old slot
   says nothing about whose it is. The script's header comment says how
   the lock works: the defaults of the slots, the workers, the load
-  ceiling and the directory, the queue, the stagger, stale slots, and
-  what `gate_take` waits for, with no bound. It gives the command that
-  names the holders, and says who removes a slot that is never
-  reclaimed.
+  ceiling and the directory, the queue, the stagger, the settle, stale
+  slots, and what `gate_take` waits for, with no bound. It gives the
+  command that names the holders, and says who removes a slot that is
+  never reclaimed.
 
   Before running a load generator, read
   `$PROCESS/process/load-generator.md`.
