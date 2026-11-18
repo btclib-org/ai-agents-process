@@ -1462,18 +1462,21 @@ pull request or waits.** A commit of theirs without the trailer is not
 ours to fix: a sign-off we add for them is not their attestation. Ask
 them, with the findings, and before we push anything to their branch, to
 run the command the `Sign-off` check's failure prints and force-push.
-The ask warns of the closing the tree's `CONTRIBUTING.md` gives in *Pull
-requests*, naming its day.
+The ask warns of the closing and names the closing day the next
+paragraph gives.
 
-**A pull request still lacking a sign-off is closed when the tree's
-`CONTRIBUTING.md` says in *Pull requests***, which is what the
-contributor reads. The request that rule counts from is the first
-comment on the pull request that asks for the trailer and warns of the
-closing, by a maintainer, a session or a job; where none does, it is the
-session's ask above. Such a comment can be a comment on the pull
-request, the body of a review or a comment of a review, which GitHub
-serves apart. These list each kind, every page read, with its time,
-author and URL, and the session reads them all and takes the earliest:
+**A pull request still lacking a sign-off is closed on its closing
+day**: the later of the day the tree's `CONTRIBUTING.md` gives in *Pull
+requests*, which is what the contributor reads, and seven days after the
+pull request's last reopen, so that a reopened pull request's author has
+the week to push the trailers. The request the tree's day counts from is
+the first comment on the pull request that asks for the trailer and
+warns of the closing, by a maintainer, a session or a job; where none
+does, it is the session's ask above. Such a comment can be a comment on
+the pull request, the body of a review or a comment of a review, which
+GitHub serves apart. These list each kind, every page read, with its
+time, author and URL, and the session reads them all and takes the
+earliest:
 
 ```shell
 n=<n>
@@ -1495,15 +1498,32 @@ gh api --paginate "repos/${repo:?}/pulls/${n:?}/comments" \
   --jq '.[] | "\(.created_at) \(.user.login) \(.html_url)"'
 ```
 
-On the day that rule gives, the session reads the head's commits: the
-`Sign-off` check on the head, or, where it did not run, the shared
-*Signed and signed off*'s script on those commits. Where the check, or
-the script where the check did not run, refuses a commit, the session
-closes the pull request with a comment, from a file. The comment thanks
-them, names the commits refused, links the request, and gives the
-commands the check or the script printed. It points to *Pull requests*
-for how the pull request comes back, and says that a comment on each
-issue it cites, posted next, says who holds that issue:
+This prints the time of the last reopen, and nothing where the pull
+request was never reopened:
+
+```shell
+gh api graphql -f owner="${repo%%/*}" -f name="${repo#*/}" -F n="${n:?}" \
+  -f query='
+  query($owner: String!, $name: String!, $n: Int!) {
+    repository(owner: $owner, name: $name) {
+      pullRequest(number: $n) {
+        timelineItems(itemTypes: [REOPENED_EVENT], last: 1) {
+          nodes { ... on ReopenedEvent { createdAt } }
+        }
+      }
+    }
+  }' --jq '.data.repository.pullRequest.timelineItems.nodes[].createdAt'
+```
+
+On the closing day, the session reads the head's commits: the `Sign-off`
+check on the head, or, where it did not run, the shared *Signed and
+signed off*'s script on those commits. Where the check, or the script
+where the check did not run, refuses a commit, the session closes the
+pull request with a comment, from a file. The comment thanks them, names
+the commits refused, links the request, and gives the commands the check
+or the script printed. It points to *Pull requests* for how the pull
+request comes back, and says that a comment on each issue it cites,
+posted next, says who holds that issue:
 
 ```shell
 comment=<comment file>
