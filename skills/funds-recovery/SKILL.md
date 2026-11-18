@@ -48,11 +48,15 @@ of `$PROCESS/process/every-role.md`.
 
 ## The user runs identify
 
-The user runs `identify` in a terminal of their own, outside the
-session, never as a command the session runs, on a machine they trust
-with the network off, as seed-scan's `SECURITY.md` asks in
-*Limitations, not vulnerabilities*. Give them the commands. The first
-installs the pinned release, before the network goes off:
+A bundle the user already has is used as it is: they run `identify`
+only where they have none, or where the report asks for a larger bound
+(*The answer*).
+
+They run it in a terminal of their own, outside the session, never as a
+command the session runs, on a machine they trust with the network off,
+as seed-scan's `SECURITY.md` asks in *Limitations, not
+vulnerabilities*. Give them the commands. The first installs the pinned
+release, before the network goes off:
 
 ```shell
 uv tool install seed-scan==2026.11.17
@@ -114,6 +118,16 @@ Ask the user for the Electrum server and the EVM node to ask, and the
 chain the node serves. Each learns every address it is asked about, so
 there is no default and the session proposes none.
 
+A hosted node's URL can hold an access key in its path or query.
+seed-scan leaves those out of its result and report, but the command the
+session runs holds the whole URL, and so does the conversation. Ask for
+a URL that holds no key, as the user's own node or a proxy on their
+machine that adds the key, and tell them not to paste one that does.
+Where one is pasted anyway, the key is exposed as the secret is (*The
+secret stays out of the session*). `scan` refuses a node URL that
+carries a login, and takes the Electrum server as `host:port` alone,
+with no path or query.
+
 ```shell
 server=<the Electrum server, as host:port>
 node=<the EVM node's URL>
@@ -164,7 +178,10 @@ uvx --from seed-scan==2026.11.17 seed-scan report \
   "${bundle:?}" > "${scratchpad:?}/funds-recovery/report.txt"
 ```
 
-`seed_scan.report`'s docstring gives the report's layout.
+The docstring of [`seed_scan.report`][report] at the tag gives the
+report's layout.
+
+[report]: https://github.com/btclib-org/seed-scan/blob/v2026.11.17/src/seed_scan/report.py
 
 ## The answer
 
@@ -180,7 +197,8 @@ limit read from the report or from the pinned release's documents:
   user's terminal with the larger bound, then the commands after it;
 - the `bounds` lines: an account or an address past those gaps was not
   read;
-- a passphrase not typed at `identify` was not tried;
+- a non-empty passphrase not typed at `identify` was not tried, since
+  it tries the empty one and those typed;
 - what the Electrum server and the EVM node are still trusted for, as
   seed-scan's `SECURITY.md` says in *Limitations, not vulnerabilities*.
 
