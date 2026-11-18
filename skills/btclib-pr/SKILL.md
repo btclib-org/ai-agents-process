@@ -1475,8 +1475,11 @@ warns of the closing, by a maintainer, a session or a job; where none
 does, it is the session's ask above. Such a comment can be a comment on
 the pull request, the body of a review or a comment of a review, which
 GitHub serves apart. These list each kind, every page read, with its
-time, author and URL, and the session reads them all and takes the
-earliest:
+time, author, URL and body, and the session reads them all and takes the
+earliest that asks and warns. A comment of a review takes its review's
+time, since GitHub shows the comments of a pending review only once it
+is submitted: the third listing prints the review's id, and the second
+that review's `submitted_at`:
 
 ```shell
 n=<n>
@@ -1485,17 +1488,19 @@ repo=<owner>/<repo>
 
 ```shell
 gh api --paginate "repos/${repo:?}/issues/${n:?}/comments" \
-  --jq '.[] | "\(.created_at) \(.user.login) \(.html_url)"'
+  --jq '.[] | "\(.created_at) \(.user.login) \(.html_url)\n\(.body)\n"'
 ```
 
 ```shell
 gh api --paginate "repos/${repo:?}/pulls/${n:?}/reviews" \
-  --jq '.[] | "\(.submitted_at) \(.user.login) \(.html_url)"'
+  --jq '.[] | "\(.submitted_at) \(.user.login) \(.html_url) review \(.id)
+\(.body)\n"'
 ```
 
 ```shell
 gh api --paginate "repos/${repo:?}/pulls/${n:?}/comments" \
-  --jq '.[] | "\(.created_at) \(.user.login) \(.html_url)"'
+  --jq '.[] | "review \(.pull_request_review_id) \(.user.login) \(.html_url)
+\(.body)\n"'
 ```
 
 This prints the time of the last reopen, and nothing where the pull
@@ -1596,10 +1601,13 @@ gh pr checks "${pr:?}" --json name,bucket,completedAt \
     | select(.bucket == "pass") | .completedAt'
 ```
 
-GitHub assigns an outside login only to an issue it has commented on,
-as *Pull requests* says. This exits `0` where a hit's author can be
+GitHub assigns an outside login only to an issue it has commented on, as
+*Pull requests* says. This exits `0` where a hit's author can be
 assigned to the issue, and exits `1`, printing `User cannot be assigned
-to this issue. (HTTP 404)`, where they cannot:
+to this issue. (HTTP 404)`, where they cannot. Any other failure, as
+another HTTP status or no answer, decides nothing, and no taker is
+chosen until the call has given one of those two answers for each hit's
+author:
 
 ```shell
 author=<hit author login>
@@ -1621,8 +1629,8 @@ taker=<taker login>
 gh issue edit "${issue:?}" --repo "${irepo:?}" --add-assignee "${taker:?}"
 ```
 
-Where the call exits `1` for every hit's author, the session assigns
-no one, and the retry below applies.
+Where the call answers that `404` for every hit's author, the session
+assigns no one, and the retry below applies.
 
 **The retry.** Where no taker was assigned, the issue's comment asks
 each hit's author who could not be assigned to comment on the issue. On
