@@ -345,6 +345,15 @@ a decision:
   git -C <wt> show <base>:<path>
   ```
 
+**A reply to a bot's finding goes through the same rounds as the tree
+before it is posted**, those of the shared *A pull request's rounds*:
+the dedicated reviewer, then a fresh reviewer in the other client, read
+each finding with its draft reply and the route taken, beside the fix
+where there is one. Each tries the reply's ground as it tries a claim
+of the change. A ground that is false on an input the text applies to,
+or a finding older than the branch that a reply declines instead of
+filing, is a finding of these rounds.
+
 **Every inline `suggestion` that is accepted is applied in the
 worktree.** It is not applied with GitHub's button, so that the gates
 run on it.

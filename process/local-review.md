@@ -224,6 +224,30 @@ says.
   In `btclib-org/.github`, whose call is local, the prompt is the sha's
   own file: `git -C <wt> show <sha>:.github/workflows/reusable-claude-review.yml`.
 
+  The brief also carries the `path_instructions` of the sha's
+  `.coderabbit.yaml`, which CodeRabbit's review on GitHub applies, and
+  asks the reviewer to apply each to the files its `path` matches,
+  reading what the instruction links to. This prints the file:
+
+  ```shell
+  git -C <wt> show <sha>:.coderabbit.yaml
+  ```
+
+  It lists these classes too, which CodeRabbit's review on GitHub has
+  found after the local rounds cleared, and asks the reviewer to try
+  each first (`orchestration.md`'s *The classes of defect found carry
+  forward*):
+
+    - a defect in the base file that a line of the diff reaches, read in
+      the file at the merge base rather than in the hunk;
+    - a test or a fixture that passes vacuously, whatever the code under
+      it does;
+    - a check in the code that differs from the exact step of the
+      specification it implements, each alternative the step allows
+      included;
+    - a boundary the tests do not isolate, so that a mutant of the
+      comparison at that edge survives every test.
+
   The brief gives the branch and the sha to review, which on an open
   pull request is not pushed yet: the reviewer reads that sha, not the
   pull request's head. Where no pull request is open, the commit

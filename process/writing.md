@@ -864,7 +864,7 @@ The findings of these local runs are answered as `/btclib-pr`'s
   ```shell
   env -C "${wt:?}" sh -c 'rc=0 t=
     command -v timeout > /dev/null && t="timeout -k 60 1200"
-    $t coderabbit review --agent --committed --fresh \
+    $t coderabbit review --agent --committed --fresh --deep \
       --base-commit "$1" || rc=$?
     echo "EXIT_coderabbit=$rc"' sh "${base:?}" \
     > <scratch>/<name>-coderabbit.log 2>&1
@@ -893,7 +893,12 @@ The findings of these local runs are answered as `/btclib-pr`'s
   with `--use-credits`, and only where `coderabbit usage` shows an
   included review left. Otherwise it is skipped. Where it is skipped or
   shows no read, the pull request body's `## Evidence` says so. It
-  stands in for no reviewer of *The rounds*.
+  stands in for no reviewer of *The rounds*, and it is not CodeRabbit's
+  review on GitHub either: that review reads the base file through the
+  diff and the issues the branch cites, which the CLI does not reach,
+  and applies the tree's `.coderabbit.yaml`. So a CLI read with no
+  finding leaves that review owed, and the fresh reviewer looks for
+  what it finds, as `local-review.md`'s *A pull request's rounds* says.
 
 ### Committing and rebasing
 
