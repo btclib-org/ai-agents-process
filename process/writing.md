@@ -967,6 +967,14 @@ The findings of these local runs are answered as `/btclib-pr`'s
   range. In `git log --format='%h %G? %GS' <base>..` any valid signer
   is fine and `N` is the defect.
 
+  No commit is made with signing turned off, by `--no-gpg-sign` or by
+  `commit.gpgsign=false` at any scope, a scratch repository built for a
+  measurement included. A measurement that needs no commit goes without
+  one: `git diff --no-index` compares two directories, and `git add`
+  then `git write-tree`, with `GIT_INDEX_FILE` set to a temporary file,
+  give a tree without touching the repository's index. Where a commit is
+  needed, it is a plain one, which `commit.gpgsign = true` signs.
+
   On a branch whose earlier commits are not the session's, an outside
   contributor's or the agent's (`/btclib-pr`'s *Whose pull request it
   is*), that check reads the session's own commits only:

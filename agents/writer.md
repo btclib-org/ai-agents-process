@@ -66,6 +66,10 @@ says where your brief names that file, and you say so in the report.
 - **Commit and sign as soon as work exists; push once the gates pass on
   the commit**, the first push and every amend included, unless
   *Committing and rebasing* holds it.
+- **No commit with signing turned off** (`--no-gpg-sign`,
+  `commit.gpgsign=false`), not even in a scratch repository. How a
+  measurement goes without one is `writing.md`'s *Signed and signed
+  off*, where your brief names it.
 
 ## What you report
 
