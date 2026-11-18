@@ -297,10 +297,19 @@ of the standard* says.
   command reads, as btclib-node's `core-citation-pin` reads what `git
   ls-files` lists. Where the suite is left to CI and the diff changes
   only Markdown, the hooks run outside the gate lock. The block runs
-  pre-commit behind `"$@"`: outside the lock `set --` empties it first,
-  and *The gate lock* sets it to `gate_peak` and the timeout. Its
-  `mktemp` takes a template under `$TMPDIR`, as `gated_tree`'s does
-  (*Every commit you hand over is gated, on its tree*):
+  pre-commit behind the array `peak`: outside the lock it is empty, as
+  the first block below sets it, and *The gate lock* sets it to
+  `gate_peak` and the timeout. The block neither reads nor sets `"$@"`:
+  on an outside contributor's branch `"$@"` holds the sandbox's command
+  (*An outside contributor's branch*), which that branch's own hooks
+  block, its status check and its other gates run behind, and elsewhere
+  no gate reads it. Its `mktemp` takes a template under `$TMPDIR`, as
+  `gated_tree`'s does (*Every commit you hand over is gated, on its
+  tree*):
+
+  ```shell
+  peak=()
+  ```
 
   ```shell
   wt=<wt>
@@ -321,7 +330,7 @@ of the standard* says.
     else
       args=(--files "${args[@]}")
     fi
-    "$@" env -C "${wt:?}" uvx pre-commit run "${args[@]}" || rc=$?
+    "${peak[@]}" env -C "${wt:?}" uvx pre-commit run "${args[@]}" || rc=$?
   fi
   rm -f "$list"
   (exit "$rc")
@@ -933,7 +942,7 @@ of the standard* says.
   gate_take <worktree> && {
     echo "TREE=$(gated_tree)"
     gate_wait
-    set -- gate_peak hooks <worktree> timeout -k 60 <seconds>
+    peak=(gate_peak hooks <worktree> timeout -k 60 <seconds>)
     … the block of *The hooks run on the changed files*, which sets rc …
     echo "EXIT_hooks=$rc"
     if [ "$rc" -eq 0 ]; then
@@ -957,7 +966,10 @@ of the standard* says.
   stop left out as not run.
 
   `gate_peak` runs the gate, returns its exit code, and records its peak
-  memory, as the script's header comment says.
+  memory, as the script's header comment says. On an outside
+  contributor's branch the hooks step is that branch's own hooks block
+  (*An outside contributor's branch*), which runs behind `"$@"`, the
+  sandbox's command, and not behind `peak`.
 
   The timeout goes around each gate inside the block, never around the
   whole call: `gate_take` waits in the queue with no bound, so a timeout
