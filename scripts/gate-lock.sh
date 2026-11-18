@@ -13,7 +13,7 @@
 #   . "${PROCESS:?}/scripts/gate-lock.sh"
 #   gate_take [<worktree>] && {
 #     gate_wait; rc=0
-#     gate_peak hooks <worktree> <the hooks> || rc=$?; echo "EXIT_hooks=$rc"
+#     gate_peak hooks <worktree> <a gate> || rc=$?; echo "EXIT_hooks=$rc"
 #     if [ "$rc" -eq 0 ]; then
 #       gate_wait; rc=0
 #       gate_peak <gate> <worktree> <a gate> || rc=$?; echo "EXIT_<gate>=$rc"

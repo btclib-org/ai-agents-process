@@ -296,14 +296,18 @@ of the standard* says.
   `pass_filenames: false` or `always_run: true` still reads what its own
   command reads, as btclib-node's `core-citation-pin` reads what `git
   ls-files` lists. Where the suite is left to CI and the diff changes
-  only Markdown, the hooks run outside the gate lock:
+  only Markdown, the hooks run outside the gate lock. The block runs
+  pre-commit behind `"$@"`: outside the lock `set --` empties it first,
+  and *The gate lock* sets it to `gate_peak` and the timeout. Its
+  `mktemp` takes a template under `$TMPDIR`, as `gated_tree`'s does
+  (*Every commit you hand over is gated, on its tree*):
 
   ```shell
   wt=<wt>
   base=<base>
   rc=0
   args=()
-  list=$(mktemp)
+  list=$(mktemp "${TMPDIR:-/tmp}/hooks.XXXXXX")
   if ! mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) ||
     ! git -C "${wt:?}" diff -z --cached --name-only --diff-filter=d \
       "${mb:?}" > "$list"; then
@@ -317,7 +321,7 @@ of the standard* says.
     else
       args=(--files "${args[@]}")
     fi
-    env -C "${wt:?}" uvx pre-commit run "${args[@]}" || rc=$?
+    "$@" env -C "${wt:?}" uvx pre-commit run "${args[@]}" || rc=$?
   fi
   rm -f "$list"
   (exit "$rc")
@@ -360,7 +364,7 @@ of the standard* says.
   base=<base>
   src=<docs source>
   rc=1
-  list=$(mktemp)
+  list=$(mktemp "${TMPDIR:-/tmp}/docs.XXXXXX")
   if ! git -C "${wt:?}" ls-files --error-unmatch -- "${src:?}" > /dev/null
   then
     echo "the index holds no ${src}" >&2
@@ -928,8 +932,9 @@ of the standard* says.
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take <worktree> && {
     echo "TREE=$(gated_tree)"
-    gate_wait; rc=0
-    gate_peak hooks <worktree> timeout -k 60 <seconds> … the hooks … || rc=$?
+    gate_wait
+    set -- gate_peak hooks <worktree> timeout -k 60 <seconds>
+    … the block of *The hooks run on the changed files*, which sets rc …
     echo "EXIT_hooks=$rc"
     if [ "$rc" -eq 0 ]; then
       gate_wait; rc=0
