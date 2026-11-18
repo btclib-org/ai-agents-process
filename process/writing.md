@@ -431,8 +431,11 @@ of the standard* says.
   file the branch adds is gated only once staged. It writes the tree
   from a copy of the index into a temporary object directory, since `git
   write-tree` takes `index.lock` in the git directory, which a Codex
-  sandbox keeps read-only (*Git writes under Codex*). The shell that
-  runs the gates defines it:
+  sandbox keeps read-only (*Git writes under Codex*). Its `mktemp` takes
+  a template under `$TMPDIR`: without one, macOS's `mktemp -d` ignores
+  `$TMPDIR` and writes in the directory `getconf DARWIN_USER_TEMP_DIR`
+  prints, which a sandbox that allows only `$TMPDIR` refuses. The shell
+  that runs the gates defines it:
 
   ```shell
   wt=<wt>
@@ -442,7 +445,8 @@ of the standard* says.
       [ -z "$(git -C "$wt" ls-files --others --exclude-standard)" ] &&
       ix=$(git -C "$wt" rev-parse --path-format=absolute --git-path index) &&
       ob=$(git -C "$wt" rev-parse --path-format=absolute --git-path objects) &&
-      tmp=$(mktemp -d) && trap 'rm -rf "${tmp:?}"' EXIT &&
+      tmp=$(mktemp -d "${TMPDIR:-/tmp}/gated.XXXXXX") &&
+      trap 'rm -rf "${tmp:?}"' EXIT &&
       mkdir "$tmp/obj" && cp "$ix" "$tmp/index" &&
       t=$(GIT_INDEX_FILE=$tmp/index GIT_OBJECT_DIRECTORY=$tmp/obj \
         GIT_ALTERNATE_OBJECT_DIRECTORIES=$ob git -C "$wt" write-tree) &&
