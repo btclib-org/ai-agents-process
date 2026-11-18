@@ -78,24 +78,29 @@
 # as gate_wait does, and takes the first free slot, so that nobody holds a
 # slot while only waiting, a load generator excepted. While a slot is held,
 # it takes none within GATE_LOCK_STAGGER seconds of the last take recorded
-# in gate.last, so that the idle reading shows the gate just started. A
-# slot is held while its owner file names a live process, so that a stale
-# slot does not hold the next take back. gate.last sits in
-# $GATE_LOCK_DIR and is written aside and renamed. gate_wait waits
+# in gate.last, so that the idle reading shows the gate just started. While
+# a slot is held, it also takes none within GATE_LOCK_SETTLE seconds (60) of
+# that take, unless it read GATE_LOCK_FREE plus GATE_LOCK_MARGIN percent (35
+# plus 15) of memory or more free: a gate reaches its peak memory after it
+# starts, so gates taken seconds apart would each see the same free memory
+# and together exceed it. A slot is held while its owner file names a live
+# process, so that a stale slot does not hold the next take back. gate.last
+# sits in $GATE_LOCK_DIR and is written aside and renamed. gate_wait waits
 # until GATE_LOCK_IDLE percent or more of the CPU was idle over the last
-# GATE_LOCK_POLL seconds, the 1-minute load is under GATE_LOCK_LOAD, GATE_LOCK_DISK GB or
-# more of disk is free where $GATE_LOCK_DIR sits (/tmp when it is unset),
-# and memory is admissible: pressure level 1, or level 2 with GATE_LOCK_FREE
-# percent of memory or more free, never level 4 (macOS answers 1 normal,
-# 2 warn, 4 critical). Where the level cannot be read, the percentage free
-# decides alone, as at level 2. Where any other read fails, as off macOS,
+# GATE_LOCK_POLL seconds, the 1-minute load is under GATE_LOCK_LOAD,
+# GATE_LOCK_DISK GB or more of disk is free where $GATE_LOCK_DIR sits (/tmp
+# when it is unset), and memory is admissible: pressure level 1 with
+# GATE_LOCK_FREE percent (35) of memory or more free, which leaves room for
+# the peak a gate has yet to reach, never level 2 or 4 (macOS answers 1
+# normal, 2 warn, 4 critical). Where the level cannot be read, the
+# percentage free decides alone. Where any other read fails, as off macOS,
 # it does not wait on that read. It prints the idle percentage, the load,
 # the level, the percentage free and the disk free, `?` for each read that
 # failed, and then names those reads. The idle percentage is the gate; the
 # load, which on macOS counts threads that use no CPU, is only a ceiling
-# that catches a runaway. These waits have no
-# bound, nor has the wait for gate.generator: holders that never finish keep
-# every waiter waiting. This names them:
+# that catches a runaway. These waits have no bound, nor has the wait for
+# gate.generator: holders that never finish keep every waiter waiting. This
+# names them:
 #
 #   cat "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.lock*/owner
 #   cat "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/gate.generator/owner
@@ -163,9 +168,11 @@ GATE_LOCK_LOAD=${GATE_LOCK_LOAD:-$((_gl_cpus * 3))}
 GATE_LOCK_IDLE=${GATE_LOCK_IDLE:-30}
 GATE_LOCK_WORKERS=${GATE_LOCK_WORKERS:-$((_gl_cpus / GATE_LOCK_SLOTS))}
 [ "$GATE_LOCK_WORKERS" -ge 1 ] || GATE_LOCK_WORKERS=1
-GATE_LOCK_FREE=${GATE_LOCK_FREE:-30}
+GATE_LOCK_FREE=${GATE_LOCK_FREE:-35}
 GATE_LOCK_DISK=${GATE_LOCK_DISK:-20}
 GATE_LOCK_STAGGER=${GATE_LOCK_STAGGER:-15}
+GATE_LOCK_SETTLE=${GATE_LOCK_SETTLE:-60}
+GATE_LOCK_MARGIN=${GATE_LOCK_MARGIN:-15}
 GATE_LOCK_POLL=${GATE_LOCK_POLL:-5}
 
 _gl_dir() {
@@ -341,16 +348,14 @@ _gl_disk() {
 }
 
 # Reads idle, load, level, free and disk into _gl_u, _gl_l, _gl_p, _gl_f and
-# _gl_g; succeeds when all five admit a gate. An empty read admits, except
-# that an empty level leaves the free percentage to decide, as at level 2.
+# _gl_g; succeeds when all five admit a gate. An empty read admits.
 _gl_admit() {
   _gl_u=$(_gl_idle 2>/dev/null) _gl_l=$(_gl_load 2>/dev/null)
   _gl_p=$(_gl_level) _gl_f=$(_gl_free) _gl_g=$(_gl_disk)
   [ -z "$_gl_u" ] || [ "$_gl_u" -ge "$GATE_LOCK_IDLE" ] || return 1
   [ -z "${_gl_l%.*}" ] || [ "${_gl_l%.*}" -lt "$GATE_LOCK_LOAD" ] || return 1
   [ -z "$_gl_g" ] || [ "$_gl_g" -ge "$GATE_LOCK_DISK" ] || return 1
-  [ -n "$_gl_p" ] && [ "$_gl_p" -le 1 ] && return 0
-  [ -z "$_gl_p" ] || [ "$_gl_p" -eq 2 ] || return 1
+  [ -z "$_gl_p" ] || [ "$_gl_p" -le 1 ] || return 1
   [ -z "$_gl_f" ] || [ "$_gl_f" -ge "$GATE_LOCK_FREE" ]
 }
 
@@ -365,8 +370,8 @@ _gl_status() {
   echo "${_gl_u:-?}% CPU idle, load ${_gl_l:-?}, memory pressure level ${_gl_p:-?}, ${_gl_f:-?}% free, ${_gl_g:-?} GB disk free${_gl_x:+; not read: ${_gl_x#, }}"
 }
 
-# Succeeds when GATE_LOCK_STAGGER seconds or more have passed since the last
-# take, or when the time of the last take is unreadable or in the future
+# Succeeds when $1 seconds or more have passed since the last take, or when
+# the time of the last take is unreadable or in the future
 _gl_spaced() {
   _gl_last=""
   [ -r "$_gl_d/gate.last" ] && read -r _gl_last < "$_gl_d/gate.last"
@@ -374,7 +379,15 @@ _gl_spaced() {
     "" | *[!0-9]* | 0?* | ???????????*) return 0 ;;
   esac
   _gl_gap=$(($(date +%s) - _gl_last))
-  [ "$_gl_gap" -lt 0 ] || [ "$_gl_gap" -ge "$GATE_LOCK_STAGGER" ]
+  [ "$_gl_gap" -lt 0 ] || [ "$_gl_gap" -ge "$1" ]
+}
+
+# Succeeds when the last take has settled, or when the percentage free that
+# _gl_admit read leaves the margin
+_gl_settled() {
+  _gl_spaced "$GATE_LOCK_SETTLE" || {
+    [ -n "$_gl_f" ] && [ "$_gl_f" -ge $((GATE_LOCK_FREE + GATE_LOCK_MARGIN)) ]
+  }
 }
 
 # Succeeds when the owner file of a slot names a live process
@@ -456,8 +469,10 @@ gate_take() {
 $(ls "$_gl_queue" 2>/dev/null)
 EOF
     [ "$_gl_head" = "$_gl_ticket" ] || { sleep "$GATE_LOCK_POLL"; continue; }
-    ! _gl_held || _gl_spaced || { sleep "$GATE_LOCK_POLL"; continue; }
+    ! _gl_held || _gl_spaced "$GATE_LOCK_STAGGER" || { sleep "$GATE_LOCK_POLL"; continue; }
     _gl_admit || continue
+    # no sleep here: the admit above waited a poll
+    ! _gl_held || _gl_settled || continue
     _gl_i=1
     while [ "$_gl_i" -le "$GATE_LOCK_SLOTS" ]; do
       _gl_slot "$_gl_i"

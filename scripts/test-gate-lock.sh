@@ -40,6 +40,11 @@
 #   written, a session asks while no slot is held, and takes one within
 #   the 30 seconds of a wait. Then a session asks beside a gate.lock.3
 #   whose holder is gone, and takes a slot within them too.
+# - Settling. With GATE_LOCK_SETTLE at 4 seconds and 40% of memory free,
+#   under the floor plus the margin, two sessions ask at once with a slot
+#   free for each, and the takes are 4 seconds or more apart. With it at
+#   60 seconds and 50% free, the second takes a slot within the 30
+#   seconds of a wait.
 # - Zsh. A zsh session takes the first slot with no other slot present, and
 #   releases it. Skipped where there is no zsh.
 # - A background subshell. Under each of sh, bash, zsh and dash, with
@@ -53,16 +58,19 @@
 #   the gate.generator and the slots of another shell as they were.
 # - A generator killed with SIGKILL while it holds every slot. The next
 #   generator reclaims gate.generator and the slots, and finishes.
-# - Defaults. Sourced with no GATE_LOCK_LOAD, GATE_LOCK_SLOTS or
-#   GATE_LOCK_WORKERS and a core count stubbed, the script sets the load
-#   ceiling to 3 times the cores, the idle to 30, and the workers to the
-#   cores divided by the slots, at least 1.
+# - Defaults. Sourced with no GATE_LOCK_LOAD, GATE_LOCK_SLOTS,
+#   GATE_LOCK_WORKERS, GATE_LOCK_FREE, GATE_LOCK_SETTLE or GATE_LOCK_MARGIN
+#   and a core count stubbed, the script sets the load ceiling to 3 times
+#   the cores, the idle to 30, the workers to the cores divided by the
+#   slots, at least 1, the free floor to 35, the settle to 60 and the
+#   margin to 15.
 # - The real _gl_idle prints an integer from 0 to 100.
 # - On macOS, with sysctl and iostat refused as Codex's sandbox refuses
 #   them, the real readers still print the idle percentage, the load and
 #   the percentage free, and no level.
 # - _gl_admit is called with each idle percentage, load, disk, level and
-#   free percentage in the tables below.
+#   free percentage in the tables below, and _gl_settled with each age of
+#   the last take and free percentage.
 # - _gl_status names the reads that failed, and only those.
 # - A process neither libproc nor ps can read is alive: its ticket is
 #   alive and its slot is not reclaimed. Once ps answers that no process
@@ -93,8 +101,10 @@ script=${1:-$(dirname "$0")/gate-lock.sh}
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-gate-lock.XXXXXX") || exit 1
 trap 'rm -r "$tmp"' EXIT
 GATE_LOCK_DIR=$tmp/lock GATE_LOCK_POLL=1 GATE_LOCK_SLOTS=1
-GATE_LOCK_LOAD=30 GATE_LOCK_IDLE=30 GATE_LOCK_FREE=30 GATE_LOCK_DISK=20 GATE_LOCK_STAGGER=0
+GATE_LOCK_LOAD=30 GATE_LOCK_IDLE=30 GATE_LOCK_FREE=35 GATE_LOCK_DISK=20 GATE_LOCK_STAGGER=0
+GATE_LOCK_SETTLE=0 GATE_LOCK_MARGIN=15
 export GATE_LOCK_DIR GATE_LOCK_POLL GATE_LOCK_SLOTS GATE_LOCK_STAGGER
+export GATE_LOCK_SETTLE GATE_LOCK_MARGIN
 export GATE_LOCK_LOAD GATE_LOCK_IDLE GATE_LOCK_FREE GATE_LOCK_DISK
 echo 80 > "$tmp/idle"
 mkdir "$tmp/scratchpad-A" "$tmp/scratchpad-B"
@@ -299,6 +309,55 @@ cat "$tmp/events"
 echo "ok: with no slot held, or only a stale one, a take came within the stagger of $GATE_LOCK_STAGGER"
 rm -r "${GATE_LOCK_DIR:?}/gate.lock.3"
 GATE_LOCK_STAGGER=0
+
+# Settling: two sessions ask at once with a slot free for each, at 40% of
+# memory free, which admits a gate but lacks the margin. The second waits
+# for the settle. At 50% free, the margin, it does not.
+# Each stub goes on a line of its own, after the libproc stub of the
+# second form.
+saved=$stubs
+stubs="$saved
+  _gl_free() { echo 40; }
+"
+GATE_LOCK_SETTLE=4
+rm -f "$GATE_LOCK_DIR/gate.last"
+: > "$tmp/events"
+pids=""
+for n in S T; do
+  holder "$n" &
+  pids="$pids $!"
+done
+await ' taken$' 1 "no session took a slot at 40% free"
+sleep 1
+[ "$(grep -c ' taken$' "$tmp/events")" -eq 1 ] ||
+  fail "a second session took a slot within the settle at 40% free"
+await ' taken$' 2 "the second session never took a slot at 40% free"
+t1=$(cat "$tmp/last-S")
+t2=$(cat "$tmp/last-T")
+[ "$t1" -le "$t2" ] || { t=$t1; t1=$t2; t2=$t; }
+[ $((t2 - t1)) -ge "$GATE_LOCK_SETTLE" ] ||
+  fail "at 40% free the takes were $((t2 - t1)) seconds apart, under the settle of $GATE_LOCK_SETTLE"
+echo "ok: at 40% free the second take came $((t2 - t1)) seconds after the first, the settle being $GATE_LOCK_SETTLE"
+for n in S T; do touch "$tmp/go-$n"; done
+wait
+stubs="$saved
+  _gl_free() { echo 50; }
+"
+GATE_LOCK_SETTLE=60
+rm -f "$GATE_LOCK_DIR/gate.last"
+: > "$tmp/events"
+pids=""
+for n in U V; do
+  holder "$n" &
+  pids="$pids $!"
+done
+await ' taken$' 2 "at 50% free, the second session was held for the settle"
+cat "$tmp/events"
+echo "ok: at 50% free the second take came within the settle of $GATE_LOCK_SETTLE"
+for n in U V; do touch "$tmp/go-$n"; done
+wait
+stubs=$saved
+GATE_LOCK_SETTLE=0
 
 # Under zsh, which stops at a glob with no match, a session takes the first
 # slot, with no gate.lock.2 or gate.lock.3 beside it, and releases it.
@@ -506,6 +565,7 @@ GATE_LOCK_SLOTS=1
 defaults() { # <ncpu> <sysctl or getconf>
   (
     unset GATE_LOCK_LOAD GATE_LOCK_IDLE GATE_LOCK_SLOTS GATE_LOCK_WORKERS
+    unset GATE_LOCK_FREE GATE_LOCK_SETTLE GATE_LOCK_MARGIN
     n=$1
     if [ "$2" = sysctl ]; then sysctl() { echo "$n"; }
     else
@@ -513,7 +573,8 @@ defaults() { # <ncpu> <sysctl or getconf>
       getconf() { echo "$n"; }
     fi
     . "$script"
-    echo "$GATE_LOCK_LOAD $GATE_LOCK_IDLE $GATE_LOCK_SLOTS $GATE_LOCK_WORKERS"
+    echo "$GATE_LOCK_LOAD $GATE_LOCK_IDLE $GATE_LOCK_SLOTS $GATE_LOCK_WORKERS" \
+      "$GATE_LOCK_FREE $GATE_LOCK_SETTLE $GATE_LOCK_MARGIN"
   )
 }
 bad=0
@@ -521,13 +582,13 @@ while read -r ncpu via want; do
   got=$(defaults "$ncpu" "$via")
   [ "$got" = "$want" ] || { echo "FAIL: $ncpu cores by $via: '$got', want '$want'"; bad=1; }
 done <<'CASES'
-10 sysctl 30 30 3 3
-10 getconf 30 30 3 3
-8 sysctl 24 30 3 2
-2 getconf 6 30 3 1
+10 sysctl 30 30 3 3 35 60 15
+10 getconf 30 30 3 3 35 60 15
+8 sysctl 24 30 3 2 35 60 15
+2 getconf 6 30 3 1 35 60 15
 CASES
 [ "$bad" -eq 0 ] || exit 1
-echo "ok: the load ceiling is 3 times the cores, idle 30, workers the cores divided by the slots, at least 1"
+echo "ok: the load ceiling is 3 times the cores, idle 30, workers the cores divided by the slots, at least 1, free 35, settle 60, margin 15"
 
 # A gate that finds the CPU busy after the slot is taken waits for it.
 : > "$tmp/events"
@@ -647,20 +708,49 @@ echo "ok: a gate is admitted under load 30, and with 20 GB of disk free"
     _gl_admit && got=admit || got="wait"
     [ "$got" = "$want" ] || { echo "FAIL: level $level free $free: $got, want $want"; bad=1; }
   done <<'CASES'
-1 5 admit
-2 57 admit
-2 30 admit
-2 29 wait
+1 35 admit
+1 90 admit
+1 34 wait
+1 5 wait
+1 - admit
+2 90 wait
+2 - wait
 4 90 wait
-2 - admit
-- 5 wait
-- 30 admit
-- 29 wait
+- 35 admit
+- 34 wait
 - - admit
 CASES
   exit "$bad"
 ) || exit 1
-echo "ok: memory is admissible at level 1, or at level 2 or an unread level with 30% free, never at level 4"
+echo "ok: memory is admissible at level 1 or an unread level with 35% free, never at level 2 or 4"
+
+# Settling: seconds since the last take, free percentage, expected take
+# ("-" is no gate.last, or a failed read of the free percentage).
+(
+  . "$script"
+  _gl_d=$tmp/settle
+  mkdir -p "$_gl_d"
+  GATE_LOCK_SETTLE=60
+  bad=0
+  while read -r age free want; do
+    if [ "$age" = - ]; then rm -f "$_gl_d/gate.last"
+    else echo $(($(date +%s) - age)) > "$_gl_d/gate.last"; fi
+    _gl_f=$free
+    [ "$free" != - ] || _gl_f=""
+    _gl_settled && got=take || got="wait"
+    [ "$got" = "$want" ] || { echo "FAIL: age $age free $free: $got, want $want"; bad=1; }
+  done <<'CASES'
+0 50 take
+0 49 wait
+50 49 wait
+0 - wait
+60 35 take
+60 - take
+- 35 take
+CASES
+  exit "$bad"
+) || exit 1
+echo "ok: within the settle a take needs 50% free, and after it the free floor alone"
 
 # The status names the reads that failed ("-"), in the order it prints them.
 (
