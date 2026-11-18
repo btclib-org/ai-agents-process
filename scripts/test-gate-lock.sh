@@ -77,7 +77,7 @@
 # The stubs are text a session evals, and they read $idle.
 # shellcheck disable=SC1090,SC2329,SC2016,SC2034
 script=${1:-$(dirname "$0")/gate-lock.sh}
-tmp=$(mktemp -d) || exit 1
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-gate-lock.XXXXXX") || exit 1
 trap 'rm -r "$tmp"' EXIT
 GATE_LOCK_DIR=$tmp/lock GATE_LOCK_POLL=1 GATE_LOCK_SLOTS=1
 GATE_LOCK_LOAD=30 GATE_LOCK_IDLE=30 GATE_LOCK_FREE=30 GATE_LOCK_DISK=20 GATE_LOCK_STAGGER=0
