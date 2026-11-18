@@ -110,8 +110,8 @@ The writer's section; the reviewer judges its result.
 - [ ] the `Sign-off` script exits `0` on `<base>..`, or after a merge of
       `main` on the ranges that leave out `main`'s commits (*Signed and
       signed off*)
-- [ ] every gate *The gates* asks of this tip ran on it, committed,
-      with exit code `0`, as it says
+- [ ] every gate *The gates* asks of this tip ran on its tree, staged
+      or committed, with exit code `0`, as it says
 - [ ] *Sourcery and CodeRabbit before a push* holds
 - [ ] `git status --porcelain` is empty in the worktree, checked after
       the last gate, and on an outside contributor's branch in the
@@ -381,15 +381,116 @@ of the standard* says.
     | select(.value != "success") | .key end'
   ```
 
-- **Every commit you hand over is gated, after it is committed.** The
-  merge of `main` above is exempt, and so is a commit kept only to
-  preserve work in progress, amended away before anything is offered. A
-  run before the commit does not count, even where the content looks
-  identical: a hook at commit time can change what is committed. Where a
-  gate's fixer changes files, commit the change and run that gate again.
-  `pre-commit run --all-files` walks `git ls-files`, so a file the
-  branch adds is gated only once staged: the report says the gate saw
-  the new files.
+- **Every commit you hand over is gated, on its tree.** The merge of
+  `main` above is exempt, and so is a commit kept only to preserve work
+  in progress, amended away before anything is offered. A gate reads a
+  tree, so its record in the report names the tree it read, and the
+  `<base>`: `git -C <wt> write-tree` for the staged tree (below), `git
+  -C <wt> rev-parse 'HEAD^{tree}'` for a commit. The run carries over to
+  a commit whose tree is that tree, on the same `<base>`, as after an
+  amend of the message alone. It holds only where this exits `0`:
+
+  ```shell
+  wt=<wt>
+  tree=<gated tree>
+  [ "$(git -C "${wt:?}" rev-parse 'HEAD^{tree}')" = "${tree:?}" ]
+  ```
+
+  A hook at commit time that changes what is committed changes the tree,
+  and the gates run again. Only what reads the tree carries over: the
+  `Sign-off` check, and any hook that reads the commit message, run on
+  the new commit. Where a gate's fixer changes files, the tree has
+  changed: stage the change and run that gate again. `pre-commit run
+  --all-files` walks `git ls-files`, so a file the branch adds is gated
+  only once staged: the report says the gate saw the new files.
+- **The writer gates the staged tree, and signs one commit, at
+  hand-over**, never one at each iteration: each signature can be a
+  pinentry prompt the human has to answer. It stages its change, lists
+  the staged files from the merge base, runs the fixers on them, stages
+  what they change with `git -C <wt> add -u`, and records the tree with
+  `git -C <wt> write-tree`. The working tree is then the staged tree
+  where `git -C <wt> diff --quiet` exits `0` and `git -C <wt> ls-files
+  --others --exclude-standard` prints nothing. The list leaves out a
+  deleted file, as the sandbox's hooks gate below says:
+
+  ```shell
+  wt=<wt>
+  base=<base>
+  list=<scratch>/<name>-paths
+  mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) &&
+    git -C "${wt:?}" diff --cached -z --name-only --diff-filter=d \
+      "${mb:?}" > "${list:?}"
+  ```
+
+  The gates then run where the bullets above put them, the hooks first
+  (*The gate lock*). The hooks read the listed files, or every file
+  where the list is empty, since an empty `--files` makes pre-commit
+  stash:
+
+  ```shell
+  wt=<wt>
+  list=<scratch>/<name>-paths
+  paths=()
+  while IFS= read -r -d '' name; do
+    paths+=("./$name")
+  done < "${list:?}"
+  if [ "${#paths[@]}" -eq 0 ]; then
+    paths=(--all-files)
+  else
+    paths=(--files "${paths[@]}")
+  fi
+  env -C "${wt:?}" uvx pre-commit run "${paths[@]}"
+  ```
+
+  The suite runs where `suite-reads.py`, given the staged paths with its
+  `--paths` form, prints a line or exits non-zero:
+
+  ```shell
+  scratch=<scratch>
+  wt=<wt>
+  base=<base>
+  (set -o pipefail
+    mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) &&
+    git -C "${wt:?}" diff --cached -z --name-only --no-renames "${mb:?}" |
+    xargs -0 env -C "${scratch:?}" uv run --no-project --python 3.15 \
+      python -I "${PROCESS:?}/scripts/suite-reads.py" "${wt:?}" --paths)
+  ```
+
+  Once they pass, the writer commits, signed, in a call of its own: `git
+  -C <wt> commit -s -F <message>`, or `git -C <wt> commit --amend -s -F
+  <message>` before the pull request is open. The commit's tree is then
+  checked against the recorded one, above. The docs build's check reads
+  `HEAD`, so it runs on the commit, and so does a build it asks for. On
+  an outside contributor's branch the gates read the commit, as *An
+  outside contributor's branch* says.
+- **The fixers run on the working tree before each commit**, so that a
+  fixer never forces another commit, gate and signature: ruff's check
+  and format, codespell, markdownlint-cli2, the end-of-file and trailing
+  whitespace fixers, and taplo. Each runs as the tree's own hook, where
+  its `.pre-commit-config.yaml` has one, at the version and with the
+  arguments it gives: here `ruff-check` with `--fix`, `codespell` with
+  `--write-changes` and `markdownlint-cli2` with `--fix`. They read the
+  list above, and a fixer that changes a file exits `1`. The gate after
+  them still runs them, and fails where one changes a file.
+  On an outside contributor's branch pre-commit runs the branch's own
+  hooks, so the fixers run in the sandbox, as its gates do, never
+  outside it:
+
+  ```shell
+  wt=<wt>
+  list=<scratch>/<name>-paths
+  paths=()
+  while IFS= read -r -d '' name; do
+    paths+=("./$name")
+  done < "${list:?}"
+  [ "${#paths[@]}" -eq 0 ] ||
+    for id in ruff-check ruff-format codespell markdownlint-cli2 \
+      end-of-file-fixer trailing-whitespace taplo-format; do
+      grep -Eq "^ *- id: ${id}\$" "${wt:?}/.pre-commit-config.yaml" &&
+        env -C "${wt:?}" uvx pre-commit run "$id" --files "${paths[@]}"
+    done
+  ```
+
 - **Read exit codes, not output.** `… > log 2>&1; echo $?`. A
   multi-batch hook's tail can show a clean batch after a failed one.
 - **A local gate run that fails because the network is down has not
@@ -796,13 +897,22 @@ of the standard* says.
   ```shell
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take <worktree> && {
-    gate_wait; rc=0; timeout -k 60 <seconds> … a gate … || rc=$?
-    echo "EXIT_<gate>=$rc"
-    gate_wait; rc=0; timeout -k 60 <seconds> … the next gate … || rc=$?
-    echo "EXIT_<next gate>=$rc"
+    gate_wait; rc=0; timeout -k 60 <seconds> … the hooks … || rc=$?
+    echo "EXIT_hooks=$rc"
+    if [ "$rc" -eq 0 ]; then
+      gate_wait; rc=0; timeout -k 60 <seconds> … the next gate … || rc=$?
+      echo "EXIT_<next gate>=$rc"
+    fi
     gate_release
   }
   ```
+
+  **The hooks run first, and a failure stops the gate**: the suite and
+  the docs build run only where the hooks exited `0`, since a fix to
+  what the hooks found changes the tree and runs them all again. Where
+  the hooks run outside the lock, as for a Markdown-only diff above, the
+  block starts only once they exited `0`. The report gives a gate the
+  stop left out as not run.
 
   The timeout goes around each gate inside the block, never around the
   whole call: `gate_take` waits in the queue with no bound, so a timeout
@@ -898,8 +1008,9 @@ The findings of these local runs are answered as `/btclib-pr`'s
 ### Committing and rebasing
 
 - **A branch's first push waits for the gates.** Push a commit or an
-  amend only once a gate run on that very commit exited 0, never after a
-  failed one, unless *The gates* asks no gate of it. A fix the gates
+  amend only once a gate run on its tree exited 0 (*Every commit you
+  hand over is gated, on its tree*), never after a failed one, unless
+  *The gates* asks no gate of it. A fix the gates
   find before the first push amends a commit not yet pushed. Check `git
   ls-remote origin <branch>` against `HEAD` after every push. On an open
   pull request, a fix is pushed only once the rounds of *Local review*

@@ -63,9 +63,10 @@ says where your brief names that file, and you say so in the report.
   say so with the measurement.
 - **A list found incomplete twice is deleted**, not lengthened.
 - **You do not review yourself**, and do not write a verdict.
-- **Commit and sign as soon as work exists; push once the gates pass on
-  the commit**, the first push and every amend included, unless
-  *Committing and rebasing* holds it.
+- **Commit and sign once, at hand-over, once the gates pass on the
+  staged tree; push once they pass on the commit's tree**, the first
+  push and every amend included, unless *Committing and rebasing* holds
+  it.
 
 ## What you report
 
