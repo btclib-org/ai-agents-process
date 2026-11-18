@@ -51,10 +51,12 @@ The process the btclib-org maintainers follow with the coding agents
 - `hooks.json` and `scripts/git-c-allow.py` — the hook that approves a
   fixed set of `git -C` commands;
 - `scripts/gate-lock.sh` — the gate lock every worker of every session
-  takes before its heavy gates;
+  takes before its heavy gates, and `gate_peak`, which records the peak
+  memory of what runs through it: the gates of the lock's block, and the
+  reviewers an orchestrator starts as a command;
 - `scripts/test-gate-lock.sh` — `sh scripts/test-gate-lock.sh` shows
-  sessions taking that lock's slots, and waiting while every slot is
-  held;
+  sessions taking that lock's slots and waiting while every slot is
+  held, and `gate_peak` recording a peak;
 - `scripts/gate-sandbox.sb` — the sandbox an outside contributor's gates
   run in, as `process/writing.md`'s *The gates* says;
 - `scripts/test-gate-sandbox.sh` — the gate blocks of *The gates* on

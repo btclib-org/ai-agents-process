@@ -72,12 +72,25 @@
 #   written through either is alive to the other. Libproc reads an
 #   unreaped zombie as gone. With ps refused, a dead PID and a zombie lose
 #   their ticket and their slot on libproc's answer alone.
+# - gate_peak. Under each of sh, bash, zsh and dash, it returns the exit
+#   code of the program it runs and appends one well-formed line to
+#   gate.peaks. A program holding 200 MB peaks between 200 and 300 MB,
+#   skipped where neither time nor /proc reads a peak, as in Codex's
+#   sandbox. A program killed with KILL returns 137. gate_peak removes
+#   time's output file, and one a shell that is gone left, and keeps one
+#   of a live shell. With no file for time's output, under each shell,
+#   the program runs through a /proc of the test's and then alone, reads
+#   the caller's stdin, and returns its code.
+#   The output of GNU time and of macOS time are both read in KB.
+# - /proc, in a tree the test writes: the largest VmHWM of a process and
+#   the processes below it, a grandchild and a child of a thread other
+#   than the main one included, and none once the process has ended.
 
 # The stubs are called by the sourced script, and the script is a variable.
 # The stubs are text a session evals, and they read $idle.
 # shellcheck disable=SC1090,SC2329,SC2016,SC2034
 script=${1:-$(dirname "$0")/gate-lock.sh}
-tmp=$(mktemp -d) || exit 1
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-gate-lock.XXXXXX") || exit 1
 trap 'rm -r "$tmp"' EXIT
 GATE_LOCK_DIR=$tmp/lock GATE_LOCK_POLL=1 GATE_LOCK_SLOTS=1
 GATE_LOCK_LOAD=30 GATE_LOCK_IDLE=30 GATE_LOCK_FREE=30 GATE_LOCK_DISK=20 GATE_LOCK_STAGGER=0
@@ -752,3 +765,146 @@ echo "ok: a process that cannot be read holds its slot, and one ps does not find
   echo "ok: libproc reads a zombie, which ps lists, as gone"
   echo "ok: with ps refused, a dead PID and a zombie lost their ticket and slot"
 ) || exit 1
+
+# gate_peak, under each shell: a program that exits 7 returns 7, and one
+# line is appended, five fields of the forms the header gives, a tab in the
+# kind written as a space.
+pids=""
+for shell in sh bash zsh dash; do
+  command -v "$shell" > /dev/null || { echo "skipped: no $shell for gate_peak"; continue; }
+  rm -rf "${GATE_LOCK_DIR:?}"
+  rc=0
+  "$shell" -c '. "$1"; gate_peak "$2" /abs/wt sh -c "exit 7"' "$shell" "$script" "$(printf 'a\tb')" ||
+    rc=$?
+  [ "$rc" -eq 7 ] || fail "under $shell, gate_peak returned $rc, not the program's 7"
+  [ "$(wc -l < "$GATE_LOCK_DIR/gate.peaks")" -eq 1 ] ||
+    fail "under $shell, gate.peaks does not hold one line"
+  awk -F '\t' 'NF != 5 || $1 !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/ ||
+    $2 != "a b" || $3 != "/abs/wt" || $4 !~ /^([0-9]+|[?])$/ || $5 != 7 { exit 1 }' \
+    "$GATE_LOCK_DIR/gate.peaks" ||
+    { cat "$GATE_LOCK_DIR/gate.peaks"; fail "under $shell, the line of gate.peaks is not well formed"; }
+  echo "ok: under $shell, gate_peak returned 7 and appended: $(cat "$GATE_LOCK_DIR/gate.peaks")"
+done
+
+# A program a signal ends returns 128 plus its number, as the shell gives
+# it: 137 for KILL, which macOS's time alone turns into 1.
+rm -rf "${GATE_LOCK_DIR:?}"
+rc=0
+sh -c '. "$1"; gate_peak killed /abs/wt sh -c "kill -KILL \$\$"' sh "$script" || rc=$?
+[ "$rc" -eq 137 ] || fail "a program killed with KILL returned $rc through gate_peak, not 137"
+[ "$(cut -f 5 "$GATE_LOCK_DIR/gate.peaks")" = 137 ] ||
+  fail "gate.peaks does not record 137 for a program killed with KILL"
+echo "ok: a program killed with KILL returned 137, and gate.peaks records it"
+
+# Time's output file: gate_peak removes its own, and one left by a shell
+# that is gone, and keeps one whose shell is alive.
+rm -rf "${GATE_LOCK_DIR:?}"
+mkdir -p "$GATE_LOCK_DIR"
+sh -c : &
+dead=$!
+wait "$dead"
+: > "$GATE_LOCK_DIR/peak.$dead.left"
+: > "$GATE_LOCK_DIR/peak.$$.live"
+sh -c '. "$1"; gate_peak k /abs/wt true' sh "$script" || fail "gate_peak failed on true"
+[ ! -e "$GATE_LOCK_DIR/peak.$dead.left" ] || fail "gate_peak kept the file of a shell that is gone"
+[ -e "$GATE_LOCK_DIR/peak.$$.live" ] || fail "gate_peak removed the file of a live shell"
+rm -f "$GATE_LOCK_DIR/peak.$$.live"
+left=""
+for f in "$GATE_LOCK_DIR"/peak.*; do [ ! -e "$f" ] || left="$left ${f##*/}"; done
+[ -z "$left" ] || fail "gate_peak left $left"
+echo "ok: gate_peak removed its own file and one of a shell that is gone, and kept a live shell's"
+
+# Where neither time can run, as with no file for its output, gate_peak runs
+# the program through /proc, here a tree of the test's holding only
+# self/status, or else alone. Under each shell, the program reads the
+# caller's stdin and its exit code comes back.
+mkdir -p "$tmp/fakeproc/self"
+: > "$tmp/fakeproc/self/status"
+for shell in sh bash zsh dash; do
+  command -v "$shell" > /dev/null || { echo "skipped: no $shell for the fallbacks"; continue; }
+  for proc in "$tmp/fakeproc" "$tmp/noproc"; do
+    rm -rf "${GATE_LOCK_DIR:?}"
+    got=$(printf 'brief\n' | "$shell" -c '
+      . "$1"
+      mktemp() { return 1; }
+      _gl_proc=$2
+      gate_peak k /abs/wt cat
+      gate_peak k /abs/wt sh -c "exit 7" < /dev/null
+      echo "rc=$?"' "$shell" "$script" "$proc")
+    [ "$got" = "$(printf 'brief\nrc=7')" ] ||
+      fail "under $shell, with _gl_proc at ${proc##*/}, the fallback printed '$got'"
+    [ "$(cut -f 4,5 "$GATE_LOCK_DIR/gate.peaks" | tr '\t\n' ' ,')" = "? 0,? 7," ] ||
+      fail "under $shell, with _gl_proc at ${proc##*/}, gate.peaks holds $(cat "$GATE_LOCK_DIR/gate.peaks")"
+  done
+  echo "ok: under $shell, through /proc and alone, the program read stdin and returned its code"
+done
+rm -rf "${GATE_LOCK_DIR:?}"
+
+# The peak of a known allocation: a program holding 200 MB reads between
+# 200 and 300 MB, in KB.
+if command -v python3 > /dev/null; then
+  rm -rf "${GATE_LOCK_DIR:?}"
+  sh -c '. "$1"; gate_peak alloc /abs/wt python3 -c "import time; b = bytearray(200 * 2**20); time.sleep(2)"' \
+    sh "$script" || fail "gate_peak failed on the allocation"
+  kb=$(cut -f 4 "$GATE_LOCK_DIR/gate.peaks")
+  # no reader of the peak, as in Codex's sandbox, which refuses time -l
+  if [ "$kb" = "?" ] && ! /usr/bin/time -l true > /dev/null 2>&1 &&
+    ! /usr/bin/time -v true > /dev/null 2>&1 && [ ! -r /proc/self/status ]; then
+    echo "skipped: no time or /proc reads a peak here"
+  else
+    case $kb in "" | *[!0-9]*) fail "the peak of the allocation is '$kb'" ;; esac
+    [ "$kb" -ge 204800 ] && [ "$kb" -le 307200 ] ||
+      fail "the peak of 200 MB held is $kb KB, outside 204800 to 307200"
+    echo "ok: a program holding 200 MB peaked at $kb KB"
+  fi
+else
+  echo "skipped: no python3 to allocate 200 MB"
+fi
+rm -rf "${GATE_LOCK_DIR:?}"
+
+# The output of each time, GNU's -v in KB and macOS's -l in bytes, read as
+# KB, and an output with neither as nothing.
+(
+  . "$script"
+  bad=0
+  got=$(printf '\tCommand being timed: "x"\n\tMaximum resident set size (kbytes): 215032\n\tExit status: 0\n' | _gl_peak_kb)
+  [ "$got" = 215032 ] || { echo "FAIL: GNU time read as '$got', want 215032"; bad=1; }
+  got=$(printf '        0,06 real         0,02 user\n           223166464  maximum resident set size\n           215581272  peak memory footprint\n' | _gl_peak_kb)
+  [ "$got" = 217936 ] || { echo "FAIL: macOS time read as '$got', want 217936"; bad=1; }
+  got=$(printf 'time: command terminated abnormally\n' | _gl_peak_kb)
+  [ -z "$got" ] || { echo "FAIL: an output with no peak read as '$got'"; bad=1; }
+  exit "$bad"
+) || exit 1
+echo "ok: the peak is read in KB from GNU time and from macOS time"
+
+# /proc, in a tree of the test's: the largest VmHWM of a process and those
+# below it, and a failure once the process shows none, as a zombie.
+(
+  . "$script"
+  _gl_proc=$tmp/proc
+  hwm() { # <pid> <KB or -> <children>
+    mkdir -p "$_gl_proc/$1/task/$1"
+    if [ "$2" = - ]; then printf 'Name:\tx\nState:\tZ (zombie)\n'
+    else printf 'Name:\tx\nVmPeak:\t 99999999 kB\nVmHWM:\t %s kB\n' "$2"; fi > "$_gl_proc/$1/status"
+    # shellcheck disable=SC2086
+    [ -z "$3" ] || printf '%s ' $3 > "$_gl_proc/$1/task/$1/children"
+  }
+  hwm 100 1000 "200 300"
+  hwm 200 3000 "400"
+  hwm 300 2000 ""
+  hwm 400 5000 ""
+  hwm 500 - ""
+  hwm 600 6000 ""
+  _gl_hwm 100 || { echo "FAIL: _gl_hwm failed on a live process"; exit 1; }
+  # _gl_hwm, of the sourced script, sets _gl_hm
+  # shellcheck disable=SC2154
+  [ "$_gl_hm" = 5000 ] || { echo "FAIL: _gl_hwm read $_gl_hm, want the grandchild's 5000"; exit 1; }
+  # a child that a thread other than the main one started
+  mkdir -p "$_gl_proc/100/task/101"
+  printf '600 ' > "$_gl_proc/100/task/101/children"
+  _gl_hwm 100 && [ "$_gl_hm" = 6000 ] ||
+    { echo "FAIL: _gl_hwm read $_gl_hm, want the thread's child's 6000"; exit 1; }
+  ! _gl_hwm 500 || { echo "FAIL: _gl_hwm read a zombie as live"; exit 1; }
+  ! _gl_hwm 700 || { echo "FAIL: _gl_hwm read a missing process as live"; exit 1; }
+) || exit 1
+echo "ok: /proc gives the largest VmHWM of a process and those below it, and none once it has ended"

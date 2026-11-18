@@ -924,10 +924,13 @@ of the standard* says.
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take <worktree> && {
     echo "TREE=$(gated_tree)"
-    gate_wait; rc=0; timeout -k 60 <seconds> … the hooks … || rc=$?
+    gate_wait; rc=0
+    gate_peak hooks <worktree> timeout -k 60 <seconds> … the hooks … || rc=$?
     echo "EXIT_hooks=$rc"
     if [ "$rc" -eq 0 ]; then
-      gate_wait; rc=0; timeout -k 60 <seconds> … the next gate … || rc=$?
+      gate_wait; rc=0
+      gate_peak <next gate> <worktree> \
+        timeout -k 60 <seconds> … the next gate … || rc=$?
       echo "EXIT_<next gate>=$rc"
     fi
     echo "TREE=$(gated_tree)"
@@ -943,6 +946,9 @@ of the standard* says.
   hooks run outside the lock, as for a Markdown-only diff above, the
   block starts only once they exited `0`. The report gives a gate the
   stop left out as not run.
+
+  `gate_peak` runs the gate, returns its exit code, and records its peak
+  memory, as the script's header comment says.
 
   The timeout goes around each gate inside the block, never around the
   whole call: `gate_take` waits in the queue with no bound, so a timeout
