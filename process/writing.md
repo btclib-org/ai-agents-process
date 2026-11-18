@@ -897,8 +897,8 @@ The findings of these local runs are answered as `/btclib-pr`'s
   review on GitHub either. On PR btclib-org/ecc#598, read at one sha,
   that review reached the base file through the diff and the issues the
   branch cites, and applied the tree's `path_instructions`, while the
-  CLI reached neither the base file nor the issues (the table of
-  ISS btclib-org/ai-agents-process#587). Whether the CLI applies
+  CLI reached neither the base file nor the issues
+  (ISS btclib-org/ai-agents-process#587). Whether the CLI applies
   `.coderabbit.yaml` is not measured; its `-c` takes the file as added
   instructions (`coderabbit review --help`). So a CLI read with no
   finding leaves that review owed, and every local reviewer looks for

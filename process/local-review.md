@@ -234,12 +234,13 @@ says.
 - **Every local reviewer's brief carries what CodeRabbit's review on
   GitHub applies**, the dedicated reviewer's as the fresh one's. It
   holds the `path_instructions` of the sha's `.coderabbit.yaml`, and
-  asks the reviewer to apply each to the files its `path` matches. A
-  reviewer has no network (*Clients*), so the brief also holds the text
-  each instruction links to. The session reads it from a checkout of
-  `btclib-org/.github` brought forward (`every-session.md`'s *Shell,
-  checkouts and prose*): a link to that repository with an anchor is the
-  section of its `README.md` the anchor names. This prints the file:
+  asks the reviewer to apply each to the files its `path` matches. The
+  reviewer in the other client has no network (*Clients*), so the brief
+  also holds the text each instruction links to. The session reads it
+  from a checkout of `btclib-org/.github` brought forward
+  (`every-session.md`'s *Shell, checkouts and prose*): a link to that
+  repository with an anchor is the section of its `README.md` the anchor
+  names. This prints the file:
 
   ```shell
   git -C <wt> show <sha>:.coderabbit.yaml
@@ -299,9 +300,10 @@ says.
   finding with its draft reply and the route taken, and names
   `/btclib-pr`'s *Answering it*, whose routes the reply is judged by.
   Each reviewer tries the reply's ground as it tries a claim of the
-  change, and checks the reply as *A text to be posted* says. A reviewer
-  has no network (*Clients*), so beside what that section's brief
-  carries, the brief holds the text of each link the reply gives. A
+  change, and checks the reply as *A text to be posted* says. The
+  reviewer in the other client has no network (*Clients*), so beside
+  what that section's brief carries, the brief holds the text of each
+  link, and each reference GitHub renders as one, the reply gives. A
   ground that is false on an input the text applies to is a finding of
   these rounds, and so is a reply that declines a finding which the
   first route that fits files: *filed*, or a defect *The rounds* keeps
