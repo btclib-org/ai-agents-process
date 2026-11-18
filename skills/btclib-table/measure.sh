@@ -6,7 +6,7 @@
 #
 # each repository's row goes to "${d}/<repo>.row" and its counts to
 # "${d}/<repo>.tot" ("<iss> <prs>", or "err")
-d=$(mktemp -d)
+d=$(mktemp -d "${TMPDIR:-/tmp}/btclib-table.XXXXXX")
 trap 'rm -r "${d}"' EXIT
 trap 'exit 1' INT TERM
 w="${d}/row.sh"
