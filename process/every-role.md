@@ -684,14 +684,16 @@ an amend where the branch is amended anyway, and otherwise in the squash
   touches takes the same route: a reviewer cannot ack a diff for a
   question it was not opened for. A new rule in `README.md` lands with
   the gate that reads it, or does not land (btclib-org/.github#1075).
-- **A new issue is filed by whoever noticed it, when they notice it**, in
-  the repository hosting that code, or, for code outside btclib-org, as
-  the next bullet says. Search first (`gh issue list --repo <owner>/<repo>
-  --state open --search "<word> <word>"`). Measure first; where that would
-  mean leaving the work at hand, put the deciding command in the body and
-  say it was not run. A small, self-contained one that no red gate,
-  security or packaging defect waits on is filed with the `good first
-  issue` label, a *Done when* and the file to look at.
+- **A new issue is filed by whoever noticed it, when they notice it**,
+  in the repository hosting that code, or, for code outside btclib-org,
+  as the next bullet says. Search first (`gh issue list --repo
+  <owner>/<repo> --state open --search "<word> <word>"`). Measure first;
+  where that would mean leaving the work at hand, put the deciding
+  command in the body and say it was not run. A small, self-contained
+  one that no red gate, security or packaging defect waits on is filed
+  with the `good first issue` label, a *Done when* and the file to look
+  at. The last bullet says which finding the orchestrator files in the
+  reviewer's place.
 - **Before a change is proposed, closed issues and pull requests are
   searched for it too**, under broad words, and the maintainers'
   comments there are read, review threads included. `gh issue list` and
@@ -720,4 +722,6 @@ an amend where the branch is amended anyway, and otherwise in the squash
   appears as `ISS <repo>#123`, as *How an issue and a pull request are
   named* says, followed by a very short description.
 - **The reviewer files with the body inline**; where it cannot file,
-  the body goes verbatim in its report.
+  the body goes verbatim in its report. A finding `local-review.md`'s
+  *The rounds* files from the third round is the exception: the
+  orchestrator files it, with the body the verdict carries.
