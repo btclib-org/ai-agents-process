@@ -23,6 +23,34 @@ is in one of the four files that opening names.
   `ls -d` a path before naming it; a missing checkout is a question for
   the human. What a brief omits misleads as much as what it gets
   wrong.
+- **Each boundary constraint the work carries goes to the writer as a
+  search it runs before handing over**: what stays confidential or under
+  embargo, a name or a detail that must not appear, a limit on the
+  work's scope. The brief gives the command, and asks the writer to run
+  it on the whole of each text it writes, not one sentence at a time:
+  the branch's diff, its paths and removed lines included, the commit
+  message, and each text drafted for posting. It asks for the command
+  and what it printed in the writer's report.
+
+  For what must not be revealed, a text can let a reader conclude what
+  none of its sentences says. So the pattern also holds the words a
+  reader could reach the protected ones from: the names, numbers, paths
+  and identifiers that point to them, and the words that describe them
+  without naming them, as a defect's class does for an embargoed fix.
+  It matches without regard to case and across line breaks (*`grep`
+  reads lines, and prose wraps*), and its zero is proved on a control
+  (*A zero is not a measurement until the pattern is proved*). In a
+  diff, a wrapped phrase runs into the next line's leading `+`, `-` or
+  space, or into the removed lines between a context line and the added
+  ones, and a match across line breaks misses it. So the search reads
+  the changed files whole, at the base and at the head, and
+  `git diff --name-status` for the paths: the head holds what is added,
+  in its context, and the base what is removed. A conclusion drawn from
+  words each harmless alone matches no pattern, so the brief also names
+  the conclusion a reader must not be able to draw. It asks the writer
+  to read each of those texts, and each file the diff changes, whole and
+  once for that conclusion, as a reader who knows nothing else would: a
+  sentence the branch adds can complete one it left unchanged.
 - **Do not hand the reviewer your hypothesis as a premise.**
 - **After a rebase or a new commit, the gates *The gates* asks of the
   new sha run before any reviewer is asked**, and the report you hand it
