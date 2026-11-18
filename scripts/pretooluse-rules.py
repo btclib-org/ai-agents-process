@@ -653,6 +653,13 @@ def unwrap(words: list[str], depth: int) -> list[Found]:
             at = skip_options(words, at, WRAPPER_VALUES[program])
             if program in ("timeout", "gtimeout"):
                 at += 1
+        elif program == "gate_peak":
+            # scripts/gate-lock.sh's function: a kind and a tree, then the
+            # program it runs. It runs an assignment there as a program
+            # name, which no shell finds, so nothing runs.
+            at += 3
+            if at < len(words) and ASSIGNMENT.match(words[at]):
+                return []
         elif program == "uv" and words[at + 1 : at + 2] == ["run"]:
             at = skip_options(words, at + 1, UV_VALUES)
         elif program == "uv" and words[at + 1 : at + 3] == ["tool", "run"]:

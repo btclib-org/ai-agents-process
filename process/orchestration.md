@@ -608,6 +608,9 @@ starts it, its tokens included, do not reach what the reviewer runs.
 `$TMPDIR`, as in `mktemp -d "${TMPDIR:-/tmp}/x.XXXXXX"`: macOS's
 `mktemp` without a template writes in its own user directory instead.
 
+`gate_peak` records the peak memory of the reviewer's run, as the header
+comment of `$PROCESS/scripts/gate-lock.sh` says.
+
 The network is off because an input runs the branch's code, and the
 sandbox still reads credentials such as `~/.codex/auth.json` and
 `~/.gnupg`. With the network on, it could send them to any host, and
@@ -638,7 +641,9 @@ rm -f <work>/<name>.last.md
 ```
 
 ```shell
-env -i -C <work>/<name> HOME="$HOME" PATH="$PATH" \
+. "${PROCESS:?}/scripts/gate-lock.sh"
+gate_peak codex <work>/<name> \
+  env -i -C <work>/<name> HOME="$HOME" PATH="$PATH" \
   UV_CACHE_DIR=<work>/<name>/uv-cache UV_OFFLINE=1 \
   TMPDIR=<work>/<name>/tmp \
   timeout 900 codex exec -s workspace-write --skip-git-repo-check \
@@ -693,9 +698,10 @@ run /login` and exits `1`.
 The session creates the reviewer's directory, links the agent into it,
 and makes the run's temporary directory. `mktemp` prints its path,
 which stands for `<tmp>` in the two blocks after it. The session then
-starts the reviewer, and removes the temporary directory once the run
-ends. The run starts `claude` only where `CLAUDE_CODE_TMPDIR` names a
-directory, so an empty or missing value stops it:
+starts the reviewer through `gate_peak`, as a Codex reviewer is started,
+and removes the temporary directory once the run ends. The run starts
+`claude` only where `CLAUDE_CODE_TMPDIR` names a directory, so an empty
+or missing value stops it:
 
 ```shell
 mkdir -p <work>/<name>/.claude/agents
@@ -714,7 +720,9 @@ mktemp -d /tmp/rv.XXXXXX
 sbx='{"sandbox":{"enabled":true,"failIfUnavailable":true,'
 sbx="${sbx}"'"allowUnsandboxedCommands":false,'
 sbx="${sbx}"'"network":{"strictAllowlist":true}}}'
-env -i -C <work>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
+. "${PROCESS:?}/scripts/gate-lock.sh"
+gate_peak claude <work>/<name> \
+  env -i -C <work>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
   ${CLAUDE_CONFIG_DIR:+"CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"} \
   CLAUDE_CODE_TMPDIR=<tmp> UV_CACHE_DIR=<work>/<name>/uv-cache \
   UV_OFFLINE=1 ZDOTDIR=/var/empty \

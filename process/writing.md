@@ -796,13 +796,19 @@ of the standard* says.
   ```shell
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take <worktree> && {
-    gate_wait; rc=0; timeout -k 60 <seconds> … a gate … || rc=$?
+    gate_wait; rc=0
+    gate_peak <gate> <worktree> timeout -k 60 <seconds> … a gate … || rc=$?
     echo "EXIT_<gate>=$rc"
-    gate_wait; rc=0; timeout -k 60 <seconds> … the next gate … || rc=$?
+    gate_wait; rc=0
+    gate_peak <next gate> <worktree> \
+      timeout -k 60 <seconds> … the next gate … || rc=$?
     echo "EXIT_<next gate>=$rc"
     gate_release
   }
   ```
+
+  `gate_peak` runs the gate, returns its exit code, and records its peak
+  memory, as the script's header comment says.
 
   The timeout goes around each gate inside the block, never around the
   whole call: `gate_take` waits in the queue with no bound, so a timeout
