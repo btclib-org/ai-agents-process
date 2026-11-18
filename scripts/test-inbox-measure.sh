@@ -43,7 +43,7 @@
 # what measure.sh printed. It exits 1 where a case failed or a copy was
 # not caught.
 measure=${1:-$(dirname "$0")/../skills/btclib-inbox/measure.sh}
-tmp=$(mktemp -d)
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-inbox-measure.XXXXXX") || exit 1
 trap 'rm -rf "${tmp:?}"' EXIT
 a=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 b=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
