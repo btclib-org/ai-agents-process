@@ -12,13 +12,55 @@
 #
 #   . "${PROCESS:?}/scripts/gate-lock.sh"
 #   gate_take [<worktree>] && {
-#     gate_wait; rc=0; <a gate> || rc=$?; echo "EXIT_<gate>=$rc"
-#     gate_wait; rc=0; <a gate> || rc=$?; echo "EXIT_<gate>=$rc"
+#     gate_wait; rc=0
+#     gate_peak <gate> <worktree> <a gate> || rc=$?; echo "EXIT_<gate>=$rc"
+#     gate_wait; rc=0
+#     gate_peak <gate> <worktree> <a gate> || rc=$?; echo "EXIT_<gate>=$rc"
 #     gate_release
 #   }
 #
 # A load generator takes every slot with gate_take_all and releases them with
 # gate_release_all. One runs at a time.
+#
+# gate_peak runs a program and records its peak memory. It takes no slot
+# and admits nothing: it only records. Each gate in the block above runs
+# through it, and so does a reviewer an orchestrator starts as a command,
+# with `codex exec` or `claude -p`. A run not started through it is not
+# recorded:
+#
+#   gate_peak <kind> <tree> <program> [<argument>...]
+#   gate_peak suite /abs/wt timeout 1800 uv run pytest -n "$GATE_LOCK_WORKERS"
+#   gate_peak codex /abs/work/reviewer env -i ... codex exec ...
+#
+# <program> is a program, not a shell function, since time runs it. It
+# returns the program's exit code and appends one line to
+# $GATE_LOCK_DIR/gate.peaks, tab-separated: the UTC time the program
+# ended, <kind>, <tree>, the peak resident memory in KB (`?` where it
+# could not be read), and that exit code. A tab or a newline in <kind> or
+# <tree> is written as a space. The peak is read with `/usr/bin/time -l` on
+# macOS and GNU `/usr/bin/time -v` elsewhere, which run the program through
+# sh, so that one a signal ends returns 128 plus its number, as 137 for
+# KILL: macOS's time alone returns 1 for it. time writes into a file
+# beside the lock, which a later gate_peak removes where an interrupt left
+# it. Where neither time runs, the peak is the largest VmHWM that /proc
+# shows, once a second while the program runs, of the program and the
+# processes /proc lists below it. The program then runs as a background
+# job, which ignores SIGINT: TERM, as timeout sends, still stops it, and
+# an interrupt that ends the calling shell leaves it running, outside the
+# lock. Where none of the three can read the peak, the program runs alone
+# and the peak is `?`, as in Codex's workspace-write sandbox, which
+# refuses `time -l` a sysctl it reads.
+#
+# The peak is that of the largest single process, not the sum over the
+# program's processes: of two processes of 200 MB at once it reads about
+# 200 MB. A process still running when its parent ends, as a daemon, is not
+# counted. /proc also misses what a process gains in its last second, and a
+# process that starts and ends between two reads. So a line is a lower
+# bound on what the run held at once. Read by time, it also bounds it from
+# above: a run that held N processes at once, as a suite's workers and its
+# controller, held at most N times its peak, daemons aside. An agent that
+# runs inside the session's own client, as a Claude Code subagent does, has
+# no process of its own to wrap, and is not recorded.
 #
 # The slots and the queue sit in $GATE_LOCK_DIR, by default
 # /tmp/claude-<uid>/gate. The first slot is the directory gate.lock, the
@@ -503,4 +545,117 @@ gate_release_all() {
       { echo "gate.generator released by $_gl_me"; _gl_gn=$((_gl_gn + 1)); }
   fi
   [ "$_gl_gn" -gt 0 ]
+}
+
+# Where _gl_hwm reads the processes; a test points it at a tree of its own
+_gl_proc=/proc
+
+# The peak in KB that the output of /usr/bin/time on stdin gives: GNU's -v
+# names KB, macOS's -l gives bytes. Prints nothing where it gives none.
+_gl_peak_kb() {
+  awk 'tolower($0) ~ /maximum resident set size/ {
+         if ($0 ~ /\(kbytes\)/) v = $NF; else if ($1 ~ /^[0-9]+$/) v = int($1 / 1024)
+       }
+       END { if (v ~ /^[0-9]+$/) print v }'
+}
+
+# The VmHWM in KB of PID $1, read under $_gl_proc
+_gl_vmhwm() {
+  sed -n 's/^VmHWM:[[:space:]]*\([0-9][0-9]*\) kB$/\1/p' "$_gl_proc/$1/status" 2>/dev/null
+}
+
+# Prints the children of PID $1 that /proc lists under each of its threads,
+# each followed by a space
+_gl_children() {
+  # listed rather than globbed: zsh stops at a glob with no match. The
+  # names are thread IDs, digits only, so each line is one whole name.
+  while read -r _gl_ht; do
+    [ -n "$_gl_ht" ] || continue
+    # split on purpose: the file holds the PIDs, a space after each
+    # shellcheck disable=SC2046
+    printf '%s ' $(cat "$_gl_proc/$1/task/$_gl_ht/children" 2>/dev/null)
+  done <<EOF
+$(ls "$_gl_proc/$1/task" 2>/dev/null)
+EOF
+}
+
+# Sets _gl_hm to the largest VmHWM in KB of PID $1 and the processes below
+# it. Fails where PID $1 shows none, as once it has ended.
+_gl_hwm() {
+  _gl_hm=$(_gl_vmhwm "$1")
+  [ -n "$_gl_hm" ] || return 1
+  # the trailing space ends every PID, so that each step drops one
+  _gl_hq="$(_gl_children "$1") "
+  while [ -n "$_gl_hq" ]; do
+    _gl_hp=${_gl_hq%% *}
+    _gl_hq=${_gl_hq#* }
+    [ -n "$_gl_hp" ] || continue
+    _gl_hk=$(_gl_vmhwm "$_gl_hp")
+    [ -z "$_gl_hk" ] || [ "$_gl_hk" -le "$_gl_hm" ] || _gl_hm=$_gl_hk
+    _gl_hq="$_gl_hq$(_gl_children "$_gl_hp")"
+  done
+}
+
+# Removes the files of time's output that gate_peak runs left behind, those
+# whose shell is gone, as one interrupted before it removed its own
+_gl_peak_sweep() {
+  # listed rather than globbed: zsh stops at a glob with no match
+  while read -r _gl_t; do
+    case $_gl_t in peak.*) ;; *) continue ;; esac
+    _gl_tp=${_gl_t#peak.}
+    _gl_tp=${_gl_tp%%.*}
+    case $_gl_tp in "" | *[!0-9]*) continue ;; esac
+    _gl_running "$_gl_tp" || rm -f "$_gl_d/$_gl_t"
+  done <<EOF
+$(ls "$_gl_d" 2>/dev/null)
+EOF
+}
+
+gate_peak() {
+  [ "$#" -ge 3 ] || {
+    echo "usage: gate_peak <kind> <tree> <program> [<argument>...]" >&2
+    return 2
+  }
+  _gl_pkind=$1 _gl_ptree=$2
+  shift 2
+  _gl_prc=0 _gl_pkb="" _gl_pf=""
+  # time's output goes beside the lock, named by this shell's PID, so that
+  # a later run removes it where this one is interrupted
+  if _gl_dir >&2 && _gl_self >&2; then
+    _gl_peak_sweep
+    _gl_pf=$(mktemp "$_gl_d/peak.$_gl_me.XXXXXX" 2>/dev/null) || _gl_pf=""
+  fi
+  # each time is tried on `true` first: where it fails after the program
+  # has run, it returns its own code in place of the program's. time runs
+  # the program through sh, which returns 128 plus the number of a signal
+  # that ends it, where macOS's time returns 1 for KILL.
+  if [ -n "$_gl_pf" ] && [ "$(uname -s)" = Darwin ] &&
+    /usr/bin/time -l -o "$_gl_pf" true > /dev/null 2>&1; then
+    /usr/bin/time -l -o "$_gl_pf" sh -c '"$@"; exit $?' sh "$@" || _gl_prc=$?
+    _gl_pkb=$(_gl_peak_kb < "$_gl_pf")
+  elif [ -n "$_gl_pf" ] && /usr/bin/time -v -o "$_gl_pf" true > /dev/null 2>&1; then
+    /usr/bin/time -v -o "$_gl_pf" sh -c '"$@"; exit $?' sh "$@" || _gl_prc=$?
+    _gl_pkb=$(_gl_peak_kb < "$_gl_pf")
+  elif [ -r "$_gl_proc/self/status" ]; then
+    # stdin through fd 3: a command started with & reads /dev/null, which
+    # dash puts in place before an explicit <&0
+    { "$@" <&3 3<&- & } 3<&0
+    _gl_ppid=$!
+    while _gl_hwm "$_gl_ppid"; do
+      [ -n "$_gl_pkb" ] && [ "$_gl_pkb" -ge "$_gl_hm" ] || _gl_pkb=$_gl_hm
+      sleep 1
+    done
+    wait "$_gl_ppid" || _gl_prc=$?
+  else
+    "$@" || _gl_prc=$?
+  fi
+  [ -z "$_gl_pf" ] || rm -f "$_gl_pf"
+  if [ -n "$_gl_d" ] && [ -d "$_gl_d" ]; then
+    printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      "$(printf '%s' "$_gl_pkind" | tr '\t\n' '  ')" \
+      "$(printf '%s' "$_gl_ptree" | tr '\t\n' '  ')" \
+      "${_gl_pkb:-?}" "$_gl_prc" >> "$_gl_d/gate.peaks" ||
+      echo "gate_peak: cannot append to $_gl_d/gate.peaks" >&2
+  fi
+  return "$_gl_prc"
 }
