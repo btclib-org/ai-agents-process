@@ -17,6 +17,14 @@ it: never on the mnemonic. Each command below is that release's, as its
 what each command does, and what it cannot. $ARGUMENTS, where given, is
 the bundle's path.
 
+The release gives its dependencies a floor only, so each command below
+runs it with `--exclude-newer 2026-11-16T23:16:00Z`: uv then resolves
+every package as PyPI served it when the release was published. That
+is the minute after the release's last file,
+`seed_scan-2026.11.17.tar.gz`, reached PyPI, at the
+`upload_time_iso_8601` that
+<https://pypi.org/pypi/seed-scan/2026.11.17/json> gives it.
+
 [readme]: https://github.com/btclib-org/seed-scan/blob/v2026.11.17/README.md
 [security]: https://github.com/btclib-org/seed-scan/blob/v2026.11.17/SECURITY.md
 
@@ -42,9 +50,10 @@ of `$PROCESS/process/every-role.md`.
   the secret*.
 - **No address leaves the machine but through `seed-scan`**, to the
   server and the node the user names; `uvx` fetches the pinned release
-  from PyPI, which sends none. No explorer, no other API, no script of
-  the session's own: what the pinned release does not read is a limit
-  of the search (*The answer*), not a gap for the session to fill.
+  and its dependencies from PyPI, which sends none. No explorer, no
+  other API, no script of the session's own: what the pinned release
+  does not read is a limit of the search (*The answer*), not a gap for
+  the session to fill.
 
 ## The user runs identify
 
@@ -62,16 +71,18 @@ vulnerabilities*. Give them the commands. The first, run before the
 network goes off, puts the pinned release in uv's cache:
 
 ```shell
-uvx seed-scan@2026.11.17 --help
+uvx --exclude-newer 2026-11-16T23:16:00Z seed-scan@2026.11.17 --help
 ```
 
-The second runs that release from the cache alone: `--offline` has uv
-fetch nothing, and a `seed-scan` found earlier on the `PATH` is not
+The second runs, from the cache alone, the environment the first built:
+`--offline` has uv fetch nothing, the same `--exclude-newer` gives the
+same packages, and a `seed-scan` found earlier on the `PATH` is not
 run. It asks for the mnemonic, then for passphrases until an empty one,
 at hidden prompts, and writes the bundle:
 
 ```shell
-uvx --offline seed-scan@2026.11.17 identify > bundle.json
+uvx --offline --exclude-newer 2026-11-16T23:16:00Z seed-scan@2026.11.17 \
+  identify > bundle.json
 ```
 
 Where they know an address the mnemonic gave, `--address` followed by
@@ -95,7 +106,8 @@ bundle=<the bundle's path>
 ```
 
 ```shell
-uvx --from seed-scan==2026.11.17 seed-scan report "${bundle:?}"
+uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
+  seed-scan report "${bundle:?}"
 ```
 
 With no result beside it, the report lists what `identify` found: the
@@ -145,7 +157,8 @@ chain=<the chain the node serves>
 ```
 
 ```shell
-uvx --from seed-scan==2026.11.17 seed-scan scan --server "${server:?}" \
+uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
+  seed-scan scan --server "${server:?}" \
   --node "${node:?}" --evm-chain "${chain:?}" "${bundle:?}" \
   > "${scratchpad:?}/funds-recovery/scan.json"
 ```
@@ -154,22 +167,32 @@ Leave out `--server` where the user named no server, and `--node` with
 `--evm-chain` where they named no node. Where they named neither,
 `scan` refuses to run, so the session skips it. `--tcp` asks a server on
 their own machine, and `--cafile` one whose certificate the system does
-not trust. `seed-scan scan --help` lists the chains, and the bounds
-`--gap-limit` and `--account-gap`. A run reads one node's chain, and a
-report reads one scan result: a further chain is a scan and a report of
-its own, each in a file of its own.
-
-A chain forked from Bitcoin is read with its own Electrum server, which
-the user names too:
+not trust. A run reads one node's chain, and a report reads one scan
+result: a further chain is a scan and a report of its own, each in a
+file of its own. The help lists the chains, and the bounds
+`--gap-limit` and `--account-gap`:
 
 ```shell
-fork=<a chain seed-scan forks --help lists>
+uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
+  seed-scan scan --help
+```
+
+A chain forked from Bitcoin is read with its own Electrum server, which
+the user names too. The help lists the chains:
+
+```shell
+uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
+  seed-scan forks --help
+```
+
+```shell
+fork=<a chain the help of forks lists>
 server=<that chain's Electrum server, as host:port>
 ```
 
 ```shell
-uvx --from seed-scan==2026.11.17 seed-scan forks --chain "${fork:?}" \
-  --server "${server:?}" "${bundle:?}" \
+uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
+  seed-scan forks --chain "${fork:?}" --server "${server:?}" "${bundle:?}" \
   > "${scratchpad:?}/funds-recovery/forks-${fork:?}.json"
 ```
 
@@ -182,7 +205,8 @@ Then the report, with `--forks` once per forks result that counts, and
 with no `--scan` or `--forks` where none does:
 
 ```shell
-uvx --from seed-scan==2026.11.17 seed-scan report \
+uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
+  seed-scan report \
   --scan "${scratchpad:?}/funds-recovery/scan.json" \
   --forks "${scratchpad:?}/funds-recovery/forks-${fork:?}.json" \
   "${bundle:?}" > "${scratchpad:?}/funds-recovery/report.txt"
