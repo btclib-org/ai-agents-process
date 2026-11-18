@@ -203,9 +203,9 @@ says.
   blind spots. Where the writer runs in Claude Code, the fresh reviewer
   runs in Codex, and the other way round. The dedicated reviewer runs in
   the writer's client, and so does the fresh reviewer of a text to be
-  posted. *Clients* and `orchestration.md`'s *Starting the reviewer in
-  the other client* say how each client starts and resumes a reviewer in
-  the other.
+  posted that the rounds review on its own. *Clients* and
+  `orchestration.md`'s *Starting the reviewer in the other client* say
+  how each client starts and resumes a reviewer in the other.
 - The fresh reviewer reads the branch's whole diff from its parent,
   briefed with *Local review* and with the bot's prompt: the `prompt:`
   block of `btclib-org/.github`'s `reusable-claude-review.yml` at the ref
@@ -290,6 +290,14 @@ says.
   names the paths in its `CONFLICT` lines.
 - A branch a review on GitHub sends back, the bot's or a person's, goes
   through the same rounds before its fix is pushed.
+- **A reply to a bot's finding is read in the branch's rounds before it
+  is posted**, beside the fix where there is one. The brief carries each
+  finding with its draft reply and the route taken, and names
+  `/btclib-pr`'s *Answering it*, whose routes the reply is judged by.
+  Each reviewer tries the reply's ground as it tries a claim of the
+  change. A ground that is false on an input the text applies to is a
+  finding of these rounds, and so is a reply that declines a finding for
+  which *filed* is the first route that fits.
 
 ### A text to be posted
 
