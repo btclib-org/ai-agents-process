@@ -48,31 +48,36 @@ of `$PROCESS/process/every-role.md`.
 
 ## The user runs identify
 
-A bundle the user already has is used as it is: they run `identify`
-only where they have none, or where the report asks for a larger bound
-(*The answer*).
+A bundle the user already has is used as it is. They run `identify`
+where they have none, where they want a passphrase tried that they did
+not type for that bundle, or where the report asks for a larger bound
+(*The answer*). Each run writes a bundle of its own, from the empty
+passphrase and those typed in that run, and each bundle is read as the
+sections below say.
 
 They run it in a terminal of their own, outside the session, never as a
 command the session runs, on a machine they trust with the network off,
 as seed-scan's `SECURITY.md` asks in *Limitations, not
-vulnerabilities*. Give them the commands. The first installs the pinned
-release, before the network goes off:
+vulnerabilities*. Give them the commands. The first, run before the
+network goes off, puts the pinned release in uv's cache:
 
 ```shell
-uv tool install seed-scan==2026.11.17
+uvx seed-scan@2026.11.17 --help
 ```
 
-The second asks for the mnemonic, then for passphrases until an empty
-one, at hidden prompts, and writes the bundle:
+The second runs that release from the cache alone: `--offline` has uv
+fetch nothing, and a `seed-scan` found earlier on the `PATH` is not
+run. It asks for the mnemonic, then for passphrases until an empty one,
+at hidden prompts, and writes the bundle:
 
 ```shell
-seed-scan identify > bundle.json
+uvx --offline seed-scan@2026.11.17 identify > bundle.json
 ```
 
 Where they know an address the mnemonic gave, `--address` followed by
 it has `identify` search for its path. `--accounts`, `--indexes` and
-`--keys` set how much it writes and searches, and
-`seed-scan identify --help` gives their defaults.
+`--keys` set how much it writes and searches, and the release's
+`identify --help` gives their defaults.
 
 The bundle holds no secret, but whoever holds it can follow the
 wallet's history and balance, as seed-scan's `README.md` says in *What
@@ -122,11 +127,16 @@ A hosted node's URL can hold an access key in its path or query.
 seed-scan leaves those out of its result and report, but the command the
 session runs holds the whole URL, and so does the conversation. Ask for
 a URL that holds no key, as the user's own node or a proxy on their
-machine that adds the key, and tell them not to paste one that does.
+machine that adds the key, and ask them not to paste one that does.
 Where one is pasted anyway, the key is exposed as the secret is (*The
 secret stays out of the session*). `scan` refuses a node URL that
 carries a login, and takes the Electrum server as `host:port` alone,
 with no path or query.
+
+A proxy passes every address on to the node behind it, which the report
+does not name. Where the user names a proxy, ask which service it
+forwards to, and scan only once they have named it and agreed that it
+learns every address. The answer names that service beside the report.
 
 ```shell
 server=<the Electrum server, as host:port>
@@ -198,7 +208,8 @@ limit read from the report or from the pinned release's documents:
 - the `bounds` lines: an account or an address past those gaps was not
   read;
 - a non-empty passphrase not typed at `identify` was not tried, since
-  it tries the empty one and those typed;
+  it tries the empty one and those typed: another is tried by a new run
+  (*The user runs identify*);
 - what the Electrum server and the EVM node are still trusted for, as
   seed-scan's `SECURITY.md` says in *Limitations, not vulnerabilities*.
 
