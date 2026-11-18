@@ -66,7 +66,8 @@ says where your brief names that file, and you say so in the report.
 - **Commit and sign once, at hand-over, once the gates pass on the
   staged tree; push once they pass on the commit's tree**, the first
   push and every amend included, unless *Committing and rebasing* holds
-  it.
+  it. Where the process gates only a commit, as its sandbox does on an
+  outside contributor's branch, commit first and gate that commit.
 
 ## What you report
 
@@ -78,7 +79,8 @@ Facts, not reassurances:
 - each gate's command and **exit code**, the counts the runner prints,
   and what *The gates* has every worker report at each run;
   where a run fell and a later one passed, both;
-- `git status --porcelain` empty, checked after the last gate;
+- `git status --porcelain` empty, checked after the last gate and the
+  commit that follows it;
 - the decisions you took and their ground, departures from the brief
   first;
 - what you did **not** check, and why;
