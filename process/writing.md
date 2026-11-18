@@ -110,13 +110,15 @@ The writer's section; the reviewer judges its result.
 - [ ] the `Sign-off` script exits `0` on `<base>..`, or after a merge of
       `main` on the ranges that leave out `main`'s commits (*Signed and
       signed off*)
-- [ ] every gate *The gates* asks of this tip ran on its tree, staged
-      or committed, with exit code `0`, as it says
+- [ ] every gate *The gates* asks of this tip exited `0`: the hooks on
+      its tree, staged or committed, and the suite and the docs build on
+      the tip itself (*Every commit you hand over is gated, on its
+      tree*)
 - [ ] *Sourcery and CodeRabbit before a push* holds
-- [ ] `git status --porcelain` is empty in the worktree, checked after
-      the commit that follows the last gate, and on an outside
-      contributor's branch in the status file of each gate too (*The
-      gates*)
+- [ ] `git status --porcelain` is empty in the worktree, checked once
+      the commit is made and the last gate has run, whichever comes
+      last, and on an outside contributor's branch in the status file of
+      each gate too (*The gates*)
 - [ ] the subject that lands carries the right citation, and the body
       carries no stray closing keyword
 - [ ] the commit message was re-read, not carried by `--no-edit`
@@ -432,17 +434,26 @@ of the standard* says.
 
 - **Every commit you hand over is gated, on its tree.** The merge of
   `main` above is exempt, and so is a commit kept only to preserve work
-  in progress, amended away before anything is offered. A gate reads a
-  tree, so a run's log names the tree it read and the merge base its
-  diffs start from, on a `TREE=` line before its first gate and another
-  after its last, `echo "TREE=$(gated_tree)"`, inside the gate lock
-  (*The gate lock*) or outside it. The run counts only where both lines
-  name the same pair. `gated_tree` prints the tree, staged or committed,
-  and the merge base of `<base>` and `HEAD`, only where the working tree
-  holds nothing the index lacks: no unstaged change, and no untracked
-  file but those `.gitignore` names. It prints nothing otherwise, so a
-  file the branch adds is gated only once staged. It writes the tree
-  from a copy of the index into a temporary object directory, since `git
+  in progress, amended away before anything is offered. The hooks are
+  made to run on a tree not yet committed: pre-commit runs them at
+  commit time, before the commit exists. The suite and the docs build
+  can read the commit itself, as btclib-wallet's
+  `tests/strategies/provenance/__init__.py` reads `git show
+  HEAD:uv.lock` and btclib's `tests/declared_version_test.py` compares
+  `HEAD` with a release tag, so on a staged tree they read the parent.
+  They run on the commit, and their run counts for that commit only,
+  which the report names. A run's log names the tree it read and the
+  merge base its diffs start from, on a `TREE=` line before its first
+  gate and another after its last, `echo "TREE=$(gated_tree)"`, inside
+  the gate lock (*The gate lock*) or outside it. The run counts only
+  where both lines name the same pair. `gated_tree` prints the tree,
+  staged or committed, and the merge base of `<base>` and `HEAD`, only
+  where the working tree holds nothing the index lacks: no unstaged
+  change, and no untracked file but those git ignores (`.gitignore`,
+  `.git/info/exclude` and `core.excludesFile`, which
+  `--exclude-standard` reads). It prints nothing otherwise, so a file
+  the branch adds is gated only once staged. It writes the tree from a
+  copy of the index into a temporary object directory, since `git
   write-tree` takes `index.lock` in the git directory, which a Codex
   sandbox keeps read-only (*Git writes under Codex*). Its `mktemp` takes
   a template under `$TMPDIR`: without one, macOS's `mktemp -d` ignores
@@ -468,10 +479,10 @@ of the standard* says.
   )
   ```
 
-  The run carries over to a commit whose tree is that tree, on the same
-  merge base, as after an amend of the message alone, or the commit of a
-  staged tree that was gated. It holds only where this exits `0`, with
-  the tree and the merge base the log's `TREE=` lines name:
+  A run of the hooks carries over to a commit whose tree is that tree,
+  on the same merge base, as after an amend of the message alone, or the
+  commit of a staged tree they ran on. It holds only where this exits
+  `0`, with the tree and the merge base the log's `TREE=` lines name:
 
   ```shell
   wt=<wt>
@@ -483,35 +494,39 @@ of the standard* says.
   ```
 
   A hook at commit time that changes what is committed changes the tree,
-  and the gates run again. Only what reads the tree carries over: the
-  `Sign-off` check, and any hook that reads the commit message, run on
-  the new commit. The carry-over is the writer's: a reviewer relies only
-  on a run on the sha it reviews, as `REVIEWING.md`'s *The gates are the
-  evidence* says. Where a gate's fixer changes files, the tree has
-  changed and the second `TREE=` line is empty: stage the change and run
-  the gates again. On an outside contributor's branch the gates run on
-  the commit `<sha>` in `<gate wt>`, where no git command runs outside
-  the sandbox once a gate has run there: the pair is `<sha>`'s tree and
-  merge base, read in `<wt>` before the first gate, and the status file
-  of each gate stands in for the second `TREE=` line.
-- **The writer gates the staged tree, and signs one commit, at
-  hand-over**, never one at each iteration: each signature can be a
-  prompt the human has to answer. It stages its change, runs
-  the fixers (below), stages what they change, and runs the gates, each
+  and the gates run again. Only the hooks' run carries over: the suite,
+  the docs build, the `Sign-off` check and any hook that reads the
+  commit message run on each new commit. The carry-over is the writer's:
+  a reviewer relies only on a run on the sha it reviews, as
+  `REVIEWING.md`'s *The gates are the evidence* says. Where a gate's
+  fixer changes files, the tree has changed and the second `TREE=` line
+  is empty: stage the change and run the gates again. On an outside
+  contributor's branch the gates run on the commit `<sha>` in `<gate
+  wt>`, where no git command runs outside the sandbox once a gate has
+  run there: the pair is `<sha>`'s tree and merge base, read in `<wt>`
+  before the first gate, and the status file of each gate stands in for
+  the second `TREE=` line.
+- **The writer runs the hooks on the staged tree, and signs one commit,
+  at hand-over**, never one at each iteration: each signature can be a
+  prompt the human has to answer. It stages its change, runs the fixers
+  (below), stages what they change, and runs the hooks until they pass,
   on the diff the bullets above read. This stages everything:
 
   ```shell
   git -C <wt> add --all
   ```
 
-  Once the gates pass, the writer commits, signed, in a call of its own:
+  Once the hooks pass, the writer commits, signed, in a call of its own:
   `git -C <wt> commit -s -F <message>`, or `git -C <wt> commit --amend
   -s -F <message>` before the pull request is open; once it is open, a
   fix is a new commit on top (*Committing and rebasing*). The commit is
-  then checked against the pair the log names, above. An outside
-  contributor's branch is the exception: its sandbox gates only a
-  commit, in `<gate wt>` (*An outside contributor's branch*), so the
-  session commits, signed, and then gates that commit.
+  then checked against the pair the hooks' log names, above, and the
+  suite and the docs build, where *The gates* asks them, run on it.
+  Where they fail, the fix is staged, the hooks run again, and the fix
+  is committed as above. An outside contributor's branch is the
+  exception: its sandbox gates only a commit, in `<gate wt>` (*An
+  outside contributor's branch*), so the session commits, signed, and
+  then gates that commit.
 - **The fixers run on the working tree before each commit**, so that a
   fixer never forces another commit, gate and signature. Section 4 of
   the organization's standard (*The lint gate is
@@ -956,13 +971,16 @@ of the standard* says.
   }
   ```
 
-  **The hooks run first, and a failure stops the gate**: the suite and
-  the docs build run only where the hooks exited `0`, since a fix to
-  what the hooks found changes the tree and runs them all again. Each
-  later gate takes the same `if`, which reads the exit of the gate
-  before it, so the first gate that fails stops the block. Where the
-  hooks run outside the lock, as for a Markdown-only diff above, the
-  block starts only once they exited `0`. The report gives a gate the
+  **The hooks run before the suite and the docs build, and a failure
+  stops the gate**: on an outside contributor's branch they follow `uv
+  sync --locked`, the sandbox's first gate. The suite and the docs build
+  run only where the hooks exited `0`, since a fix to what the hooks
+  found changes the tree and runs them all again. Each later gate takes
+  the same `if`, which reads the exit of the gate before it, so the
+  first gate that fails stops the block. Where the hooks ran on the
+  staged tree and their run carries over to the commit, or ran outside
+  the lock, as for a Markdown-only diff above, the block starts at the
+  next gate, and only once they exited `0`. The report gives a gate the
   stop left out as not run.
 
   `gate_peak` runs the gate, returns its exit code, and records its peak
@@ -1065,15 +1083,14 @@ The findings of these local runs are answered as `/btclib-pr`'s
 ### Committing and rebasing
 
 - **A branch's first push waits for the gates.** Push a commit or an
-  amend only once a gate run on its tree exited 0 (*Every commit you
-  hand over is gated, on its tree*), never after a failed one, unless
-  *The gates* asks no gate of it. A fix the gates
-  find before the first push amends a commit not yet pushed. Check `git
-  ls-remote origin <branch>` against `HEAD` after every push. On an open
-  pull request, a fix is pushed only once the rounds of *Local review*
-  have ended, and the orchestrator then has the writer push it. An armed
-  pull request is disarmed before any push to it (`/btclib-pr`'s
-  *Merging*).
+  amend only once its gates exited 0, as *Every commit you hand over is
+  gated, on its tree* says, never after a failed one, unless *The gates*
+  asks no gate of it. A fix the gates find before the first push amends
+  a commit not yet pushed. Check `git ls-remote origin <branch>` against
+  `HEAD` after every push. On an open pull request, a fix is pushed only
+  once the rounds of *Local review* have ended, and the orchestrator
+  then has the writer push it. An armed pull request is disarmed before
+  any push to it (`/btclib-pr`'s *Merging*).
 - **An embargoed fix is the exception: it is pushed to `origin` only
   once its release commit is ready on top of it.** It is gated locally.
   The standard's section 12, *A security advisory is worked in this
