@@ -105,15 +105,25 @@ two disagree.
   processes are not yours to kill.
 
   A job that takes no slot and weighs on memory — an agent, a local
-  Codex run, a targeted test run, a build — starts only at memory
-  pressure level 1 (`sysctl -n kern.memorystatus_vm_pressure_level`),
-  and only where the share of memory free
-  (`memory_pressure -Q | tail -1`) stays above about 35% once the job's
-  peak is added. Otherwise it waits. While any job waits, the session
-  reads again every 120 seconds, and whenever one of its jobs ends.
-  Where the level cannot be read, as in Codex's sandbox, the share free
-  decides alone. The readings decide how many jobs run, never a fixed
-  count.
+  Codex run, a targeted test run, a build outside the gate lock — starts
+  only at memory pressure level 1
+  (`sysctl -n kern.memorystatus_vm_pressure_level`), and only where the
+  share of memory free (`memory_pressure -Q | tail -1`) stays above
+  about 35% once the job's peak is added. Otherwise it waits. While any
+  job waits, the session reads again every 120 seconds, and whenever one
+  of its jobs ends. Where the level cannot be read, as in Codex's
+  sandbox, the share free decides alone. The readings decide how many
+  jobs run, never a fixed count.
+
+  The peaks to add are those measured, as the maximum resident set size
+  `/usr/bin/time -l` prints, until the ledger of
+  ISS btclib-org/ai-agents-process#582 replaces them: a local Codex run
+  about 0.2 GB (185 to 221 MB on 2026-11-18), and this repository's
+  pre-commit hooks about 1 GB (0.94 to 1.12 GB that day). A job whose
+  peak is not measured, an agent among them, starts one at a time: the
+  session reads again once it runs, before it starts the next. In Claude
+  Code an agent shares the session's own process, which `time` cannot
+  isolate.
 - **The forge's quota is shared.** Every session and agent on this
   machine calls the forge through the same `gh` login, and so draws on
   the same hourly quotas: `core` for REST, `graphql` for what `gh pr
