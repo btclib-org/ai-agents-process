@@ -578,10 +578,12 @@ change() {
 change '<cleared sha>^' '<cleared sha>' | env -i PATH="$PATH" shasum
 change '<new tip>^' '<new tip>' | env -i PATH="$PATH" shasum
 { change '<cleared sha>^' '<cleared sha>'; change '<new tip>^' '<new tip>'; } \
-  | env -i PATH="$PATH" grep -c .   # not zero
+  | env -i PATH="$PATH" grep -c .
 ```
 
-Equal hashes over a non-empty stream, and the clearance stands. Where
+Equal hashes over a non-empty stream, and the clearance stands: the
+last command prints the stream's count of lines, which must not be
+zero. Where
 `git diff` fails, even after printing part of the diff, as on a
 `diff.<driver>.xfuncname` that is not a regular expression, `change`
 ends its stream with a line naming both revisions, so the hashes differ
