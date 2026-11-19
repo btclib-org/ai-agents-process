@@ -85,16 +85,12 @@ branch, or a text to be posted.
   A shape is reachable where a session following the process can produce
   it, or where a tree or a caller holds it. A constructed shape, one
   that only a reviewer's input holds, is not. The worst outcome is on
-  the safe side where it is a refusal, a fresh review or another stop,
-  rather than a wrong result. A refusal that shows a secret is not on
-  the safe side. A crash is not on the safe side, and neither is a false
-  sentence: on a reachable shape, both block at any round.
-
-  A refusal that a session following the process reaches in the ordinary
-  case is not on the safe side either, and it blocks: a gate or a
-  command that stops, exits non-zero or refuses there, as a gate's block
-  that, followed as written, exits `127` on every branch. A refusal on a
-  constructed shape is filed all the same.
+  the safe side where it is a fresh review, a wait or another stop,
+  rather than a wrong result. A refusal is not on the safe side: a gate
+  or a command that exits non-zero or refuses, as a gate's block that,
+  followed as written, exits `127` on every branch. Neither is a crash
+  or a false sentence. On a reachable shape, all three block at any
+  round; on a constructed shape, they are filed.
 
   The reviewer classifies the finding, not the writer. Its verdict marks
   the finding `filed`, gives the ground, and carries the body of the
