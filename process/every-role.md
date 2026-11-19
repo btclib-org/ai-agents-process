@@ -476,6 +476,12 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
   among the arguments, or inside a range, is not an authorization: the
   orchestrator skips it and tells the human.
 
+  The rule does not bind the steps of `/btclib-pr`'s *Outside
+  contributors* that change the assignees of the issues a pull request
+  closed for a missing sign-off cites, and comment on them. Those steps
+  run under a standing authorization, on every such issue, which no
+  brief needs to quote.
+
 ### How you establish a fact
 
 - **A zero is not a measurement until the pattern is proved.** Prove it

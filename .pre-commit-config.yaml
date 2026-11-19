@@ -18,12 +18,21 @@ ci:
   autofix_prs: false
   autoupdate_commit_msg: "Update the pinned pre-commit hook revisions"
   autoupdate_schedule: weekly
-  # the hook pre-commit.ci cannot run: actionlint-shellcheck runs past
-  # pre-commit.ci's time limit.
+  # the hooks that would take pre-commit.ci past its time limit:
+  # actionlint-shellcheck, and the tests of scripts/, which take most of
+  # a run. test-gate-sandbox is not among them: with no sandbox-exec
+  # there it skips at once.
   # What the skip costs is nothing that decides a merge -- lint.yml runs
   # this file whole, with the command a developer runs, on every commit
   # and every pull request
-  skip: [actionlint-shellcheck]
+  skip:
+    - actionlint-shellcheck
+    - test-git-c-allow
+    - test-suite-reads
+    - test-port-check
+    - test-rebase-clearance
+    - test-pretooluse-rules
+    - test-sweep
 
 repos:
   # this file checking itself, and the only two hooks with no environment
