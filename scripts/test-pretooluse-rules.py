@@ -55,6 +55,11 @@ CASES: list[tuple[str, set[str]]] = [
     (".venv/bin/pytest -n logical", {"xdist"}),
     ("env -C /w uv run pytest -n auto", {"xdist"}),
     ("timeout -k 60 900 uv run pytest -n auto", {"xdist"}),
+    # gate_peak, of scripts/gate-lock.sh, runs what follows its kind and tree
+    ("gate_peak suite /w timeout -k 60 900 uv run pytest -n auto", {"xdist"}),
+    ("gate_peak suite /w uv run pytest -n 3", set()),
+    ("gate_peak k /w PYTEST_ADDOPTS=-nauto pytest", set()),
+    ("PYTEST_ADDOPTS=-nauto gate_peak k /w pytest", {"xdist"}),
     # PYTEST_ADDOPTS is read only as a literal prefix of pytest itself,
     # split as pytest splits it
     ("PYTEST_ADDOPTS='-n auto' uv run pytest", {"xdist"}),

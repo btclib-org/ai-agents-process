@@ -28,7 +28,8 @@
 #   process/every-role.md's *Debris goes when its work ends* moves first;
 # - it holds .sweep-unfinished, of any kind, which a failed
 #   `git worktree remove` leaves (below);
-# - find cannot read all of it, or it holds a name with a newline;
+# - find cannot read all of it, or it holds a name with a newline or
+#   \001, or its own path holds one;
 # - git cannot read one of its worktrees, or its git directory holds
 #   modules, or it holds a commit and its repository has no remote named
 #   origin, or its HEAD is a symbolic ref to anything but a branch,
@@ -73,16 +74,25 @@
 # which follows no symbolic link; <work> being no worktree, no worktree
 # it removes holds it. It removes each linked worktree with its
 # repository's `git worktree remove`, so that the repository keeps no
-# entry for it, deletes the worktree's branch with `git update-ref -d` at
-# the tip that was checked, and removes the directory. A branch whose tip
-# moved meanwhile, or that git cannot delete, is kept and printed as
-# `kept branch:`, and the directory still goes. Where
-# `git worktree remove` fails, the directory is refused and keeps
-# .sweep-unfinished, so that every later run refuses it until a person
-# has read it and removed .sweep-unfinished. Where rm -rf fails, the
-# directory is refused, and what it left had passed every check. A
-# worktree whose .git file is gone is not found, and its repository keeps
-# an entry for it, which `git worktree prune` clears.
+# entry for it. Once every one is removed, it deletes their branches with
+# `git update-ref -d` at the tip that was checked, deleting once a branch
+# that two of them had checked out, and removes the directory. A branch
+# that a worktree outside the directory has checked out, or one inside
+# whose .git file is gone, as `git worktree list --porcelain -z` shows at
+# the check, is kept, even where a directory named later removes that
+# worktree: the run prints it as `kept branch:`, and --check as
+# `would keep branch:`, with ? for each newline in that worktree's path.
+# The run has removed the worktrees of a directory named earlier before
+# that check, and --check counts them as removed where it would remove
+# that directory. A branch whose tip moved meanwhile, or that git cannot
+# delete, is kept too, and printed as `kept branch:`. The directory still
+# goes. Where `git worktree remove` fails, the branches of the worktrees
+# already deregistered stay, and the refusal names them; the directory is
+# refused and keeps .sweep-unfinished, so that every later run refuses it
+# until a person has read it and removed .sweep-unfinished. Where rm -rf
+# fails, the directory is refused, and what it left had passed every
+# check. A worktree whose .git file is gone is not found, and its
+# repository keeps an entry for it, which `git worktree prune` clears.
 #
 # Exit 0 where each directory named was removed, or would be under
 # --check, or does not exist; 1 where any was refused; 2, after the usage,
@@ -145,10 +155,14 @@ list=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
 todo=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
 owns=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
 dirs=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
-trap 'rm -f "${list:?}" "${todo:?}" "${owns:?}" "${dirs:?}"' EXIT
+wls=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
+gone=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
+trap 'rm -f "${list:?}" "${todo:?}" "${owns:?}" "${dirs:?}" "${wls:?}" \
+  "${gone:?}"' EXIT
 trap 'exit 1' INT TERM
 nl='
 '
+soh=$(printf '\001')
 # a ref's commit, or the commit its tag points at, then its type and name
 fmt='%(if)%(*objectname)%(then)%(*objectname) %(*objecttype)'
 fmt="$fmt%(else)%(objectname) %(objecttype)%(end) %(refname)"
@@ -233,6 +247,18 @@ held() {
   tips="$h $tips"
 }
 
+# ours <path>: one of the worktrees the run removes: those the scan
+# listed in $owns, and under --check, in $gone, those of the directories
+# named earlier, which the run will have removed
+ours() {
+  for f in "$owns" "$gone"; do
+    while IFS= read -r y <&4; do
+      if [ "$1" -ef "$y" ]; then return 0; fi
+    done 4< "$f"
+  done
+  return 1
+}
+
 # tree <dir>: the checks of the linked worktree <dir>, which the scan
 # found to be the session's; it goes in $todo, to be removed with git
 # worktree remove
@@ -276,18 +302,34 @@ tree() {
     refuse "git reads $t as no linked worktree"
     return 1
   fi
-  if ! wl=$(git --git-dir="$cd_" worktree list --porcelain); then
+  # without -z, a newline in a worktree's path would start a line of its
+  # own; tr makes each field a line, and such a newline \001
+  if ! git --git-dir="$cd_" worktree list --porcelain -z > "$wls"; then
     refuse "git cannot read $cd_"
     return 1
   fi
-  listed='' locked='' cur=''
+  wl=$(tr '\n\000' '\001\n' < "$wls")
+  b=$(git -C "$t" symbolic-ref -q HEAD) || b=
+  # k: a worktree the run does not remove that has the branch checked out,
+  # which keeps it
+  listed='' locked='' cur='' at='' k='' nlp=''
   while IFS= read -r l; do
     case $l in
       'worktree '*)
-        cur=
-        if [ "${l#worktree }" -ef "$t" ]; then cur=1 listed=1; fi
+        cur='' at=${l#worktree } nlp=''
+        # a path holding \001, which stands for a newline here, is no
+        # worktree the run removes: the scan refuses a <work> whose path
+        # or names hold either
+        case $at in
+          *"$soh"*) nlp=1 ;;
+          *) if [ "$at" -ef "$t" ]; then cur=1 listed=1; fi ;;
+        esac
         ;;
       locked*) [ -z "$cur" ] || locked=1 ;;
+      "branch $b")
+        [ -n "$k" ] || { [ -z "$nlp" ] && ours "$at"; } ||
+          k=$(printf '%s\n' "$at" | tr '\001' '?')
+        ;;
     esac
   done << EOF
 $wl
@@ -303,7 +345,6 @@ EOF
   held "$t" refs/worktree refs/bisect refs/rewritten || return 1
   # shellcheck disable=SC2086
   pushed "$t" $tips || return 1
-  b=$(git -C "$t" symbolic-ref -q HEAD) || b=
   # what HEAD names is deleted with the worktree, so it must be a branch
   case $b in
     '' | refs/heads/*) ;;
@@ -312,7 +353,7 @@ EOF
       return 1
       ;;
   esac
-  printf '%s\n%s\n%s\n%s\n' "$t" "$cd_" "$b" "$h" >> "$todo"
+  printf '%s\n%s\n%s\n%s\n%s\n' "$t" "$cd_" "$b" "$h" "$k" >> "$todo"
 }
 
 # foreign <path> <why>: the refusal of a repository the scan cannot tell
@@ -392,21 +433,52 @@ scan() {
   done 3< "$dirs"
 }
 
+# record: the next record of $todo, read from descriptor 3
+record() {
+  IFS= read -r t <&3 && IFS= read -r cd_ <&3 && IFS= read -r b <&3 &&
+    IFS= read -r h <&3 && IFS= read -r k <&3
+}
+
+# once: whether the record names a branch that no earlier record of the
+# loop named, $seen holding those
+once() {
+  [ -n "$b" ] && [ -n "$h" ] || return 1
+  case $nl$seen in
+    *"$nl$cd_ $b$nl"*) return 1 ;;
+  esac
+  seen="$seen$cd_ $b$nl"
+}
+
 # remove: the removal of $r, once its checks have passed
 remove() {
   if ! mkdir "$r/.sweep-unfinished"; then
     refuse 'cannot write .sweep-unfinished'
     return
   fi
-  while IFS= read -r t <&3 && IFS= read -r cd_ <&3 &&
-    IFS= read -r b <&3 && IFS= read -r h <&3; do
+  # left: the branches of the worktrees deregistered so far, n of them
+  seen='' left='' n=0
+  while record; do
     if ! git --git-dir="$cd_" worktree remove "$t"; then
-      refuse "git worktree remove $t fails; .sweep-unfinished stays"
+      why="git worktree remove $t fails; .sweep-unfinished stays"
+      case $n in
+        0) ;;
+        1) why="$why; so does the branch $left" ;;
+        *) why="$why; so do the branches $left" ;;
+      esac
+      refuse "$why"
       return
     fi
     printf 'deregistered: %s\n' "$t"
-    [ -n "$b" ] && [ -n "$h" ] || continue
-    if git --git-dir="$cd_" update-ref -d "$b" "$h" 2> /dev/null; then
+    if once; then left="$left${left:+, }$b of $cd_" n=$((n + 1)); fi
+  done 3< "$todo"
+  # the branches go once every worktree is deregistered, so that none is
+  # left on a deleted branch
+  seen=
+  while record; do
+    once || continue
+    if [ -n "$k" ]; then
+      printf 'kept branch: %s of %s, checked out in %s\n' "$b" "$cd_" "$k"
+    elif git --git-dir="$cd_" update-ref -d "$b" "$h" 2> /dev/null; then
       git --git-dir="$cd_" config --remove-section "branch.${b#refs/heads/}" \
         2> /dev/null
       printf 'deleted branch: %s of %s\n' "$b" "$cd_"
@@ -434,6 +506,12 @@ sweep() {
   if [ ! -e "$w" ]; then printf 'absent: %s\n' "$name"; return; fi
   if [ ! -d "$w" ]; then refuse 'not a directory'; return; fi
   if ! r=$(real "$w"); then refuse 'cannot be resolved'; return; fi
+  case $r in
+    *"$nl"* | *"$soh"*)
+      refuse 'its path holds a newline or \001'
+      return
+      ;;
+  esac
   if [ -z "$rroot" ]; then
     refuse "$root is not a directory the caller owns"
     return
@@ -462,14 +540,17 @@ sweep() {
   fi
   # each name that is .git in any letter case, then each other directory
   # not below one, which the scan asks the file system about, as git asks
-  if ! odd=$(find "$r" -name "*$nl*" -print) ||
+  if ! odd=$(find "$r" \( -name "*$nl*" -o -name "*$soh*" \) -print) ||
     ! kept=$(find "$r" -name 'findings-*.md' -print) ||
     ! find "$r" -iname .git -print -prune > "$list" ||
     ! find "$r" \( -iname .git -prune \) -o -type d -print > "$dirs"; then
     refuse 'find cannot read all of it'
     return
   fi
-  if [ -n "$odd" ]; then refuse 'holds a name with a newline'; return; fi
+  if [ -n "$odd" ]; then
+    refuse 'holds a name with a newline or \001'
+    return
+  fi
   if [ -n "$kept" ]; then
     refuse "holds the findings record ${kept%%"$nl"*}, kept elsewhere first"
     return
@@ -487,13 +568,20 @@ sweep() {
     remove
     return
   fi
-  while IFS= read -r t <&3 && IFS= read -r cd_ <&3 &&
-    IFS= read -r b <&3 && IFS= read -r h <&3; do
+  while record; do
     printf 'would deregister: %s\n' "$t"
-    [ -n "$b" ] && [ -n "$h" ] || continue
-    printf 'would delete branch: %s of %s\n' "$b" "$cd_"
+  done 3< "$todo"
+  seen=
+  while record; do
+    once || continue
+    if [ -n "$k" ]; then
+      printf 'would keep branch: %s of %s, checked out in %s\n' "$b" "$cd_" "$k"
+    else
+      printf 'would delete branch: %s of %s\n' "$b" "$cd_"
+    fi
   done 3< "$todo"
   printf 'would remove: %s\n' "$r"
+  cat "$owns" >> "$gone"
 }
 
 for name in "$@"; do

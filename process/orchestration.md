@@ -23,6 +23,34 @@ is in one of the four files that opening names.
   `ls -d` a path before naming it; a missing checkout is a question for
   the human. What a brief omits misleads as much as what it gets
   wrong.
+- **Each boundary constraint the work carries goes to the writer as a
+  search it runs before handing over**: what stays confidential or under
+  embargo, a name or a detail that must not appear, a limit on the
+  work's scope. The brief gives the command, and asks the writer to run
+  it on the whole of each text it writes, not one sentence at a time:
+  the branch's diff, its paths and removed lines included, the commit
+  message, and each text drafted for posting. It asks for the command
+  and what it printed in the writer's report.
+
+  For what must not be revealed, a text can let a reader conclude what
+  none of its sentences says. So the pattern also holds the words a
+  reader could reach the protected ones from: the names, numbers, paths
+  and identifiers that point to them, and the words that describe them
+  without naming them, as a defect's class does for an embargoed fix.
+  It matches without regard to case and across line breaks (*`grep`
+  reads lines, and prose wraps*), and its zero is proved on a control
+  (*A zero is not a measurement until the pattern is proved*). In a
+  diff, a wrapped phrase runs into the next line's leading `+`, `-` or
+  space, or into the removed lines between a context line and the added
+  ones, and a match across line breaks misses it. So the search reads
+  the changed files whole, at the base and at the head, and
+  `git diff --name-status` for the paths: the head holds what is added,
+  in its context, and the base what is removed. A conclusion drawn from
+  words each harmless alone matches no pattern, so the brief also names
+  the conclusion a reader must not be able to draw. It asks the writer
+  to read each of those texts, and each file the diff changes, whole and
+  once for that conclusion, as a reader who knows nothing else would: a
+  sentence the branch adds can complete one it left unchanged.
 - **Do not hand the reviewer your hypothesis as a premise.**
 - **After a rebase or a new commit, the gates *The gates* asks of the
   new sha run before any reviewer is asked**, and the report you hand it
@@ -211,11 +239,13 @@ is in one of the four files that opening names.
   local `CLEARED`, and that holds (the fix accepts it or the human
   upholds it), is marked in the record as one the local rounds missed,
   and the session's report to the human names its class and proposes
-  where the next session will read it: for a btclib-org tree, its
-  `REVIEWING.md`'s *This repository in particular*, or the shared part
-  in `btclib-org/.github` where the class is not that tree's own
-  (*Wrap-up*). The report also proposes the pull request as a case of
-  `$PROCESS/process/replay-set.md`.
+  where the next session will read it (*Wrap-up*): for a btclib-org
+  tree, its `REVIEWING.md`'s *This repository in particular*, the shared
+  part in `btclib-org/.github` where the class is not that tree's own,
+  or, for a class CodeRabbit's review on GitHub found, the list of
+  classes every local reviewer's brief carries (`local-review.md`'s *A
+  pull request's rounds*). The report also proposes the pull request as
+  a case of `$PROCESS/process/replay-set.md`.
 - **Where the other client is unavailable, the branch goes on without
   the fresh reviewer.** Unavailable means the client refuses the run.
   The first run is judged when the rounds reach the fresh reviewer: it
@@ -609,6 +639,9 @@ macOS's `mktemp` writes in that `TMPDIR` where its template is under
 given `-p ''`. With neither, `mktemp -d` and `mktemp -t <prefix>` write
 in the directory `getconf DARWIN_USER_TEMP_DIR` prints.
 
+`gate_peak` records the peak memory of the reviewer's run, as the header
+comment of `$PROCESS/scripts/gate-lock.sh` says.
+
 The network is off because an input runs the branch's code, and the
 sandbox still reads credentials such as `~/.codex/auth.json` and
 `~/.gnupg`. With the network on, it could send them to any host, and
@@ -639,7 +672,9 @@ rm -f <work>/<name>.last.md
 ```
 
 ```shell
-env -i -C <work>/<name> HOME="$HOME" PATH="$PATH" \
+. "${PROCESS:?}/scripts/gate-lock.sh"
+gate_peak codex <work>/<name> \
+  env -i -C <work>/<name> HOME="$HOME" PATH="$PATH" \
   UV_CACHE_DIR=<work>/<name>/uv-cache UV_OFFLINE=1 \
   TMPDIR=<work>/<name>/tmp \
   timeout 900 codex exec -s workspace-write --skip-git-repo-check \
@@ -694,9 +729,10 @@ run /login` and exits `1`.
 The session creates the reviewer's directory, links the agent into it,
 and makes the run's temporary directory. `mktemp` prints its path,
 which stands for `<tmp>` in the two blocks after it. The session then
-starts the reviewer, and removes the temporary directory once the run
-ends. The run starts `claude` only where `CLAUDE_CODE_TMPDIR` names a
-directory, so an empty or missing value stops it:
+starts the reviewer through `gate_peak`, as a Codex reviewer is started,
+and removes the temporary directory once the run ends. The run starts
+`claude` only where `CLAUDE_CODE_TMPDIR` names a directory, so an empty
+or missing value stops it:
 
 ```shell
 mkdir -p <work>/<name>/.claude/agents
@@ -715,7 +751,9 @@ mktemp -d /tmp/rv.XXXXXX
 sbx='{"sandbox":{"enabled":true,"failIfUnavailable":true,'
 sbx="${sbx}"'"allowUnsandboxedCommands":false,'
 sbx="${sbx}"'"network":{"strictAllowlist":true}}}'
-env -i -C <work>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
+. "${PROCESS:?}/scripts/gate-lock.sh"
+gate_peak claude <work>/<name> \
+  env -i -C <work>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
   ${CLAUDE_CONFIG_DIR:+"CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"} \
   CLAUDE_CODE_TMPDIR=<tmp> UV_CACHE_DIR=<work>/<name>/uv-cache \
   UV_OFFLINE=1 ZDOTDIR=/var/empty \

@@ -796,13 +796,19 @@ of the standard* says.
   ```shell
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take <worktree> && {
-    gate_wait; rc=0; timeout -k 60 <seconds> … a gate … || rc=$?
+    gate_wait; rc=0
+    gate_peak <gate> <worktree> timeout -k 60 <seconds> … a gate … || rc=$?
     echo "EXIT_<gate>=$rc"
-    gate_wait; rc=0; timeout -k 60 <seconds> … the next gate … || rc=$?
+    gate_wait; rc=0
+    gate_peak <next gate> <worktree> \
+      timeout -k 60 <seconds> … the next gate … || rc=$?
     echo "EXIT_<next gate>=$rc"
     gate_release
   }
   ```
+
+  `gate_peak` runs the gate, returns its exit code, and records its peak
+  memory, as the script's header comment says.
 
   The timeout goes around each gate inside the block, never around the
   whole call: `gate_take` waits in the queue with no bound, so a timeout
@@ -822,10 +828,10 @@ of the standard* says.
   session removes a slot any other way: a failed `mkdir` or an old slot
   says nothing about whose it is. The script's header comment says how
   the lock works: the defaults of the slots, the workers, the load
-  ceiling and the directory, the queue, the stagger, stale slots, and
-  what `gate_take` waits for, with no bound. It gives the command that
-  names the holders, and says who removes a slot that is never
-  reclaimed.
+  ceiling and the directory, the queue, the stagger, the settle, stale
+  slots, and what `gate_take` waits for, with no bound. It gives the
+  command that names the holders, and says who removes a slot that is
+  never reclaimed.
 
   Before running a load generator, read
   `$PROCESS/process/load-generator.md`.
@@ -864,7 +870,7 @@ The findings of these local runs are answered as `/btclib-pr`'s
   ```shell
   env -C "${wt:?}" sh -c 'rc=0 t=
     command -v timeout > /dev/null && t="timeout -k 60 1200"
-    $t coderabbit review --agent --committed --fresh \
+    $t coderabbit review --agent --committed --fresh --deep \
       --base-commit "$1" || rc=$?
     echo "EXIT_coderabbit=$rc"' sh "${base:?}" \
     > <scratch>/<name>-coderabbit.log 2>&1
@@ -893,7 +899,16 @@ The findings of these local runs are answered as `/btclib-pr`'s
   with `--use-credits`, and only where `coderabbit usage` shows an
   included review left. Otherwise it is skipped. Where it is skipped or
   shows no read, the pull request body's `## Evidence` says so. It
-  stands in for no reviewer of *The rounds*.
+  stands in for no reviewer of *The rounds*, and it is not CodeRabbit's
+  review on GitHub either. On PR btclib-org/ecc#598, read at one sha,
+  that review reached the base file through the diff and the issues the
+  branch cites, and applied the tree's `path_instructions`, while the
+  CLI reached neither the base file nor the issues
+  (ISS btclib-org/ai-agents-process#587). Whether the CLI applies
+  `.coderabbit.yaml` is not measured; its `-c` takes the file as added
+  instructions (`coderabbit review --help`). So a CLI read with no
+  finding leaves that review owed, and every local reviewer looks for
+  what it finds, as `local-review.md`'s *A pull request's rounds* says.
 
 ### Committing and rebasing
 
