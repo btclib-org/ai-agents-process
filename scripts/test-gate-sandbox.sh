@@ -351,7 +351,8 @@ for c in diff empty diff-3.2 empty-3.2 peak; do
     "$(tr '\n' ' ' < "$tmp/hooks-$c.log")"; fi
 done
 if awk -F '\t' -v t="$gwt" 'NR == 1 && $2 == "hooks" && $3 == t &&
-  $4 >= 102400 && $5 == 0 { f = 1 } END { exit !(f && NR == 1) }' \
+  $4 ~ /^[0-9]+$/ && $4 + 0 >= 102400 && $5 == 0 { f = 1 }
+  END { exit !(f && NR == 1) }' \
   "$tmp/lock/gate.peaks" 2>/dev/null; then
   ok "hooks, peak: gate_peak outside the sandbox recorded $(cut -f 4 \
     "$tmp/lock/gate.peaks") KB for pre-commit inside it"
