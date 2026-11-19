@@ -1102,6 +1102,76 @@ has gone both ways before under configurations that differ in nothing
 it concerns (the runs above), so the run cannot tie the gain to the
 change.
 
+- **Baseline and candidate**, 2026-11-19: `$PROCESS` `ebd995a` and
+  `f7b7ce4a5b4e7b75494899bcab9d6f56b03c0a15`, tree
+  `fcfa4f0f017fbbe7ca4db53bcb7a05ad3c78057a`, the factor changed being
+  the brief: the change of ISS btclib-org/ai-agents-process#624, which
+  `git diff ebd995a f7b7ce4a5b4e7b75494899bcab9d6f56b03c0a15 -- process`
+  makes in `local-review.md`'s *The rounds* alone. From the third round,
+  a reviewer that cannot run the search showing a finding's shape is not
+  reachable, as one that needs the forge, gives the command and names it
+  as not run. The orchestrator runs it before filing. The finding blocks
+  where what it printed shows a tree or a caller holding the shape, or
+  where the orchestrator cannot run it either. Claude Code, the
+  `reviewer` agent, Opus, effort `high`, one run per case, and a second
+  in each configuration on PR btclib-org/ecc#580, which alone decided
+  the first runs. In both: PR btclib-org/ecc#484: hit. PR
+  btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
+  miss. PR btclib-org/btclib-node#2516: miss. PR
+  btclib-org/ai-agents-process#526: miss. PR
+  btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with no
+  false finding. PR btclib-org/ecc#580: the baseline miss, then hit; the
+  candidate hit, then hit.
+
+On PR btclib-org/ecc#484 both block on perl `-n` opening hostile file
+names, and on PR btclib-org/ai-agents-process#444 both block on the
+skills that still arm with `--auto`. On PR btclib-org/ecc#580 both of
+the candidate's runs and the baseline's second block on the comment over
+`_AFF_CALLS`, which leaves out `add_var`, `is_on_curve` and
+`require_on_curve`, and the baseline's first clears the head without
+naming it. On PR btclib-org/ai-agents-process#317 both block on the hold
+covering limits that reset, and the candidate names the wait of the
+resumed run only as `filed`. On PR btclib-org/btclib-secp256k1#1331 both
+clear the head, and neither names the exit `42`. The candidate clears it
+while naming as not run the inputs that bear on the case, the zkp source
+at the pin and Valgrind. On PR btclib-org/.github#2288 both clear the
+head: that no test pins the lookbehind is non-blocking in the candidate
+and `filed` in the baseline. On PR btclib-org/btclib-node#2516 both
+clear the head, and the candidate names "`i` sums the length fields"
+only as non-blocking (*How a run is scored*).
+
+On PR btclib-org/ai-agents-process#526 the candidate's verdict takes the
+route the change adds. It files the defect, the item indented after a
+prose paragraph that is never compared while the check exits `0`, and
+names as not run the forge search that decides whether a tree holds that
+shape. The run scores the verdict as given, so the defect is `filed` and
+a miss. The baseline blocks on a numbered prose line the item pattern
+refuses, outside the defect, and names the indented item only as
+collateral. The findings outside the cases' defects were not measured.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, for which its check prints `copied`, and the case
+from a repository holding only the head and its ancestors (*What a case
+holds*), for which its check prints `isolated` and the check of *A
+case's tree can hold this file* prints `unnamed`. `diff -r` of the two
+copies shows only the change's paragraph. Every brief said that this was
+the branch's third local round, gave no earlier round's verdict, and
+forbade the network, the forge, any suite and any gate. The briefs were
+given inline. Both reviewers of PR btclib-org/ai-agents-process#522 list
+the case tree's own copy of this file as read. Nothing was withheld: the
+change edits no `REVIEWING.md`, no skill and nothing in `agents/`.
+
+The candidate has the baseline's hits and misses on eight cases, and
+loses none. On the first runs the baseline hits on two cases and the
+candidate on three, and neither makes a false finding on the clean case.
+PR btclib-org/ecc#580 alone decided the first runs, so it ran again in
+both (*One factor at a time*), and over two runs the baseline hits it
+once and the candidate twice. That case has gone both ways before under
+configurations that differ in nothing it concerns (the runs above), so
+the run shows no gain from the change.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
