@@ -73,27 +73,40 @@ branch, or a text to be posted.
 - **On an outside contributor's branch, only a `CLEARED` that came after
   the results of every input, and names none as not run, is the
   dedicated reviewer's `CLEARED`.**
-- **From the sixth round of a branch's local review, a finding on a
-  shape that no tree and no caller holds is filed as an issue and does
-  not block.** Each verdict of a local reviewer is a round, so a head
-  that two reviewers read is two rounds. The reviewer classifies the
-  finding, not the writer, and gives in its verdict the search that
-  shows no tree and no caller holds the shape: the command and what it
-  printed. A reviewer that cannot run that search, being offline or
-  unable to reach another tree's files, names it in its verdict as not
-  run. The orchestrator then runs it and records the command and what
-  it printed before the finding is filed. Where the search is not run,
-  or finds the shape, the finding blocks. The pull request's body lists
-  each such finding as `/btclib-iss`'s *Opening the pull request* says.
-  A defect on the
-  ordinary case, a shape that a tree or a caller holds, blocks at any
-  round, and so do a false sentence and a crash.
-- **From the third round on the forge, only a defect on the ordinary
-  case, a false sentence or a crash is fixed on the branch.** A round on
-  the forge is a head the reviews on GitHub read (`/btclib-pr`'s *The
-  reviews on GitHub*): the head the pull request is opened on, then each
-  push to it. Every other finding stays off the branch, answered as
-  `/btclib-pr`'s *Answering it* says.
+- **From the third round of a branch's local review, a finding on a
+  shape that is not reachable, or whose worst outcome is on the safe
+  side, is filed as an issue and does not block.** The rounds are
+  numbered from one, as the forge's are in the next bullet. Each verdict
+  of a local reviewer is a round, so a head that two reviewers read is
+  two rounds. The count is the branch's, not a reviewer's: any reviewer
+  that starts later, after a rebase or at any other point, goes on from
+  the branch's last round.
+
+  A shape is reachable where a session following the process can produce
+  it, or where a tree or a caller holds it. A constructed shape, one
+  that only a reviewer's input holds, is not. The worst outcome is on
+  the safe side where it is a fresh review, a wait or another stop,
+  rather than a wrong result. A refusal is not on the safe side: a gate
+  or a command that exits non-zero or refuses, as a gate's block that,
+  followed as written, exits `127` on every branch. Neither is a crash
+  or a false sentence. On a reachable shape, all three block at any
+  round; on a constructed shape, they are filed.
+
+  The reviewer classifies the finding, not the writer. Its verdict marks
+  the finding `filed`, gives the ground, and carries the body of the
+  issue to file. For a shape that is not reachable, the ground is the
+  search that shows no tree and no caller holds it, the command and what
+  it printed, and why no step of the process produces it. For the safe
+  side, it is the input run, or the case a rule in prose was tried on,
+  and its outcome. The orchestrator files the issue with that body, and
+  the pull request's body lists it as `/btclib-iss`'s *Opening the pull
+  request* says.
+- **From the third round on the forge, only a defect on a shape that a
+  tree or a caller holds, a false sentence or a crash is fixed on the
+  branch.** A round on the forge is a head the reviews on GitHub read
+  (`/btclib-pr`'s *The reviews on GitHub*): the head the pull request is
+  opened on, then each push to it. Every other finding stays off the
+  branch, answered as `/btclib-pr`'s *Answering it* says.
 - A non-blocking finding that is not filed waits for the next change;
   *Which prose is worth a round* says which prose blocks.
 - **A reviewer's first verdict is one wide pass.** It records every
@@ -117,7 +130,7 @@ branch, or a text to be posted.
   *The classes of defect found carry forward*). An input that breaks a
   claim is a finding. It blocks where the claim is in the tree, or in a
   text to be posted that the rounds review on its own, within the limits
-  the sixth round (above) and a differential *Done when* (below) set; a
+  the third round (above) and a differential *Done when* (below) set; a
   claim of a branch's commit message, pull request body or reply is
   weighed as *Which prose is worth a round* says. `writing.md`'s
   *Writing work* says what the fix of a blocking one adds. The verdict
@@ -487,8 +500,8 @@ got=$(gh api "gists/${gist:?}/${rev:?}" --jq .id) &&
       (*Which prose is worth a round*)
 - [ ] in a first verdict, every distinct finding, small ones included
       (*The rounds*)
-- [ ] each finding *The rounds* files from the sixth round, with its
-      search, or that search named as not run
+- [ ] each finding *The rounds* files from the third round, marked
+      `filed`, with its ground and the body of the issue to file
 - [ ] the claims tried, as *Every reviewer tries to break the change*
       says
 - [ ] where the change touches a rule the tree states, or makes a

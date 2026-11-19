@@ -262,7 +262,7 @@ open:**
 - **`## Evidence` is a short table or list**: the gates of the head,
   with their exit codes, as the shared *The gates* reports them; the
   rebase case the clearance is in; the review, with each finding the
-  shared *The rounds* files from the sixth round, as not covered; and,
+  shared *The rounds* files from the third round, as not covered; and,
   once they have answered, each review on GitHub that is absent, with
   its reason (`/btclib-pr`'s *The reviews on GitHub*). The records the
   tree asks of a body go here too, each where its own text says it

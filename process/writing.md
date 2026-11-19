@@ -301,13 +301,15 @@ of the standard* says.
   only Markdown, the hooks run outside the gate lock. The block runs
   pre-commit behind the array `peak`: outside the lock it is empty, as
   the first block below sets it, and *The gate lock* sets it to
-  `gate_peak` and the timeout. The block neither reads nor sets `"$@"`:
-  on an outside contributor's branch `"$@"` holds the sandbox's command
-  (*An outside contributor's branch*), which that branch's own hooks
-  block, its status check and its other gates run behind, and elsewhere
-  no gate reads it. Its `mktemp` takes a template under `$TMPDIR`, as
-  `gated_tree`'s does (*Every commit you hand over is gated, on its
-  tree*):
+  `gate_peak` and the timeout. It expands `peak` as
+  `${peak[@]+"${peak[@]}"}`: under `set -u`, macOS's `/bin/bash` 3.2
+  reads an empty `"${peak[@]}"` as an unbound variable and exits. The
+  block neither reads nor sets `"$@"`: on an outside contributor's
+  branch `"$@"` holds the sandbox's command (*An outside contributor's
+  branch*), which that branch's own hooks block, its status check and
+  its other gates run behind, and elsewhere no gate reads it. Its
+  `mktemp` takes a template under `$TMPDIR`, as `gated_tree`'s does
+  (*Every commit you hand over is gated, on its tree*):
 
   ```shell
   peak=()
@@ -332,7 +334,8 @@ of the standard* says.
     else
       args=(--files "${args[@]}")
     fi
-    "${peak[@]}" env -C "${wt:?}" uvx pre-commit run "${args[@]}" || rc=$?
+    ${peak[@]+"${peak[@]}"} env -C "${wt:?}" uvx pre-commit run \
+      "${args[@]}" || rc=$?
   fi
   rm -f "$list"
   (exit "$rc")
@@ -449,28 +452,43 @@ of the standard* says.
   where both lines name the same pair. `gated_tree` prints the tree,
   staged or committed, and the merge base of `<base>` and `HEAD`, only
   where the working tree holds nothing the index lacks: no unstaged
-  change, and no untracked file but those git ignores (`.gitignore`,
+  change, no untracked file but those git ignores (`.gitignore`,
   `.git/info/exclude` and `core.excludesFile`, which
-  `--exclude-standard` reads). It prints nothing otherwise, so a file
-  the branch adds is gated only once staged. It writes the tree from a
-  copy of the index into a temporary object directory, since `git
-  write-tree` takes `index.lock` in the git directory, which a Codex
-  sandbox keeps read-only (*Git writes under Codex*). Its `mktemp` takes
-  a template under `$TMPDIR`: without one, macOS's `mktemp -d` ignores
-  `$TMPDIR` and writes in the directory `getconf DARWIN_USER_TEMP_DIR`
-  prints, which a sandbox that allows only `$TMPDIR` refuses. The shell
-  that runs the gates defines it:
+  `--exclude-standard` reads), and no file marked assume-unchanged or
+  skip-worktree, whose change `git diff` does not show (`git ls-files
+  -v` tags it in lower case or `S`). It prints nothing otherwise, so a
+  file the branch adds is gated only once staged. Its `awk` reads every
+  line: one that exits early can leave `printf` writing to a closed
+  pipe, which under `set -o pipefail` fails the pipeline, and `!` then
+  passes the tree. It writes the tree from a copy of the index into a
+  temporary object directory, since `git write-tree` takes `index.lock`
+  in the git directory, which a Codex sandbox keeps read-only (*Git
+  writes under Codex*). Its `mktemp` takes a template under `$TMPDIR`:
+  without one, macOS's `mktemp -d` ignores `$TMPDIR` and writes in the
+  directory `getconf DARWIN_USER_TEMP_DIR` prints, which a sandbox that
+  allows only `$TMPDIR` refuses. `HUP`, `INT` or `TERM` makes it exit,
+  so that its `EXIT` trap removes the directory: zsh and dash run no
+  `EXIT` trap where `TERM` ends the shell. In zsh a signal that arrives
+  while `mktemp` runs still leaves the directory, since zsh runs the
+  trap before it assigns `tmp`. `scripts/test-gate-blocks.sh` shows
+  each refusal, and a signal while `cp` runs and while `mktemp` runs.
+  The shell that runs the gates defines it:
 
   ```shell
   wt=<wt>
   base=<base>
   gated_tree() (
+    tmp=
+    trap '[ -z "$tmp" ] || rm -rf "$tmp"' EXIT
+    trap 'exit 1' HUP INT TERM
     git -C "${wt:?}" diff --quiet &&
       [ -z "$(git -C "$wt" ls-files --others --exclude-standard)" ] &&
+      v=$(git -C "$wt" ls-files -v) &&
+      ! printf '%s\n' "$v" |
+        awk '/^([a-z]|S) / { f = 1 } END { exit !f }' &&
       ix=$(git -C "$wt" rev-parse --path-format=absolute --git-path index) &&
       ob=$(git -C "$wt" rev-parse --path-format=absolute --git-path objects) &&
       tmp=$(mktemp -d "${TMPDIR:-/tmp}/gated.XXXXXX") &&
-      trap 'rm -rf "${tmp:?}"' EXIT &&
       mkdir "$tmp/obj" && cp "$ix" "$tmp/index" &&
       t=$(GIT_INDEX_FILE=$tmp/index GIT_OBJECT_DIRECTORY=$tmp/obj \
         GIT_ALTERNATE_OBJECT_DIRECTORIES=$ob git -C "$wt" write-tree) &&
@@ -766,9 +784,11 @@ of the standard* says.
   options, as `-h` would print its help and exit `0`; pre-commit turns
   it back into the path. pre-commit runs once, so the exit is its own;
   where git fails, it exits `2`. It runs in the shell that set the
-  sandbox's command, as `"$@"` followed by pre-commit, and git reads the
-  list in `<wt>`. On the octopus `<sha>` is the `main` its worktree was
-  added at, so the list is empty and the hooks read the whole merge:
+  sandbox's command, as `"$@"` followed by pre-commit, behind `peak` as
+  outside the sandbox (*The hooks run on the changed files*), and git
+  reads the list in `<wt>`. On the octopus `<sha>` is the `main` its
+  worktree was added at, so the list is empty and the hooks read the
+  whole merge:
 
   ```shell
   wt=<wt>
@@ -789,7 +809,8 @@ of the standard* says.
     else
       files=(--files "${files[@]}")
     fi
-    "$@" uv run pre-commit run "${files[@]}" || rc=$?
+    ${peak[@]+"${peak[@]}"} "$@" uv run pre-commit run "${files[@]}" ||
+      rc=$?
   fi
   rm -f "$list"
   (exit "$rc")
@@ -986,8 +1007,10 @@ of the standard* says.
   `gate_peak` runs the gate, returns its exit code, and records its peak
   memory, as the script's header comment says. On an outside
   contributor's branch the hooks step is that branch's own hooks block
-  (*An outside contributor's branch*), which runs behind `"$@"`, the
-  sandbox's command, and not behind `peak`.
+  (*An outside contributor's branch*), which runs `"$@"`, the sandbox's
+  command, behind `peak` too: `gate_peak` runs outside the sandbox, and
+  its `time` reads the peak of the processes inside it, as
+  `scripts/test-gate-sandbox.sh` shows.
 
   The timeout goes around each gate inside the block, never around the
   whole call: `gate_take` waits in the queue with no bound, so a timeout
