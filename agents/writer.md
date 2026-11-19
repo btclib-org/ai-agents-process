@@ -67,7 +67,8 @@ says where your brief names that file, and you say so in the report.
   the commit**, the first push and every amend included, unless
   *Committing and rebasing* holds it.
 - **No commit with signing turned off** (`--no-gpg-sign`,
-  `commit.gpgsign=false`), not even in a scratch repository. How a
+  `commit.gpgsign=false`, `git commit-tree` without `-S`, an emptied or
+  replaced git config), not even in a scratch repository. How a
   measurement goes without one is `writing.md`'s *Signed and signed
   off*, where your brief names it.
 
