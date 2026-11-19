@@ -1082,13 +1082,16 @@ brief. The baseline's reviewer of PR btclib-org/btclib-node#2516 ran
 none of its own inputs, since memory pressure stayed at level 2 for the
 whole run.
 
-After the run the branch merged `main` at `bcbd810` in `ed608ae`, which
-brought to the reviewer's files the change of ISS
-btclib-org/ai-agents-process#587 that the entry above tried, and the
-sign-off closing's exemption in `every-role.md`. The change's own lines
-are unchanged: with `-- process agents skills REVIEWING.md`, `git diff
-bcbd810 ed608ae` adds and removes the lines `git diff 460205a acfa6d3`
-does.
+After the run the branch merged `main` twice: at `bcbd810` in `ed608ae`,
+which brought to the reviewer's files the change of ISS
+btclib-org/ai-agents-process#587 that the run at `fbd575b` and
+`2a9ba3a6058a88ddda691a1b69085b111fa53a25` tried and the sign-off
+closing's exemption in `every-role.md`; and at `d2da963` in `6de8585`,
+which brought the change of ISS btclib-org/ai-agents-process#585 to
+`writing.md`'s *Writing work*, tried in the entry above. The change's
+own lines are unchanged: with `-- process agents skills REVIEWING.md`,
+neither merge changes the lines `git diff 460205a acfa6d3` adds and
+removes.
 
 The candidate has the baseline's hits and misses on eight cases, and
 loses none. Over the defects the baseline hits on two cases and the
