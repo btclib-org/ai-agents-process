@@ -932,6 +932,80 @@ the candidate made one false finding in two runs. The run shows no loss
 of hits, and cannot show a gain, least of all from what the change has a
 brief carry, which no brief of the run held.
 
+- **Baseline and candidate**, 2026-11-19: `$PROCESS` `460205a` and
+  `d5b52538e06e53b2635dcc427f78fa214d844b0b`, tree
+  `ef50694b9a4dc1c9a68b92a7320fd8fc85edab5a`, the factor changed being
+  the brief: the change of ISS btclib-org/ai-agents-process#585, which
+  `git diff 460205a d5b52538e06e53b2635dcc427f78fa214d844b0b -- process`
+  makes in `writing.md` alone, all of it in *Writing work*, which the
+  reviewer's map gives whole. Its checklist asks the hooks to pass on
+  the tip's tree, staged or committed, and the suite and the docs build
+  on the tip itself, and reads `git status --porcelain` once the commit
+  is made and the last gate has run. In *The gates*, the hooks and the
+  checks that decide the suite and the docs build read the staged
+  tree's diff from the merge base; a run of the hooks carries over to a
+  commit of the same tree on the same merge base, which the log's
+  `TREE=` lines name; the writer runs the fixers before the commit and
+  signs one commit at hand-over; and in the gate lock the hooks run
+  first and a failure stops the block. In *Committing and rebasing*, a
+  push waits on those gates. Claude Code, the `reviewer` agent, Opus,
+  effort `high`, one run per case, and a second in each configuration
+  on PR btclib-org/ecc#580, where the first runs differed. In both: PR
+  btclib-org/ai-agents-process#444: hit. PR btclib-org/ecc#484: hit. PR
+  btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
+  miss. PR btclib-org/btclib-node#2516: miss. PR
+  btclib-org/ai-agents-process#526: miss. PR
+  btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with no
+  false finding. PR btclib-org/ecc#580: the baseline hit, then hit; the
+  candidate miss, then miss.
+
+On PR btclib-org/ai-agents-process#317 both runs block on "tied to the
+account", and neither names the exemption of the resumed run as the
+defect. On PR btclib-org/.github#2288 both name the lookbehind's single
+space, and on PR btclib-org/btclib-node#2516 both name the wording on
+`i`, only as non-blocking (*How a run is scored*). The baseline's run on
+PR btclib-org/btclib-node#2516 asks for changes only because no gate run
+is on record, and names no defect, so it is a miss and not a false
+finding. On PR btclib-org/ai-agents-process#526 the baseline names the
+item after a paragraph and the candidate only the nested item, each as
+non-blocking. On PR btclib-org/ecc#580 each of the baseline's runs
+blocks on the comment over `_AFF_CALLS`, which leaves out `add_var`,
+`is_on_curve` and `require_on_curve`, and each of the candidate's clears
+the head without naming that comment. The findings outside the cases'
+defects were not measured.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, and the case from a repository holding only the head
+and its ancestors (*What a case holds*), for which its check prints
+`isolated` and the check of *A case's tree can hold this file* prints
+`unnamed`. Every brief followed one template, which named only the
+case's tree, its base, the process copy and the limits, and every
+reviewer reports that it ran no gate. Both reviewers of PR
+btclib-org/ai-agents-process#317 read the copy's `orchestration.md`,
+which words the rule the case changes as it later landed. Both
+reviewers of PR btclib-org/ai-agents-process#526 read the case tree's
+own copy of this file, the candidate's lines 1 to 80 and the baseline's
+lines 1 to 60. The baseline's reviewer of PR
+btclib-org/ai-agents-process#317 opened one command with `cd`. The
+change edits no `REVIEWING.md`, and neither `agents/reviewer.md` nor its
+`.toml`. Its edits to `agents/writer.md`, `agents/writer.toml` and
+`scripts/gate-lock.sh` are outside the reviewer's map, so the run did
+not exercise them. No reviewer wrote a verdict file. The labels were
+random, and each verdict was scored as it arrived, against the case's
+defect sentence.
+
+The candidate has the baseline's results on eight cases. On PR
+btclib-org/ecc#580 the baseline hits in both runs and the candidate in
+neither: a loss on that case, over two runs each. Under `process/` the
+change touches only the gating text, the checklist's line on the gates
+and its line on `git status` among it, all in *Writing work*. The run
+cannot tell whether that wording moves a reviewer's attention, or
+whether the difference is the variation between runs this case has
+shown: in the run at `9f70ee0` and `e49e295` each configuration hits it
+once in two runs, and in the run at `9dd351e` and `bd66221` neither hits
+it.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317

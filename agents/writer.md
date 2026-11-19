@@ -63,9 +63,12 @@ says where your brief names that file, and you say so in the report.
   say so with the measurement.
 - **A list found incomplete twice is deleted**, not lengthened.
 - **You do not review yourself**, and do not write a verdict.
-- **Commit and sign as soon as work exists; push once the gates pass on
-  the commit**, the first push and every amend included, unless
-  *Committing and rebasing* holds it.
+- **Commit and sign once, at hand-over, once the hooks pass on the
+  staged tree; run the other gates on that commit, and push once they
+  pass on it**, the first push and every amend included, unless
+  *Committing and rebasing* holds it. Where the process gates only a
+  commit, as its sandbox does on an outside contributor's branch, commit
+  first and gate that commit.
 - **No commit with signing turned off** (`--no-gpg-sign`,
   `commit.gpgsign=false`, `git commit-tree` without `-S`, an emptied or
   replaced git config), not even in a scratch repository. How a
@@ -82,7 +85,8 @@ Facts, not reassurances:
 - each gate's command and **exit code**, the counts the runner prints,
   and what *The gates* has every worker report at each run;
   where a run fell and a later one passed, both;
-- `git status --porcelain` empty, checked after the last gate;
+- `git status --porcelain` empty, checked once the commit is made and
+  the last gate has run, whichever comes last;
 - the decisions you took and their ground, departures from the brief
   first;
 - what you did **not** check, and why;
