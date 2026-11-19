@@ -23,14 +23,18 @@ two disagree.
   reference checkout (not your own worktree) is read after:
 
   ```shell
-  git -C <checkout> rev-parse --abbrev-ref HEAD    # main or master
-  git -C <checkout> status --porcelain             # empty
-  git -C <checkout> fetch origin
-  git -C <checkout> pull --ff-only
-  git -C <checkout> rev-parse HEAD origin/<branch> # equal
+  checkout=<checkout>
+  branch=<branch>
+  git -C "${checkout:?}" rev-parse --abbrev-ref HEAD
+  git -C "${checkout:?}" status --porcelain
+  git -C "${checkout:?}" fetch origin
+  git -C "${checkout:?}" pull --ff-only
+  git -C "${checkout:?}" rev-parse HEAD "origin/${branch:?}"
   ```
 
-  Where it is not on its default branch or not clean, stop and say so.
+  The first `git` command prints `main` or `master`, the second nothing,
+  and the last the same sha twice. Where it is not on its default branch
+  or not clean, stop and say so.
 - **Write plainly.** Everything written — code comments, docs, these
   process files, commit messages, pull request and issue bodies,
   comments, reports — must be clear, simple and no longer than it needs

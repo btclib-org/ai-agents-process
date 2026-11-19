@@ -47,11 +47,11 @@ briefed with is the configuration under test, at the `$PROCESS` sha the
 run records. The reviewer reads that process from a copy that leaves
 this file out, and the discard of *A case's tree can hold this file* is
 the backstop. The reviewer reads the prose at the head itself, not on
-the merge with `origin/main` that *A pull request's rounds* asks for,
-since `main` has moved past the case, a defect's fix included. Where the
-run changes this tree's `REVIEWING.md`, a reviewer of this repository's
-cases reads the changed file in place of the head's, without the
-sentences that describe a case's defect, such as PR
+the merge with `origin/main` that `local-review.md`'s *A pull request's
+rounds* asks for, since `main` has moved past the case, a defect's fix
+included. Where the run changes this tree's `REVIEWING.md`, a reviewer
+of this repository's cases reads the changed file in place of the
+head's, without the sentences that describe a case's defect, such as PR
 btclib-org/ai-agents-process#317's in its *This repository in
 particular*. The run records what it withheld. Where the change under
 test rewrites such a sentence, its case is recorded as unable to
@@ -215,12 +215,16 @@ A forge finding gives a case its head, the commit its thread names, and
 the head gives its base, the merge base with `main`:
 
 ```shell
-gh api repos/<owner>/<repo>/pulls/comments/<comment id> \
+repo=<owner>/<repo>
+id=<comment id>
+gh api "repos/${repo:?}/pulls/comments/${id:?}" \
   --jq .original_commit_id
 ```
 
 ```shell
-gh api repos/<owner>/<repo>/compare/main...<head> \
+repo=<owner>/<repo>
+head=<head>
+gh api "repos/${repo:?}/compare/main...${head:?}" \
   --jq .merge_base_commit.sha
 ```
 
@@ -307,7 +311,7 @@ read only where its objects are, as in the clone the run was made in.
   which holds and moved the case to the defects.
 - **Candidate**, 2026-11-15: `$PROCESS` `466d803`, tree
   `ae2991e8a0a7037091e9dd03fd2e04e93145474f`, the factor changed being
-  the brief: *Local review*'s round rules of ISS
+  the brief: `local-review.md`'s *Local review*'s round rules of ISS
   btclib-org/ai-agents-process#461 and ISS
   btclib-org/ai-agents-process#464. The same client, model and effort.
   The same four results: miss, miss, hit, and the same finding on the
@@ -427,9 +431,9 @@ process from a copy of its files at the run's sha without this file,
 read the prose at the head, run no suite and use no forge. The reviewers
 read their own tree's `REVIEWING.md` at the head, and no verdict's
 coverage list named this file. On one run per case the candidate loses
-no hit and gains none. What it adds to the reviewer's reading, *The
-gates*, *Sourcery and CodeRabbit before a push* and *Committing and
-rebasing*, bears on checks no case of the set exercises.
+no hit and gains none. What it adds to the reviewer's reading,
+`writing.md`'s *The gates*, *Sourcery and CodeRabbit before a push* and
+*Committing and rebasing*, bears on checks no case of the set exercises.
 
 - **Candidate**, 2026-11-15: `$PROCESS` `86cc1ec`, tree
   `bb669fe1f9761677f194399770c630f802f3a980`, the factor changed being
@@ -492,11 +496,11 @@ item is not adopted.
 - **Candidate**, 2026-11-15: `$PROCESS` `cab9c97`, tree
   `39a87f84c7133c05199cda4b8d25bb8141f984ff`, the factor changed being
   the brief's prose rules of ISS btclib-org/ai-agents-process#415,
-  *Local review*'s new *A text to be posted* among them. Claude Code,
-  the `reviewer` agent, Opus, effort `high`, one run per case. It is
-  compared with the baseline at `53b7a57` above on all seven cases: the
-  candidate's base, `e029de3`, differs from `53b7a57` only in
-  `process/orchestration.md`, which no brief of this run had the
+  `local-review.md`'s *Local review*'s new *A text to be posted* among
+  them. Claude Code, the `reviewer` agent, Opus, effort `high`, one run
+  per case. It is compared with the baseline at `53b7a57` above on all
+  seven cases: the candidate's base, `e029de3`, differs from `53b7a57`
+  only in `process/orchestration.md`, which no brief of this run had the
   reviewer read. PR btclib-org/ai-agents-process#317: miss. PR
   btclib-org/ai-agents-process#444: hit. PR
   btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit. PR
@@ -693,12 +697,13 @@ gain: no case's defect concerns the test a fix adds or a major version.
   pass, the port check, and a rebase and the clearance. The reviewer
   keeps what its sandbox lets it write, run and read, the human's answer
   standing in for an input's result, how a finding quotes its lines, now
-  in *The verdict*, and the merge of `main` that resolved nothing, now
-  *A merge of `main` and the clearance*; its pointers to the moved text
-  name `orchestration.md`. Claude Code, the `reviewer` agent, Opus,
-  effort `high`, one run per case, and a second in each configuration on
-  PR btclib-org/.github#2288 and PR btclib-org/ecc#580, where the first
-  runs differed. In both: PR btclib-org/ai-agents-process#317: miss. PR
+  in `local-review.md`'s *The verdict*, and the merge of `main` that
+  resolved nothing, now *A merge of `main` and the clearance*; its
+  pointers to the moved text name `orchestration.md`. Claude Code, the
+  `reviewer` agent, Opus, effort `high`, one run per case, and a second
+  in each configuration on PR btclib-org/.github#2288 and PR
+  btclib-org/ecc#580, where the first runs differed. In both: PR
+  btclib-org/ai-agents-process#317: miss. PR
   btclib-org/ai-agents-process#444: hit. PR
   btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/ecc#484: hit. PR
   btclib-org/btclib-node#2516: miss. PR btclib-org/.github#2288: the
@@ -941,18 +946,18 @@ brief carry, which no brief of the run held.
   reviewer's map gives whole. Its checklist asks the hooks to pass on
   the tip's tree, staged or committed, and the suite and the docs build
   on the tip itself, and reads `git status --porcelain` once the commit
-  is made and the last gate has run. In *The gates*, the hooks and the
-  checks that decide the suite and the docs build read the staged
-  tree's diff from the merge base; a run of the hooks carries over to a
-  commit of the same tree on the same merge base, which the log's
-  `TREE=` lines name; the writer runs the fixers before the commit and
-  signs one commit at hand-over; and in the gate lock the hooks run
-  first and a failure stops the block. In *Committing and rebasing*, a
-  push waits on those gates. Claude Code, the `reviewer` agent, Opus,
-  effort `high`, one run per case, and a second in each configuration
-  on PR btclib-org/ecc#580, where the first runs differed. In both: PR
-  btclib-org/ai-agents-process#444: hit. PR btclib-org/ecc#484: hit. PR
-  btclib-org/ai-agents-process#317: miss. PR
+  is made and the last gate has run. In `writing.md`'s *The gates*, the
+  hooks and the checks that decide the suite and the docs build read the
+  staged tree's diff from the merge base; a run of the hooks carries
+  over to a commit of the same tree on the same merge base, which the
+  log's `TREE=` lines name; the writer runs the fixers before the commit
+  and signs one commit at hand-over; and in the gate lock the hooks run
+  first and a failure stops the block. In `writing.md`'s *Committing and
+  rebasing*, a push waits on those gates. Claude Code, the `reviewer`
+  agent, Opus, effort `high`, one run per case, and a second in each
+  configuration on PR btclib-org/ecc#580, where the first runs differed.
+  In both: PR btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/ecc#484: hit. PR btclib-org/ai-agents-process#317: miss. PR
   btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
   miss. PR btclib-org/btclib-node#2516: miss. PR
   btclib-org/ai-agents-process#526: miss. PR
@@ -999,12 +1004,12 @@ The candidate has the baseline's results on eight cases. On PR
 btclib-org/ecc#580 the baseline hits in both runs and the candidate in
 neither: a loss on that case, over two runs each. Under `process/` the
 change touches only the gating text, the checklist's line on the gates
-and its line on `git status` among it, all in *Writing work*. The run
-cannot tell whether that wording moves a reviewer's attention, or
-whether the difference is the variation between runs this case has
-shown: in the run at `9f70ee0` and `e49e295` each configuration hits it
-once in two runs, and in the run at `9dd351e` and `bd66221` neither hits
-it.
+and its line on `git status` among it, all in `writing.md`'s *Writing
+work*. The run cannot tell whether that wording moves a reviewer's
+attention, or whether the difference is the variation between runs this
+case has shown: in the run at `9f70ee0` and `e49e295` each configuration
+hits it once in two runs, and in the run at `9dd351e` and `bd66221`
+neither hits it.
 
 - **Baseline and candidate**, 2026-11-19: `$PROCESS` `460205a` and
   `acfa6d32c9210b7aa1461d0c8b2cee508d055013`, tree
@@ -1029,10 +1034,10 @@ it.
   baseline miss, then miss; the candidate hit, then hit.
 
 On PR btclib-org/ai-agents-process#444 both block on the skills that
-still arm with `--auto` and cite *Landing it*. On PR btclib-org/ecc#484
-both block on the perl two-argument `open` on file names, and the
-candidate's reviewer holds it blocking at the third round because an
-outside contributor's branch supplies the names. On PR
+still arm with `--auto` and cite `CONTRIBUTING.md`'s *Landing it*. On PR
+btclib-org/ecc#484 both block on the perl two-argument `open` on file
+names, and the candidate's reviewer holds it blocking at the third round
+because an outside contributor's branch supplies the names. On PR
 btclib-org/ecc#580 the candidate's runs block on the comment over
 `_AFF_CALLS`, whose "each" leaves out `add_var`, `is_on_curve` and
 `require_on_curve`, and the baseline's do not name it. On PR
