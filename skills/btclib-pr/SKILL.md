@@ -1505,9 +1505,17 @@ and how to resolve it. Completing it:
   comes in by a signed merge, not a rebase, run with hooks off as
   `writing.md`'s *The gates* says. The fixes are a signed commit of ours
   on top, signed off by us.
-- **Push to their fork as a fast-forward only**: `git push <fork url>
-  HEAD:refs/heads/<their branch>`, never with any `--force`. Before
-  every push, `git ls-remote <fork url> refs/heads/<their branch>` must
+- **Push to their fork as a fast-forward only**, from the worktree and
+  never with any `--force`:
+
+  ```shell
+  wt=<wt>
+  fork=<fork url>
+  branch=<their branch>
+  git -C "${wt:?}" push "${fork:?}" "HEAD:refs/heads/${branch:?}"
+  ```
+
+  Before every push, `git ls-remote <fork url> refs/heads/<their branch>` must
   still answer the sha you built on; where it moved, they are working,
   and you stop and ask.
 - **The same review and decision, then the squash of their pull
