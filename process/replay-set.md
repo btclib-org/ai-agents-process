@@ -1006,6 +1006,102 @@ shown: in the run at `9f70ee0` and `e49e295` each configuration hits it
 once in two runs, and in the run at `9dd351e` and `bd66221` neither hits
 it.
 
+- **Baseline and candidate**, 2026-11-19: `$PROCESS` `460205a` and
+  `acfa6d32c9210b7aa1461d0c8b2cee508d055013`, tree
+  `0f73cc704177d24a897b87ec0cef1ae8ee3fc377`, the factor changed being
+  the brief: the change of ISS btclib-org/ai-agents-process#589, which
+  `git diff 460205a acfa6d32c9210b7aa1461d0c8b2cee508d055013 -- process`
+  makes. In `local-review.md`'s *The rounds*, from the third round of a
+  branch's local review, in place of the sixth, a finding on a shape
+  that is not reachable, or whose worst outcome is on the safe side, is
+  filed as an issue and does not block. A refusal, a crash and a false
+  sentence on a reachable shape block at any round. The verdict marks
+  such a finding `filed`, with its ground and the issue's body, and the
+  orchestrator files it. Claude Code, the `reviewer` agent, Opus, effort
+  `high`, one run per case, and a second in each configuration on PR
+  btclib-org/ecc#580, which alone decided the first runs. In both: PR
+  btclib-org/ai-agents-process#444: hit. PR btclib-org/ecc#484: hit. PR
+  btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with no
+  false finding. PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
+  miss. PR btclib-org/btclib-node#2516: miss. PR
+  btclib-org/ai-agents-process#526: miss. PR btclib-org/ecc#580: the
+  baseline miss, then miss; the candidate hit, then hit.
+
+On PR btclib-org/ai-agents-process#444 both block on the skills that
+still arm with `--auto` and cite *Landing it*. On PR btclib-org/ecc#484
+both block on the perl two-argument `open` on file names, and the
+candidate's reviewer holds it blocking at the third round because an
+outside contributor's branch supplies the names. On PR
+btclib-org/ecc#580 the candidate's runs block on the comment over
+`_AFF_CALLS`, whose "each" leaves out `add_var`, `is_on_curve` and
+`require_on_curve`, and the baseline's do not name it. On PR
+btclib-org/btclib-node#2516 both name the `i` wording only as
+non-blocking, and on PR btclib-org/btclib-secp256k1#1331 neither names
+as blocking that the exit `42` refusal accepts any error.
+
+On PR btclib-org/ai-agents-process#317, PR btclib-org/.github#2288 and
+PR btclib-org/ai-agents-process#526 the candidate's reviewer finds the
+defect, and the third round's rule files it in place of blocking. On PR
+btclib-org/ai-agents-process#317 it names the wait of the resumed run
+with its mechanism and files it as on the safe side, where the
+baseline's names it only as collateral. On PR btclib-org/.github#2288 it
+names the single-space lookbehind and files it as on the safe side,
+where the baseline's names it only as non-blocking. On PR
+btclib-org/ai-agents-process#526 it names exactly the item indented two
+spaces after a prose paragraph and files it as a constructed shape,
+where the baseline's does not name it. The baseline misses these three
+cases anyway, so the comparison does not move. But the rule turns into
+issues defects that the cases record, which a run scores as a hit only
+where it blocks (*How a run is scored*).
+
+The findings outside the cases' defects were not measured, among them
+the filed finding on prose lines that look like list markers on PR
+btclib-org/ai-agents-process#526, the overstated `__len__` on PR
+btclib-org/ecc#580, the `#:` and `//` comment lines on PR
+btclib-org/ecc#484, and both runs on PR btclib-org/ai-agents-process#317
+blocking on "tied to the account".
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, and the case from a repository holding only the head
+and its ancestors, at the head and base *Cases* names. Every brief said
+that this was the branch's third local round (`local-review.md`'s *The
+rounds*) and gave no earlier round's verdict. Each reviewer was fresh,
+at fresh context, read the case only from its tree and the process only
+from the copy, used no network, no forge and no gate, and gave its
+verdict in its output only. The runs went in a shuffled order. The
+copies hold `process/` alone, so the run left out the change's edit to
+`/btclib-iss`'s *Opening the pull request*. Nothing was withheld: the
+change edits no `REVIEWING.md` and nothing in `agents/`. The account's
+API limit stopped five runs, which resumed where they stopped once it
+reset. A first launch of the baseline's run on PR
+btclib-org/btclib-secp256k1#1331 went out with a cut-off brief, was
+stopped about three seconds in after listing the primary checkout's
+`process/` and the cases directory, and was relaunched with the full
+brief. The baseline's reviewer of PR btclib-org/btclib-node#2516 ran
+none of its own inputs, since memory pressure stayed at level 2 for the
+whole run.
+
+After the run the branch merged `main` twice: at `bcbd810` in `ed608ae`,
+which brought to the reviewer's files the change of ISS
+btclib-org/ai-agents-process#587 that the run at `fbd575b` and
+`2a9ba3a6058a88ddda691a1b69085b111fa53a25` tried and the sign-off
+closing's exemption in `every-role.md`; and at `d2da963` in `6de8585`,
+which brought the change of ISS btclib-org/ai-agents-process#585 to
+`writing.md`'s *Writing work*, tried in the entry above. The change's
+own lines are unchanged: with `-- process agents skills REVIEWING.md`,
+neither merge changes the lines `git diff 460205a acfa6d3` adds and
+removes.
+
+The candidate has the baseline's hits and misses on eight cases, and
+loses none. Over the defects the baseline hits on two cases and the
+candidate on three, and neither makes a false finding on the clean case.
+The difference is PR btclib-org/ecc#580, whose defect is a false
+sentence, which blocks at any round in both configurations. That case
+has gone both ways before under configurations that differ in nothing
+it concerns (the runs above), so the run cannot tie the gain to the
+change.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
