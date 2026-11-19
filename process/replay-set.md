@@ -1102,7 +1102,7 @@ has gone both ways before under configurations that differ in nothing
 it concerns (the runs above), so the run cannot tie the gain to the
 change.
 
-- **Baseline and candidate**, 2026-11-20: `$PROCESS` `ebd995a` and
+- **Baseline and candidate**, 2026-11-19: `$PROCESS` `ebd995a` and
   `f7b7ce4a5b4e7b75494899bcab9d6f56b03c0a15`, tree
   `fcfa4f0f017fbbe7ca4db53bcb7a05ad3c78057a`, the factor changed being
   the brief: the change of ISS btclib-org/ai-agents-process#624, which
