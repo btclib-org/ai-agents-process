@@ -121,11 +121,13 @@ two disagree.
   pre-commit hooks about 1 GiB (0.94 to 1.12 GiB that day). Each is the
   largest resident set of a single process, as `/usr/bin/time -l` prints
   it, so a lower bound for a job of several processes, as both are. A
-  job whose peak is not measured, an agent among them, adds none: in
-  Claude Code an agent shares the session's own process, which `time`
-  cannot isolate. So after starting any job, the session starts the next
-  only on a fresh reading, taken `GATE_LOCK_SETTLE` seconds (60) after
-  the start, or, for an agent or a Codex run, once its first tool call
+  job whose peak is not measured adds none. In Claude Code an agent
+  shares the session's own process, which `time` cannot isolate. A
+  reviewer started as a process of its own, as Codex starts one with
+  `claude -p`, has no figure above. So after starting any job, the
+  session starts the next only on a fresh reading, taken at the first of
+  these: the job has ended, `GATE_LOCK_SETTLE` seconds (60) have passed
+  since its start, or, for an agent or a Codex run, its first tool call
   has returned.
 - **The forge's quota is shared.** Every session and agent on this
   machine calls the forge through the same `gh` login, and so draws on
