@@ -150,7 +150,7 @@ if ! rroot=$(real "$root") ||
   rroot=
 fi
 here=$(env pwd -P)
-# a template under $TMPDIR: macOS's mktemp without one ignores it
+# a template under $TMPDIR: macOS's mktemp given none, and no -p, ignores it
 list=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
 todo=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
 owns=$(mktemp "${TMPDIR:-/tmp}/sweep.XXXXXX") || exit 2
