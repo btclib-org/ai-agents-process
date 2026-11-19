@@ -5,7 +5,9 @@ exhausted, matched as `/btclib-pr`'s *Rebase and CI* says. This prints
 the two lines of the log:
 
 ```shell
-gh run view <run id> --repo <owner>/<repo> --log-failed |
+run=<run id>
+repo=<owner>/<repo>
+gh run view "${run:?}" --repo "${repo:?}" --log-failed |
   grep -E 'api_error_status 429|hit your .* limit'
 ```
 
@@ -29,7 +31,9 @@ Where it prints `passed`, the session following the pull request
 re-runs the failed run, and its result stands:
 
 ```shell
-gh run rerun --repo <owner>/<repo> --failed <run id>
+repo=<owner>/<repo>
+run=<run id>
+gh run rerun --repo "${repo:?}" --failed "${run:?}"
 ```
 
 Where it prints `ahead`, a pull request whose only red check is this one
