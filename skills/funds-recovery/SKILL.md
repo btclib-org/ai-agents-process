@@ -80,11 +80,19 @@ same packages, and a `seed-scan` found earlier on the `PATH` is not
 run. It asks for the mnemonic, then for passphrases until an empty one,
 at hidden prompts, and writes the bundle. The shell empties the file it
 writes to before uv starts, even where the run then fails, so each run
-writes a file of its own, named for the second the command started:
+writes to a new file. This makes one in the current directory, with the
+time in UTC in its name, and prints its path:
+
+```shell
+bundle=$(mktemp "$PWD/bundle-$(date -u +%Y%m%dT%H%M%SZ)-XXXXXX") &&
+  printf '%s\n' "$bundle"
+```
+
+Then `identify` writes the bundle to it, in the same terminal:
 
 ```shell
 uvx --offline --exclude-newer 2026-11-16T23:16:00Z seed-scan@2026.11.17 \
-  identify > "bundle-$(date +%Y%m%dT%H%M%S).json"
+  identify > "${bundle:?}"
 ```
 
 Where they know an address the mnemonic gave, `--address` followed by
