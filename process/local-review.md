@@ -74,31 +74,27 @@ branch, or a text to be posted.
   the results of every input, and names none as not run, is the
   dedicated reviewer's `CLEARED`.**
 - **From the third round of a branch's local review, a finding on a
-  shape that is not reachable, or whose worst outcome is on the safe
-  side, is filed as an issue and does not block.** The rounds are
-  numbered from one, as the forge's are in the next bullet. Each verdict
-  of a local reviewer is a round, so a head that two reviewers read is
-  two rounds. The count is the branch's, not a reviewer's: any reviewer
-  that starts later, after a rebase or at any other point, goes on from
-  the branch's last round.
+  constructed shape is filed as an issue and does not block.** The
+  rounds are numbered from one, as the forge's are in the next bullet.
+  Each verdict of a local reviewer is a round, so a head that two
+  reviewers read is two rounds. The count is the branch's, not a
+  reviewer's: any reviewer that starts later, after a rebase or at any
+  other point, goes on from the branch's last round.
 
-  A shape is reachable where a session following the process can produce
-  it, or where a tree or a caller holds it. A constructed shape, one
-  that only a reviewer's input holds, is not. The worst outcome is on
-  the safe side where it is a refusal, a fresh review or another stop,
-  rather than a wrong result. A refusal that shows a secret is not on
-  the safe side. A crash is not on the safe side, and neither is a false
-  sentence: on a reachable shape, both block at any round.
+  A shape is constructed where only a reviewer's input holds it: no tree
+  and no caller holds it, and no session following the process produces
+  it. Every other shape is reachable, and the third round changes
+  nothing for a finding on it, whatever its worst outcome, a refusal
+  included: a gate's block that, followed as written, exits `127` on
+  every branch only refuses, and it blocks.
 
   The reviewer classifies the finding, not the writer. Its verdict marks
   the finding `filed`, gives the ground, and carries the body of the
-  issue to file. For a shape that is not reachable, the ground is the
-  search that shows no tree and no caller holds it, the command and what
-  it printed, and why no step of the process produces it. For the safe
-  side, it is the input run, or the case a rule in prose was tried on,
-  and its outcome. The orchestrator files the issue with that body, and
-  the pull request's body lists it as `/btclib-iss`'s *Opening the pull
-  request* says.
+  issue to file. The ground is the search that shows no tree and no
+  caller holds the shape, the command and what it printed, and why no
+  step of the process produces it. The orchestrator files the issue with
+  that body, and the pull request's body lists it as `/btclib-iss`'s
+  *Opening the pull request* says.
 - **From the third round on the forge, only a defect on a shape that a
   tree or a caller holds, a false sentence or a crash is fixed on the
   branch.** A round on the forge is a head the reviews on GitHub read
