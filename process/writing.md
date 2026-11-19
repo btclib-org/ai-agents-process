@@ -457,17 +457,22 @@ of the standard* says.
   `--exclude-standard` reads), and no file marked assume-unchanged or
   skip-worktree, whose change `git diff` does not show (`git ls-files
   -v` tags it in lower case or `S`). It prints nothing otherwise, so a
-  file the branch adds is gated only once staged. It writes the tree
-  from a copy of the index into a temporary object directory, since
-  `git write-tree` takes `index.lock` in the git directory, which a
-  Codex sandbox keeps read-only (*Git writes under Codex*). Its `mktemp`
-  takes a template under `$TMPDIR`: without one, macOS's `mktemp -d`
-  ignores `$TMPDIR` and writes in the directory `getconf
-  DARWIN_USER_TEMP_DIR` prints, which a sandbox that allows only
-  `$TMPDIR` refuses. `HUP`, `INT` or `TERM` makes it exit, so that its
-  `EXIT` trap removes the directory: zsh and dash run no `EXIT` trap
-  where `TERM` ends the shell. `scripts/test-gate-blocks.sh` shows each
-  refusal and the signal. The shell that runs the gates defines it:
+  file the branch adds is gated only once staged. Its `awk` reads every
+  line: one that exits early can leave `printf` writing to a closed
+  pipe, which under `set -o pipefail` fails the pipeline, and `!` then
+  passes the tree. It writes the tree from a copy of the index into a
+  temporary object directory, since `git write-tree` takes `index.lock`
+  in the git directory, which a Codex sandbox keeps read-only (*Git
+  writes under Codex*). Its `mktemp` takes a template under `$TMPDIR`:
+  without one, macOS's `mktemp -d` ignores `$TMPDIR` and writes in the
+  directory `getconf DARWIN_USER_TEMP_DIR` prints, which a sandbox that
+  allows only `$TMPDIR` refuses. `HUP`, `INT` or `TERM` makes it exit,
+  so that its `EXIT` trap removes the directory: zsh and dash run no
+  `EXIT` trap where `TERM` ends the shell. In zsh a signal that arrives
+  while `mktemp` runs still leaves the directory, since zsh runs the
+  trap before it assigns `tmp`. `scripts/test-gate-blocks.sh` shows
+  each refusal, and a signal while `cp` runs and while `mktemp` runs.
+  The shell that runs the gates defines it:
 
   ```shell
   wt=<wt>
@@ -480,7 +485,7 @@ of the standard* says.
       [ -z "$(git -C "$wt" ls-files --others --exclude-standard)" ] &&
       v=$(git -C "$wt" ls-files -v) &&
       ! printf '%s\n' "$v" |
-        awk '/^([a-z]|S) / { f = 1; exit } END { exit !f }' &&
+        awk '/^([a-z]|S) / { f = 1 } END { exit !f }' &&
       ix=$(git -C "$wt" rev-parse --path-format=absolute --git-path index) &&
       ob=$(git -C "$wt" rev-parse --path-format=absolute --git-path objects) &&
       tmp=$(mktemp -d "${TMPDIR:-/tmp}/gated.XXXXXX") &&
