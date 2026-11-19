@@ -59,10 +59,16 @@
 #   length, with `* ident` in `$HOME/.config/git/attributes`, which git
 #   would collapse back. Each status file lists the change, as
 #   `!! hidden/`, ` M file`, `?? x` or ` M id`.
-# - hooks: the hooks gate runs, with the commit's parent and then the
-#   commit itself for `<base>`. Its pre-commit, run by bash, records its
-#   directory and arguments: `<gate wt>`, then `--files ./file ./id
-#   ./sub`, and then `--all-files` for the empty diff.
+# - hooks: the hooks gate runs under `set -u`, with `peak` unset,
+#   with the commit's parent and then the commit itself for `<base>`,
+#   under bash and then under `/bin/bash`, which on macOS is bash 3.2.
+#   Its pre-commit records its directory and arguments: `<gate wt>`,
+#   then `--files ./file ./id ./sub`, and then `--all-files` for the
+#   empty diff.
+# - hooks, peak: with the parent again, under bash, `peak` is
+#   `gate_peak hooks <gate wt>`, and pre-commit holds 100 MiB. Outside
+#   the sandbox, `gate.peaks` gains one line, for `hooks` and `<gate
+#   wt>`, with a peak of 100 MiB or more and an exit of 0.
 # - octopus: `<gate wt>` merges two heads with `--no-commit`, which
 #   stages a change to `file` and a new file `new`, and the status block
 #   runs before the gate into a base file. With a gate that writes
@@ -310,31 +316,48 @@ for c in hidden crlf attributes ignore ident; do
     "$(tr "\n" " " 2>/dev/null < "$st")"; fi
 done
 
-# shellcheck disable=SC2016
-printf '{ pwd -P; printf "%%s\\n" "$@"; } > "$HOME/hooks-args"\n' \
-  > "$tmp/hooks.sh"
-for c in diff empty; do
-  case $c in
-    diff) b=$base want="$gwt
+cat > "$tmp/hooks.sh" <<'EOF'
+{ pwd -P; printf '%s\n' "$@"; } > "$HOME/hooks-args"
+[ ! -e "$HOME/alloc" ] || perl -e '$x = "x" x (100 * 1024 * 1024)'
+EOF
+for c in diff empty diff-3.2 empty-3.2 peak; do
+  sh=bash b=$base want="$gwt
 --files
 ./file
 ./id
-./sub" ;;
-    empty) b=$sha want="$gwt
+./sub"
+  case $c in
+    empty*) b=$sha want="$gwt
 --all-files" ;;
   esac
+  case $c in *-3.2) sh=/bin/bash ;; esac
   fresh
-  rm -f "$sbx/home/hooks-args"
-  sed "s|<base>|$b|g" "$tmp/hooks-gate.sh" > "$tmp/hooks-$c.sh"
-  bash "$tmp/hooks-$c.sh" > "$tmp/hooks-$c.log" 2>&1
+  rm -f "$sbx/home/hooks-args" "$sbx/home/alloc" "$tmp/lock/gate.peaks"
+  { echo 'set -u'
+    if [ "$c" = peak ]; then
+      : > "$sbx/home/alloc"
+      printf 'GATE_LOCK_DIR=%s\n. %s\npeak=(gate_peak hooks %s)\n' \
+        "$tmp/lock" "$proc/scripts/gate-lock.sh" "$gwt"
+    fi
+    sed "s|<base>|$b|g" "$tmp/hooks-gate.sh"; } > "$tmp/hooks-$c.sh"
+  "$sh" "$tmp/hooks-$c.sh" > "$tmp/hooks-$c.log" 2>&1
   rc=$?
   got=$(cat "$sbx/home/hooks-args" 2>/dev/null)
   if [ "$rc" -eq 0 ] && [ "$got" = "$want" ]; then
     ok "hooks, $c: pre-commit ran in <gate wt> with $(printf '%s' "$got" |
       sed 1d | tr '\n' ' ')"
   else no "hooks, $c: exit $rc, pre-commit ran with:" \
-    "$(printf '%s' "$got" | tr '\n' ' ')"; fi
+    "$(printf '%s' "$got" | tr '\n' ' ')" \
+    "$(tr '\n' ' ' < "$tmp/hooks-$c.log")"; fi
 done
+if awk -F '\t' -v t="$gwt" 'NR == 1 && $2 == "hooks" && $3 == t &&
+  $4 ~ /^[0-9]+$/ && $4 + 0 >= 102400 && $5 == 0 { f = 1 }
+  END { exit !(f && NR == 1) }' \
+  "$tmp/lock/gate.peaks" 2>/dev/null; then
+  ok "hooks, peak: gate_peak outside the sandbox recorded $(cut -f 4 \
+    "$tmp/lock/gate.peaks") KB for pre-commit inside it"
+else no "hooks, peak: gate.peaks does not hold one line of 100 MiB or more:" \
+  "$(tr '\n\t' '  ' 2>/dev/null < "$tmp/lock/gate.peaks")"; fi
 
 # Two heads on the gated commit: one changes file, one adds new.
 mk() {
