@@ -78,11 +78,16 @@ The second runs, from the cache alone, the environment the first built:
 `--offline` has uv fetch nothing, the same `--exclude-newer` gives the
 same packages, and a `seed-scan` found earlier on the `PATH` is not
 run. It asks for the mnemonic, then for passphrases until an empty one,
-at hidden prompts, and writes the bundle:
+at hidden prompts, and writes the bundle. The shell empties the file it
+writes to before uv starts, even where the run then fails, so each run
+first makes a new file in the current directory, with the time in UTC
+in its name, and prints its path:
 
 ```shell
-uvx --offline --exclude-newer 2026-11-16T23:16:00Z seed-scan@2026.11.17 \
-  identify > bundle.json
+bundle=$(mktemp "$PWD/bundle-$(date -u +%Y%m%dT%H%M%SZ)-XXXXXX") &&
+  printf '%s\n' "$bundle" &&
+  uvx --offline --exclude-newer 2026-11-16T23:16:00Z seed-scan@2026.11.17 \
+  identify > "$bundle"
 ```
 
 Where they know an address the mnemonic gave, `--address` followed by
@@ -121,14 +126,23 @@ its refusal repeats nothing the file holds.
 
 ## Scan, and read the forks
 
-The results go in a directory of the session's scratchpad:
+Each bundle's results go in a directory of their own in the session's
+scratchpad, so that a second bundle's results replace none of the
+first's. This makes it, once per bundle, and prints its path:
 
 ```shell
 scratchpad=<the session's scratchpad>
 ```
 
 ```shell
-mkdir -p "${scratchpad:?}/funds-recovery"
+mkdir -p "${scratchpad:?}/funds-recovery" &&
+  mktemp -d "${scratchpad:?}/funds-recovery/results-XXXXXX"
+```
+
+The commands below take it for that bundle:
+
+```shell
+results=<the directory made for the bundle>
 ```
 
 Ask the user for the Electrum server and the EVM node to ask, and the
@@ -145,15 +159,13 @@ secret stays out of the session*). `scan` refuses a node URL that
 carries a login, and takes the Electrum server as `host:port` alone,
 with no path or query.
 
-A proxy or a tunnel passes every address on to the service behind it,
-which the report does not name. Ask of each EVM node and each Electrum
-server, the one for `scan` and each one for `forks`, whether it
-forwards to another service: `--tcp` takes any host that resolves to
-loopback, as seed-scan's `README.md` says in *Scanning a bundle*, so a
-server on `127.0.0.1` can be an SSH tunnel to another party's. Where
-one does, ask which service it forwards to, and scan only once they
-have named it and agreed that it learns every address. The answer
-names that service beside the report.
+A proxy passes every address on to the node behind it, which the report
+does not name. Its URL can read as the user's own node's does:
+`http://127.0.0.1:8545` names either. So ask of each node URL whether it
+forwards to another service, whether or not the user calls it a proxy.
+Where it does, ask which service, and scan only once they have named it
+and agreed that it learns every address. The answer names that service
+beside the report.
 
 ```shell
 server=<the Electrum server, as host:port>
@@ -165,7 +177,7 @@ chain=<the chain the node serves>
 uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
   seed-scan scan --server "${server:?}" \
   --node "${node:?}" --evm-chain "${chain:?}" "${bundle:?}" \
-  > "${scratchpad:?}/funds-recovery/scan.json"
+  > "${results:?}/scan.json"
 ```
 
 Leave out `--server` where the user named no server, and `--node` with
@@ -199,7 +211,7 @@ server=<that chain's Electrum server, as host:port>
 ```shell
 uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
   seed-scan forks --chain "${fork:?}" --server "${server:?}" "${bundle:?}" \
-  > "${scratchpad:?}/funds-recovery/forks-${fork:?}.json"
+  > "${results:?}/forks-${fork:?}.json"
 ```
 
 A result counts only where its command exited `0`. One that exited
@@ -213,9 +225,9 @@ with no `--scan` or `--forks` where none does:
 ```shell
 uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
   seed-scan report \
-  --scan "${scratchpad:?}/funds-recovery/scan.json" \
-  --forks "${scratchpad:?}/funds-recovery/forks-${fork:?}.json" \
-  "${bundle:?}" > "${scratchpad:?}/funds-recovery/report.txt"
+  --scan "${results:?}/scan.json" \
+  --forks "${results:?}/forks-${fork:?}.json" \
+  "${bundle:?}" > "${results:?}/report.txt"
 ```
 
 The docstring of [`seed_scan.report`][report] at the tag gives the
