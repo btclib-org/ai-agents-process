@@ -55,8 +55,8 @@ The process the btclib-org maintainers follow with the coding agents
   fixed set of `git -C` commands;
 - `scripts/gate-lock.sh` — the gate lock every worker of every session
   takes before its heavy gates, and `gate_peak`, which records the peak
-  memory of what runs through it: the gates of the lock's block, and the
-  reviewers an orchestrator starts as a command;
+  memory and the wall time of what runs through it: the gates of the
+  lock's block, and the reviewers an orchestrator starts as a command;
 - `scripts/test-gate-lock.sh` — `sh scripts/test-gate-lock.sh` shows
   sessions taking that lock's slots and waiting while every slot is
   held, and `gate_peak` recording a peak;

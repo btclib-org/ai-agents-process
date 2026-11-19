@@ -82,13 +82,14 @@
 #   their ticket and their slot on libproc's answer alone.
 # - gate_peak. Under each of sh, bash, zsh and dash, it returns the exit
 #   code of the program it runs and appends one well-formed line to
-#   gate.peaks. A program holding 200 MB peaks between 200 and 300 MB,
-#   skipped where neither time nor /proc reads a peak, as in Codex's
-#   sandbox. A program killed with KILL returns 137. gate_peak removes
-#   time's output file, and one a shell that is gone left, and keeps one
-#   of a live shell. With no file for time's output, under each shell,
-#   the program runs through a /proc of the test's and then alone, reads
-#   the caller's stdin, and returns its code.
+#   gate.peaks, whose wall time is between the second the program sleeps and
+#   a minute. A program holding 200 MB peaks between 200 and 300 MB, skipped
+#   where neither time nor /proc reads a peak, as in Codex's sandbox. A
+#   program killed with KILL returns 137. gate_peak removes time's output
+#   file, and one a shell that is gone left, and keeps one of a live shell.
+#   With no file for time's output, under each shell, the program runs
+#   through a /proc of the test's and then alone, reads the caller's stdin,
+#   and returns its code, and each line records a wall time.
 #   The output of GNU time and of macOS time are both read in KB.
 # - /proc, in a tree the test writes: the largest VmHWM of a process and
 #   the processes below it, a grandchild and a child of a thread other
@@ -856,21 +857,23 @@ echo "ok: a process that cannot be read holds its slot, and one ps does not find
   echo "ok: with ps refused, a dead PID and a zombie lost their ticket and slot"
 ) || exit 1
 
-# gate_peak, under each shell: a program that exits 7 returns 7, and one
-# line is appended, five fields of the forms the header gives, a tab in the
-# kind written as a space.
+# gate_peak, under each shell: a program that sleeps a second and exits 7
+# returns 7, and one line is appended, six fields of the forms the header
+# gives, a tab in the kind written as a space and the wall time between 1
+# and 60 seconds, so that neither a missing time nor a clock reading passes.
 pids=""
 for shell in sh bash zsh dash; do
   command -v "$shell" > /dev/null || { echo "skipped: no $shell for gate_peak"; continue; }
   rm -rf "${GATE_LOCK_DIR:?}"
   rc=0
-  "$shell" -c '. "$1"; gate_peak "$2" /abs/wt sh -c "exit 7"' "$shell" "$script" "$(printf 'a\tb')" ||
+  "$shell" -c '. "$1"; gate_peak "$2" /abs/wt sh -c "sleep 1; exit 7"' "$shell" "$script" "$(printf 'a\tb')" ||
     rc=$?
   [ "$rc" -eq 7 ] || fail "under $shell, gate_peak returned $rc, not the program's 7"
   [ "$(wc -l < "$GATE_LOCK_DIR/gate.peaks")" -eq 1 ] ||
     fail "under $shell, gate.peaks does not hold one line"
-  awk -F '\t' 'NF != 5 || $1 !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/ ||
-    $2 != "a b" || $3 != "/abs/wt" || $4 !~ /^([0-9]+|[?])$/ || $5 != 7 { exit 1 }' \
+  awk -F '\t' 'NF != 6 || $1 !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/ ||
+    $2 != "a b" || $3 != "/abs/wt" || $4 !~ /^([0-9]+|[?])$/ || $5 != 7 ||
+    $6 !~ /^[0-9]+$/ || $6 < 1 || $6 > 60 { exit 1 }' \
     "$GATE_LOCK_DIR/gate.peaks" ||
     { cat "$GATE_LOCK_DIR/gate.peaks"; fail "under $shell, the line of gate.peaks is not well formed"; }
   echo "ok: under $shell, gate_peak returned 7 and appended: $(cat "$GATE_LOCK_DIR/gate.peaks")"
@@ -925,6 +928,8 @@ for shell in sh bash zsh dash; do
       fail "under $shell, with _gl_proc at ${proc##*/}, the fallback printed '$got'"
     [ "$(cut -f 4,5 "$GATE_LOCK_DIR/gate.peaks" | tr '\t\n' ' ,')" = "? 0,? 7," ] ||
       fail "under $shell, with _gl_proc at ${proc##*/}, gate.peaks holds $(cat "$GATE_LOCK_DIR/gate.peaks")"
+    awk -F '\t' 'NF != 6 || $6 !~ /^[0-9]+$/ || $6 > 60 { exit 1 }' "$GATE_LOCK_DIR/gate.peaks" ||
+      fail "under $shell, with _gl_proc at ${proc##*/}, a line of gate.peaks holds no wall time of a minute or less: $(cat "$GATE_LOCK_DIR/gate.peaks")"
   done
   echo "ok: under $shell, through /proc and alone, the program read stdin and returned its code"
 done

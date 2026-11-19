@@ -1005,11 +1005,11 @@ of the standard* says.
   stop left out as not run.
 
   `gate_peak` runs the gate, returns its exit code, and records its peak
-  memory, as the script's header comment says. On an outside
-  contributor's branch the hooks step is that branch's own hooks block
-  (*An outside contributor's branch*), which runs `"$@"`, the sandbox's
-  command, behind `peak` too: `gate_peak` runs outside the sandbox, and
-  its `time` reads the peak of the processes inside it, as
+  memory and its wall time, as the script's header comment says. On an
+  outside contributor's branch the hooks step is that branch's own hooks
+  block (*An outside contributor's branch*), which runs `"$@"`, the
+  sandbox's command, behind `peak` too: `gate_peak` runs outside the
+  sandbox, and its `time` reads the peak of the processes inside it, as
   `scripts/test-gate-sandbox.sh` shows.
 
   The timeout goes around each gate inside the block, never around the
