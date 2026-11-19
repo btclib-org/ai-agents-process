@@ -1479,11 +1479,13 @@ warns of the closing, by a maintainer, a session or a job; where none
 does, it is the session's ask above. Such a comment can be a comment on
 the pull request, the body of a review or a comment of a review, which
 GitHub serves apart. These list each kind, every page read, with its
-time, author, URL and body, and the session reads them all and takes the
-earliest that asks and warns. A comment of a review takes its review's
-time, since GitHub shows the comments of a pending review only once it
-is submitted: the third listing prints the review's id, and the second
-that review's `submitted_at`:
+time, author and URL on one line and its body on the next, as a JSON
+string, so that a body holding a line of that shape adds no entry. The
+session reads them all and takes the earliest that asks and warns. A
+comment of a review takes its review's time, since GitHub shows the
+comments of a pending review only once it is submitted: the third
+listing prints the review's id, and the second that review's
+`submitted_at`:
 
 ```shell
 n=<n>
@@ -1492,19 +1494,20 @@ repo=<owner>/<repo>
 
 ```shell
 gh api --paginate "repos/${repo:?}/issues/${n:?}/comments" \
-  --jq '.[] | "\(.created_at) \(.user.login) \(.html_url)\n\(.body)\n"'
+  --jq '.[] | "\(.created_at) \(.user.login) \(.html_url)
+\(.body | @json)\n"'
 ```
 
 ```shell
 gh api --paginate "repos/${repo:?}/pulls/${n:?}/reviews" \
   --jq '.[] | "\(.submitted_at) \(.user.login) \(.html_url) review \(.id)
-\(.body)\n"'
+\(.body | @json)\n"'
 ```
 
 ```shell
 gh api --paginate "repos/${repo:?}/pulls/${n:?}/comments" \
   --jq '.[] | "review \(.pull_request_review_id) \(.user.login) \(.html_url)
-\(.body)\n"'
+\(.body | @json)\n"'
 ```
 
 This prints the time of the last reopen, and nothing where the pull
@@ -1605,6 +1608,46 @@ gh pr checks "${pr:?}" --json name,bucket,completedAt \
     | select(.bucket == "pass") | .completedAt'
 ```
 
+A hit that passes is ranked by its first pass on any head it had, so a
+pull request pushed again after passing keeps its place. `gh pr checks`
+reads the current head alone. This prints the earliest time a `Sign-off`
+run passed, read from every `pull_request` workflow run on the hit's
+head branch, from a repository of its head owner, since it was opened,
+and nothing where none passed. Where a call fails it exits non-zero, and
+no taker is chosen until it has exited `0` for each hit that passes:
+
+```shell
+info=$(gh pr view "${pr:?}" \
+  --json url,headRefName,headRepositoryOwner,createdAt \
+  --jq '(.url | split("/")[3:5] | join("/")), .headRefName,
+    .headRepositoryOwner.login, .createdAt') &&
+  { read -r prepo && read -r branch && read -r from && read -r since; } \
+    <<< "$info" &&
+  ids=$(FROM=$from SINCE=$since gh api --paginate -X GET \
+    "repos/${prepo:?}/actions/runs" -f event=pull_request \
+    -f branch="${branch:?}" -F per_page=100 \
+    --jq '.workflow_runs[] | select(.head_repository.owner.login == env.FROM
+      and .created_at >= env.SINCE) | .check_suite_id') &&
+  times=$(while read -r id; do
+    [ -z "$id" ] || gh api --paginate -X GET -f filter=all \
+      "repos/${prepo:?}/check-suites/${id}/check-runs" \
+      --jq '.check_runs[] | select(.name | test("(^|/ )Sign-off$"))
+        | select(.conclusion == "success") | .completed_at' || exit
+  done <<< "$ids") &&
+  printf '%s' "$times" | sort | head -n 1
+```
+
+It matches the head's owner, not its repository: once a fork is
+deleted, `gh pr view` gives the pull request no head repository, while
+its runs still name it.
+
+GitHub caps the runs one query returns
+([*List workflow runs for a repository*](https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-repository)),
+and returns them newest first, so a branch name with more `pull_request`
+runs than the cap, from any repository, loses its oldest. The runs of
+another pull request opened by the same owner from a branch of that name
+count too, from the time this one was opened.
+
 GitHub assigns an outside login only to an issue it has commented on, as
 *Pull requests* says. This exits `0` where a hit's author can be
 assigned to the issue, and exits `1`, printing `User cannot be assigned
@@ -1621,9 +1664,9 @@ author=<hit author login>
 gh api --silent "repos/${irepo:?}/issues/${issue:?}/assignees/${author:?}"
 ```
 
-The taker is the author of the hit with the earliest time among those
-for whose author this call exits `0`. The session assigns them, then
-reads the issue's assignees back as after the removal:
+The taker is the author of the hit with the earliest first pass among
+those for whose author this call exits `0`. The session assigns them,
+then reads the issue's assignees back as after the removal:
 
 ```shell
 taker=<taker login>
