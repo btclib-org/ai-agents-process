@@ -978,30 +978,43 @@ btclib-org/ai-agents-process#526 it names exactly the item indented two
 spaces after a prose paragraph and files it as a constructed shape,
 where the baseline's does not name it. The baseline misses these three
 cases anyway, so the comparison does not move. But the rule turns into
-issues defects that the cases record as blocking.
+issues defects that the cases record, which a run scores as a hit only
+where it blocks (*How a run is scored*).
+
+The findings outside the cases' defects were not measured, among them
+the filed finding on prose lines that look like list markers on PR
+btclib-org/ai-agents-process#526, the overstated `__len__` on PR
+btclib-org/ecc#580, the `#:` and `//` comment lines on PR
+btclib-org/ecc#484, and both runs on PR btclib-org/ai-agents-process#317
+blocking on "tied to the account".
 
 Each reviewer read the process from a copy of `process/` at its sha
 without this file, and the case from a repository holding only the head
 and its ancestors, at the head and base *Cases* names. Every brief said
 that this was the branch's third local round (`local-review.md`'s *The
 rounds*) and gave no earlier round's verdict. Each reviewer was fresh,
-at fresh context, read only the case's tree and the copy, used no
-network, no forge and no gate, and gave its verdict in its output only.
-The runs went in a shuffled order. The copies hold `process/` alone, so
-the run left out the change's edit to `/btclib-iss`'s *Opening the pull
-request*. Nothing was withheld: the change edits no `REVIEWING.md` and
-nothing in `agents/`. The account's API limit stopped five runs, which
-resumed where they stopped once it reset. The baseline's reviewer of PR
-btclib-org/btclib-node#2516 ran none of its own inputs, since memory
-pressure stayed at level 2 for the whole run.
+at fresh context, read the case only from its tree and the process only
+from the copy, used no network, no forge and no gate, and gave its
+verdict in its output only. The runs went in a shuffled order. The
+copies hold `process/` alone, so the run left out the change's edit to
+`/btclib-iss`'s *Opening the pull request*. Nothing was withheld: the
+change edits no `REVIEWING.md` and nothing in `agents/`. The account's
+API limit stopped five runs, which resumed where they stopped once it
+reset. A first launch of the baseline's run on PR
+btclib-org/btclib-secp256k1#1331 went out with a cut-off brief, was
+stopped about three seconds in after listing the primary checkout's
+`process/` and the cases directory, and was relaunched with the full
+brief. The baseline's reviewer of PR btclib-org/btclib-node#2516 ran
+none of its own inputs, since memory pressure stayed at level 2 for the
+whole run.
 
 After the run the branch merged `main` at `bcbd810` in `ed608ae`, which
-brought to the reviewer's files the `path_instructions` and classes the
-briefs of `local-review.md` carry, the CLI's `--deep` in `writing.md`,
-and the sign-off closing's exemption in `every-role.md`. The change's
-own lines are unchanged: with `-- process agents skills REVIEWING.md`,
-`git diff bcbd810 ed608ae` adds and removes the lines `git diff 460205a
-acfa6d3` does.
+brought to the reviewer's files the change of ISS
+btclib-org/ai-agents-process#587 that the entry above tried, and the
+sign-off closing's exemption in `every-role.md`. The change's own lines
+are unchanged: with `-- process agents skills REVIEWING.md`, `git diff
+bcbd810 ed608ae` adds and removes the lines `git diff 460205a acfa6d3`
+does.
 
 The candidate has the baseline's hits and misses on eight cases, and
 loses none. Over the defects the baseline hits on two cases and the
