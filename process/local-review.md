@@ -101,6 +101,15 @@ branch, or a text to be posted.
   and its outcome. The orchestrator files the issue with that body, and
   the pull request's body lists it as `/btclib-iss`'s *Opening the pull
   request* says.
+
+  Where the reviewer cannot run that search, as one that needs the
+  forge, which its sandbox does not reach (*Clients*), it gives the
+  command and names it as not run. The orchestrator runs it before
+  filing, and records the command and what it printed in the finding's
+  entry (`orchestration.md`'s *The findings record*). Where what it
+  printed shows a tree or a caller holding the shape, or the
+  orchestrator cannot run it either, the finding blocks, and the verdict
+  counts as `CHANGES REQUESTED`.
 - **From the third round on the forge, only a defect on a shape that a
   tree or a caller holds, a false sentence or a crash is fixed on the
   branch.** A round on the forge is a head the reviews on GitHub read
