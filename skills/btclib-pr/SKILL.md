@@ -345,6 +345,10 @@ a decision:
   git -C <wt> show <base>:<path>
   ```
 
+**A reply to a bot's finding goes through the branch's rounds before it
+is posted**, with the route it took, as the shared *A pull request's
+rounds* says.
+
 **Every inline `suggestion` that is accepted is applied in the
 worktree.** It is not applied with GitHub's button, so that the gates
 run on it.
