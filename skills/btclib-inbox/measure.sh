@@ -6,7 +6,7 @@
 #
 # each query's output goes to "${d}/<name>.out", its stderr to
 # "${d}/<name>.err" and its exit code to "${d}/<name>.rc"
-d=$(mktemp -d "${TMPDIR:-/tmp}/btclib-inbox.XXXXXX")
+d=$(mktemp -d "${TMPDIR:-/tmp}/btclib-inbox.XXXXXX") || exit 1
 trap 'rm -r "${d}"' EXIT
 trap 'exit 1' INT TERM
 o=btclib-org
