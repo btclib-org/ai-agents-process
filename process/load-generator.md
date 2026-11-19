@@ -29,12 +29,16 @@ rest and checks with `kill -0` that they are gone before
 `gate_release_all`:
 
 ```shell
+scratch=<scratch>
+workers=<n>
+wt=<worktree>
+set -- <the measured run>
 . "${PROCESS:?}/scripts/gate-lock.sh"
-out=<scratch>/gen.out pids=<scratch>/gen.pids workers=<n>
-gate_take_all <worktree> > "$out" 2>&1 && {
+out=${scratch:?}/gen.out pids=${scratch:?}/gen.pids
+gate_take_all "${wt:?}" > "$out" 2>&1 && {
   idle=$(tail -n 1 "$out" | sed 's/.* at \([0-9]*\)% CPU idle.*/\1/')
   case $idle in ''|*[!0-9]*) idle=0 ;; esac
-  free=$(( $(getconf _NPROCESSORS_ONLN) * idle / 100 - workers ))
+  free=$(( $(getconf _NPROCESSORS_ONLN) * idle / 100 - ${workers:?} ))
   : > "$pids"
   reaped=
   # Codex's sandbox refuses ps, and kill -0 also fails for another user's
@@ -77,7 +81,7 @@ gate_take_all <worktree> > "$out" 2>&1 && {
   done
   # the measured run goes in the background so that a signal reaches
   # the trap
-  <the measured run> & run=$!; gen_add "$run"
+  "$@" & run=$!; gen_add "$run"
   # the watchdog is recorded ahead of its nap, so that gen_stop ends it
   # first: this narrows the time it can signal a reaped run
   sleep 900 & nap=$!
@@ -108,7 +112,11 @@ and no process those start. Of a pipeline `$!` names the last process:
 zsh then goes on with the others still running, and sh, bash and dash
 wait in `wait "$run"` until they end, with the generators running. Of a
 list or a group it names one process of several, which one depending on
-the shell. So the measured run is a single command.
+the shell. So the measured run is a single command, and a simple one:
+`set -- <the measured run>` takes its words, and a redirection or a
+pipeline written there applies to `set`, not to the run. An assignment
+written before the command is read as its name, which no shell finds
+(exit 127): `env NAME=value cmd` sets a variable for the run.
 
 A recorded process that ends on its own before `gen_stop`, such as a
 generator, the watchdog or its `sleep 900`, is reaped by the shell, and
