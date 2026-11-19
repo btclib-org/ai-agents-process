@@ -370,10 +370,13 @@ share, and `agents/` holds the agents a session briefs with them.
 skills that only read: one table of the organization's repositories, and
 the issues and pull requests that wait on the maintainer.
 `skills/night-mode/SKILL.md` turns night mode on or off in any session,
-or says whether it is on. `scripts/agents-toml.py` writes the agents'
-`.toml` files for Codex. `README.md` says how a machine is set up to use
-them. A change here changes what every session reads once its branch
-lands, so it is reviewed like code.
+or says whether it is on. `skills/funds-recovery/SKILL.md` helps
+somebody find the funds of a mnemonic with `seed-scan`, working on its
+public bundle alone and never on the mnemonic.
+`scripts/agents-toml.py` writes the agents' `.toml` files for Codex.
+`README.md` says how a machine is set up to use them. A change here
+changes what every session reads once its branch lands, so it is
+reviewed like code.
 
 The findings record a session keeps on a pull request is not a comment
 for *Write plainly*'s limits: `process/every-session.md`'s *What is

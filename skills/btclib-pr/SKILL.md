@@ -1414,13 +1414,14 @@ has, is put to the human before it lands through the bypass.
 
 ## Outside contributors
 
-Its issue stays theirs, and no competing branch is opened. The reviewer
-reviews it against `REVIEWING.md`. Its gates run in the sandbox of the
-shared *The gates*, whoever runs them, and so do the dedicated
-reviewer's inputs, which the session runs there for it. Where
-`orchestration.md`'s *Where the other client is unavailable* has the
-body record something, the comment that section names records it
-instead.
+While the pull request is open, no competing branch is opened for its
+issue, which its assignees hold, as the tree's `CONTRIBUTING.md` says
+in *Pull requests*. The reviewer reviews it against `REVIEWING.md`. Its
+gates run in the sandbox of the shared *The gates*, whoever runs them,
+and so do the dedicated reviewer's inputs, which the session runs there
+for it. Where `orchestration.md`'s *Where the other client is
+unavailable* has the body record something, the comment that section
+names records it instead.
 
 **It is completed in place where `maintainerCanModify` is `true`**, with
 every fix the approval needs, blocking findings and nits alike, as the
@@ -1437,10 +1438,6 @@ and how to resolve it. Completing it:
   comes in by a signed merge, not a rebase, run with hooks off as the
   shared *The gates* says. The fixes are a signed commit of ours on top,
   signed off by us.
-- **Their sign-off is theirs to add.** A commit of theirs without the
-  trailer is not ours to fix: a sign-off we add for them is not their
-  attestation. Ask them, before we push anything to their branch, to
-  run the command the `Sign-off` check's failure prints and force-push.
 - **Push to their fork as a fast-forward only**: `git push <fork url>
   HEAD:refs/heads/<their branch>`, never with any `--force`. Before
   every push, `git ls-remote <fork url> refs/heads/<their branch>` must
@@ -1463,6 +1460,229 @@ and how to resolve it. Completing it:
 
 Both thanks, the findings' first line and the comment of its own, bind
 btclib-org only.
+
+**Their sign-off is theirs to add, whether the session completes the
+pull request or waits.** A commit of theirs without the trailer is not
+ours to fix: a sign-off we add for them is not their attestation. Ask
+them, with the findings, and before we push anything to their branch, to
+run the command the `Sign-off` check's failure prints and force-push.
+The ask warns of the closing and names the closing day the next
+paragraph gives.
+
+**A pull request still lacking a sign-off is closed on its closing
+day**: the later of the day the tree's `CONTRIBUTING.md` gives in *Pull
+requests*, which is what the contributor reads, and seven days after the
+pull request's last reopen, so that a reopened pull request's author has
+the week to push the trailers. The request the tree's day counts from is
+the first comment on the pull request that asks for the trailer and
+warns of the closing, by a maintainer, a session or a job; where none
+does, it is the session's ask above. Such a comment can be a comment on
+the pull request, the body of a review or a comment of a review, which
+GitHub serves apart. These list each kind, every page read, with its
+time, author, URL and body, and the session reads them all and takes the
+earliest that asks and warns. A comment of a review takes its review's
+time, since GitHub shows the comments of a pending review only once it
+is submitted: the third listing prints the review's id, and the second
+that review's `submitted_at`:
+
+```shell
+n=<n>
+repo=<owner>/<repo>
+```
+
+```shell
+gh api --paginate "repos/${repo:?}/issues/${n:?}/comments" \
+  --jq '.[] | "\(.created_at) \(.user.login) \(.html_url)\n\(.body)\n"'
+```
+
+```shell
+gh api --paginate "repos/${repo:?}/pulls/${n:?}/reviews" \
+  --jq '.[] | "\(.submitted_at) \(.user.login) \(.html_url) review \(.id)
+\(.body)\n"'
+```
+
+```shell
+gh api --paginate "repos/${repo:?}/pulls/${n:?}/comments" \
+  --jq '.[] | "review \(.pull_request_review_id) \(.user.login) \(.html_url)
+\(.body)\n"'
+```
+
+This prints the time of the last reopen, and nothing where the pull
+request was never reopened:
+
+```shell
+gh api graphql -f owner="${repo%%/*}" -f name="${repo#*/}" -F n="${n:?}" \
+  -f query='
+  query($owner: String!, $name: String!, $n: Int!) {
+    repository(owner: $owner, name: $name) {
+      pullRequest(number: $n) {
+        timelineItems(itemTypes: [REOPENED_EVENT], last: 1) {
+          nodes { ... on ReopenedEvent { createdAt } }
+        }
+      }
+    }
+  }' --jq '.data.repository.pullRequest.timelineItems.nodes[].createdAt'
+```
+
+On the closing day, the session reads the head's commits: the `Sign-off`
+check on the head, or, where it did not run, the shared *Signed and
+signed off*'s script on those commits. Where the check, or the script
+where the check did not run, refuses a commit, the session closes the
+pull request with a comment, from a file. The comment thanks them, names
+the commits refused, links the request, and gives the commands the check
+or the script printed. It points to *Pull requests* for how the pull
+request comes back, and says that a comment on each issue it cites,
+posted next, says who holds that issue:
+
+```shell
+comment=<comment file>
+```
+
+```shell
+gh pr close "${n:?}" --repo "${repo:?}" --comment "$(cat "${comment:?}")"
+```
+
+An issue is held by its assignees, as *Pull requests* says. The issues
+the pull request cites are those its `closingIssuesReferences` lists,
+and any its title or body says it is for. Each issue sits in the
+repository its reference names, which may not be the pull request's:
+`<issue repo>` is that repository, `<owner>/<repo>` for a bare `#N`.
+This prints each issue `closingIssuesReferences` lists, with its
+repository:
+
+```shell
+gh pr view "${n:?}" --repo "${repo:?}" --json closingIssuesReferences \
+  --jq '.closingIssuesReferences[]
+    | "\(.repository.owner.login)/\(.repository.name) \(.number)"'
+```
+
+For each issue, the session removes the pull request's author from its
+assignees:
+
+```shell
+irepo=<issue repo>
+issue=<issue>
+login=<author login>
+```
+
+```shell
+gh issue edit "${issue:?}" --repo "${irepo:?}" --remove-assignee "${login:?}"
+```
+
+This then prints the issue's assignees:
+
+```shell
+gh api "repos/${irepo:?}/issues/${issue:?}" --jq '[.assignees[].login]'
+```
+
+Where it prints any login, the assignees it prints keep the issue. Where
+it prints none, the session looks for the next taker: of the open pull
+requests that cite the issue, pass the `Sign-off` check and have an
+author GitHub can assign to the issue, in any repository of the
+organization, the same author's included, the first to pass it. This
+lists the candidates:
+
+```shell
+gh search prs --owner btclib-org --state open "${issue:?} in:title,body" \
+  --limit 100 --json url,author \
+  --jq '.[] | "\(.author.login) \(.url)"'
+```
+
+The search matches the number as a word, so the session reads each
+hit's title, body and `closingIssuesReferences`, and keeps the hits
+that cite the issue, as `<issue repo>#<issue>`, by the issue's URL, or
+as a bare `#<issue>` in `<issue repo>` itself. This prints when the
+`Sign-off` check on a hit's head passed, and nothing where it does not
+pass:
+
+```shell
+pr=<hit url>
+```
+
+```shell
+gh pr checks "${pr:?}" --json name,bucket,completedAt \
+  --jq '.[] | select(.name | test("(^|/ )Sign-off$"))
+    | select(.bucket == "pass") | .completedAt'
+```
+
+GitHub assigns an outside login only to an issue it has commented on, as
+*Pull requests* says. This exits `0` where a hit's author can be
+assigned to the issue, and exits `1`, printing `User cannot be assigned
+to this issue. (HTTP 404)`, where they cannot. Any other failure, as
+another HTTP status or no answer, decides nothing, and no taker is
+chosen until the call has given one of those two answers for each hit's
+author:
+
+```shell
+author=<hit author login>
+```
+
+```shell
+gh api --silent "repos/${irepo:?}/issues/${issue:?}/assignees/${author:?}"
+```
+
+The taker is the author of the hit with the earliest time among those
+for whose author this call exits `0`. The session assigns them, then
+reads the issue's assignees back as after the removal:
+
+```shell
+taker=<taker login>
+```
+
+```shell
+gh issue edit "${issue:?}" --repo "${irepo:?}" --add-assignee "${taker:?}"
+```
+
+Where the call answers that `404` for every hit's author, the session
+assigns no one, and the retry below applies.
+
+**The retry.** Where no taker was assigned, the issue's comment asks
+each hit's author who could not be assigned to comment on the issue. On
+its next pass over one of their pull requests, the session reads the
+issue's assignees as after the removal and, where they hold no login,
+looks for the next taker again, as above, and assigns the one it finds.
+An assignee is never displaced: once a taker is assigned, a hit that
+passed earlier holds nothing, and its author's later comment changes
+nothing.
+
+The search returns at most 100 hits, and misses a pull request its index
+does not hold yet. Where it finds no taker, the issue stays unassigned
+and open to others, so a hit it missed costs that pull request's author
+only the assignment, never the issue.
+
+The issue then gets a comment from a file, posted after these edits. It
+links the pull request, says it was closed for a missing sign-off, and
+says who holds the issue: the assignees that remain, the taker just
+assigned, or no one, in which case it is open to others and the comment
+carries the retry's ask:
+
+```shell
+note=<issue comment file>
+```
+
+```shell
+gh issue comment "${issue:?}" --repo "${irepo:?}" --body-file "${note:?}"
+```
+
+On the contributor's comment asking for a reopen, the session reopens
+the pull request in the order *Pull requests* gives. Where another
+contributor has been assigned to an issue it cites meanwhile, the human
+decides whether it is reopened:
+
+```shell
+gh pr reopen "${n:?}" --repo "${repo:?}"
+```
+
+Once its `Sign-off` check passes, read as above, the session reads the
+assignees of each issue it cites as after the removal. Where they hold
+any login, those assignees keep the issue. Otherwise the session looks
+for the next taker as above, the reopened pull request among the hits,
+and says on the issue who holds it, with a comment from a file as
+above, which carries the retry's ask where no taker was assigned.
+
+On an issue labelled `good first issue`, the removal and the assignment
+are both edits the shared *Issues left to newcomers* leaves to the human,
+asked for that issue.
 
 Where the bot's review does not run — a fork's pull request, and any
 other where `gh pr checks` shows no review — that review is absent (*The

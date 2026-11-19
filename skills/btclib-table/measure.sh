@@ -6,7 +6,7 @@
 #
 # each repository's row goes to "${d}/<repo>.row" and its counts to
 # "${d}/<repo>.tot" ("<iss> <prs>", or "err")
-d=$(mktemp -d "${TMPDIR:-/tmp}/btclib-table.XXXXXX")
+d=$(mktemp -d "${TMPDIR:-/tmp}/btclib-table.XXXXXX") || exit 1
 trap 'rm -r "${d}"' EXIT
 trap 'exit 1' INT TERM
 w="${d}/row.sh"
@@ -14,7 +14,7 @@ cat > "${w}" <<'EOF_ROW'
 # call: a command's output, or "error: <its stderr>" and exit 1 where it
 # fails or prints anything on stderr, its "|" as "/" to keep the columns
 call() {
-  e=$(mktemp "${d}/err.XXXXXX")
+  e=$(mktemp "${d}/err.XXXXXX") || { printf 'error: mktemp failed'; return 1; }
   o=$("$@" 2> "${e}")
   s=$?
   if [ "${s}" -ne 0 ] || [ -s "${e}" ]; then
