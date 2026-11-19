@@ -277,8 +277,10 @@ the brief, the model, the effort or the tools, and is compared with the
 baseline's run on the same cases. One configuration can answer
 differently on two runs, so a case that alone decides the comparison is
 run again first. A run that changes the brief is compared with a
-baseline at the commit before the change under test's first commit, so
-that only that change differs, and the baseline's entry names that sha.
+baseline at the candidate's merge base with `main`, the commit of `main`
+its branch last merged or, with no merge, its first commit's parent, so
+that `git diff <baseline> <candidate> -- process` shows that change
+alone, and the baseline's entry names that sha.
 
 ## Runs
 
