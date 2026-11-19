@@ -1113,30 +1113,34 @@ change.
   as not run. The orchestrator runs it before filing. The finding blocks
   where what it printed shows a tree or a caller holding the shape, or
   where the orchestrator cannot run it either. Claude Code, the
-  `reviewer` agent, Opus, effort `high`, one run per case. In both: PR
-  btclib-org/ecc#484: hit. PR btclib-org/ai-agents-process#444: hit. PR
+  `reviewer` agent, Opus, effort `high`, one run per case, and a second
+  in each configuration on PR btclib-org/ecc#580, which alone decided
+  the first runs. In both: PR btclib-org/ecc#484: hit. PR
+  btclib-org/ai-agents-process#444: hit. PR
   btclib-org/ai-agents-process#317: miss. PR
   btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
   miss. PR btclib-org/btclib-node#2516: miss. PR
   btclib-org/ai-agents-process#526: miss. PR
   btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with no
-  false finding. PR btclib-org/ecc#580: the baseline miss; the candidate
-  hit.
+  false finding. PR btclib-org/ecc#580: the baseline miss, then hit; the
+  candidate hit, then hit.
 
 On PR btclib-org/ecc#484 both block on perl `-n` opening hostile file
 names, and on PR btclib-org/ai-agents-process#444 both block on the
-skills that still arm with `--auto`. On PR btclib-org/ecc#580 the
-candidate blocks on the comment over `_AFF_CALLS`, which leaves out
-`add_var`, `is_on_curve` and `require_on_curve`, and the baseline clears
-the head without naming it. On PR btclib-org/ai-agents-process#317 both
-block on the hold covering limits that reset, and the candidate names
-the wait of the resumed run only as `filed`. On PR
-btclib-org/btclib-secp256k1#1331 both clear the head, and neither names
-the exit `42`. On PR btclib-org/.github#2288 both clear the head: that
-no test pins the lookbehind is non-blocking in the candidate and `filed`
-in the baseline. On PR btclib-org/btclib-node#2516 both clear the head,
-and the candidate names "`i` sums the length fields" only as
-non-blocking (*How a run is scored*).
+skills that still arm with `--auto`. On PR btclib-org/ecc#580 both of
+the candidate's runs and the baseline's second block on the comment over
+`_AFF_CALLS`, which leaves out `add_var`, `is_on_curve` and
+`require_on_curve`, and the baseline's first clears the head without
+naming it. On PR btclib-org/ai-agents-process#317 both block on the hold
+covering limits that reset, and the candidate names the wait of the
+resumed run only as `filed`. On PR btclib-org/btclib-secp256k1#1331 both
+clear the head, and neither names the exit `42`. The candidate clears it
+while naming as not run the inputs that bear on the case, the zkp source
+at the pin and Valgrind. On PR btclib-org/.github#2288 both clear the
+head: that no test pins the lookbehind is non-blocking in the candidate
+and `filed` in the baseline. On PR btclib-org/btclib-node#2516 both
+clear the head, and the candidate names "`i` sums the length fields"
+only as non-blocking (*How a run is scored*).
 
 On PR btclib-org/ai-agents-process#526 the candidate's verdict takes the
 route the change adds. It files the defect, the item indented after a
@@ -1160,11 +1164,11 @@ the case tree's own copy of this file as read. Nothing was withheld: the
 change edits no `REVIEWING.md`, no skill and nothing in `agents/`.
 
 The candidate has the baseline's hits and misses on eight cases, and
-loses none. Over the defects the baseline hits on two cases and the
+loses none. On the first runs the baseline hits on two cases and the
 candidate on three, and neither makes a false finding on the clean case.
-The difference is PR btclib-org/ecc#580, which was not run again (*One
-factor at a time*): neither result there would cost the candidate a hit
-of the baseline. That case has gone both ways before under
+PR btclib-org/ecc#580 alone decided the first runs, so it ran again in
+both (*One factor at a time*), and over two runs the baseline hits it
+once and the candidate twice. That case has gone both ways before under
 configurations that differ in nothing it concerns (the runs above), so
 the run shows no gain from the change.
 
