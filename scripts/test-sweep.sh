@@ -157,11 +157,12 @@
 #   branch on top of it with --update-refs, or is bisecting from it, at
 #   paths holding | or reading as -i, under a git directory whose name
 #   starts with . or .., or listed on another branch after
-#   bisect --no-checkout, or where the repository's own worktree is
-#   rebasing it, the branch is kept and printed naming that worktree,
-#   --check prints what the run does, line for line, and the directory is
-#   removed; where a second worktree of the directory is rebasing the
-#   branch, the branch is deleted;
+#   bisect --no-checkout, or bisecting from a branch named
+#   refs/heads/<name>, or where the repository's own worktree is rebasing
+#   it, the branch is kept and printed naming that worktree, --check
+#   prints what the run does, line for line, and the directory is removed;
+#   where a second worktree of the directory is rebasing the branch, the
+#   branch is deleted;
 # - where git worktree remove fails on the third worktree of the
 #   directory, the branches of the first two stay and the refusal names
 #   them, the directory is refused and keeps .sweep-unfinished, and the
@@ -1283,6 +1284,34 @@ b"
   git -C "$far" bisect reset -q > /dev/null 2>&1
   git -C "$m" worktree remove "$far"
   git -C "$m" branch -q -D "$br" "$br-other" 2> /dev/null
+
+  # a worktree outside, bisecting from a branch named refs/heads/<name>,
+  # whose full ref is refs/heads/refs/heads/<name>, which BISECT_START
+  # names refs/heads/<name>
+  n=$((n + 1))
+  w=$sp/bisect-refs-name wt=$sp/bisect-refs-name/wt br=refs/heads/b$n
+  mkdir -p "$w/writer"
+  echo note > "$w/writer/msg.txt"
+  git -C "$m" worktree add -q -b "$br" "$wt" origin/main 2> /dev/null ||
+    fail 'bisect refs name: no worktree'
+  [ "$(git -C "$wt" symbolic-ref HEAD)" = "refs/heads/$br" ] ||
+    fail "bisect refs name: the worktree is not on refs/heads/$br"
+  far=$base/bisect-refs-name
+  { git -C "$m" worktree add -q -f "$far" "$br" 2> /dev/null &&
+    git -C "$far" bisect start > /dev/null 2>&1 &&
+    git -C "$far" checkout -q --detach; } || fail 'bisect refs name: no bisect'
+  y=$(git -C "$far" rev-parse --path-format=absolute --git-path BISECT_START)
+  [ "$(cat "$y")" = "$br" ] ||
+    fail "bisect refs name: BISECT_START holds $(cat "$y"), not $br"
+  run "$base" work "$w"
+  expect 'bisect refs name' 0 \
+    "kept branch: refs/heads/$br of $m/.git, being bisected in $far$nl"
+  expect 'bisect refs name' 0 "removed: $w"
+  same 'bisect refs name'
+  branch 'bisect refs name' yes "$br"
+  git -C "$far" bisect reset -q > /dev/null 2>&1
+  git -C "$m" worktree remove "$far"
+  git -C "$m" branch -q -D "$br" 2> /dev/null
 
   # the repository's own worktree, stopped in a rebase of the branch
   git clone -q "$o" "$base/main5"
