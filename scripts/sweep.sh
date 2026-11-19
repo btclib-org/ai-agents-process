@@ -29,7 +29,8 @@
 # - it holds .sweep-unfinished, of any kind, which a failed
 #   `git worktree remove` leaves (below);
 # - find cannot read all of it, or it holds a name with a newline or
-#   \001, or its own path holds one;
+#   \001, or its own path holds a newline as named, or either once
+#   resolved;
 # - git cannot read one of its worktrees, or its git directory holds
 #   modules, or it holds a commit and its repository has no remote named
 #   origin, or its HEAD is a symbolic ref to anything but a branch,
@@ -500,6 +501,12 @@ sweep() {
   w=$name
   case /$w/ in
     */./* | */../*) refuse 'a . or .. component'; return ;;
+  esac
+  # the path as named, since real's command substitution drops a trailing
+  # newline and would name the sibling without it; the resolved path is
+  # checked after real
+  case $w in
+    *"$nl"*) refuse 'its path as named holds a newline'; return ;;
   esac
   while [ "${#w}" -gt 1 ] && [ "${w%/}" != "$w" ]; do w=${w%/}; done
   if [ -L "$w" ]; then refuse 'a symbolic link'; return; fi

@@ -64,6 +64,8 @@
 #   and a directory find cannot read are refused; where find still reads
 #   a directory of mode 000, as for uid 0, the unreadable directory case
 #   is skipped and the test says so;
+# - a name that ends in a newline, beside a sibling without it, is refused
+#   and both are kept;
 # - a directory holding a repository that is not a linked worktree of the
 #   session's is refused, left as it was, and no git runs, under --check
 #   or in the run: a clone, a .git deeper than <work>/<e>, a clone inside
@@ -717,6 +719,15 @@ b"
   run "$base" work "$root/p${soh}q/sess/scratchpad/w"
   expect 'soh path' 1 'its path holds a newline or \001'
   kept 'soh path' "$root/p${soh}q/sess/scratchpad/w"
+
+  mkdir -p "$sp/trailing" "$sp/trailing
+"
+  run "$base" work "$sp/trailing
+"
+  expect 'trailing newline' 1 'its path as named holds a newline'
+  kept 'trailing newline' "$sp/trailing"
+  kept 'trailing newline' "$sp/trailing
+"
 
   # chmod 000 hides nothing from uid 0, or from an account that may read
   # past permissions
