@@ -174,8 +174,8 @@ chain=<the chain the node serves>
 ```
 
 Each chain's scan and report take a name of their own in the bundle's
-results directory: the chain the node serves, `bitcoin` where the user
-named no node, and `forks` where the session skips the scan.
+results directory: the chain the node serves, `bitcoin` where the scan
+asks a server and no node, and `forks` where the session skips the scan.
 
 ```shell
 name=<the chain the node serves, bitcoin, or forks>
