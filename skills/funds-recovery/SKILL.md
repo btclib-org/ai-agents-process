@@ -159,13 +159,15 @@ secret stays out of the session*). `scan` refuses a node URL that
 carries a login, and takes the Electrum server as `host:port` alone,
 with no path or query.
 
-A proxy passes every address on to the node behind it, which the report
-does not name. Its URL can read as the user's own node's does:
-`http://127.0.0.1:8545` names either. So ask of each node URL whether it
-forwards to another service, whether or not the user calls it a proxy.
-Where it does, ask which service, and scan only once they have named it
-and agreed that it learns every address. The answer names that service
-beside the report.
+A proxy passes every address on to the node or Electrum server behind
+it, which the report does not name. Its URL can read as the user's own
+node's does: `http://127.0.0.1:8545` names either. So ask of each node
+URL, and of each Electrum server, the one for `scan` and each one for
+`forks`, whether it forwards to another service, whether or not the user
+calls it a proxy. Where it does, ask which service, and run `scan` or
+`forks` with it only once the user has named that service and agreed
+that it learns every address. The answer names that service beside the
+report.
 
 ```shell
 server=<the Electrum server, as host:port>
