@@ -81,11 +81,13 @@
 # is kept where, at the check, a worktree outside the directory, or one
 # inside whose .git file is gone, has it checked out, as
 # `git worktree list --porcelain -z` shows, or is rebasing or bisecting
-# it, which that list shows as detached. For a rebase or a bisect, the
-# script reads the first line of rebase-apply/head-name,
-# rebase-merge/head-name and BISECT_START in each worktree's git
-# directory, and keeps a branch one of them names, with or without
-# refs/heads/. The branch is kept even where a directory named later
+# it, which that list need not show. For a rebase or a bisect, the script
+# reads in each worktree's git directory the first line of
+# rebase-apply/head-name, rebase-merge/head-name and BISECT_START, and
+# the first line of each three-line record of rebase-merge/update-refs,
+# which rebase --update-refs writes. It keeps a branch one of them names,
+# with or without refs/heads/ for the first three. The branch is kept
+# even where a directory named later
 # removes that worktree: the run prints it as `kept branch:`, and --check
 # as `would keep branch:`, with ? for each newline in that worktree's
 # path, or with the git directory where its gitdir file cannot be read.
@@ -268,10 +270,10 @@ ours() {
 
 # busy <common dir> <branch>: sets $k where a worktree the run does not
 # remove is rebasing or bisecting the branch, which git worktree list
-# shows as detached. It reads the files git's own refusal to delete the
-# branch reads, in each worktree's git directory: the repository's own,
-# and worktrees/<id>, whose gitdir file names the worktree's .git; the
-# glob's dot forms take an <id> that starts with a dot, as git's own
+# need not show. git 2.54's own refusal to delete the branch reads the
+# files below too. Each worktree's git directory is the repository's
+# own, or worktrees/<id>, whose gitdir file names the worktree's .git;
+# the glob's dot forms take an <id> that starts with a dot, as git's own
 # listing does
 busy() {
   for bg in "$1" "$1"/worktrees/* "$1"/worktrees/.[!.]* "$1"/worktrees/..?*
@@ -302,6 +304,13 @@ busy() {
         return
       fi
     done
+    # update-refs holds a ref, its old and its new commit, a line each
+    if [ -f "$bg/rebase-merge/update-refs" ] &&
+      B=$2 awk 'NR % 3 == 1 && $0 == ENVIRON["B"] { f = 1 }
+        END { exit !f }' "$bg/rebase-merge/update-refs"; then
+      k="being rebased in $(printf '%s' "$bp" | tr '\n' '?')"
+      return
+    fi
   done
 }
 

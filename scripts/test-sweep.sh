@@ -153,12 +153,15 @@
 #   branch, the first keeps the branch, the second deletes it, and
 #   --check prints what the run does, line for line;
 # - where a worktree outside the directory is rebasing the branch, stopped
-#   by its exec line or by a conflict of the apply backend, or is
-#   bisecting from it, at paths holding | or reading as -i, or under a git
-#   directory whose name starts with a dot, the branch is kept and printed
-#   naming that worktree, --check prints what the run does, line for line,
-#   and the directory is removed; where a second worktree of the directory
-#   is rebasing the branch, the branch is deleted;
+#   by its exec line or by a conflict of the apply backend, or rebasing a
+#   branch on top of it with --update-refs, or is bisecting from it, at
+#   paths holding | or reading as -i, under a git directory whose name
+#   starts with . or .., or listed on another branch after
+#   bisect --no-checkout, or where the repository's own worktree is
+#   rebasing it, the branch is kept and printed naming that worktree,
+#   --check prints what the run does, line for line, and the directory is
+#   removed; where a second worktree of the directory is rebasing the
+#   branch, the branch is deleted;
 # - where git worktree remove fails on the third worktree of the
 #   directory, the branches of the first two stay and the refusal names
 #   them, the directory is refused and keeps .sweep-unfinished, and the
@@ -1195,18 +1198,22 @@ b"
 
   # a worktree outside, bisecting from the branch, at a path that reads as
   # an option, and one whose git directory's name starts with a dot
-  for x in -i dot; do
+  for x in -i dot dotdot; do
     mkwork "$m" "bisecting$x"
     far=$base/$x
     git -C "$m" worktree add -q -f "$far" "$br" 2> /dev/null ||
       fail "bisecting $x: no worktree"
-    if [ "$x" = dot ]; then
-      y=$(git -C "$far" rev-parse --path-format=absolute --git-dir)
-      mv "$y" "${y%/*}/.${y##*/}"
-      printf 'gitdir: %s\n' "${y%/*}/.${y##*/}" > "$far/.git"
-      git -C "$m" worktree list --porcelain | grep -qxF "worktree $far" ||
-        fail 'bisecting dot: git does not list the worktree'
-    fi
+    case $x in
+      dot*)
+        y=$(git -C "$far" rev-parse --path-format=absolute --git-dir)
+        z=${y%/*}/.${y##*/}
+        [ "$x" = dot ] || z=${y%/*}/..${y##*/}
+        mv "$y" "$z"
+        printf 'gitdir: %s\n' "$z" > "$far/.git"
+        git -C "$m" worktree list --porcelain | grep -qxF "worktree $far" ||
+          fail "bisecting $x: git does not list the worktree"
+        ;;
+    esac
     { git -C "$far" bisect start > /dev/null 2>&1 &&
       git -C "$far" checkout -q --detach; } || fail "bisecting $x: no bisect"
     run "$base" work "$w"
@@ -1219,6 +1226,81 @@ b"
     git -C "$m" worktree remove "$far"
     git -C "$m" branch -q -D "$br" 2> /dev/null
   done
+
+  # a worktree outside, stopped in a rebase --update-refs of a branch on
+  # top of this one, which update-refs names and head-name does not; the
+  # rebase leaves out a branch checked out elsewhere, so it starts first,
+  # and git worktree add then takes the branch without --force
+  n=$((n + 1))
+  w=$sp/update-refs wt=$sp/update-refs/wt br=b$n
+  c=$(git -C "$m" commit-tree -p origin/main -m update-refs "$t" < /dev/null)
+  y=$(git -C "$m" commit-tree -p "$c" -m 'update-refs child' "$t" < /dev/null)
+  git -C "$m" update-ref "refs/heads/$br" "$c"
+  git -C "$m" update-ref "refs/heads/$br-child" "$y"
+  git -C "$m" push -q origin "refs/heads/$br"
+  far=$base/update-refs
+  git -C "$m" worktree add -q "$far" "$br-child" 2> /dev/null ||
+    fail 'update-refs: no worktree'
+  ! git -C "$far" rebase -q --update-refs -x false HEAD~2 > /dev/null 2>&1 ||
+    fail 'update-refs: the rebase did not stop'
+  grep -qxF "refs/heads/$br" "$(git -C "$far" rev-parse \
+    --path-format=absolute --git-path rebase-merge/update-refs)" ||
+    fail "update-refs: rebase-merge/update-refs does not name $br"
+  mkdir -p "$w/writer"
+  echo note > "$w/writer/msg.txt"
+  git -C "$m" worktree add -q "$wt" "$br" 2> /dev/null ||
+    fail "update-refs: git worktree add refuses $br"
+  run "$base" work "$w"
+  expect update-refs 0 \
+    "kept branch: refs/heads/$br of $m/.git, being rebased in $far$nl"
+  expect update-refs 0 "removed: $w"
+  same update-refs
+  branch update-refs yes "$br"
+  git -C "$far" rebase --abort
+  git -C "$m" worktree remove "$far"
+  git -C "$m" branch -q -D "$br" "$br-child" 2> /dev/null
+
+  # a worktree outside that bisects from the branch with --no-checkout,
+  # then checks out another, as which git worktree list shows it
+  mkwork "$m" bisect-elsewhere
+  commit "$wt" bisect-elsewhere
+  git -C "$wt" push -q origin HEAD
+  far=$base/bisect-elsewhere
+  { git -C "$m" worktree add -q -f "$far" "$br" 2> /dev/null &&
+    git -C "$far" bisect start --no-checkout "$br" origin/main \
+      > /dev/null 2>&1 &&
+    git -C "$far" checkout -q -b "$br-other" origin/main; } ||
+    fail 'bisect elsewhere: no bisect'
+  git -C "$m" worktree list --porcelain | grep -A 2 -xF "worktree $far" |
+    grep -qxF "branch refs/heads/$br-other" ||
+    fail "bisect elsewhere: git does not list $far on $br-other"
+  run "$base" work "$w"
+  expect 'bisect elsewhere' 0 \
+    "kept branch: refs/heads/$br of $m/.git, being bisected in $far$nl"
+  expect 'bisect elsewhere' 0 "removed: $w"
+  same 'bisect elsewhere'
+  branch 'bisect elsewhere' yes "$br"
+  git -C "$far" bisect reset -q > /dev/null 2>&1
+  git -C "$m" worktree remove "$far"
+  git -C "$m" branch -q -D "$br" "$br-other" 2> /dev/null
+
+  # the repository's own worktree, stopped in a rebase of the branch
+  git clone -q "$o" "$base/main5"
+  mkwork "$base/main5" main-rebasing
+  commit "$wt" main-rebasing
+  git -C "$wt" push -q origin HEAD
+  { git -C "$base/main5" checkout -q --ignore-other-worktrees "$br" &&
+    ! git -C "$base/main5" rebase -q -x false HEAD~1 > /dev/null 2>&1; } ||
+    fail 'main rebasing: the rebase did not stop'
+  run "$base" work "$w"
+  expect 'main rebasing' 0 "kept branch: refs/heads/$br of $base/main5/.git,"
+  expect 'main rebasing' 0 "being rebased in $base/main5$nl"
+  expect 'main rebasing' 0 "removed: $w"
+  same 'main rebasing'
+  [ -n "$(git -C "$base/main5" rev-parse -q --verify "refs/heads/$br")" ] ||
+    fail "main rebasing: branch $br was deleted"
+  git -C "$base/main5" rebase --abort
+  git -C "$base/main5" checkout -q main
 
   # a second worktree of the directory, stopped in a rebase of the branch
   mkwork "$m" rebase-inside wt1
@@ -1359,7 +1441,7 @@ b"
   expect 'pull head ahead, fetched' 0 "removed: $w"
   lookups
 
-  for r in "$m" "$base/main2" "$base/main3" "$base/main4"; do
+  for r in "$m" "$base/main2" "$base/main3" "$base/main4" "$base/main5"; do
     s=$(git -C "$r" worktree prune -n -v 2>&1)
     [ -z "$s" ] || fail "stale worktree entries in $r: $s"
   done
