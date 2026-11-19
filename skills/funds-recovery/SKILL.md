@@ -156,11 +156,20 @@ node=<the EVM node's URL>
 chain=<the chain the node serves>
 ```
 
+Each chain's scan and report take a name of their own in that
+directory: the chain the node serves, `bitcoin` where the user named no
+node, and `forks` where the session skips the scan and the report reads
+forks results alone.
+
+```shell
+name=<the chain the node serves, bitcoin, or forks>
+```
+
 ```shell
 uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
   seed-scan scan --server "${server:?}" \
   --node "${node:?}" --evm-chain "${chain:?}" "${bundle:?}" \
-  > "${scratchpad:?}/funds-recovery/scan.json"
+  > "${scratchpad:?}/funds-recovery/scan-${name:?}.json"
 ```
 
 Leave out `--server` where the user named no server, and `--node` with
@@ -169,8 +178,8 @@ Leave out `--server` where the user named no server, and `--node` with
 their own machine, and `--cafile` one whose certificate the system does
 not trust. A run reads one node's chain, and a report reads one scan
 result: a further chain is a scan and a report of its own, each in a
-file of its own. The help lists the chains, and the bounds
-`--gap-limit` and `--account-gap`:
+file of its own under that chain's name. The help lists the chains, and
+the bounds `--gap-limit` and `--account-gap`:
 
 ```shell
 uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
@@ -207,9 +216,9 @@ with no `--scan` or `--forks` where none does:
 ```shell
 uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
   seed-scan report \
-  --scan "${scratchpad:?}/funds-recovery/scan.json" \
+  --scan "${scratchpad:?}/funds-recovery/scan-${name:?}.json" \
   --forks "${scratchpad:?}/funds-recovery/forks-${fork:?}.json" \
-  "${bundle:?}" > "${scratchpad:?}/funds-recovery/report.txt"
+  "${bundle:?}" > "${scratchpad:?}/funds-recovery/report-${name:?}.txt"
 ```
 
 The docstring of [`seed_scan.report`][report] at the tag gives the
