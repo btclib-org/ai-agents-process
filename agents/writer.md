@@ -71,9 +71,9 @@ says where your brief names that file, and you say so in the report.
   first and gate that commit.
 - **No commit with signing turned off** (`--no-gpg-sign`,
   `commit.gpgsign=false`, `git commit-tree` without `-S`, an emptied or
-  replaced git config), not even in a scratch repository. How a
-  measurement goes without one is `writing.md`'s *Signed and signed
-  off*, where your brief names it.
+  replaced git config), not even in a scratch repository. What is not
+  your commit, and how a measurement goes without one, is `writing.md`'s
+  *Signed and signed off*, where your brief names it.
 
 ## What you report
 
