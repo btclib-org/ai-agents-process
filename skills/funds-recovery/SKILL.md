@@ -173,10 +173,9 @@ node=<the EVM node's URL>
 chain=<the chain the node serves>
 ```
 
-Each chain's scan and report take a name of their own in that
-directory: the chain the node serves, `bitcoin` where the user named no
-node, and `forks` where the session skips the scan and the report reads
-forks results alone.
+Each chain's scan and report take a name of their own in the bundle's
+results directory: the chain the node serves, `bitcoin` where the user
+named no node, and `forks` where the session skips the scan.
 
 ```shell
 name=<the chain the node serves, bitcoin, or forks>
@@ -194,9 +193,8 @@ Leave out `--server` where the user named no server, and `--node` with
 `scan` refuses to run, so the session skips it. `--tcp` asks a server on
 their own machine, and `--cafile` one whose certificate the system does
 not trust. A run reads one node's chain, and a report reads one scan
-result: a further chain is a scan and a report of its own, each in a
-file of its own under that chain's name. The help lists the chains, and
-the bounds `--gap-limit` and `--account-gap`:
+result: a further chain is a scan and a report of its own. The help
+lists the chains, and the bounds `--gap-limit` and `--account-gap`:
 
 ```shell
 uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
