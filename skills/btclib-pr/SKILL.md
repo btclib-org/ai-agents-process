@@ -1680,10 +1680,6 @@ for the next taker as above, the reopened pull request among the hits,
 and says on the issue who holds it, with a comment from a file as
 above, which carries the retry's ask where no taker was assigned.
 
-On an issue labelled `good first issue`, the removal and the assignment
-are both edits the shared *Issues left to newcomers* leaves to the human,
-asked for that issue.
-
 Where the bot's review does not run — a fork's pull request, and any
 other where `gh pr checks` shows no review — that review is absent (*The
 reviews on GitHub*), and the approval is never obvious: it goes to the
