@@ -79,8 +79,13 @@ branch, or a text to be posted.
   that two reviewers read is two rounds. The reviewer classifies the
   finding, not the writer, and gives in its verdict the search that
   shows no tree and no caller holds the shape: the command and what it
-  printed. The pull request's body lists each such finding as
-  `/btclib-iss`'s *Opening the pull request* says. A defect on the
+  printed. A reviewer that cannot run that search, being offline or
+  unable to reach another tree's files, names it in its verdict as not
+  run. The orchestrator then runs it and records the command and what
+  it printed before the finding is filed. Where the search is not run,
+  or finds the shape, the finding blocks. The pull request's body lists
+  each such finding as `/btclib-iss`'s *Opening the pull request* says.
+  A defect on the
   ordinary case, a shape that a tree or a caller holds, blocks at any
   round, and so do a false sentence and a crash.
 - **From the third round on the forge, only a defect on the ordinary
@@ -483,7 +488,7 @@ got=$(gh api "gists/${gist:?}/${rev:?}" --jq .id) &&
 - [ ] in a first verdict, every distinct finding, small ones included
       (*The rounds*)
 - [ ] each finding *The rounds* files from the sixth round, with its
-      search
+      search, or that search named as not run
 - [ ] the claims tried, as *Every reviewer tries to break the change*
       says
 - [ ] where the change touches a rule the tree states, or makes a

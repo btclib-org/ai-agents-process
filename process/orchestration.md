@@ -72,7 +72,9 @@ is in one of the four files that opening names.
   criterion.
 - **From the sixth round of a branch's local review, the brief names the
   round**, and the rule of *The rounds* that files a finding on a shape
-  no tree and no caller holds.
+  no tree and no caller holds. Where the reviewer names that rule's
+  search as not run, run it and record the command and what it printed
+  before the finding is filed.
 - **Weigh a finding by who reads the text and how often** before sending
   it on.
 - **Workers writing in one repository at once contend for regions of a
