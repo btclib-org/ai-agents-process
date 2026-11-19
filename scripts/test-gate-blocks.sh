@@ -22,6 +22,12 @@
 #   `other` holds a change git diff shows; then a new file `new` is
 #   untracked; then `other` holds the change with each bit set on it.
 #   It prints nothing, and exits other than 0.
+# - gated_tree, mark: given a file made before, with `cache`, which
+#   `.git/info/exclude` names, written after it, it prints the tree.
+#   Then `file` is written and restored with `cp -p`, which keeps its
+#   bytes and its modification time: without the file gated_tree still
+#   prints the tree; given the file, it prints nothing, and exits other
+#   than 0.
 # - gated_tree, pipefail: under `set -o pipefail`, in the larger
 #   repository, whose first entry is marked assume-unchanged and
 #   changed. It prints nothing, and exits other than 0. Skipped in a
@@ -68,7 +74,9 @@ git init -q -b main "$wt" &&
   git -C "$wt" add file other && git -C "$wt" commit -q -m base &&
   base=$(git -C "$wt" rev-parse HEAD) &&
   printf 'b\n' > "$wt/file" && git -C "$wt" commit -q -am change &&
-  tree=$(git -C "$wt" rev-parse 'HEAD^{tree}') || exit 1
+  tree=$(git -C "$wt" rev-parse 'HEAD^{tree}') &&
+  mkdir -p "$wt/.git/info" && printf 'cache\n' >> "$wt/.git/info/exclude" ||
+  exit 1
 # A larger index, whose `git ls-files -v` fills a pipe's buffer, its
 # first entry marked assume-unchanged and changed
 big=$tmp/big
@@ -90,6 +98,8 @@ block() {
 }
 block 'gated_tree[(][)]' > "$tmp/gated.sh"
 { cat "$tmp/gated.sh"; echo gated_tree; } > "$tmp/gated-run.sh"
+{ cat "$tmp/gated.sh"; printf "gated_tree '%s'\n" "$tmp/mark"; } \
+  > "$tmp/gated-mark.sh"
 grep -q 'gated_tree()' "$tmp/gated.sh" ||
   { no "no block in $doc defines gated_tree"; exit 1; }
 block '^peak=[(][)]\n$' > "$tmp/empty.sh"
@@ -160,6 +170,28 @@ for s in sh bash zsh dash; do
       git -C "$wt" update-index "--no-$c" other || exit 1 ;; esac
     rm -f "$wt/new" && git -C "$wt" checkout -q -- other || exit 1
   done
+  # The sleep makes each write after the mark newer than it, where the
+  # file system counts whole seconds.
+  : > "$tmp/mark" && sleep 1 && : > "$wt/cache" || exit 1
+  gated "$s" "$PATH" "$tmp/gated-mark.sh"
+  if [ "$rc" -eq 0 ] && [ "$out" = "$tree $base" ]; then
+    ok "$s, mark, ignored file written: gated_tree prints the tree"
+  else no "$s, mark, ignored file written: exit $rc, prints '$out'"; fi
+  emptied "$s, mark, ignored file written"
+  "$real_cp" -p "$wt/file" "$tmp/saved" && printf 'x\n' > "$wt/file" &&
+    "$real_cp" -p "$tmp/saved" "$wt/file" || exit 1
+  gated "$s" "$PATH"
+  if [ "$rc" -eq 0 ] && [ "$out" = "$tree $base" ]; then
+    ok "$s, written and restored, no mark: gated_tree prints the tree"
+  else no "$s, written and restored, no mark: exit $rc, prints '$out'"; fi
+  emptied "$s, written and restored, no mark"
+  gated "$s" "$PATH" "$tmp/gated-mark.sh"
+  if [ "$rc" -ne 0 ] && [ -z "$out" ]; then
+    ok "$s, written and restored, mark: gated_tree prints nothing," \
+      "exits $rc"
+  else no "$s, written and restored, mark: exit $rc, prints '$out'"; fi
+  emptied "$s, written and restored, mark"
+  rm -f "$wt/cache" "$tmp/mark" "$tmp/saved" || exit 1
   if "$s" -c 'set -o pipefail' 2> /dev/null; then
     { cat "$tmp/gated.sh"
       printf 'wt=%s base=HEAD\nset -o pipefail\ngated_tree\n' "$big"; } \
