@@ -145,10 +145,15 @@ secret stays out of the session*). `scan` refuses a node URL that
 carries a login, and takes the Electrum server as `host:port` alone,
 with no path or query.
 
-A proxy passes every address on to the node behind it, which the report
-does not name. Where the user names a proxy, ask which service it
-forwards to, and scan only once they have named it and agreed that it
-learns every address. The answer names that service beside the report.
+A proxy or a tunnel passes every address on to the service behind it,
+which the report does not name. Ask of each EVM node and each Electrum
+server, the one for `scan` and each one for `forks`, whether it
+forwards to another service: `--tcp` takes any host that resolves to
+loopback, as seed-scan's `README.md` says in *Scanning a bundle*, so a
+server on `127.0.0.1` can be an SSH tunnel to another party's. Where
+one does, ask which service it forwards to, and scan only once they
+have named it and agreed that it learns every address. The answer
+names that service beside the report.
 
 ```shell
 server=<the Electrum server, as host:port>
@@ -178,7 +183,8 @@ uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
 ```
 
 A chain forked from Bitcoin is read with its own Electrum server, which
-the user names too. The help lists the chains:
+the user names too, and which is asked whether it forwards to another
+service as the one for `scan` is. The help lists the chains:
 
 ```shell
 uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
