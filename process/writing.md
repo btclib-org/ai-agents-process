@@ -1142,7 +1142,9 @@ The findings of these local runs are answered as `/btclib-pr`'s
 - **A force-push with lease, to a branch the session works only**:
 
   ```shell
-  git push --force-with-lease=refs/heads/<branch>:<sha you built on> \
+  wt=<wt>
+  git -C "${wt:?}" push \
+    --force-with-lease=refs/heads/<branch>:<sha you built on> \
     origin HEAD:refs/heads/<branch>
   ```
 
