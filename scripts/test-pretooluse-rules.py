@@ -232,6 +232,12 @@ CASES: list[tuple[str, set[str]]] = [
     ("git worktree add -b FETCH_HEAD /s/new abc123", set()),
     ("git worktree add -b x /s/wt FETCH_HEAD", {"fetch-head"}),
     ("git -C /r rev-parse FETCH_HEAD", set()),
+    # an assignment on a line of its own is not carried into a later command
+    ("git -C /x/wt worktree add --detach /x/gwt FETCH_HEAD", {"fetch-head"}),
+    (
+        'sha=FETCH_HEAD\ngit -C "${wt:?}" worktree add --detach "${gwt:?}" "${sha:?}"',
+        set(),
+    ),
     # uv cache prune --force
     ("uv cache prune --force", {"prune"}),
     ("uv cache prune", set()),
