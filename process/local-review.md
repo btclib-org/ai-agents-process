@@ -221,9 +221,9 @@ says.
   blind spots. Where the writer runs in Claude Code, the fresh reviewer
   runs in Codex, and the other way round. The dedicated reviewer runs in
   the writer's client, and so does the fresh reviewer of a text to be
-  posted. *Clients* and `orchestration.md`'s *Starting the reviewer in
-  the other client* say how each client starts and resumes a reviewer in
-  the other.
+  posted that the rounds review on its own. *Clients* and
+  `orchestration.md`'s *Starting the reviewer in the other client* say
+  how each client starts and resumes a reviewer in the other.
 - The fresh reviewer reads the branch's whole diff from its parent,
   briefed with *Local review* and with the bot's prompt: the `prompt:`
   block of `btclib-org/.github`'s `reusable-claude-review.yml` at the ref
@@ -249,6 +249,35 @@ says.
   prompt says about gates, the fresh reviewer follows *The gates are the
   writer's* instead. It posts nothing; its verdict is as *The verdict*
   says.
+- **Every local reviewer's brief carries what CodeRabbit's review on
+  GitHub applies**, the dedicated reviewer's as the fresh one's. It
+  holds the `path_instructions` of the sha's `.coderabbit.yaml`, and
+  asks the reviewer to apply each to the files its `path` matches. The
+  reviewer in the other client has no network (*Clients*), so the brief
+  also holds the text each instruction links to. The session reads it
+  from a checkout of `btclib-org/.github` brought forward
+  (`every-session.md`'s *Shell, checkouts and prose*): a link to that
+  repository with an anchor is the section of its `README.md` the anchor
+  names. This prints the file:
+
+  ```shell
+  git -C <wt> show <sha>:.coderabbit.yaml
+  ```
+
+  It lists these classes too, which CodeRabbit's review on GitHub has
+  found after the local rounds cleared, and asks the reviewer to try
+  each first (`orchestration.md`'s *The classes of defect found carry
+  forward*):
+
+    - a defect in the base file that a line of the diff reaches, read in
+      the file at the merge base rather than in the hunk;
+    - a test or a fixture that passes vacuously, whatever the code under
+      it does;
+    - a check in the code that differs from the exact step of the
+      specification it implements, each alternative the step allows
+      included;
+    - a boundary the tests do not isolate, so that a mutant of the
+      comparison at that edge survives every test.
 - The bot's commands are `gh pr view`, `gh pr diff`, `gh issue view`,
   `gh-get` (which reads a blob or a file from GitHub), and what the
   tree's `claude-review.yml` adds as `extra-allowed-tools`. Where a
@@ -284,6 +313,22 @@ says.
   names the paths in its `CONFLICT` lines.
 - A branch a review on GitHub sends back, the bot's or a person's, goes
   through the same rounds before its fix is pushed.
+- **A reply to a bot's finding is read in the branch's rounds before it
+  is posted**, beside the fix where there is one. The brief carries each
+  finding with its draft reply and the route taken, and names
+  `/btclib-pr`'s *Answering it*, whose routes the reply is judged by.
+  Each reviewer tries the reply's ground as it tries a claim of the
+  change, and checks the reply as *A text to be posted* says. The
+  reviewer in the other client has no network (*Clients*), so beside
+  what that section's brief carries, the brief holds the text of each
+  link, and each reference GitHub renders as one, the reply gives. A
+  ground that is false on an input the text applies to is a finding of
+  these rounds, and so is a reply that declines a finding which the
+  first route that fits files: *filed*, or a defect *The rounds* keeps
+  off the branch. Such a finding holds back the reply, not the branch:
+  it does not send a cleared branch back, as *Which prose is worth a
+  round* says of a sentence outside the tree, and the reply is posted
+  only once the reviewer has read its fix.
 
 ### A text to be posted
 

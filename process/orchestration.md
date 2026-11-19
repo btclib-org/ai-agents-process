@@ -239,11 +239,13 @@ is in one of the four files that opening names.
   local `CLEARED`, and that holds (the fix accepts it or the human
   upholds it), is marked in the record as one the local rounds missed,
   and the session's report to the human names its class and proposes
-  where the next session will read it: for a btclib-org tree, its
-  `REVIEWING.md`'s *This repository in particular*, or the shared part
-  in `btclib-org/.github` where the class is not that tree's own
-  (*Wrap-up*). The report also proposes the pull request as a case of
-  `$PROCESS/process/replay-set.md`.
+  where the next session will read it (*Wrap-up*): for a btclib-org
+  tree, its `REVIEWING.md`'s *This repository in particular*, the shared
+  part in `btclib-org/.github` where the class is not that tree's own,
+  or, for a class CodeRabbit's review on GitHub found, the list of
+  classes every local reviewer's brief carries (`local-review.md`'s *A
+  pull request's rounds*). The report also proposes the pull request as
+  a case of `$PROCESS/process/replay-set.md`.
 - **Where the other client is unavailable, the branch goes on without
   the fresh reviewer.** Unavailable means the client refuses the run.
   The first run is judged when the rounds reach the fresh reviewer: it

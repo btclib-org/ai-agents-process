@@ -345,6 +345,10 @@ a decision:
   git -C <wt> show <base>:<path>
   ```
 
+**A reply to a bot's finding goes through the branch's rounds before it
+is posted**, with the route it took, as the shared *A pull request's
+rounds* says.
+
 **Every inline `suggestion` that is accepted is applied in the
 worktree.** It is not applied with GitHub's button, so that the gates
 run on it.
@@ -1675,10 +1679,6 @@ any login, those assignees keep the issue. Otherwise the session looks
 for the next taker as above, the reopened pull request among the hits,
 and says on the issue who holds it, with a comment from a file as
 above, which carries the retry's ask where no taker was assigned.
-
-On an issue labelled `good first issue`, the removal and the assignment
-are both edits the shared *Issues left to newcomers* leaves to the human,
-asked for that issue.
 
 Where the bot's review does not run — a fork's pull request, and any
 other where `gh pr checks` shows no review — that review is absent (*The
