@@ -31,6 +31,7 @@ rest and checks with `kill -0` that they are gone before
 ```shell
 . "${PROCESS:?}/scripts/gate-lock.sh"
 out=<scratch>/gen.out pids=<scratch>/gen.pids workers=<n>
+: "${workers:?}"
 gate_take_all <worktree> > "$out" 2>&1 && {
   idle=$(tail -n 1 "$out" | sed 's/.* at \([0-9]*\)% CPU idle.*/\1/')
   case $idle in ''|*[!0-9]*) idle=0 ;; esac
