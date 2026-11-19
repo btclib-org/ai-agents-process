@@ -1612,21 +1612,21 @@ A hit that passes is ranked by its first pass on any head it had, so a
 pull request pushed again after passing keeps its place. `gh pr checks`
 reads the current head alone. This prints the earliest time a `Sign-off`
 run passed, read from every `pull_request` workflow run on the hit's
-head branch and repository since it was opened, and nothing where none
-passed. Where a call fails it exits non-zero, and no taker is chosen
-until it has exited `0` for each hit that passes:
+head branch, from a repository of its head owner, since it was opened,
+and nothing where none passed. Where a call fails it exits non-zero, and
+no taker is chosen until it has exited `0` for each hit that passes:
 
 ```shell
 info=$(gh pr view "${pr:?}" \
-  --json url,headRefName,headRepositoryOwner,headRepository,createdAt \
+  --json url,headRefName,headRepositoryOwner,createdAt \
   --jq '(.url | split("/")[3:5] | join("/")), .headRefName,
-    "\(.headRepositoryOwner.login)/\(.headRepository.name)", .createdAt') &&
+    .headRepositoryOwner.login, .createdAt') &&
   { read -r prepo && read -r branch && read -r from && read -r since; } \
     <<< "$info" &&
   ids=$(FROM=$from SINCE=$since gh api --paginate -X GET \
     "repos/${prepo:?}/actions/runs" -f event=pull_request \
     -f branch="${branch:?}" -F per_page=100 \
-    --jq '.workflow_runs[] | select(.head_repository.full_name == env.FROM
+    --jq '.workflow_runs[] | select(.head_repository.owner.login == env.FROM
       and .created_at >= env.SINCE) | .check_suite_id') &&
   times=$(while read -r id; do
     [ -z "$id" ] || gh api --paginate -X GET -f filter=all \
@@ -1637,11 +1637,16 @@ info=$(gh pr view "${pr:?}" \
   printf '%s' "$times" | sort | head -n 1
 ```
 
-GitHub caps the runs one query returns, newest first
+It matches the head's owner, not its repository: once a fork is
+deleted, `gh pr view` gives the pull request no head repository, while
+its runs still name it.
+
+GitHub caps the runs one query returns
 ([*List workflow runs for a repository*](https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-repository)),
-so a hit with more runs than the cap loses its oldest. The runs of
-another pull request opened from the same branch count too, from the
-time this one was opened.
+and returns them newest first, so a branch name with more `pull_request`
+runs than the cap, from any repository, loses its oldest. The runs of
+another pull request opened by the same owner from a branch of that name
+count too, from the time this one was opened.
 
 GitHub assigns an outside login only to an issue it has commented on, as
 *Pull requests* says. This exits `0` where a hit's author can be
