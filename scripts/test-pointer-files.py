@@ -94,6 +94,14 @@ CASES: list[tuple[str, dict[str, str], list[str]]] = [
         ["REVIEWING.md:5: *The gates*"],
     ),
     (
+        "a copy of the standard whose heading is spelt otherwise",
+        {
+            "REVIEWING.md": "As *The gates* says.\n\n"
+            "## This Repository In Particular\n\nAs *The gates* holds.\n"
+        },
+        ['REVIEWING.md: lacks the heading "## This repository in particular"'],
+    ),
+    (
         "the tree's AGENTS.md",
         {"AGENTS.md": "As *The gates* says.\n"},
         ["AGENTS.md:1: *The gates*"],
