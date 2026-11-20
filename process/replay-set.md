@@ -1181,6 +1181,78 @@ once and the candidate twice. That case has gone both ways before under
 configurations that differ in nothing it concerns (the runs above), so
 the run shows no gain from the change.
 
+- **Candidate**, 2026-11-20, for ISS btclib-org/ai-agents-process#620:
+  `$PROCESS` `3e291f3e9d03187113523cf9fa705400df72aa46`, tree
+  `1adc27f256ca9de6d8957c4fe1316a00ebff6b80`, the factor changed being
+  the brief: the change of ISS btclib-org/ai-agents-process#620, ISS
+  btclib-org/ai-agents-process#664 and ISS
+  btclib-org/ai-agents-process#668, which `git diff d469992
+  3e291f3e9d03187113523cf9fa705400df72aa46 -- process` makes in
+  `writing.md` alone, all of it in *Writing work*, which the reviewer's
+  map gives whole. Each `TREE=` line of a gate run names `HEAD`, and a
+  run of the suite or the docs build counts only where both lines name,
+  as `HEAD`, the commit the report names. The gate blocks write the file
+  `mktemp` made with `>|`, and the gates that follow hooks whose run
+  carries over run in a block of their own. The baseline is the run at
+  `80b7f26` for ISS btclib-org/ai-agents-process#612 and ISS
+  btclib-org/ai-agents-process#614, which PR
+  btclib-org/ai-agents-process#673 records, its runs reused but its
+  second on PR btclib-org/ecc#580, made in this run from a copy at
+  `80b7f26`, since that case alone decided the first runs (*One factor
+  at a time*): `git diff 80b7f26 d469992 -- process agents skills
+  REVIEWING.md`, from it to the candidate's merge base, prints nothing.
+  Claude Code, the `reviewer` agent, Opus, effort `high`, one run per
+  case, and the baseline's two on PR btclib-org/ecc#484 and two on PR
+  btclib-org/ecc#580. In both: PR btclib-org/ai-agents-process#444: hit.
+  PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
+  miss. PR btclib-org/btclib-node#2516: miss. PR
+  btclib-org/ai-agents-process#526: miss. PR
+  btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with no
+  blocking finding. PR btclib-org/ecc#484 and PR btclib-org/ecc#580: the
+  baseline miss, then hit; the candidate hit.
+
+On PR btclib-org/ecc#484 the candidate blocks on perl's `<>` opening
+hostile file names, as `-i` and `cmd|` show, which an outside
+contributor's branch can supply. The baseline's first run names it only
+as `filed`, and its second blocks on it. On PR btclib-org/ecc#580 the
+candidate blocks on the comment over `_AFF_CALLS`, which leaves out
+methods that take an affine point. The baseline's first run does not
+name it, and its second blocks on it. On PR
+btclib-org/ai-agents-process#444 both block on the skills that still arm
+with `--auto`. On PR btclib-org/ai-agents-process#317 the baseline
+blocks on the hold covering limits that reset, as in the runs above, and
+the candidate clears the head without blocking on it. On PR
+btclib-org/ai-agents-process#526 the baseline names the item indented
+after a paragraph only as `filed`, and the candidate does not name it.
+On PR btclib-org/.github#2288 the baseline names whitespace other than
+one space only as `filed`, and the candidate only in a non-blocking
+finding. On PR btclib-org/btclib-secp256k1#1331 the baseline names only
+as `filed` that any exit `42` reads as reported, and the candidate does
+not name it. On PR btclib-org/btclib-node#2516 the baseline names "`i`
+sums the length fields" only as non-blocking, and the candidate measures
+that `i` also counts the fixed-width fields and calls the sentence true.
+The findings outside the cases' defects were not measured.
+
+Both of the baseline's verdicts on PR btclib-org/ecc#484 cite the
+session's auto-memory note of the maintainer's answer on ISS
+btclib-org/ai-agents-process#614, for which ISS
+btclib-org/ai-agents-process#677 is filed. The candidate's verdict on it
+cites no memory note.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, for which its check prints `copied`, and the cases
+from the same trees as the baseline. Each read its brief from a file.
+The copies hold `process/` alone, and nothing was withheld: the change
+edits no `REVIEWING.md`, no skill and nothing in `agents/`.
+
+The candidate hits each case the baseline hits in either of its runs,
+and loses none, and neither blocks on the clean case. On PR
+btclib-org/ecc#580 the baseline's second run hits too, so the
+candidate's hit is within the baseline's spread, not a gain. On PR
+btclib-org/ecc#484 the memory note confounds the baseline, so the run
+does not compare the two there.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
