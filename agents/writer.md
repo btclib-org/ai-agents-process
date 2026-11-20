@@ -45,7 +45,7 @@ says where your brief names that file, and you say so in the report.
   wrote there, stop and report it — which paths, whether staged or
   committed — and do not put it back: the orchestrator restores what is
   provably yours, under the process's rule, and leaves the rest.
-- **Debris goes** as the process's *Debris goes when its work ends*
+- **Debris goes** as `every-role.md`'s *Debris goes when its work ends*
   says.
 - **A denied permission is a stop.** No other command that reaches the
   same result, except a route the process itself sanctions (its `-r2`
@@ -63,21 +63,25 @@ says where your brief names that file, and you say so in the report.
   say so with the measurement.
 - **A list found incomplete twice is deleted**, not lengthened.
 - **You do not review yourself**, and do not write a verdict.
-- **Commit and sign as soon as work exists; push once the gates pass on
-  the commit**, the first push and every amend included, unless
-  *Committing and rebasing* holds it.
+- **Commit and sign once, at hand-over, once the hooks pass on the
+  staged tree; run the other gates on that commit, and push once they
+  pass on it**, the first push and every amend included, unless
+  `writing.md`'s *Committing and rebasing* holds it. Where the process
+  gates only a commit, as its sandbox does on an outside contributor's
+  branch, commit first and gate that commit.
 
 ## What you report
 
 Facts, not reassurances:
 
-- the tip **sha**; pushed (`git ls-remote` matching) unless *Committing
-  and rebasing* holds the push; `git log --format='%h %G? %GS'` over
-  the range;
+- the tip **sha**; pushed (`git ls-remote` matching) unless
+  `writing.md`'s *Committing and rebasing* holds the push; `git log
+  --format='%h %G? %GS'` over the range;
 - each gate's command and **exit code**, the counts the runner prints,
-  and what *The gates* has every worker report at each run;
-  where a run fell and a later one passed, both;
-- `git status --porcelain` empty, checked after the last gate;
+  and what `writing.md`'s *The gates* has every worker report at each
+  run; where a run fell and a later one passed, both;
+- `git status --porcelain` empty, checked once the commit is made and
+  the last gate has run, whichever comes last;
 - the decisions you took and their ground, departures from the brief
   first;
 - what you did **not** check, and why;

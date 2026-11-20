@@ -13,20 +13,22 @@
 #   . "${PROCESS:?}/scripts/gate-lock.sh"
 #   gate_take [<worktree>] && {
 #     gate_wait; rc=0
-#     gate_peak <gate> <worktree> <a gate> || rc=$?; echo "EXIT_<gate>=$rc"
-#     gate_wait; rc=0
-#     gate_peak <gate> <worktree> <a gate> || rc=$?; echo "EXIT_<gate>=$rc"
+#     gate_peak hooks <worktree> <a gate> || rc=$?; echo "EXIT_hooks=$rc"
+#     if [ "$rc" -eq 0 ]; then
+#       gate_wait; rc=0
+#       gate_peak <gate> <worktree> <a gate> || rc=$?; echo "EXIT_<gate>=$rc"
+#     fi
 #     gate_release
 #   }
 #
 # A load generator takes every slot with gate_take_all and releases them with
 # gate_release_all. One runs at a time.
 #
-# gate_peak runs a program and records its peak memory. It takes no slot
-# and admits nothing: it only records. Each gate in the block above runs
-# through it, and so does a reviewer an orchestrator starts as a command,
-# with `codex exec` or `claude -p`. A run not started through it is not
-# recorded:
+# gate_peak runs a program and records its peak memory and its wall time. It
+# takes no slot and admits nothing: it only records. Each gate in the block
+# above runs through it, and so does a reviewer an orchestrator starts as a
+# command, with `codex exec` or `claude -p`. A run not started through it is
+# not recorded:
 #
 #   gate_peak <kind> <tree> <program> [<argument>...]
 #   gate_peak suite /abs/wt timeout 1800 uv run pytest -n "$GATE_LOCK_WORKERS"
@@ -34,22 +36,23 @@
 #
 # <program> is a program, not a shell function, since time runs it. It
 # returns the program's exit code and appends one line to
-# $GATE_LOCK_DIR/gate.peaks, tab-separated: the UTC time the program
-# ended, <kind>, <tree>, the peak resident memory in KB (`?` where it
-# could not be read), and that exit code. A tab or a newline in <kind> or
-# <tree> is written as a space. The peak is read with `/usr/bin/time -l` on
-# macOS and GNU `/usr/bin/time -v` elsewhere, which run the program through
-# sh, so that one a signal ends returns 128 plus its number, as 137 for
-# KILL: macOS's time alone returns 1 for it. time writes into a file
+# $GATE_LOCK_DIR/gate.peaks, tab-separated: the UTC time the program ended,
+# <kind>, <tree>, the peak resident memory in KB (`?` where it could not be
+# read), that exit code, and the wall time in whole seconds, the difference
+# of `date +%s` before and after the program. A tab or a newline in <kind>
+# or <tree> is written as a space. The peak is read with `/usr/bin/time -l`
+# on macOS and GNU `/usr/bin/time -v` elsewhere, which run the program
+# through sh, so that one a signal ends returns 128 plus its number, as 137
+# for KILL: macOS's time alone returns 1 for it. time writes into a file
 # beside the lock, which a later gate_peak removes where an interrupt left
 # it. Where neither time runs, the peak is the largest VmHWM that /proc
 # shows, once a second while the program runs, of the program and the
-# processes /proc lists below it. The program then runs as a background
-# job, which ignores SIGINT: TERM, as timeout sends, still stops it, and
-# an interrupt that ends the calling shell leaves it running, outside the
-# lock. Where none of the three can read the peak, the program runs alone
-# and the peak is `?`, as in Codex's workspace-write sandbox, which
-# refuses `time -l` a sysctl it reads.
+# processes /proc lists below it. The program then runs as a background job,
+# which ignores SIGINT: TERM, as timeout sends, still stops it, and an
+# interrupt that ends the calling shell leaves it running, outside the lock.
+# Where none of the three can read the peak, the program runs alone and the
+# peak is `?`, as in Codex's workspace-write sandbox, which refuses
+# `time -l` a sysctl it reads.
 #
 # The peak is that of the largest single process, not the sum over the
 # program's processes: of two processes of 200 MB at once it reads about
@@ -640,6 +643,7 @@ gate_peak() {
     _gl_peak_sweep
     _gl_pf=$(mktemp "$_gl_d/peak.$_gl_me.XXXXXX" 2>/dev/null) || _gl_pf=""
   fi
+  _gl_pt0=$(date +%s)
   # each time is tried on `true` first: where it fails after the program
   # has run, it returns its own code in place of the program's. time runs
   # the program through sh, which returns 128 plus the number of a signal
@@ -664,12 +668,13 @@ gate_peak() {
   else
     "$@" || _gl_prc=$?
   fi
+  _gl_psec=$(($(date +%s) - _gl_pt0))
   [ -z "$_gl_pf" ] || rm -f "$_gl_pf"
   if [ -n "$_gl_d" ] && [ -d "$_gl_d" ]; then
-    printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
       "$(printf '%s' "$_gl_pkind" | tr '\t\n' '  ')" \
       "$(printf '%s' "$_gl_ptree" | tr '\t\n' '  ')" \
-      "${_gl_pkb:-?}" "$_gl_prc" >> "$_gl_d/gate.peaks" ||
+      "${_gl_pkb:-?}" "$_gl_prc" "$_gl_psec" >> "$_gl_d/gate.peaks" ||
       echo "gate_peak: cannot append to $_gl_d/gate.peaks" >&2
   fi
   return "$_gl_prc"

@@ -1,8 +1,7 @@
 # The btclib-org process: writing
 
 `every-role.md`, beside this file, opens the process: its opening says
-which role reads this file. A section named here in italics with no file
-is in one of the four files that opening names.
+which role reads this file, and where a section named in italics is.
 
 ## Before starting
 
@@ -19,13 +18,15 @@ does it before briefing anybody.
   its URL:
 
   ```shell
-  gh pr list --repo <owner>/<repo> --state open --limit 200 \
+  repo=<owner>/<repo>
+  gh pr list --repo "${repo:?}" --state open --limit 200 \
     --json number,title,body \
     --jq '.[] | select((.title + .body) | test("#<issue>\\b")) | .number'
   ```
 
   ```shell
-  gh pr list --repo <owner>/<repo> --state open --limit 200 \
+  repo=<owner>/<repo>
+  gh pr list --repo "${repo:?}" --state open --limit 200 \
     --search "<issue> in:title,body" --json number,title
   ```
 
@@ -45,7 +46,8 @@ does it before briefing anybody.
   does not apply:
 
   ```shell
-  gh api repos/<owner>/<repo>/contents/.github/workflows/claude-implement.yml \
+  repo=<owner>/<repo>
+  gh api "repos/${repo:?}/contents/.github/workflows/claude-implement.yml" \
     --jq .name
   ```
 
@@ -54,7 +56,8 @@ does it before briefing anybody.
   prints the title of each run not completed:
 
   ```shell
-  gh run list --repo <owner>/<repo> --workflow claude-implement.yml \
+  repo=<owner>/<repo>
+  gh run list --repo "${repo:?}" --workflow claude-implement.yml \
     --limit 200 --json displayTitle,status \
     --jq '.[] | select(.status != "completed") | .displayTitle'
   ```
@@ -84,16 +87,17 @@ does it before briefing anybody.
   shared*).
 - **Look at the free disk** before cloning, building or adding a
   worktree: `df -g <scratchpad>`. Under 30 GB available, the
-  orchestrator sweeps (*The orchestrator, never a writer, sweeps*), runs
-  `uv cache prune`, and reads it again; a writer tells the orchestrator.
-  Still under 30 GB, stop and tell the human: work not yet started needs
-  room to clone and build. A gate on work already started runs down to
-  `GATE_LOCK_DISK`, 20 GB. `uv cache prune` removes the cache's unused
-  entries and its cached environments, `uvx`'s among them, which the next
-  `uvx` rebuilds offline. It waits while another uv process runs, without
-  holding back one that starts meanwhile. It exits `2` once
-  `UV_LOCK_TIMEOUT` passes, 5 minutes by default
-  ([uv's *Clearing the cache*](https://docs.astral.sh/uv/concepts/cache/#clearing-the-cache)),
+  orchestrator sweeps (`every-role.md`'s *The orchestrator, never a
+  writer, sweeps*), runs `uv cache prune`, and reads it again; a writer
+  tells the orchestrator. Still under 30 GB, stop and tell the human:
+  work not yet started needs room to clone and build. A gate on work
+  already started runs down to `GATE_LOCK_DISK`, 20 GB. `uv cache prune`
+  removes the cache's unused entries and its cached environments,
+  `uvx`'s among them, which the next `uvx` rebuilds offline. It waits
+  while another uv process runs, without holding back one that starts
+  meanwhile. It exits `2` once `UV_LOCK_TIMEOUT` passes, 5 minutes by
+  default ([uv's *Clearing the
+  cache*](https://docs.astral.sh/uv/concepts/cache/#clearing-the-cache)),
   and the second read goes on without it. `--force` skips that wait and
   is not used.
 
@@ -110,12 +114,15 @@ The writer's section; the reviewer judges its result.
 - [ ] the `Sign-off` script exits `0` on `<base>..`, or after a merge of
       `main` on the ranges that leave out `main`'s commits (*Signed and
       signed off*)
-- [ ] every gate *The gates* asks of this tip ran on it, committed,
-      with exit code `0`, as it says
+- [ ] every gate *The gates* asks of this tip exited `0`: the hooks on
+      its tree, staged or committed, and the suite and the docs build on
+      the tip itself (*Every commit you hand over is gated, on its
+      tree*)
 - [ ] *Sourcery and CodeRabbit before a push* holds
-- [ ] `git status --porcelain` is empty in the worktree, checked after
-      the last gate, and on an outside contributor's branch in the
-      status file of each gate too (*The gates*)
+- [ ] `git status --porcelain` is empty in the worktree, checked once
+      the commit is made and the last gate has run, whichever comes
+      last, and on an outside contributor's branch in the status file of
+      each gate too (*The gates*)
 - [ ] the subject that lands carries the right citation, and the body
       carries no stray closing keyword
 - [ ] the commit message was re-read, not carried by `--no-edit`
@@ -142,17 +149,18 @@ The writer's section; the reviewer judges its result.
 **Before writing, search for every sentence that states the rule you
 change**, and for every sentence the change makes false or narrows, rule
 or not: a claim narrowed in one comment still stands, unnarrowed, in the
-docstring and the documents beside it (*Where your diff falsifies a
-sentence elsewhere*). Run one search over every file `git ls-files`
-lists, with a pattern for each way the rule or the claim is worded,
-matched across line breaks (*`grep` reads lines, and prose wraps*). List
-each hit as `file:line` with what you do with it. Change them all in one
-round. A restatement becomes a pointer to the section that holds the
-rule (`every-session.md`'s *Write plainly*), and a sentence made false
-is corrected. The report carries the patterns and the hits. The reviewer
-runs the same search, adds the patterns it would have used, and reads
-the files where the rule or the claim is stated. A sentence either
-search finds and the list lacks is a finding.
+docstring and the documents beside it (`every-role.md`'s *Where your
+diff falsifies a sentence elsewhere*). Run one search over every file
+`git ls-files` lists, with a pattern for each way the rule or the claim
+is worded, matched across line breaks (`every-role.md`'s *`grep` reads
+lines, and prose wraps*). List each hit as `file:line` with what you do
+with it. Change them all in one round. A restatement becomes a pointer
+to the section that holds the rule (`every-session.md`'s *Write
+plainly*), and a sentence made false is corrected. The report carries
+the patterns and the hits. The reviewer runs the same search, adds the
+patterns it would have used, and reads the files where the rule or the
+claim is stated. A sentence either search finds and the list lacks is a
+finding.
 
 **A tree-wide sweep starts from a census** of every spelling over `git
 ls-files`, and ends at the census re-run answering zero, its exceptions
@@ -168,7 +176,8 @@ the items beside it.
 **The organization's copies are in the list.** Section 14 of the
 organization's standard lists the files copied verbatim into every tree,
 and their rules count too. A copy the change cannot touch is filed in
-btclib-org/.github's tracker as collateral (*Collateral*).
+btclib-org/.github's tracker as collateral (`every-role.md`'s
+*Collateral*).
 
 ### What the prose that lands may say
 
@@ -177,10 +186,11 @@ btclib-org/.github's tracker as collateral (*Collateral*).
   and `RELEASE_NOTES.md`*) says which pull request adds an entry under
   `changelog/next/`, and what the entry holds. A tree's
   `CONTRIBUTING.md` that still asks for an entry in either file is a
-  drifted copy, and the standard wins (*Which file wins*). An entry in
-  either file found on a branch is dropped. A release's own pull request
-  writes that release's section, and so does the pull request that moves
-  an entry left in `changelog/next/` into it, as section 9 says.
+  drifted copy, and the standard wins (`every-role.md`'s *Which file
+  wins*). An entry in either file found on a branch is dropped. A
+  release's own pull request writes that release's section, and so does
+  the pull request that moves an entry left in `changelog/next/` into
+  it, as section 9 says.
 - **Backward compatibility is not a constraint.** Choose the most
   rational design and document what it breaks in the commit message and
   the pull request body.
@@ -272,27 +282,70 @@ of the standard* says.
   floor, `pre-commit run --all-files`, and the docs build with `-W`,
   which pre-commit rarely covers. **Run all of them** unless that
   section, or else the bullets from here to *Every commit you hand over
-  is gated*, scale them by what the diff touches. "This gate does not
-  read the changed files" is a claim like any other and is measured
-  first: a docs build may include `CHANGELOG.md`, a test may read every
-  tracked file. `<base>` below is the pinned `origin/main`
-  (*`refs/remotes/origin/main` is shared by every worktree*). The report
-  and the pull request's `## Evidence` give a gate those bullets leave
-  to CI as `left to CI`, with the command that decided it and its exit
-  code.
+  is gated, on its tree*, scale them by what the diff touches. Each
+  reads the diff of the staged tree against the merge base of `<base>`
+  and `HEAD`, which is the branch's diff from that merge base once it is
+  committed, so the same command serves a staged tree and a commit.
+  "This gate does not read the changed files" is a claim like any other
+  and is measured first: a docs build may include `CHANGELOG.md`, a test
+  may read every tracked file. `<base>` below is the pinned
+  `origin/main` (`every-role.md`'s *`refs/remotes/origin/main` is shared
+  by every worktree*). The report and the pull request's `## Evidence`
+  give a gate those bullets leave to CI as `left to CI`, with the
+  command that decided it and its exit code.
 - **The hooks run on the changed files**: the tree's own `pre-commit
-  run`, here `uvx pre-commit run`, takes `--from-ref` and `--to-ref` in
-  place of `--all-files`. pre-commit then reads the changed files from
-  `git diff <base>...HEAD`, and exits non-zero where that diff fails. A
-  hook with `pass_filenames: false` or `always_run: true` still reads
-  what its own command reads, as btclib-node's `core-citation-pin` reads
-  what `git ls-files` lists. Where the suite is left to CI and the diff
-  changes only Markdown, the hooks run outside the gate lock:
+  run`, here `uvx pre-commit run`, takes `--files` with the files of
+  that diff in place of `--all-files`. `--from-ref <base> --to-ref HEAD`
+  reads only what is committed, so it misses what is staged: where
+  `HEAD` is still at the base it finds no changed file, skips every hook
+  that reads one, and exits `0`. The paths are read as the sandbox's
+  hooks block reads them (*An outside contributor's branch*):
+  NUL-terminated, each as `./<path>`, a deleted file left out, and
+  `--all-files` where the diff only deletes. A hook with
+  `pass_filenames: false` or `always_run: true` still reads what its own
+  command reads, as btclib-node's `core-citation-pin` reads what `git
+  ls-files` lists. Where the suite is left to CI and the diff changes
+  only Markdown, the hooks run outside the gate lock. The block runs
+  pre-commit behind the array `peak`: outside the lock it is empty, as
+  the first block below sets it, and *The gate lock* sets it to
+  `gate_peak` and the timeout. It expands `peak` as
+  `${peak[@]+"${peak[@]}"}`: under `set -u`, macOS's `/bin/bash` 3.2
+  reads an empty `"${peak[@]}"` as an unbound variable and exits. The
+  block neither reads nor sets `"$@"`: on an outside contributor's
+  branch `"$@"` holds the sandbox's command (*An outside contributor's
+  branch*), which that branch's own hooks block, its status check and
+  its other gates run behind, and elsewhere no gate reads it. Its
+  `mktemp` takes a template under `$TMPDIR`, as `gated_tree`'s does
+  (*Every commit you hand over is gated, on its tree*):
+
+  ```shell
+  peak=()
+  ```
 
   ```shell
   wt=<wt>
   base=<base>
-  env -C "${wt:?}" uvx pre-commit run --from-ref "${base:?}" --to-ref HEAD
+  rc=0
+  args=()
+  list=$(mktemp "${TMPDIR:-/tmp}/hooks.XXXXXX")
+  if ! mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) ||
+    ! git -C "${wt:?}" diff -z --cached --name-only --diff-filter=d \
+      "${mb:?}" > "$list"; then
+    rc=2
+  else
+    while IFS= read -r -d '' name; do
+      args+=("./$name")
+    done < "$list"
+    if [ "${#args[@]}" -eq 0 ]; then
+      args=(--all-files)
+    else
+      args=(--files "${args[@]}")
+    fi
+    ${peak[@]+"${peak[@]}"} env -C "${wt:?}" uvx pre-commit run \
+      "${args[@]}" || rc=$?
+  fi
+  rm -f "$list"
+  (exit "$rc")
   ```
 
 - **The suite is left to CI where no test of the tree reads a file of
@@ -300,14 +353,19 @@ of the standard* says.
   a renamed file under both its names, and prints nothing and exits `0`
   where none does. Any line, or another exit, runs the suite, and so
   does a suite that is not pytest's. The script's header says what it
-  misses, which CI's run reads. It runs outside the gate lock:
+  misses, which CI's run reads. Its `--paths` form takes the paths of
+  the diff, since its other form reads `<base>...HEAD`, which a staged
+  tree leaves out. It runs outside the gate lock:
 
   ```shell
   scratch=<scratch>
   wt=<wt>
   base=<base>
-  env -C "${scratch:?}" uv run --no-project --python 3.15 \
-    python -I "${PROCESS:?}/scripts/suite-reads.py" "${wt:?}" "${base:?}"
+  (set -o pipefail
+    mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) &&
+    git -C "${wt:?}" diff --cached -z --name-only --no-renames "${mb:?}" |
+    xargs -0 env -C "${scratch:?}" uv run --no-project --python 3.15 \
+      python -I "${PROCESS:?}/scripts/suite-reads.py" "${wt:?}" --paths)
   ```
 
 - **The docs build runs only where the diff touches what it builds**: a
@@ -316,28 +374,31 @@ of the standard* says.
   lists the pages that name a changed file. It reads each path of the
   diff as data, NUL-terminated, never as shell text, and `--no-renames`
   gives a renamed file under both its names, where a plain
-  `--name-only` gives the new one alone. It exits `1` with no output
-  where no page names any. Where HEAD holds no source directory, or git
-  fails, it exits `2` with a message. Any other exit runs the build.
-  Elsewhere it is left to CI:
+  `--name-only` gives the new one alone. It reads the pages from the
+  index, as `HEAD` would leave out a staged change. It exits `1` with no
+  output where no page names any. Where the index holds no source
+  directory, or git fails, it exits `2` with a message. Any other exit
+  runs the build. Elsewhere it is left to CI:
 
   ```shell
   wt=<wt>
   base=<base>
   src=<docs source>
   rc=1
-  list=$(mktemp)
-  if ! git -C "${wt:?}" cat-file -e "HEAD:${src:?}"; then
-    echo "HEAD holds no ${src}" >&2
+  list=$(mktemp "${TMPDIR:-/tmp}/docs.XXXXXX")
+  if ! git -C "${wt:?}" ls-files --error-unmatch -- "${src:?}" > /dev/null
+  then
+    echo "the index holds no ${src:?}" >&2
     rc=2
-  elif ! git -C "${wt:?}" diff -z --name-only --no-renames \
-    "${base:?}...HEAD" > "$list"; then
+  elif ! mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) ||
+    ! git -C "${wt:?}" diff -z --cached --name-only --no-renames \
+      "${mb:?}" > "$list"; then
     rc=2
   else
     while IFS= read -r -d '' name; do
       got=0
-      out=$(git -C "${wt:?}" grep -l -F -e "$name" HEAD -- "${src:?}" 2>&1) ||
-        got=$?
+      out=$(git -C "${wt:?}" grep --cached -l -F -e "$name" \
+        -- "${src:?}" 2>&1) || got=$?
       if [ "$got" -eq 0 ]; then
         printf '%s\n' "$out"
         [ "$rc" -eq 2 ] || rc=0
@@ -381,15 +442,140 @@ of the standard* says.
     | select(.value != "success") | .key end'
   ```
 
-- **Every commit you hand over is gated, after it is committed.** The
-  merge of `main` above is exempt, and so is a commit kept only to
-  preserve work in progress, amended away before anything is offered. A
-  run before the commit does not count, even where the content looks
-  identical: a hook at commit time can change what is committed. Where a
-  gate's fixer changes files, commit the change and run that gate again.
-  `pre-commit run --all-files` walks `git ls-files`, so a file the
-  branch adds is gated only once staged: the report says the gate saw
-  the new files.
+- **Every commit you hand over is gated, on its tree.** The merge of
+  `main` above is exempt, and so is a commit kept only to preserve work
+  in progress, amended away before anything is offered. The hooks are
+  made to run on a tree not yet committed: pre-commit runs them at
+  commit time, before the commit exists. The suite and the docs build
+  can read the commit itself, as btclib-wallet's
+  `tests/strategies/provenance/__init__.py` reads `git show
+  HEAD:uv.lock` and btclib's `tests/declared_version_test.py` compares
+  `HEAD` with a release tag, so on a staged tree they read the parent.
+  They run on the commit, and their run counts for that commit only,
+  which the report names. A run's log names the tree it read and the
+  merge base its diffs start from, on a `TREE=` line before its first
+  gate and another after its last, `echo "TREE=$(gated_tree)"`, inside
+  the gate lock (*The gate lock*) or outside it. The run counts only
+  where both lines name the same pair. `gated_tree` prints the tree,
+  staged or committed, and the merge base of `<base>` and `HEAD`, only
+  where the working tree holds nothing the index lacks: no unstaged
+  change, no untracked file but those git ignores (`.gitignore`,
+  `.git/info/exclude` and `core.excludesFile`, which
+  `--exclude-standard` reads), and no file marked assume-unchanged or
+  skip-worktree, whose change `git diff` does not show (`git ls-files
+  -v` tags it in lower case or `S`). It prints nothing otherwise, so a
+  file the branch adds is gated only once staged. Its `awk` reads every
+  line: one that exits early can leave `printf` writing to a closed
+  pipe, which under `set -o pipefail` fails the pipeline, and `!` then
+  passes the tree. It writes the tree from a copy of the index into a
+  temporary object directory, since `git write-tree` takes `index.lock`
+  in the git directory, which a Codex sandbox keeps read-only
+  (`every-role.md`'s *Git writes under Codex*). Its `mktemp` takes a
+  template under `$TMPDIR`: without one, macOS's `mktemp -d` ignores
+  `$TMPDIR` and writes in the directory `getconf DARWIN_USER_TEMP_DIR`
+  prints, which a sandbox that allows only `$TMPDIR` refuses. `HUP`,
+  `INT` or `TERM` makes it exit, so that its `EXIT` trap removes the
+  directory: zsh and dash run no `EXIT` trap where `TERM` ends the
+  shell. In zsh a signal that arrives while `mktemp` runs still leaves
+  the directory, since zsh runs the trap before it assigns `tmp`.
+  `scripts/test-gate-blocks.sh` shows each refusal, and a signal while
+  `cp` runs and while `mktemp` runs. The shell that runs the gates
+  defines it:
+
+  ```shell
+  wt=<wt>
+  base=<base>
+  gated_tree() (
+    tmp=
+    trap '[ -z "$tmp" ] || rm -rf "$tmp"' EXIT
+    trap 'exit 1' HUP INT TERM
+    git -C "${wt:?}" diff --quiet &&
+      [ -z "$(git -C "${wt:?}" ls-files --others --exclude-standard)" ] &&
+      v=$(git -C "${wt:?}" ls-files -v) &&
+      ! printf '%s\n' "$v" |
+        awk '/^([a-z]|S) / { f = 1 } END { exit !f }' &&
+      ix=$(git -C "${wt:?}" rev-parse --path-format=absolute \
+        --git-path index) &&
+      ob=$(git -C "${wt:?}" rev-parse --path-format=absolute \
+        --git-path objects) &&
+      tmp=$(mktemp -d "${TMPDIR:-/tmp}/gated.XXXXXX") &&
+      mkdir "$tmp/obj" && cp "$ix" "$tmp/index" &&
+      t=$(GIT_INDEX_FILE=$tmp/index GIT_OBJECT_DIRECTORY=$tmp/obj \
+        GIT_ALTERNATE_OBJECT_DIRECTORIES=$ob git -C "${wt:?}" write-tree) &&
+      m=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) &&
+      echo "$t $m"
+  )
+  ```
+
+  A run of the hooks carries over to a commit whose tree is that tree,
+  on the same merge base, as after an amend of the message alone, or the
+  commit of a staged tree they ran on. It holds only where this exits
+  `0`, with the tree and the merge base the log's `TREE=` lines name:
+
+  ```shell
+  wt=<wt>
+  base=<base>
+  tree=<gated tree>
+  mb=<gated merge base>
+  [ "$(git -C "${wt:?}" rev-parse 'HEAD^{tree}')" = "${tree:?}" ] &&
+    [ "$(git -C "${wt:?}" merge-base "${base:?}" HEAD)" = "${mb:?}" ]
+  ```
+
+  A hook at commit time that changes what is committed changes the tree,
+  and the gates run again. Only the hooks' run carries over: the suite,
+  the docs build, the `Sign-off` check and any hook that reads the
+  commit message run on each new commit. The carry-over is the writer's:
+  a reviewer relies only on a run on the sha it reviews, as
+  `REVIEWING.md`'s *The gates are the evidence* says. Where a gate's
+  fixer changes files, the tree has changed and the second `TREE=` line
+  is empty: stage the change and run the gates again. On an outside
+  contributor's branch the gates run on the commit `<sha>` in `<gate
+  wt>`, where no git command runs outside the sandbox once a gate has
+  run there: the pair is `<sha>`'s tree and merge base, read in `<wt>`
+  before the first gate, and the status file of each gate stands in for
+  the second `TREE=` line.
+- **The writer runs the hooks on the staged tree, and signs one commit,
+  at hand-over**, never one at each iteration: each signature can be a
+  prompt the human has to answer. It stages its change, runs the fixers
+  (below), stages what they change, and runs the hooks until they pass,
+  on the diff the bullets above read. This stages everything:
+
+  ```shell
+  wt=<wt>
+  git -C "${wt:?}" add --all
+  ```
+
+  Once the hooks pass, the writer commits, signed, in a call of its own:
+  `git -C <wt> commit -s -F <message>`, or `git -C <wt> commit --amend
+  -s -F <message>` before the pull request is open; once it is open, a
+  fix is a new commit on top (*Committing and rebasing*). The commit is
+  then checked against the pair the hooks' log names, above, and the
+  suite and the docs build, where *The gates* asks them, run on it.
+  Where they fail, the fix is staged, the hooks run again, and the fix
+  is committed as above. An outside contributor's branch is the
+  exception: its sandbox gates only a commit, in `<gate wt>` (*An
+  outside contributor's branch*), so the session commits, signed, and
+  then gates that commit.
+- **The fixers run on the working tree before each commit**, so that a
+  fixer never forces another commit, gate and signature. Section 4 of
+  the organization's standard (*The lint gate is
+  `.pre-commit-config.yaml`*) has every hook that has a fix mode run
+  with it turned on, so the tree's own hooks are its fixers, at the
+  versions and with the arguments its `.pre-commit-config.yaml` gives,
+  and no list of them is kept here. The command of *The hooks run on the
+  changed files* runs them. A fixer writes its fix into the working
+  tree, and pre-commit then fails its hook, prints `files were modified
+  by this hook` under it and exits `1`, even where the fixer exited `0`,
+  as `ruff format` does. The fix is staged and the hooks run again,
+  until they exit `0`: in that run no fixer wrote, so it is the check,
+  and it is the hooks gate of its tree where its `TREE=` lines agree.
+  What a hook reports and cannot fix is fixed by hand. On an outside
+  contributor's branch no fixer runs before the commit: pre-commit would
+  run the branch's own hooks outside the sandbox, with the network and
+  the credentials, and the sandbox's gates run only on a commit, in
+  `<gate wt>`. There the hooks gate runs the fixers, and a fixer's
+  change is read with `git diff` and made again in `<wt>`, as *An
+  outside contributor's branch* says.
 - **Read exit codes, not output.** `… > log 2>&1; echo $?`. A
   multi-batch hook's tail can show a clean batch after a failed one.
 - **A local gate run that fails because the network is down has not
@@ -425,13 +611,17 @@ of the standard* says.
   picks the same hook environments outside and inside:
 
   ```shell
-  mkdir -p <sbx>/home <sbx>/tmp
+  sbx=<sbx>
+  mkdir -p "${sbx:?}/home" "${sbx:?}/tmp"
   ```
 
   ```shell
-  env -i -C <main wt> HOME=<sbx>/home PATH="$PATH" TMPDIR=<sbx>/tmp \
-    UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR=<sbx>/uv-cache \
-    UV_TOOL_DIR=<sbx>/uv-tools PRE_COMMIT_HOME=<sbx>/pre-commit \
+  mwt=<main wt>
+  sbx=<sbx>
+  env -i -C "${mwt:?}" HOME="${sbx:?}/home" PATH="$PATH" \
+    TMPDIR="${sbx:?}/tmp" UV_PYTHON_INSTALL_DIR="$(uv python dir)" \
+    UV_CACHE_DIR="${sbx:?}/uv-cache" UV_TOOL_DIR="${sbx:?}/uv-tools" \
+    PRE_COMMIT_HOME="${sbx:?}/pre-commit" \
     sh -c 'uv sync --locked --all-groups && uv run pre-commit install-hooks'
   ```
 
@@ -444,44 +634,60 @@ of the standard* says.
   contributor's code with the network on:
 
   ```shell
-  env -i -C <main wt> HOME=<sbx>/home PATH="$PATH" TMPDIR=<sbx>/tmp \
-    UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR=<sbx>/uv-cache \
-    UV_TOOL_DIR=<sbx>/uv-tools PRE_COMMIT_HOME=<sbx>/pre-commit \
+  mwt=<main wt>
+  sbx=<sbx>
+  env -i -C "${mwt:?}" HOME="${sbx:?}/home" PATH="$PATH" \
+    TMPDIR="${sbx:?}/tmp" UV_PYTHON_INSTALL_DIR="$(uv python dir)" \
+    UV_CACHE_DIR="${sbx:?}/uv-cache" UV_TOOL_DIR="${sbx:?}/uv-tools" \
+    PRE_COMMIT_HOME="${sbx:?}/pre-commit" \
     uvx pre-commit install-hooks
   ```
 
   Then each gate runs offline, under `sandbox-exec`, in `<gate wt>`,
   never in `<wt>`, the branch's worktree where the session commits.
   `<gate wt>` is a new worktree detached at `<sha>`, the commit it
-  gates, named as *Your own worktree* says with `gate-<short sha>` for
-  its role; for the octopus it is the worktree that merges the heads.
-  Its git directories, its gitlinks' paths and its configuration are
-  read before its first gate, into files of the scratch directory
-  outside `<sbx>`, where the gate cannot write:
+  gates, named as `every-role.md`'s *Your own worktree* says with
+  `gate-<short sha>` for its role; for the octopus it is the worktree
+  that merges the heads. Its git directories, its gitlinks' paths and
+  its configuration are read before its first gate, into files of the
+  scratch directory outside `<sbx>`, where the gate cannot write:
 
   ```shell
-  git -C <wt> worktree add --detach <gate wt> <sha>
+  wt=<wt>
+  gwt=<gate wt>
+  sha=<sha>
+  git -C "${wt:?}" worktree add --detach "${gwt:?}" "${sha:?}"
   ```
 
   ```shell
   gwt=<gate wt>
+  scratch=<scratch>
+  name=<name>
+  dirs=${scratch:?}/${name:?}-git-dirs
+  links=${scratch:?}/${name:?}-gitlinks
+  conf=${scratch:?}/${name:?}-config
   git -C "${gwt:?}" rev-parse --path-format=absolute --git-dir \
-    --git-common-dir > <scratch>/<name>-git-dirs &&
+    --git-common-dir > "${dirs:?}" &&
   git -C "${gwt:?}" ls-files -s |
-    awk -F '\t' '$1 ~ /^160000 / { print $2 }' > <scratch>/<name>-gitlinks &&
-  git -C "${gwt:?}" config --list --show-scope --no-includes \
-    > <scratch>/<name>-config
+    awk -F '\t' '$1 ~ /^160000 / { print $2 }' > "${links:?}" &&
+  git -C "${gwt:?}" config --list --show-scope --no-includes > "${conf:?}"
   ```
 
   The shell that runs the gates sets the sandbox's command first:
 
   ```shell
-  { read -r gd && read -r gc; } < <scratch>/<name>-git-dirs &&
-  set -- env -i -C <gate wt> HOME=<sbx>/home PATH="$PATH" TMPDIR=<sbx>/tmp \
-    UV_PYTHON_INSTALL_DIR="$(uv python dir)" UV_CACHE_DIR=<sbx>/uv-cache \
-    UV_TOOL_DIR=<sbx>/uv-tools PRE_COMMIT_HOME=<sbx>/pre-commit UV_OFFLINE=1 \
+  gwt=<gate wt>
+  sbx=<sbx>
+  scratch=<scratch>
+  name=<name>
+  dirs=${scratch:?}/${name:?}-git-dirs
+  { read -r gd && read -r gc; } < "${dirs:?}" &&
+  set -- env -i -C "${gwt:?}" HOME="${sbx:?}/home" PATH="$PATH" \
+    TMPDIR="${sbx:?}/tmp" UV_PYTHON_INSTALL_DIR="$(uv python dir)" \
+    UV_CACHE_DIR="${sbx:?}/uv-cache" UV_TOOL_DIR="${sbx:?}/uv-tools" \
+    PRE_COMMIT_HOME="${sbx:?}/pre-commit" UV_OFFLINE=1 \
     sandbox-exec -f "${PROCESS:?}/scripts/gate-sandbox.sb" \
-    -D WT="$(realpath <gate wt>)" -D SBX="$(realpath <sbx>)" \
+    -D WT="$(realpath "${gwt:?}")" -D SBX="$(realpath "${sbx:?}")" \
     -D HOME="$(realpath "$HOME")" -D UV_PYTHON="$(uv python dir)" \
     -D GIT_DIR="${gd:?}" -D GIT_COMMON_DIR="${gc:?}"
   ```
@@ -520,11 +726,14 @@ of the standard* says.
       gate wrote hides.
 
   ```shell
+  scratch=<scratch>
+  name=<name>
+  st=${scratch:?}/${name:?}-status
   "$@" env GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 \
     git -c core.attributesFile=/dev/null -c core.excludesFile=/dev/null \
     -c core.fsmonitor=false status --porcelain --ignored \
-    --ignore-submodules=all > <scratch>/<name>-status
-  echo "EXIT_status=$?" >> <scratch>/<name>-status
+    --ignore-submodules=all > "${st:?}"
+  echo "EXIT_status=$?" >> "${st:?}"
   ```
 
   What a gitlink's directory holds is then read by the shell outside,
@@ -536,7 +745,11 @@ of the standard* says.
 
   ```shell
   gwt=<gate wt>
-  st=<scratch>/<name>-status
+  scratch=<scratch>
+  name=<name>
+  st=${scratch:?}/${name:?}-status
+  links=${scratch:?}/${name:?}-gitlinks
+  conf=${scratch:?}/${name:?}-config
   find "${gwt:?}" -mindepth 1 -iname .git ! -path "${gwt:?}/.git" \
     -exec printf 'nested: %s\n' {} + >> "${st:?}" ||
     echo "EXIT_find=$?" >> "${st:?}"
@@ -544,8 +757,8 @@ of the standard* says.
     d=${gwt:?}/$p
     { [ -d "$d" ] && [ ! -L "$d" ] && [ -z "$(ls -A "$d" 2>&1)" ]; } ||
       printf 'gitlink: %s\n' "$p" >> "${st:?}"
-  done < <scratch>/<name>-gitlinks
-  grep -iE '^(local|worktree)[[:space:]]+include' <scratch>/<name>-config |
+  done < "${links:?}"
+  grep -iE '^(local|worktree)[[:space:]]+include' "${conf:?}" |
     sed 's/^/include: /' >> "${st:?}"
   ```
 
@@ -560,10 +773,9 @@ of the standard* says.
 
   On the octopus, `git status` lists the files the merge staged before
   any gate runs. So the status block also runs once before the first
-  gate, with `<scratch>/<name>-base` in place of
-  `<scratch>/<name>-status`, and a line that file holds is no change. A
-  gate that writes a staged file changes that file's line, as
-  `scripts/test-gate-sandbox.sh` shows.
+  gate, with `-base` in place of `-status` on its `st=` line, and a line
+  that file holds is no change. A gate that writes a staged file changes
+  that file's line, as `scripts/test-gate-sandbox.sh` shows.
 
   A process the gate leaves running keeps the sandbox's limits, and can
   still write in `<gate wt>` and `<sbx>` after the check, as
@@ -596,22 +808,24 @@ of the standard* says.
   ```
 
   In the sandbox, the hooks gate names the diff's files with `--files`,
-  in place of `--from-ref` and `--to-ref`. Given neither `--files` nor
-  `--all-files`, pre-commit first stashes the unstaged changes, and its
-  stash runs `git write-tree`, which takes `index.lock` in the git
-  directory the profile keeps read-only: the run exits `3` before any
-  hook runs. `--diff-filter=d` leaves out a deleted file, which
-  pre-commit's own `--from-ref` skips too. Where the diff only deletes,
-  the list is empty, and an empty `--files` stashes again, so the hooks
-  run with `--all-files` instead. The paths are read NUL-terminated,
-  never as shell text. Each is passed as `./<path>`, so that a name
-  starting with `-` is not read as one of pre-commit's options, as `-h`
-  would print its help and exit `0`; pre-commit turns it back into the
-  path. pre-commit runs once, so the exit is its own; where git fails,
-  it exits `2`. It runs in the shell that set the sandbox's command, as
-  `"$@"` followed by pre-commit, and git reads the list in `<wt>`. On
-  the octopus `<sha>` is the `main` its worktree was added at, so the
-  list is empty and the hooks read the whole merge:
+  as outside it, from `<base>...<sha>`, the commit it gates. Given
+  neither `--files` nor `--all-files`, pre-commit first stashes the
+  unstaged changes, and its stash runs `git write-tree`, which takes
+  `index.lock` in the git directory the profile keeps read-only: the run
+  exits `3` before any hook runs. `--diff-filter=d` leaves out a deleted
+  file, which pre-commit's own `--from-ref` skips too. Where the diff
+  only deletes, the list is empty, and an empty `--files` stashes again,
+  so the hooks run with `--all-files` instead. The paths are read
+  NUL-terminated, never as shell text. Each is passed as `./<path>`, so
+  that a name starting with `-` is not read as one of pre-commit's
+  options, as `-h` would print its help and exit `0`; pre-commit turns
+  it back into the path. pre-commit runs once, so the exit is its own;
+  where git fails, it exits `2`. It runs in the shell that set the
+  sandbox's command, as `"$@"` followed by pre-commit, behind `peak` as
+  outside the sandbox (*The hooks run on the changed files*), and git
+  reads the list in `<wt>`. On the octopus `<sha>` is the `main` its
+  worktree was added at, so the list is empty and the hooks read the
+  whole merge:
 
   ```shell
   wt=<wt>
@@ -632,7 +846,8 @@ of the standard* says.
     else
       files=(--files "${files[@]}")
     fi
-    "$@" uv run pre-commit run "${files[@]}" || rc=$?
+    ${peak[@]+"${peak[@]}"} "$@" uv run pre-commit run "${files[@]}" ||
+      rc=$?
   fi
   rm -f "$list"
   (exit "$rc")
@@ -671,16 +886,17 @@ of the standard* says.
 
   Nothing in `<wt>`, `<gate wt>` or `<sbx>` runs outside the sandbox,
   except the Codex reviewer's inputs, which run from `<gate wt>`'s
-  `.venv` in its own sandbox (*Clients*). That one has the network off
-  too, though it reads `~/.codex/auth.json` and `~/.gnupg`. `<sbx>` and
-  `<gate wt>` are new for each head. The Sign-off check runs as *Signed
-  and signed off* says. A commit or a merge in `<wt>` runs with `git -c
-  core.hooksPath=/dev/null`, which runs no hook, where `git commit
-  --no-verify` still lets `prepare-commit-msg` and `post-commit` run,
-  and with no path under `<wt>`, `<gate wt>` or `<sbx>` on `PATH`.
-  `<gate wt>`, `<sbx>` and the worktrees at `origin/main` and at the
-  merge base go once the head's gates, and every reviewer's inputs the
-  session runs there, are done (*Debris goes when its work ends*).
+  `.venv` in its own sandbox (`every-role.md`'s *Clients*). That one has
+  the network off too, though it reads `~/.codex/auth.json` and
+  `~/.gnupg`. `<sbx>` and `<gate wt>` are new for each head. The
+  Sign-off check runs as *Signed and signed off* says. A commit or a
+  merge in `<wt>` runs with `git -c core.hooksPath=/dev/null`, which
+  runs no hook, where `git commit --no-verify` still lets
+  `prepare-commit-msg` and `post-commit` run, and with no path under
+  `<wt>`, `<gate wt>` or `<sbx>` on `PATH`. `<gate wt>`, `<sbx>` and the
+  worktrees at `origin/main` and at the merge base go once the head's
+  gates, and every reviewer's inputs the session runs there, are done
+  (`every-role.md`'s *Debris goes when its work ends*).
 
   The dedicated reviewer runs none of the branch's code
   (`local-review.md`'s *Every reviewer tries to break the change*). It
@@ -700,11 +916,12 @@ of the standard* says.
   or of a package, a version of one or a hook that the branch adds or
   changes and neither fetch holds, is not run locally. For a gate, the
   session relies on CI's run of it on the head, and says so; an input
-  goes to the human as *Clients* says. A test whose bind or connection
-  is refused, loopback included, fails for want of the network. A suite
-  with such a failure is then not run locally, however few tests failed:
-  it is not read as passing apart from them, nor rerun with them
-  deselected (`REVIEWING.md`'s *Whole, whoever runs it*).
+  goes to the human as `every-role.md`'s *Clients* says. A test whose
+  bind or connection is refused, loopback included, fails for want of
+  the network. A suite with such a failure is then not run locally,
+  however few tests failed: it is not read as passing apart from them,
+  nor rerun with them deselected (`REVIEWING.md`'s *Whole, whoever runs
+  it*).
 
   The sandbox refuses with an error that carries `[Errno 1]`, as
   `PermissionError: [Errno 1] Operation not permitted`.
@@ -721,9 +938,12 @@ of the standard* says.
   gate's `gate_wait`:
 
   ```shell
+  scratch=<scratch>
+  name=<name>
+  slog=${scratch:?}/${name:?}-sandbox.log
   /usr/bin/log stream --style compact \
     --predicate 'sender == "Sandbox" AND eventMessage CONTAINS "network"' \
-    > <scratch>/<name>-sandbox.log & stream=$!
+    > "${slog:?}" & stream=$!
   ```
 
   The gate then runs as *The gate lock*'s block says, and the session
@@ -765,11 +985,12 @@ of the standard* says.
   the load, the memory and the disk admit a gate, as the header comment
   of `$PROCESS/scripts/gate-lock.sh` says, and prints the readings the
   report copies.
-- **`--basetemp=<work>/pytest-<branch>`** (*The scratchpad is shared*),
-  outside the worktree, the same name on every run of that branch,
-  removed once the branch's gates are done (*Debris goes when its work
-  ends*). A teardown `OSError` or `FileNotFoundError` on `popen-gw*` is a
-  neighbour's run on a shared path (`ps` shows it), not a failing test.
+- **`--basetemp=<work>/pytest-<branch>`** (`every-role.md`'s *The
+  scratchpad is shared*), outside the worktree, the same name on every
+  run of that branch, removed once the branch's gates are done (*Debris
+  goes when its work ends*). A teardown `OSError` or `FileNotFoundError`
+  on `popen-gw*` is a neighbour's run on a shared path (`ps` shows it),
+  not a failing test.
 - **Build artefacts outside the worktree** (`uv build --out-dir
   <scratch>/…`): an untracked file inside it fails `check-sdist` while
   `git status` reads clean.
@@ -790,25 +1011,52 @@ of the standard* says.
   Sourcing the script sets `GATE_LOCK_WORKERS`, the `-n` of a suite.
   Release the slot the moment the gates finish. A slot is taken and
   released only through `$PROCESS/scripts/gate-lock.sh`, sourced in the
-  same background shell call as the gates (*Long jobs run in the
-  background*), never by a hand-written `mkdir` or `rmdir`:
+  same background shell call as the gates (`every-role.md`'s *Long jobs
+  run in the background*), never by a hand-written `mkdir` or `rmdir`.
+  The shell defines `gated_tree` first (*Every commit you hand over is
+  gated, on its tree*):
 
   ```shell
+  wt=<wt>
+  secs=<seconds>
+  gate=<next gate>
   . "${PROCESS:?}/scripts/gate-lock.sh"
-  gate_take <worktree> && {
-    gate_wait; rc=0
-    gate_peak <gate> <worktree> timeout -k 60 <seconds> … a gate … || rc=$?
-    echo "EXIT_<gate>=$rc"
-    gate_wait; rc=0
-    gate_peak <next gate> <worktree> \
-      timeout -k 60 <seconds> … the next gate … || rc=$?
-    echo "EXIT_<next gate>=$rc"
+  gate_take "${wt:?}" && {
+    echo "TREE=$(gated_tree)"
+    gate_wait
+    peak=(gate_peak hooks "${wt:?}" timeout -k 60 "${secs:?}")
+    … the block of *The hooks run on the changed files*, which sets rc …
+    echo "EXIT_hooks=$rc"
+    if [ "$rc" -eq 0 ]; then
+      gate_wait; rc=0
+      gate_peak "${gate:?}" "${wt:?}" \
+        timeout -k 60 "${secs:?}" … the next gate … || rc=$?
+      echo "EXIT_${gate:?}=$rc"
+    fi
+    echo "TREE=$(gated_tree)"
     gate_release
   }
   ```
 
+  **The hooks run before the suite and the docs build, and a failure
+  stops the gate**: on an outside contributor's branch they follow `uv
+  sync --locked`, the sandbox's first gate. The suite and the docs build
+  run only where the hooks exited `0`, since a fix to what the hooks
+  found changes the tree and runs them all again. Each later gate takes
+  the same `if`, which reads the exit of the gate before it, so the
+  first gate that fails stops the block. Where the hooks ran on the
+  staged tree and their run carries over to the commit, or ran outside
+  the lock, as for a Markdown-only diff above, the block starts at the
+  next gate, and only once they exited `0`. The report gives a gate the
+  stop left out as not run.
+
   `gate_peak` runs the gate, returns its exit code, and records its peak
-  memory, as the script's header comment says.
+  memory and its wall time, as the script's header comment says. On an
+  outside contributor's branch the hooks step is that branch's own hooks
+  block (*An outside contributor's branch*), which runs `"$@"`, the
+  sandbox's command, behind `peak` too: `gate_peak` runs outside the
+  sandbox, and its `time` reads the peak of the processes inside it, as
+  `scripts/test-gate-sandbox.sh` shows.
 
   The timeout goes around each gate inside the block, never around the
   whole call: `gate_take` waits in the queue with no bound, so a timeout
@@ -845,25 +1093,29 @@ The findings of these local runs are answered as `/btclib-pr`'s
   the `sourcery` check, from a clone of the worktree in the scratch
   directory, as the standard's section 10, *The set, and its cadence*,
   says. The writer runs it on each commit it hands over, after the
-  gates, so that the reviewers of *The rounds* read the fixes it calls
-  for; the orchestrator runs it on a commit it made itself (*A branch
-  has one author at a time*). A finding that does not hold is answered
-  at its own site, as section 10 says. The clone goes once the run ends
-  (*Debris goes when its work ends*).
+  gates, so that the reviewers of `local-review.md`'s *The rounds* read
+  the fixes it calls for; the orchestrator runs it on a commit it made
+  itself (`every-role.md`'s *A branch has one author at a time*). A
+  finding that does not hold is answered at its own site, as section 10
+  says. The clone goes once the run ends (`every-role.md`'s *Debris goes
+  when its work ends*).
 - **CodeRabbit reads the branch once, before its first push.** The
   writer runs its CLI from the branch's worktree on the first commit it
   hands over, after the gates. A review takes minutes, so the writer
-  starts this as a background call (*Long jobs run in the background
-  with a timeout*). The CLI reads the branch from its merge base with
-  `<target>`, the branch the pull request will target: `main`, or the
-  parent of a stacked branch. The timeout is longer than the
-  `expectedDuration` of the CLI's `review_context` event, since a review
-  stopped early is discarded. The timeout follows `every-session.md`'s
-  *Shell, checkouts and prose*:
+  starts this as a background call (`every-role.md`'s *Long jobs run in
+  the background with a timeout*). The CLI reads the branch from its
+  merge base with `<target>`, the branch the pull request will target:
+  `main`, or the parent of a stacked branch. The timeout is longer than
+  the `expectedDuration` of the CLI's `review_context` event, since a
+  review stopped early is discarded. The timeout follows
+  `every-session.md`'s *Shell, checkouts and prose*:
 
   ```shell
   wt=<wt>
   target=<target>
+  scratch=<scratch>
+  name=<name>
+  log=${scratch:?}/${name:?}-coderabbit.log
   base=$(git -C "${wt:?}" merge-base "origin/${target:?}" HEAD)
   ```
 
@@ -872,8 +1124,7 @@ The findings of these local runs are answered as `/btclib-pr`'s
     command -v timeout > /dev/null && t="timeout -k 60 1200"
     $t coderabbit review --agent --committed --fresh --deep \
       --base-commit "$1" || rc=$?
-    echo "EXIT_coderabbit=$rc"' sh "${base:?}" \
-    > <scratch>/<name>-coderabbit.log 2>&1
+    echo "EXIT_coderabbit=$rc"' sh "${base:?}" > "${log:?}" 2>&1
   ```
 
   The CLI read the branch only where this command exits `0`: the log
@@ -881,6 +1132,8 @@ The findings of these local runs are answered as `/btclib-pr`'s
   `complete` event outside sign-in that reports a whole, fresh review:
 
   ```shell
+  scratch=<scratch>
+  name=<name>
   jq -enR '[inputs] as $l | ($l | last) == "EXIT_coderabbit=0" and (
     [$l[] | fromjson? | objects] as $a
     | [$a[] | select(.type == "complete" and .phase != "auth")] as $c
@@ -892,35 +1145,35 @@ The findings of these local runs are answered as `/btclib-pr`'s
     and ([$a[] | select(.type == "error")] | length) == 0
     and (($c[0].message // "")
       | startswith("No fresh detailed file review") | not))' \
-    <scratch>/<name>-coderabbit.log
+    "${scratch:?}/${name:?}-coderabbit.log"
   ```
 
   It runs under the login `README.md`'s *Prerequisites* asks for, never
   with `--use-credits`, and only where `coderabbit usage` shows an
   included review left. Otherwise it is skipped. Where it is skipped or
   shows no read, the pull request body's `## Evidence` says so. It
-  stands in for no reviewer of *The rounds*, and it is not CodeRabbit's
-  review on GitHub either. On PR btclib-org/ecc#598, read at one sha,
-  that review reached the base file through the diff and the issues the
-  branch cites, and applied the tree's `path_instructions`, while the
-  CLI reached neither the base file nor the issues
-  (ISS btclib-org/ai-agents-process#587). Whether the CLI applies
-  `.coderabbit.yaml` is not measured; its `-c` takes the file as added
-  instructions (`coderabbit review --help`). So a CLI read with no
+  stands in for no reviewer of `local-review.md`'s *The rounds*, and it
+  is not CodeRabbit's review on GitHub either. On PR btclib-org/ecc#598,
+  read at one sha, that review reached the base file through the diff
+  and the issues the branch cites, and applied the tree's
+  `path_instructions`, while the CLI reached neither the base file nor
+  the issues (ISS btclib-org/ai-agents-process#587). Whether the CLI
+  applies `.coderabbit.yaml` is not measured; its `-c` takes the file as
+  added instructions (`coderabbit review --help`). So a CLI read with no
   finding leaves that review owed, and every local reviewer looks for
   what it finds, as `local-review.md`'s *A pull request's rounds* says.
 
 ### Committing and rebasing
 
 - **A branch's first push waits for the gates.** Push a commit or an
-  amend only once a gate run on that very commit exited 0, never after a
-  failed one, unless *The gates* asks no gate of it. A fix the gates
-  find before the first push amends a commit not yet pushed. Check `git
-  ls-remote origin <branch>` against `HEAD` after every push. On an open
-  pull request, a fix is pushed only once the rounds of *Local review*
-  have ended, and the orchestrator then has the writer push it. An armed
-  pull request is disarmed before any push to it (`/btclib-pr`'s
-  *Merging*).
+  amend only once its gates exited 0, as *Every commit you hand over is
+  gated, on its tree* says, never after a failed one, unless *The gates*
+  asks no gate of it. A fix the gates find before the first push amends
+  a commit not yet pushed. Check `git ls-remote origin <branch>` against
+  `HEAD` after every push. On an open pull request, a fix is pushed only
+  once the rounds of `local-review.md`'s *Local review* have ended, and
+  the orchestrator then has the writer push it. An armed pull request is
+  disarmed before any push to it (`/btclib-pr`'s *Merging*).
 - **An embargoed fix is the exception: it is pushed to `origin` only
   once its release commit is ready on top of it.** It is gated locally.
   The standard's section 12, *A security advisory is worked in this
@@ -940,23 +1193,29 @@ The findings of these local runs are answered as `/btclib-pr`'s
 - **A force-push with lease, to a branch the session works only**:
 
   ```shell
-  git push --force-with-lease=refs/heads/<branch>:<sha you built on> \
-    origin HEAD:refs/heads/<branch>
+  wt=<wt>
+  branch=<branch>
+  built=<sha you built on>
+  git -C "${wt:?}" push \
+    "--force-with-lease=refs/heads/${branch:?}:${built:?}" \
+    origin "HEAD:refs/heads/${branch:?}"
   ```
 
-  Never a bare `--force`, never another branch. *The force-push grant*
-  covers it. Where the classifier refuses the push under the grant, push
-  the rewritten, gated commit without force to `<branch>-r2` and report
-  both names; the orchestrator opens the pull request from it and closes
-  the old one. This is the one route around a refusal the process
-  sanctions. The old branch is deleted once its replacement has landed
-  on `main`.
+  Never a bare `--force`, never another branch. `every-role.md`'s *The
+  force-push grant* covers it. Where the classifier refuses the push
+  under the grant, push the rewritten, gated commit without force to
+  `<branch>-r2` and report both names; the orchestrator opens the pull
+  request from it and closes the old one. This is the one route around a
+  refusal the process sanctions. The old branch is deleted once its
+  replacement has landed on `main`.
 - **A claim holds a pull request's branch.** Before every push to an
   open pull request's branch, read the claim that stands on it, made by
   a login other than its author's:
 
   ```shell
-  gh pr view <n> --repo <owner>/<repo> --json author,comments --jq '
+  n=<n>
+  repo=<owner>/<repo>
+  gh pr view "${n:?}" --repo "${repo:?}" --json author,comments --jq '
     .author.login as $a | [.comments[] | select(.author.login != $a)
     | select(.body | startswith("Claimed") or startswith("Released"))]
     | last // empty | select(.body | startswith("Claimed")) | .author.login'
@@ -1004,17 +1263,24 @@ The findings of these local runs are answered as `/btclib-pr`'s
   place of `<theirs>` on the session's own branch:
 
   ```shell
-  git -C <wt> log --merges --first-parent --reverse --format=%H \
+  wt=<wt>
+  git -C "${wt:?}" log --merges --first-parent --reverse --format=%H \
     '<theirs>..'
   ```
 
-  The `Sign-off` job's script exits `0` on each range:
+  The `Sign-off` job's script exits `0` on each range, `<range>`, which
+  is `<base>..` where the branch merged no `main`:
 
   ```shell
+  scratch=<scratch>
+  wt=<wt>
+  range=<range>
   gh api -H 'Accept: application/vnd.github.raw' \
     repos/btclib-org/.github/contents/.github/scripts/check_sign_off.py |
-    env -C <scratch> GIT_DIR="$(git -C <wt> rev-parse --absolute-git-dir)" \
-      uv run --no-config --no-project --python 3.15 python -I - <base>..
+    env -C "${scratch:?}" \
+      GIT_DIR="$(git -C "${wt:?}" rev-parse --absolute-git-dir)" \
+      uv run --no-config --no-project --python 3.15 python -I - \
+      "${range:?}"
   ```
 
   It runs in the scratch directory, with git pointed at the worktree,
@@ -1033,10 +1299,10 @@ The findings of these local runs are answered as `/btclib-pr`'s
   ```
 
   The same command, with `<clone>` for `<wt>` and
-  `c1786962edc1~1..c1786962edc1` for `<base>..`, exits `1`. A failed
+  `c1786962edc1~1..c1786962edc1` for `<range>`, exits `1`. A failed
   fetch pipes an empty script, which exits `0`. The clone goes once the
-  control has run, since the sweep of *Debris goes when its work ends*
-  refuses a `<work>` that holds it:
+  control has run, since the sweep of `every-role.md`'s *Debris goes
+  when its work ends* refuses a `<work>` that holds it:
 
   ```shell
   clone=<clone>

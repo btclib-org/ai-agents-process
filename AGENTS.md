@@ -28,9 +28,9 @@ and pull-request work, and `agents/` defines the roles a session briefs.
 
 ## Code Review Rules
 
-Review against [REVIEWING.md](./REVIEWING.md). Its *The verdict* says
-which review opens with a verdict line and what every other review
-posts.
+Review against [REVIEWING.md](./REVIEWING.md). `REVIEWING.md`'s *The
+verdict* says which review opens with a verdict line and what every
+other review posts.
 
 The heading is the one Codex's GitHub review asks for
 ([Customize what Codex reviews](https://learn.chatgpt.com/docs/third-party/github#customize-what-codex-reviews)).
