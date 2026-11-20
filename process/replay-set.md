@@ -1330,6 +1330,72 @@ candidate's hit is within the baseline's spread, not a gain. On PR
 btclib-org/ecc#484 the memory note confounds the baseline, so the run
 does not compare the two there.
 
+- **Candidate**, 2026-11-20, for ISS btclib-org/ai-agents-process#634:
+  `$PROCESS` `0cc65b8`, tree `e386a4605299cdc6545eba1d5e5cb7a57c1737a8`,
+  the factor changed being the brief: the change of that issue, which
+  `git diff 80b7f26 0cc65b8 -- process` makes in `writing.md` alone, all
+  of it in *The gates*, under *Writing work*, which the reviewer's map
+  gives whole. The bullet that leaves the suite to CI where no test of
+  the tree reads a file of the diff goes, with its block, so the suite
+  runs locally as the other rules of `writing.md`'s *The gates* say, and
+  the hooks of a diff that changes only Markdown run outside the gate
+  lock only where the tree's gates hold no suite. The baseline is its
+  merge base, `80b7f26`: the runs at effort `high` made for ISS
+  btclib-org/ai-agents-process#612 and ISS
+  btclib-org/ai-agents-process#614 the same day, reused but for its
+  second run on PR btclib-org/ecc#580. Claude Code, the `reviewer`
+  agent, Opus, effort `high`, one run per case, a second in the baseline
+  on PR btclib-org/ecc#484, and a second in each configuration on PR
+  btclib-org/ecc#580, the baseline's made in this run. PR
+  btclib-org/ai-agents-process#444: hit in both. PR btclib-org/ecc#484:
+  the candidate hit; the baseline miss, then hit. PR
+  btclib-org/ai-agents-process#317: miss in both. PR
+  btclib-org/btclib-secp256k1#1331: miss in both. PR
+  btclib-org/.github#2288: miss in both. PR btclib-org/btclib-node#2516:
+  miss in both. PR btclib-org/ai-agents-process#526: miss in both. PR
+  btclib-org/ai-agents-process#522, the clean case: `CLEARED` in both,
+  with no blocking finding. PR btclib-org/ecc#580: the candidate hit,
+  then hit; the baseline miss, then hit.
+
+On PR btclib-org/ai-agents-process#444 both block on the skills that
+still arm with `--auto`. On PR btclib-org/ecc#484 the candidate blocks
+on perl's `<>` opening hostile file names, which the pull request's
+author can supply. On PR btclib-org/ecc#580 the candidate's runs and the
+baseline's second block on the comment over `_AFF_CALLS`, which leaves
+out `add_var`, `require_on_curve` and `is_on_curve`, and the baseline's
+first clears the head without naming it. On PR
+btclib-org/ai-agents-process#317 both block on "tied to the account"
+covering limits that reset, as in the runs above. On PR
+btclib-org/.github#2288 both name whitespace other than one space only
+as `filed`, and on PR btclib-org/ai-agents-process#526 both name the
+item indented after a paragraph only as `filed`. On PR
+btclib-org/btclib-secp256k1#1331 the baseline names only as `filed` that
+any exit `42` reads as a secret reaching a branch, and the candidate
+does not name it. On PR btclib-org/btclib-node#2516, where the baseline
+of 2026-11-19 above asks for changes only because no gate run is on
+record, both clear the head and name "`i` sums the length fields" only
+as non-blocking. The findings outside the cases' defects were not
+measured.
+
+Both of the baseline's verdicts on PR btclib-org/ecc#484 cite the
+session's auto-memory note of the maintainer's answer on ISS
+btclib-org/ai-agents-process#614, which reached the reviewer from
+neither the copy nor the case's tree (ISS
+btclib-org/ai-agents-process#677), and the second's hit rests on it.
+
+Each candidate reviewer read the process from a copy of `process/` at
+its sha without this file, for which its check prints `copied`, the case
+from the same tree as the baseline's reviewer, and its brief from a file
+in the run's directory, not inline. Nothing was withheld: the change
+edits no `REVIEWING.md` and nothing in `agents/` or `skills/`.
+
+The candidate has the baseline's hits on PR
+btclib-org/ai-agents-process#444 and PR btclib-org/ecc#484, loses none,
+and blocks on nothing in the clean case. On PR btclib-org/ecc#580 it
+hits twice where the baseline's first run misses, but the baseline's
+second run hits too, so the difference is within the baseline's spread
+and shows no gain from the change.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
