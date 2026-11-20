@@ -11,7 +11,9 @@ word holding a bare placeholder that is not its line's last word, and
 exits 1 where it prints one. In `CONTRIBUTING.md` and `REVIEWING.md`,
 whose text down to `## This repository in particular` is the
 organization's copy and changes there first, it reads only what follows
-that heading.
+that heading. Where either lacks that heading, spelt exactly so, it
+prints `<file>: lacks the heading "## This repository in particular"`
+and exits 1.
 
 A placeholder is `<`, a letter, then anything but a newline, a quote,
 `<` or `>`, then `>`. It is bare where no quote holds it, and one inside
@@ -199,7 +201,9 @@ def check(path: str, text: str) -> list[str]:
     found = []
     if Path(path).name in COPIES:
         head = text.find(f"\n{OWN}\n")
-        text = "\n" * text.count("\n", 0, head) + text[head:] if head >= 0 else ""
+        if head < 0:
+            return [f'{path}: lacks the heading "{OWN}"']
+        text = "\n" * text.count("\n", 0, head) + text[head:]
     for first, body in fences(text):
         shell = Shell(body)
         shell.read()

@@ -72,6 +72,12 @@ CASES: list[tuple[str, str, list[str]] | tuple[str, str, list[str], str]] = [
         ["12: <e>"],
         "CONTRIBUTING.md",
     ),
+    (
+        "a copy of the standard whose heading is spelt otherwise",
+        shell("a <b> c") + "\n## This Repository In Particular\n\n" + shell("d <e> f"),
+        [' lacks the heading "## This repository in particular"'],
+        "REVIEWING.md",
+    ),
 ]
 
 

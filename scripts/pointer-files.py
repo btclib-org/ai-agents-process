@@ -11,7 +11,9 @@ name its file, and exits 1 where it prints one. In `CONTRIBUTING.md`
 and `REVIEWING.md`, whose text down to `## This repository in
 particular` is the organization's copy and changes there first, it
 reads the sections of the whole file and the pointers below that
-heading.
+heading. Where either lacks that heading, spelt exactly so, it prints
+`<file>: lacks the heading "## This repository in particular"` and
+exits 1.
 
 A section is a heading, or a bold run (`**...**`) that opens a
 paragraph, a list item or a sentence, its closing `.`, `,`, `:` or `;`
@@ -141,6 +143,7 @@ def bare(files: dict[str, str]) -> list[str]:
         if path in COPIES:
             start = text.find(OWN)
             if start < 0:
+                found.append(f'{path}: lacks the heading "{OWN.strip()}"')
                 continue
         plain = masked(text)
         for m in ITALIC.finditer(plain, start):
