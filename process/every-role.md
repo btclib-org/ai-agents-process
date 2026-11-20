@@ -342,6 +342,51 @@ This section is in `every-session.md`, beside this file.
   repositories and reports go before it hands back its verdict, and a
   writer's clones as `writing.md` says where it makes them.
 
+  **A local branch goes when its work ends**, by whom and when this list
+  says:
+
+    - a pull request's branch, by the session that worked the pull
+      request, once it lands or is closed, after its worktree. Its
+      branch on a remote is the human's: the session never deletes it,
+      and its report names one left;
+    - a branch a writer or a reviewer made, by that worker before it
+      reports, unless its brief or the orchestrator keeps it for a named
+      next step. The branch a writer hands over is kept so, and is the
+      session's from then on;
+    - a backup (`bak-*`, `*-backup`) or a retry (`*-redo*`,
+      `*-rebuild`), by whoever made it, in the turn the step it guarded
+      succeeds;
+    - a release attempt that another replaced, by the session that made
+      it, once the release that replaced it is tagged;
+    - a local copy of an outside contributor's pull request
+      (`fix-pr<N>-*`, `pr-<N>`), by the session that made it, once its
+      push lands on the pull request or the pull request is closed;
+    - a branch made in a primary checkout, by the session that made it,
+      in the turn its use ends, where it is provably that session's (*The
+      primary checkout is not written*).
+
+  A branch goes only where a ref of origin reaches its head: a branch, a
+  tag or a pull request's `refs/pull/<n>/head`, as `git ls-remote origin`
+  prints them, whose sha `git merge-base --is-ancestor <head> <sha>`
+  exits `0` on, the repository holding that sha's commit. A branch whose
+  head no such ref reaches, on no remote and in no pull request, is work
+  (*Before removing or discarding anything that could be work*): it is
+  named to the human, in a worker's report or the session's, at the
+  moment the list gives, and goes only on their word. Git refuses to
+  delete a branch a worktree holds, so its worktree goes first. This
+  deletes it:
+
+  ```shell
+  checkout=<checkout>
+  branch=<branch>
+  git -C "${checkout:?}" branch -D "${branch:?}"
+  ```
+
+  `scripts/sweep.sh` deletes the branch of each worktree it removes,
+  under its own checks. A script that lists the local branches on no
+  remote and in no pull request is still to come
+  (ISS btclib-org/ai-agents-process#662).
+
   **A piece of work's `<work>` goes when the last pull request of its
   issue lands or is closed**, or when the pull request that stands in for
   the issue does. It is the last only where the searches of
@@ -631,7 +676,8 @@ rebasing*.
   time.
 - **Under squash, ancestry is the wrong question.** A landed branch is
   not an ancestor of `main`; ask whether its content is on `origin/main`
-  before removing a branch, worktree or clone.
+  before removing a worktree or clone. A local branch goes as *Debris
+  goes when its work ends* says.
 - **A distribution is not a rule.** What a tree does is not what it
   owes: find the sentence that requires it, or say you are proposing one.
 - **A landed sentence constrains the next decision.** Read what the tree

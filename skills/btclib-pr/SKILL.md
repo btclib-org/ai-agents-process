@@ -1524,6 +1524,8 @@ and how to resolve it. Completing it:
 - **Thank them in a comment of its own**: what their change does, what
   was added and why, in terms they can learn from, and the open issues
   they might take next.
+- **The local copy of their branch goes** as `every-role.md`'s *Debris
+  goes when its work ends* says.
 
 Both thanks, the findings' first line and the comment of its own, bind
 btclib-org only.
@@ -2449,8 +2451,9 @@ has not reported yet.
   link of the skill or agent it changed.
 - **The collateral goes back now** (`orchestration.md`'s *Closing
   collateral*), before anything new starts.
-- **Remove the worktrees** — yours, and tell the writer to remove its
-  own (`every-role.md`'s *Debris goes when its work ends*).
+- **Remove the worktrees and the local branches** — yours, the branch
+  the writer handed over among them, once the writer has removed its
+  worktree (`every-role.md`'s *Debris goes when its work ends*).
 
 Then `orchestration.md`'s *Wrap-up*.
 

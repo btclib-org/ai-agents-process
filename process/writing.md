@@ -1256,8 +1256,10 @@ The findings of these local runs are answered as `/btclib-pr`'s
   under the grant, push the rewritten, gated commit without force to
   `<branch>-r2` and report both names; the orchestrator opens the pull
   request from it and closes the old one. This is the one route around a
-  refusal the process sanctions. The old branch is deleted once its
-  replacement has landed on `main`.
+  refusal the process sanctions. The old branch on origin is the
+  human's: once its replacement has landed on `main`, the report names
+  it. Locally, `<branch>` and `<branch>-r2` each go as a pull request's
+  branch does (`every-role.md`'s *Debris goes when its work ends*).
 - **A claim holds a pull request's branch.** Before every push to an
   open pull request's branch, read the claim that stands on it, made by
   a login other than its author's:
