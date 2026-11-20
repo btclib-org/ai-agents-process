@@ -176,13 +176,16 @@ repos:
         pass_filenames: false
         verbose: true
       # gated_tree, the hooks block and the gate lock's block of
-      # process/writing.md, under each shell the script finds
+      # process/writing.md, under each shell the script finds; it skips a
+      # shell it does not find, and a case it cannot run there, and
+      # verbose shows that it did
       - id: test-gate-blocks
         name: writing.md's gate blocks outside the sandbox pass their test
         language: unsupported_script
         entry: scripts/test-gate-blocks.sh
         files: ^(scripts/test-gate-blocks\.sh|process/writing\.md)$
         pass_filenames: false
+        verbose: true
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
