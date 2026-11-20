@@ -1,13 +1,17 @@
 #!/bin/sh
-# What two blocks of *The gates* that run outside the sandbox do with
+# What three blocks of *The gates* that run outside the sandbox do with
 # the trees and shells they meet:
 #
 #   sh scripts/test-gate-blocks.sh [<writing.md>]
 #
 # From <writing.md>, by default process/writing.md beside this script,
-# it takes the block that defines gated_tree, and the hooks block of
-# *The hooks run on the changed files* with the block before it, which
-# empties `peak`. Their placeholders become paths of a fixture: a
+# it takes the block that defines gated_tree, the hooks block of *The
+# hooks run on the changed files* with the block before it, which
+# empties `peak`, and the gate-lock block for a hooks run that carries
+# over, whose next gate is `suite`, a script that exits $GATE_RC. Its
+# gate-lock.sh is a script of the test's, which records the slot taken,
+# the gate run and the slot released, and its timeout one that runs
+# its command. Their placeholders become paths of a fixture: a
 # repository whose `main` holds `file` and `other`, with `HEAD` a commit
 # on it that changes `file`, and a larger one, whose `git ls-files -v`
 # fills a pipe's buffer. pre-commit is a script of the test's, which
@@ -39,6 +43,11 @@
 #   empty, then with `peak` a script of the test's, which records that
 #   it ran and runs the rest. Each exits 0, pre-commit runs in the
 #   worktree with `--files ./file`, and only the second runs the script.
+# - carried over: the carried-over block runs under bash, `/bin/bash`
+#   and zsh, with the gate exiting 0, then 3. It parses, exits 0, prints
+#   two `TREE=` lines with `HEAD`'s tree and the merge base around
+#   `EXIT_suite=` and the gate's exit, and takes the slot, runs the gate
+#   in it and releases it.
 #
 # Each line it prints starts `ok`, `skip` or `FAIL`, and it exits 1 where
 # a check failed.
@@ -98,6 +107,11 @@ grep -qx 'peak=()' "$tmp/empty.sh" ||
 block 'uvx pre-commit run' > "$tmp/hooks.sh"
 grep -q "sh $tmp/pre-commit.sh" "$tmp/hooks.sh" ||
   { no "no hooks block in $doc"; exit 1; }
+block 'TREE=[$][(]gated_tree[)]"\n  gate_wait; rc=0' |
+  sed -e 's|<seconds>|60|' -e 's|<next gate>|suite|' \
+    -e "s|… the next gate …|sh $tmp/gate.sh|" > "$tmp/carried.sh"
+grep -q "sh $tmp/gate.sh" "$tmp/carried.sh" ||
+  { no "no carried-over block in $doc"; exit 1; }
 
 mkdir "$tmp/bin" "$tmp/bin-mktemp" "$tmp/t" || exit 1
 cat > "$tmp/bin/cp" <<EOF
@@ -116,7 +130,19 @@ cat > "$tmp/bin-mktemp/mktemp" <<EOF
 "$real_mktemp" "\$@" || exit 1
 kill -TERM 0
 EOF
-chmod +x "$tmp/bin/cp" "$tmp/bin-mktemp/mktemp" || exit 1
+mkdir -p "$tmp/process/scripts" "$tmp/bin-timeout" || exit 1
+cat > "$tmp/process/scripts/gate-lock.sh" <<EOF
+gate_take() { echo "take \$1" >> "$tmp/lock-log"; }
+gate_wait() { :; }
+gate_peak() { echo "peak \$1 \$2" >> "$tmp/lock-log"; shift 2; "\$@"; }
+gate_release() { echo release >> "$tmp/lock-log"; }
+EOF
+# shellcheck disable=SC2016
+printf 'exit "$GATE_RC"\n' > "$tmp/gate.sh"
+# shellcheck disable=SC2016
+printf '#!/bin/sh\nshift 3\nexec "$@"\n' > "$tmp/bin-timeout/timeout"
+chmod +x "$tmp/bin/cp" "$tmp/bin-mktemp/mktemp" "$tmp/bin-timeout/timeout" ||
+  exit 1
 
 # Runs gated_tree under shell $1 with PATH $2, from script $3 where
 # given, after the command words that follow; sets out and rc.
@@ -212,6 +238,32 @@ for s in bash /bin/bash zsh; do
     else no "$s, set -u, peak $c: exit $rc, the peak script ran: $ran," \
       "pre-commit ran with: $(printf '%s' "$got" | tr '\n' ' ')" \
       "$(tr '\n' ' ' < "$tmp/hooks-$n-$c.log")"; fi
+  done
+done
+
+for s in bash /bin/bash zsh; do
+  if ! command -v "$s" > /dev/null; then
+    echo "skip: the carried-over block under $s, which is missing"
+    continue
+  fi
+  n=$(printf '%s' "$s" | tr / _)
+  for c in 0 3; do
+    rm -f "$tmp/lock-log"
+    cat "$tmp/gated.sh" "$tmp/carried.sh" > "$tmp/carried-$n-$c.sh"
+    out=$(PROCESS=$tmp/process PATH=$tmp/bin-timeout:$PATH GATE_RC=$c \
+      "$s" "$tmp/carried-$n-$c.sh" 2>&1)
+    rc=$?
+    lock=$(cat "$tmp/lock-log" 2> /dev/null)
+    if [ "$rc" -eq 0 ] &&
+      [ "$out" = "$(printf 'TREE=%s\nEXIT_suite=%s\nTREE=%s' \
+        "$tree $base" "$c" "$tree $base")" ] &&
+      [ "$lock" = "$(printf 'take %s\npeak suite %s\nrelease' "$wt" "$wt")" ]
+    then
+      ok "$s, carried over, gate exits $c: the gate ran in the slot," \
+        "EXIT_suite=$c, the slot is released"
+    else no "$s, carried over, gate exits $c: exit $rc," \
+      "$(printf '%s' "$out" | tr '\n' ' ')," \
+      "the lock: $(printf '%s' "$lock" | tr '\n' ' ')"; fi
   done
 done
 exit "$fail"

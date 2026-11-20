@@ -68,10 +68,11 @@ The process the btclib-org maintainers follow with the coding agents
   check: which git calls outside the sandbox read that repository, and
   whether the check refuses the forgery, run by the `test-gate-sandbox`
   hook;
-- `scripts/test-gate-blocks.sh` — `gated_tree` and the hooks block of
-  `process/writing.md`'s *The gates* under each shell it finds: the
-  trees `gated_tree` refuses, a signal while it runs, and the hooks
-  block under `set -u`, run by the `test-gate-blocks` hook;
+- `scripts/test-gate-blocks.sh` — `gated_tree`, the hooks block and the
+  carried-over gate-lock block of `process/writing.md`'s *The gates*
+  under each shell it finds: the trees `gated_tree` refuses, a signal
+  while it runs, the hooks block under `set -u`, and the carried-over
+  block's slot and exits, run by the `test-gate-blocks` hook;
 - `scripts/sweep.sh` — the script that removes the directory of a piece
   of work, which `process/every-role.md`'s *Debris goes when its work
   ends* runs;

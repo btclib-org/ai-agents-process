@@ -1046,9 +1046,30 @@ of the standard* says.
   the same `if`, which reads the exit of the gate before it, so the
   first gate that fails stops the block. Where the hooks ran on the
   staged tree and their run carries over to the commit, or ran outside
-  the lock, as for a Markdown-only diff above, the block starts at the
-  next gate, and only once they exited `0`. The report gives a gate the
-  stop left out as not run.
+  the lock, as for a Markdown-only diff above, the block is the one
+  below, run only once they exited `0`: the block above without the
+  hooks, and without the `if` that reads their exit and its `fi`. A cut
+  of the block above at the next gate keeps the `fi` without its `if`,
+  and does not parse. A gate after the next one takes the same `if`
+  there too. The report gives a gate the stop left out as not run.
+
+  ```shell
+  wt=<wt>
+  secs=<seconds>
+  gate=<next gate>
+  . "${PROCESS:?}/scripts/gate-lock.sh"
+  gate_take "${wt:?}" && {
+    echo "TREE=$(gated_tree)"
+    gate_wait; rc=0
+    gate_peak "${gate:?}" "${wt:?}" \
+      timeout -k 60 "${secs:?}" … the next gate … || rc=$?
+    echo "EXIT_${gate:?}=$rc"
+    echo "TREE=$(gated_tree)"
+    gate_release
+  }
+  ```
+
+  `scripts/test-gate-blocks.sh` runs it under bash and zsh.
 
   `gate_peak` runs the gate, returns its exit code, and records its peak
   memory and its wall time, as the script's header comment says. On an
