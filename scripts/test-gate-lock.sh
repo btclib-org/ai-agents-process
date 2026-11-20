@@ -62,7 +62,7 @@
 #   GATE_LOCK_WORKERS, GATE_LOCK_FREE, GATE_LOCK_SETTLE or GATE_LOCK_MARGIN
 #   and a core count stubbed, the script sets the load ceiling to 3 times
 #   the cores, the idle to 30, the workers to the cores divided by the
-#   slots, at least 1, the free floor to 35, the settle to 60 and the
+#   slots, at least 1, the free floor to 30, the settle to 60 and the
 #   margin to 15.
 # - The real _gl_idle prints an integer from 0 to 100.
 # - On macOS, with sysctl and iostat refused as Codex's sandbox refuses
@@ -583,13 +583,13 @@ while read -r ncpu via want; do
   got=$(defaults "$ncpu" "$via")
   [ "$got" = "$want" ] || { echo "FAIL: $ncpu cores by $via: '$got', want '$want'"; bad=1; }
 done <<'CASES'
-10 sysctl 30 30 3 3 35 60 15
-10 getconf 30 30 3 3 35 60 15
-8 sysctl 24 30 3 2 35 60 15
-2 getconf 6 30 3 1 35 60 15
+10 sysctl 30 30 3 3 30 60 15
+10 getconf 30 30 3 3 30 60 15
+8 sysctl 24 30 3 2 30 60 15
+2 getconf 6 30 3 1 30 60 15
 CASES
 [ "$bad" -eq 0 ] || exit 1
-echo "ok: the load ceiling is 3 times the cores, idle 30, workers the cores divided by the slots, at least 1, free 35, settle 60, margin 15"
+echo "ok: the load ceiling is 3 times the cores, idle 30, workers the cores divided by the slots, at least 1, free 30, settle 60, margin 15"
 
 # A gate that finds the CPU busy after the slot is taken waits for it.
 : > "$tmp/events"
@@ -696,8 +696,10 @@ CASES
 ) || exit 1
 echo "ok: a gate is admitted under load 30, and with 20 GB of disk free"
 
-# Memory: level, free percentage, expected admission ("-" is a failed read).
+# Memory: level, free percentage, expected admission ("-" is a failed read),
+# with GATE_LOCK_FREE unset, so that the script's default floor decides.
 (
+  unset GATE_LOCK_FREE
   . "$script"
   _gl_idle() { echo 80; }
   _gl_load() { echo 5; }
@@ -709,21 +711,22 @@ echo "ok: a gate is admitted under load 30, and with 20 GB of disk free"
     _gl_admit && got=admit || got="wait"
     [ "$got" = "$want" ] || { echo "FAIL: level $level free $free: $got, want $want"; bad=1; }
   done <<'CASES'
-1 35 admit
-1 90 admit
-1 34 wait
-1 5 wait
+1 31 admit
+1 30 admit
+1 29 wait
 1 - admit
-2 90 wait
-2 - wait
+2 31 admit
+2 29 wait
+2 - admit
 4 90 wait
-- 35 admit
-- 34 wait
+4 - wait
+- 31 admit
+- 29 wait
 - - admit
 CASES
   exit "$bad"
 ) || exit 1
-echo "ok: memory is admissible at level 1 or an unread level with 35% free, never at level 2 or 4"
+echo "ok: memory is admissible at a level below 4 or an unread level with 30% free, never at level 4"
 
 # Settling: seconds since the last take, free percentage, expected take
 # ("-" is no gate.last, or a failed read of the free percentage).
