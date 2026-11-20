@@ -40,22 +40,25 @@ window hides none of their rows.
 His login is the one `gh api user --jq .login` prints. Sessions post
 under it, so no comment under it counts as his own act: groups 2 to 4
 read a label, a review request and an approval, which no comment
-changes. In group 1 a comment under it is an answer, since the person
-waiting sees one, whoever wrote it.
+changes. In groups 1 and 5 a comment under it is an answer, since the
+person waiting sees one, whoever wrote it. One starting `Claimed` or
+`Released` is not: it says that a session takes the item or leaves it
+(`$PROCESS/process/writing.md`'s *Claim it before work starts* and *A
+claim holds a pull request's branch*), and answers nobody.
 
 The script puts each open issue and pull request in the first group that
 holds it, and a closed one in the last. *A person* is an author GitHub
 gives the type `User`, not a bot:
 
 1. **A person waits on an answer.** Among its latest 30 comments, the
-   latest by a person is another login's, and it is labelled neither
-   `decision` nor `needs-maintainer`. Or, with neither label, it is an
-   outside person's: its author's association is none of `OWNER`,
-   `MEMBER` and `COLLABORATOR`, and no other person is among its latest
-   30 comments and, on a pull request, its latest 30 reviews. Such a
-   pull request is also not a draft and has its checks green. Aged from
-   that comment, or else from an issue's opening or a pull request's
-   head commit.
+   latest answer by a person is another login's, and it is labelled
+   neither `decision` nor `needs-maintainer`. Or, with neither label, it
+   is an outside person's: its author's association is none of `OWNER`,
+   `MEMBER` and `COLLABORATOR`, and no other person answered among its
+   latest 30 comments and, on a pull request, its latest 30 reviews.
+   Such a pull request is also not a draft and has its checks green.
+   Aged from that comment, or else from an issue's opening or a pull
+   request's head commit.
 1. **Asked of you.** Labelled `decision` or `needs-maintainer`. Aged
    from the latest time that label was added.
 1. **Your review requested.** A pull request whose pending review
@@ -71,18 +74,35 @@ gives the type `User`, not a bot:
    `; mergeability unknown:`, and so is one whose head moved in between,
    whose verdict and checks were read on the earlier head.
 1. **A person spoke on a closed item.** A closed issue or pull request
-   whose latest comment by a person, among those created since the
+   whose latest answer by a person, among the comments created since the
    `--since` time, is another login's. Aged from that comment.
+
+A row also shows the claim that stands on its item, as
+`claimed by <login>, <age>`, aged from the claim. That claim is the
+latest of the item's latest 30 comments to start `Claimed` or
+`Released`, where it starts `Claimed`; none stands on a pull request
+that has landed (`$PROCESS/process/writing.md`'s *A claim holds a pull
+request's branch*). Unlike that section's check, it counts the item's
+author too, since the maintainer claims his own issues. Where none
+stands on the item, the row shows the latest standing on an open item
+linked to it: an open pull request whose closing references name the
+item, or an open issue the item's own closing references name.
+
+A claim over 24 hours old reads `claimed by <login>, claim idle <age>`
+where nothing happened after it on the claimed item or on an open item
+linked to that: no person commented, among their latest 30 comments, and
+no pull request among them has a head commit dated later. Releasing it
+stays the human's.
 
 An age the script cannot read, because the event is not among the item's
 latest 20 label and review-request events, shows as `?`. A call that
 fails, or prints anything on stderr, prints `error:`, the call's name
 and its message, and the script exits `1`: a failed read never shows as
-a group with no rows. An item with over 100 labels or review requests
-does the same, with its URL, since the script reads 100 of each. So does
-a search that gives no count of matches, or whose count exceeds the
-items it returned: GitHub stops a search at its cap on results, with no
-error.
+a group with no rows. An item with over 100 labels, review requests or
+closing references does the same, with its URL, since the script reads
+100 of each. So does a search that gives no count of matches, or whose
+count exceeds the items it returned: GitHub stops a search at its cap on
+results, with no error.
 
 ## Mail
 
@@ -117,9 +137,9 @@ age, in hours under 48 hours and in days after; the item's link and, for
 a pull request, its diff balance, both as
 `$PROCESS/process/every-role.md`'s *How an issue and a pull request are
 named* writes them; what it waits on, with `(new)` after it where the
-wait is new; and the title, cut at 50 characters, with each control
-character a space and Markdown's and HTML's characters escaped, so that
-it renders as written.
+wait is new; the claim, where one shows (*Measure*); and the title, cut
+at 50 characters, with each control character a space and Markdown's and
+HTML's characters escaped, so that it renders as written.
 
 After the last line, at most two lines: what a reader cannot see in the
 rows, such as an item that waits on another.

@@ -90,7 +90,12 @@ query($q: String!, $endCursor: String) {
         }
         reviews(last: 30) { nodes { author { __typename login } } }
         verdicts: reviews(author: "claude[bot]", last: 5) { nodes { body } }
-        comments(last: 30) { nodes { author { __typename login } createdAt } }
+        comments(last: 30) {
+          nodes { author { __typename login } createdAt body }
+        }
+        closingIssuesReferences(first: 100) {
+          pageInfo { hasNextPage } nodes { url }
+        }
       }
     }
   }
@@ -111,7 +116,9 @@ query($q: String!, $endCursor: String) {
         timelineItems(itemTypes: [LABELED_EVENT], last: 20) {
           nodes { ... on LabeledEvent { createdAt label { name } } }
         }
-        comments(last: 30) { nodes { author { __typename login } createdAt } }
+        comments(last: 30) {
+          nodes { author { __typename login } createdAt body }
+        }
       }
     }
   }
@@ -123,10 +130,22 @@ cat > "${d}/item.graphql" <<'EOF_ITEM'
 query($o: String!, $r: String!, $n: Int!) {
   repository(owner: $o, name: $r) {
     issueOrPullRequest(number: $n) {
-      ... on Issue { number title url state repository { name } }
+      ... on Issue {
+        number title url state repository { name }
+        comments(last: 30) {
+          nodes { author { __typename login } createdAt body }
+        }
+      }
       ... on PullRequest {
         number title url state additions deletions changedFiles
         repository { name }
+        commits(last: 1) { nodes { commit { committedDate } } }
+        comments(last: 30) {
+          nodes { author { __typename login } createdAt body }
+        }
+        closingIssuesReferences(first: 100) {
+          pageInfo { hasNextPage } nodes { url }
+        }
       }
     }
   }
@@ -134,15 +153,17 @@ query($o: String!, $r: String!, $n: Int!) {
 EOF_ITEM
 
 # comments.sh <repo>: the repository's comments by a person created
-# since ${since}, as "<repo>\t<n>\t<login>\t<time>"; the endpoint's since
-# reads the time a comment was last updated
+# since ${since}, as "<repo>\t<n>\t<login>\t<time>\t<claim>", <claim>
+# true where the comment claims the item or releases it; the endpoint's
+# since reads the time a comment was last updated
 cat > "${d}/comments.sh" <<'EOF_COMMENTS'
 r=$1
 exec sh "${d}/run.sh" "comments.${r}" gh api --paginate \
   "repos/${o}/${r}/issues/comments?since=${since}&per_page=100" \
   --jq ".[] | select(.user.type == \"User\" and .created_at >= \"${since}\")
     | [\"${r}\", (.issue_url | split(\"/\") | last), .user.login,
-       .created_at] | @tsv"
+       .created_at, (.body // \"\" | startswith(\"Claimed\")
+         or startswith(\"Released\"))] | @tsv"
 EOF_COMMENTS
 
 # merge.sh <repo>/<n>: the pull request's URL, mergeability and head
@@ -166,12 +187,14 @@ exec sh "${d}/run.sh" "item.${r}.${n}" gh api graphql -f o="${o}" \
   --jq .data.repository.issueOrPullRequest
 EOF_ITEMSH
 
-# the items whose latest comment by a person since ${since} is not
-# ${me}, and that the open searches did not return
+# the items whose latest answer by a person since ${since}, a claim or
+# release under ${me} left out, is not ${me}'s, and that the open
+# searches did not return
 cat > "${d}/spoke.jq" <<'EOF_SPOKE'
 ($open | map(.data.search.nodes[] | select(.url)
   | {("\(.repository.name)/\(.number)"): true}) | add // {}) as $seen
-| [inputs | select(. != "") | split("\t")]
+| [inputs | select(. != "") | split("\t")
+  | select(.[2] != $me or .[4] != "true")]
 | group_by(.[0:2]) | map(max_by(.[3])) | .[]
 | {k: "\(.[0])/\(.[1])", login: .[2], t: .[3]}
 | select(.login != $me and ($seen[.k] | not))
@@ -186,14 +209,18 @@ def held: [.labels.nodes[].name | select(IN("decision", "needs-maintainer"))]
   | first;
 def labeled($l):
   [.timelineItems.nodes[] | select(.label.name? == $l) | .createdAt] | last;
-def lastother: [.comments.nodes[] | select(human)] | last
+# a comment that claims the item or releases it
+def claimtext: (.body // "") | startswith("Claimed") or startswith("Released");
+# a person's comment or review that answers, as SKILL.md's "Measure" says
+def answer: human and (.author.login != $me or (claimtext | not));
+def lastother: [.comments.nodes[] | select(answer)] | last
   | if . != null and .author.login != $me then . else null end;
 def asked: [.timelineItems.nodes[]
   | select(.requestedReviewer.login? == $me) | .createdAt] | last;
 def green: .commits.nodes[0].commit.statusCheckRollup.state == "SUCCESS";
 def unanswered: .author.login as $a
   | [.comments.nodes[], .reviews.nodes[]?
-    | select(human and .author.login != $a)]
+    | select(answer and .author.login != $a)]
   | length == 0;
 # the bot's verdict on the head, read as /btclib-pr's "The reviews on
 # GitHub" reads it with gh pr view, but among the bot's latest reviews
@@ -208,6 +235,34 @@ def agentack: kind == "PR" and .author.login == "claude"
 def age: if . == null then "?" else
   [0, ($at | fromdate) - fromdate] | max / 3600 | floor
   | if . < 48 then "\(.) h" else "\(. / 24 | floor) d" end end;
+# the claim that stands on an item: the latest of its claims and
+# releases, where that is a claim, and none on a landed pull request
+def claim: if .state == "MERGED" then null else
+  [.comments.nodes[]? | select(claimtext)] | last
+  | if . != null and (.body | startswith("Claimed"))
+    then {login: (.author.login // "ghost"), t: .createdAt} else null end end;
+# when a person commented on an item, and when its head was committed
+def acts: [(.comments.nodes[]? | select(human) | .createdAt),
+  (.commits.nodes[0]?.commit.committedDate // empty)];
+# the open items linked to an item: those its own closing references
+# name, and the pull requests whose closing references name it, $by
+# holding the open items by URL and $links an issue's pull requests
+def linked($by; $links):
+  [$links[.url][]?, .closingIssuesReferences.nodes[]?.url] | unique
+  | map($by[.] // empty);
+# what a row says of the claim: the item's own, or else the latest on an
+# open item linked to it; idle where it is over 24 hours old and nobody
+# acted after it on the claimed item or an open item linked to that
+def claimline($by; $links): . as $x
+  | first(($x | claim // empty | {c: ., i: $x}),
+      ([$x | linked($by; $links)[] | claim as $c | select($c) | {c: $c, i: .}]
+        | sort_by(.c.t) | reverse | .[])) // null
+  | if . == null then "" else .c.t as $t
+    | ([.i, (.i | linked($by; $links)[])] | map(acts[]) | any(. > $t))
+      as $acted
+    | " — claimed by \(.c.login), "
+      + (if ($acted | not) and ($at | fromdate) - ($t | fromdate) > 86400
+        then "claim idle " else "" end) + ($t | age) end;
 def balance: if kind == "PR" then " \(.changedFiles) file"
   + (if .changedFiles == 1 then "" else "s" end)
   + ", +\(.additions)/-\(.deletions)" else "" end;
@@ -216,9 +271,15 @@ def row($g; $t; $why; $mark): {g: $g, t: $t,
   slug: "\(.repository.name)/\(.number)", link: link, line: ("- \($t | age) "
   + "\(link)\(balance) — \($why)"
   + (if $mark and ($t // "") >= $since then " (new)" else "" end)
+  + .claimline
   + " — \(.title[:50] | gsub("[[:cntrl:]]"; " ")
     | gsub("(?<c>[\\\\`*_\\[\\]<>#|~&])"; "\\\(.c)"))")};
-[ ($open | map(.data.search.nodes[] | select(.url)) | unique_by(.url) | .[]
+($open | map(.data.search.nodes[] | select(.url)) | unique_by(.url)) as $items
+| ($items | map({(.url): .}) | add // {}) as $by
+| ([$items[] | .url as $u | .closingIssuesReferences.nodes[]?.url
+    | [., $u]] | group_by(.[0]) | map({(.[0][0]): map(.[1])})
+  | add // {}) as $links
+| [ ($items[] | .claimline = claimline($by; $links)
     | if (held | not) and lastother then
         row(1; lastother.createdAt; "\(lastother.author.login) spoke last"; true)
       elif kind == "PR" and (held | not) and human and (member | not)
@@ -241,6 +302,7 @@ def row($g; $t; $why; $mark): {g: $g, t: $t,
       else empty end),
   (($spoke | map({(.k): .}) | add // {}) as $s
     | $closed[] | select(. != null and .state != "OPEN")
+    | .claimline = claimline($by; $links)
     | $s["\(.repository.name)/\(.number)"] as $c
     | row(5; $c.t; "\($c.login) spoke last"; false)) ]
 # the groups, then one line holding a JSON array of those of unknown
@@ -288,15 +350,22 @@ while read -r r; do
   check "comments.${r}"
 done < "${d}/repos.out"
 cat "${d}/prs.out" "${d}/issues.out" > "${d}/open.json"
-# labels and review requests are read 100 at a time, and never cut short
-more=$(jq -r '.data.search.nodes[] | select(.labels.pageInfo.hasNextPage
-    or .reviewRequests.pageInfo.hasNextPage) | .url' "${d}/open.json") ||
-  exit 1
-if [ -n "${more}" ]; then
-  printf 'error: over 100 labels or review requests: %s\n' \
-    "$(printf '%s' "${more}" | tr '\n' ' ')"
-  exit 1
-fi
+# many <file> <filter>: "error: over 100 ..." and exit 1 where an item the
+# filter reads in the file holds over 100 labels, review requests or
+# closing references, which are read 100 at a time, and never cut short
+many() {
+  more=$(jq -r "$2"' | select(.labels.pageInfo.hasNextPage
+      or .reviewRequests.pageInfo.hasNextPage
+      or .closingIssuesReferences.pageInfo.hasNextPage) | .url' "$1") ||
+    exit 1
+  if [ -n "${more}" ]; then
+    printf 'error: over 100 %s: %s\n' \
+      'labels, review requests or closing references' \
+      "$(printf '%s' "${more}" | tr '\n' ' ')"
+    exit 1
+  fi
+}
+many "${d}/open.json" '.data.search.nodes[]'
 while read -r r; do
   cat "${d}/comments.${r}.out"
 done < "${d}/repos.out" |
@@ -311,6 +380,7 @@ done < "${d}/spoke.keys"
 while read -r k; do
   cat "${d}/item.${k%/*}.${k#*/}.out"
 done < "${d}/spoke.keys" > "${d}/closed.json"
+many "${d}/closed.json" 'select(. != null)'
 rows() {
   jq -nr --arg me "${me}" --arg since "${since}" --arg at "${at}" \
     --slurpfile open "${d}/open.json" --slurpfile spoke "${d}/spoke.json" \
