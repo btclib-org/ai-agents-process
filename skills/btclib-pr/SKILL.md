@@ -320,13 +320,13 @@ a decision:
   prose is worth a round* blocks on, or where `local-review.md`'s *The
   rounds* keeps it off the branch: it adds no text to the branch. A
   defect `local-review.md`'s *The rounds* keeps off the branch is filed
-  as `every-role.md`'s *Collateral* says, and the reply names its issue,
-  whether or not the branch adds the defect. A refinement of prose is
-  declined with its ground, not filed, since `REVIEWING.md`'s *What is
-  filed, and what is not* files no prose; any other finding of this
-  route is filed the same way, or else declined with its ground.
-  Repeated after the reply, it is answered by pointing to the first
-  reply, and resolved.
+  as `every-role.md`'s *Collateral* says, or as a line of a known-limits
+  issue where *The rounds* says, and the reply names its issue, whether
+  or not the branch adds the defect. A refinement of prose is declined
+  with its ground, not filed, since `REVIEWING.md`'s *What is filed, and
+  what is not* files no prose; any other finding of this route is filed
+  the same way, or else declined with its ground. Repeated after the
+  reply, it is answered by pointing to the first reply, and resolved.
 - **accepted** where it is the branch's own: a defect or a false
   sentence its diff or its pull request body adds, or anything else
   `every-role.md`'s *Collateral* counts as the branch's subject

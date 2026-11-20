@@ -74,7 +74,7 @@ branch, or a text to be posted.
   dedicated reviewer's `CLEARED`.**
 - **From the third round of a branch's local review, a finding on a
   shape that is not reachable, or whose worst outcome is on the safe
-  side, is filed as an issue and does not block.** The rounds are
+  side, is filed in an issue and does not block.** The rounds are
   numbered from one, as the forge's are in the next bullet. Each verdict
   of a local reviewer is a round, so a head that two reviewers read is
   two rounds. The count is the branch's, not a reviewer's: any reviewer
@@ -109,12 +109,54 @@ branch, or a text to be posted.
   what it printed shows a tree or a caller holding the shape, or the
   orchestrator cannot run it either, the finding blocks, and the verdict
   counts as `CHANGES REQUESTED`.
+
+  A finding on a constructed shape of a script or its test, or a mutant
+  of a script that survives its test, is filed as a line of the script's
+  known-limits issue, not as an issue of its own. A mutant is a
+  constructed shape; its ground is the mutant and the test run it
+  survives. This covers scripts and their tests alone: a finding on any
+  other source file stays an issue of its own. A test's finding goes to
+  the issue of the script it tests. A script has one known-limits issue,
+  titled with the script's path from its tree's root, then
+  `: known limits`. This prints its number, and nothing where none is
+  open:
+
+  ```shell
+  repo=<owner>/<repo>
+  script=<path>
+  ```
+
+  ```shell
+  export t="${script:?}: known limits" &&
+    gh issue list --repo "${repo:?}" --state open --limit 1000 \
+      --json number,title --jq '.[] | select(.title == env.t) | .number'
+  ```
+
+  The body the verdict carries is the line, which names the branch the
+  finding came from, or its pull request where one is open. The
+  orchestrator adds the line, and files the known-limits issue where
+  none is open. Its body opens by saying what its lines list and when
+  one is worked, and closes with a *Done when*: a test case answers each
+  line, or kills its mutant, or the script's docstring names it out of
+  reach. It takes no `good first issue` label, which would keep every
+  branch from taking it (`every-role.md`'s *Issues left to newcomers*).
+  A line is worked when a file in a tree meets its shape, or when the
+  script is next changed for another reason; a mutant's line has no
+  shape to meet, and waits for that change.
+
+  A line filed from the rounds of a branch that changes the script is
+  not that branch's to work, and a known-limits issue the branch filed
+  from its own rounds is not taken with it. Where the branch closes the
+  known-limits issue, the orchestrator files the line in a new one once
+  the branch lands.
 - **From the third round on the forge, only a defect on a shape that a
   tree or a caller holds, a false sentence or a crash is fixed on the
   branch.** A round on the forge is a head the reviews on GitHub read
   (`/btclib-pr`'s *The reviews on GitHub*): the head the pull request is
   opened on, then each push to it. Every other finding stays off the
-  branch, answered as `/btclib-pr`'s *Answering it* says.
+  branch: one of a kind the bullet above files in a known-limits issue
+  goes there as a line, and the rest are answered as `/btclib-pr`'s
+  *Answering it* says.
 - A non-blocking finding that is not filed waits for the next change;
   `every-role.md`'s *Which prose is worth a round* says which prose
   blocks.
@@ -521,7 +563,8 @@ got=$(gh api "gists/${gist:?}/${rev:?}" --jq .id) &&
 - [ ] in a first verdict, every distinct finding, small ones included
       (*The rounds*)
 - [ ] each finding *The rounds* files from the third round, marked
-      `filed`, with its ground and the body of the issue to file
+      `filed`, with its ground and the body of the issue, or the line,
+      to file
 - [ ] the claims tried, as *Every reviewer tries to break the change*
       says
 - [ ] where the change touches a rule the tree states, or makes a

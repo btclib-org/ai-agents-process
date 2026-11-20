@@ -70,7 +70,9 @@ says which a number is. A pull request among the arguments is
   decision answers share a subject; issues that only touch the same file
   do not. Before assigning a worker, look for open issues sharing a
   subject with the one at hand (`gh issue view` each) and take them
-  together.
+  together. The exception is a known-limits issue (`local-review.md`'s
+  *The rounds*), which shares a subject with any issue whose branch
+  changes its script, and is taken with it.
 - **Where a pull request is already open for an issue**, this skill
   opens no competing branch: that pull request is `/btclib-pr`'s.
 
@@ -270,15 +272,15 @@ open:**
   with their exit codes, as `writing.md`'s *The gates* reports them; the
   rebase case the clearance is in; the review, with each finding
   `local-review.md`'s *The rounds* files from the third round, as not
-  covered; and, once they have answered, each review on GitHub that is
-  absent, with its reason (`/btclib-pr`'s *The reviews on GitHub*). The
-  records the tree asks of a body go here too, each where its own text
-  says it applies: the command that verifies a rule (`CONTRIBUTING.md`),
-  the count that decided the change (`writing.md`'s *What the prose that
-  lands may say*), the runs the bot can repeat (`local-review.md`'s *A
-  pull request's rounds*), the command that reads a setting back
-  (`every-role.md`'s *Collateral*), and the command that measured a
-  claim (`REVIEWING.md`).
+  covered, with the issue that holds it; and, once they have answered,
+  each review on GitHub that is absent, with its reason (`/btclib-pr`'s
+  *The reviews on GitHub*). The records the tree asks of a body go here
+  too, each where its own text says it applies: the command that
+  verifies a rule (`CONTRIBUTING.md`), the count that decided the change
+  (`writing.md`'s *What the prose that lands may say*), the runs the bot
+  can repeat (`local-review.md`'s *A pull request's rounds*), the
+  command that reads a setting back (`every-role.md`'s *Collateral*),
+  and the command that measured a claim (`REVIEWING.md`).
 - **`## Decision` is there only where the issue reserved one, or the
   design pass put one** (*The design pass*): it says what the branch
   takes, on what ground, and what the cut-back is.
