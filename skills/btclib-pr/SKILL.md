@@ -722,9 +722,11 @@ head, or the dedicated reviewer's where the other client is unavailable
   in *Whose pull request it is*
   ([ISS 248](https://github.com/btclib-org/ai-agents-process/issues/248)).
   `btclib-org/.github`'s `reusable-claude-review.yml` skips the review
-  where `head.repo.full_name` is not the calling repository. The human
-  approves it, and the merge follows as *Merging* says (*Outside
-  contributors*).
+  where `head.repo.full_name` is not the calling repository. No session
+  asks for it with an `@claude` comment either: that run is handed the
+  credential while it reads the contributor's text. The `CLEARED` stands
+  for the bot's ACK, and the pull request is approved as *The decision*
+  says and merged as *Merging* says, as any other is.
 
 Where such a pull request lands through the bypass (*The human's own
 pull request*), every check but the bot's `Claude review` is green as
@@ -1790,10 +1792,13 @@ for the next taker as above, the reopened pull request among the hits,
 and says on the issue who holds it, with a comment from a file as
 above, which carries the retry's ask where no taker was assigned.
 
-Where the bot's review does not run — a fork's pull request, and any
-other where `gh pr checks` shows no review — that review is absent (*The
+On a fork's pull request the bot's review does not run, and the
+`CLEARED` that *The reviews on GitHub* asks for stands for its ACK.
+
+Where the bot's review does not run on another of their pull requests,
+as where `gh pr checks` shows no review, that review is absent (*The
 reviews on GitHub*), and the approval is never obvious: it goes to the
-human. A fork's pull request is merged as *Merging* says.
+human.
 
 **A fork's workflow runs can wait for approval as `action_required`**,
 as on PR btclib-org/btclib#2823. This prints the organization's
