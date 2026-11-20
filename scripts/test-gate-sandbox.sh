@@ -143,13 +143,16 @@ STANDIN_LOG=$tmp/outside.log
 export PATH STANDIN_LOG
 : > "$STANDIN_LOG"
 
-# The shell fence whose lines match $1, its two-space indent removed, and
-# its placeholders filled.
+# The shell fence that, with the fence just above it where that one holds
+# only assignments, matches $1: the two, their two-space indent removed,
+# and their placeholders filled.
 block() {
-  awk -v re="$1" '/^ *```shell$/ { b = ""; on = 1; next }
-    on && /^ *```$/ { if (b ~ re) { printf "%s", b; exit }
-      on = 0; next }
-    on { sub(/^  /, ""); b = b $0 "\n" }' "$doc" |
+  awk -v re="$1" '/^ *```shell$/ { b = ""; on = 1; only = 1; next }
+    on && /^ *```$/ { if ((a b) ~ re) { printf "%s", a b; exit }
+      a = only ? b : ""; on = 0; next }
+    on { sub(/^  /, ""); b = b $0 "\n"
+      if ($0 !~ /^([A-Za-z_][A-Za-z0-9_]*=|set -- )/) only = 0; next }
+    /[^ ]/ { a = "" }' "$doc" |
     sed -e "s|<gate wt>|$gwt|g" -e "s|<wt>|$wt|g" -e "s|<sbx>|$sbx|g" \
       -e "s|\${PROCESS:?}|$proc|g" \
       -e "s|^scratch=<scratch>\$|scratch=$tmp|" \

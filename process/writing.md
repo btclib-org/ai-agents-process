@@ -305,13 +305,13 @@ of the standard* says.
   `pass_filenames: false` or `always_run: true` still reads what its own
   command reads, as btclib-node's `core-citation-pin` reads what `git
   ls-files` lists. Where the tree's gates hold no suite and the diff
-  changes only Markdown, the hooks run outside the gate lock. The block
-  runs pre-commit behind the array `peak`: outside the lock it is empty,
-  as the first block below sets it, and *The gate lock* sets it to
-  `gate_peak` and the timeout. It expands `peak` as
-  `${peak[@]+"${peak[@]}"}`: under `set -u`, macOS's `/bin/bash` 3.2
-  reads an empty `"${peak[@]}"` as an unbound variable and exits. The
-  block neither reads nor sets `"$@"`: on an outside contributor's
+  changes only Markdown, the hooks run outside the gate lock. The fence
+  that runs pre-commit runs it behind the array `peak`: outside the lock
+  it is empty, as the fence that holds only `peak=()` sets it, and *The
+  gate lock* sets it to `gate_peak` and the timeout. It expands `peak`
+  as `${peak[@]+"${peak[@]}"}`: under `set -u`, macOS's `/bin/bash` 3.2
+  reads an empty `"${peak[@]}"` as an unbound variable and exits. That
+  fence neither reads nor sets `"$@"`: on an outside contributor's
   branch `"$@"` holds the sandbox's command (*An outside contributor's
   branch*), which that branch's own hooks block, its status check and
   its other gates run behind, and elsewhere no gate reads it. Its
@@ -328,6 +328,9 @@ of the standard* says.
   ```shell
   wt=<wt>
   base=<base>
+  ```
+
+  ```shell
   rc=0
   args=()
   list=$(mktemp "${TMPDIR:-/tmp}/hooks.XXXXXX")
@@ -367,6 +370,9 @@ of the standard* says.
   wt=<wt>
   base=<base>
   src=<docs source>
+  ```
+
+  ```shell
   rc=1
   list=$(mktemp "${TMPDIR:-/tmp}/docs.XXXXXX")
   if ! git -C "${wt:?}" ls-files --error-unmatch -- "${src:?}" > /dev/null
@@ -401,12 +407,13 @@ of the standard* says.
   completed push run of each of its workflows succeeded, read when the
   session looks, with no wait for a run in progress. CI gates the merged
   head. Each command below holds only where it prints nothing and exits
-  `0`. The first prints each file both sides change, and `pipefail`
-  makes a stage that fails fail it. The second prints each workflow
-  whose latest completed run did not succeed, or `no runs` where none
-  has completed. It reads the newest 200 completed push runs, so a
-  workflow whose last run is older than those, or that has no completed
-  run, is not read:
+  `0`. The fence that lists the files the branch changes and the files
+  the merge brings in prints, through `uniq -d`, each file in both
+  lists, and `pipefail` makes a stage that fails fail it. `gh run list`
+  prints each workflow whose latest completed run did not succeed, or
+  `no runs` where none has completed. It reads the newest 200 completed
+  push runs, so a workflow whose last run is older than those, or that
+  has no completed run, is not read:
 
   ```shell
   wt=<wt>
@@ -500,6 +507,9 @@ of the standard* says.
   ```shell
   wt=<wt>
   base=<base>
+  ```
+
+  ```shell
   gated_tree() (
     tmp=
     trap '[ -z "$tmp" ] || rm -rf "$tmp"' EXIT
@@ -573,6 +583,9 @@ of the standard* says.
 
   ```shell
   wt=<wt>
+  ```
+
+  ```shell
   git -C "${wt:?}" add --all
   ```
 
@@ -593,20 +606,20 @@ of the standard* says.
   `.pre-commit-config.yaml`*) has every hook that has a fix mode run
   with it turned on, so the tree's own hooks are its fixers, at the
   versions and with the arguments its `.pre-commit-config.yaml` gives,
-  and no list of them is kept here. The command of *The hooks run on the
-  changed files* runs them. A fixer writes its fix into the working
-  tree, and pre-commit then fails its hook, prints `files were modified
-  by this hook` under it and exits `1`, even where the fixer exited `0`,
-  as `ruff format` does. The fix is staged and the hooks run again,
-  until they exit `0`: in that run no fixer wrote, so it is the check,
-  and it is the hooks gate of its tree where its `TREE=` lines agree.
-  What a hook reports and cannot fix is fixed by hand. On an outside
-  contributor's branch no fixer runs before the commit: pre-commit would
-  run the branch's own hooks outside the sandbox, with the network and
-  the credentials, and the sandbox's gates run only on a commit, in
-  `<gate wt>`. There the hooks gate runs the fixers, and a fixer's
-  change is read with `git diff` and made again in `<wt>`, as *An
-  outside contributor's branch* says.
+  and no list of them is kept here. The fence of *The hooks run on the
+  changed files* that runs pre-commit, with its values, runs them. A
+  fixer writes its fix into the working tree, and pre-commit then fails
+  its hook, prints `files were modified by this hook` under it and exits
+  `1`, even where the fixer exited `0`, as `ruff format` does. The fix
+  is staged and the hooks run again, until they exit `0`: in that run no
+  fixer wrote, so it is the check, and it is the hooks gate of its tree
+  where its `TREE=` lines agree. What a hook reports and cannot fix is
+  fixed by hand. On an outside contributor's branch no fixer runs before
+  the commit: pre-commit would run the branch's own hooks outside the
+  sandbox, with the network and the credentials, and the sandbox's gates
+  run only on a commit, in `<gate wt>`. There the hooks gate runs the
+  fixers, and a fixer's change is read with `git diff` and made again in
+  `<wt>`, as *An outside contributor's branch* says.
 - **Read exit codes, not output.** `… > log 2>&1; echo $?`. A
   multi-batch hook's tail can show a clean batch after a failed one.
 - **A local gate run that fails because the network is down has not
@@ -643,12 +656,18 @@ of the standard* says.
 
   ```shell
   sbx=<sbx>
+  ```
+
+  ```shell
   mkdir -p "${sbx:?}/home" "${sbx:?}/tmp"
   ```
 
   ```shell
   mwt=<main wt>
   sbx=<sbx>
+  ```
+
+  ```shell
   env -i -C "${mwt:?}" HOME="${sbx:?}/home" PATH="$PATH" \
     TMPDIR="${sbx:?}/tmp" UV_PYTHON_INSTALL_DIR="$(uv python dir)" \
     UV_CACHE_DIR="${sbx:?}/uv-cache" UV_TOOL_DIR="${sbx:?}/uv-tools" \
@@ -667,6 +686,9 @@ of the standard* says.
   ```shell
   mwt=<main wt>
   sbx=<sbx>
+  ```
+
+  ```shell
   env -i -C "${mwt:?}" HOME="${sbx:?}/home" PATH="$PATH" \
     TMPDIR="${sbx:?}/tmp" UV_PYTHON_INSTALL_DIR="$(uv python dir)" \
     UV_CACHE_DIR="${sbx:?}/uv-cache" UV_TOOL_DIR="${sbx:?}/uv-tools" \
@@ -687,6 +709,9 @@ of the standard* says.
   wt=<wt>
   gwt=<gate wt>
   sha=<sha>
+  ```
+
+  ```shell
   git -C "${wt:?}" worktree add --detach "${gwt:?}" "${sha:?}"
   ```
 
@@ -694,6 +719,9 @@ of the standard* says.
   gwt=<gate wt>
   scratch=<scratch>
   name=<name>
+  ```
+
+  ```shell
   dirs=${scratch:?}/${name:?}-git-dirs
   links=${scratch:?}/${name:?}-gitlinks
   conf=${scratch:?}/${name:?}-config
@@ -759,6 +787,9 @@ of the standard* says.
   ```shell
   scratch=<scratch>
   name=<name>
+  ```
+
+  ```shell
   st=${scratch:?}/${name:?}-status
   "$@" env GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 \
     git -c core.attributesFile=/dev/null -c core.excludesFile=/dev/null \
@@ -778,6 +809,9 @@ of the standard* says.
   gwt=<gate wt>
   scratch=<scratch>
   name=<name>
+  ```
+
+  ```shell
   st=${scratch:?}/${name:?}-status
   links=${scratch:?}/${name:?}-gitlinks
   conf=${scratch:?}/${name:?}-config
@@ -862,6 +896,9 @@ of the standard* says.
   wt=<wt>
   sha=<sha>
   base=<base>
+  ```
+
+  ```shell
   rc=0
   files=()
   list=$(mktemp)
@@ -971,6 +1008,9 @@ of the standard* says.
   ```shell
   scratch=<scratch>
   name=<name>
+  ```
+
+  ```shell
   slog=${scratch:?}/${name:?}-sandbox.log
   /usr/bin/log stream --style compact \
     --predicate 'sender == "Sandbox" AND eventMessage CONTAINS "network"' \
@@ -1051,12 +1091,16 @@ of the standard* says.
   wt=<wt>
   secs=<seconds>
   gate=<next gate>
+  ```
+
+  ```shell
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take "${wt:?}" && {
     echo "TREE=$(gated_tree)" "HEAD=$(git -C "${wt:?}" rev-parse HEAD)"
     gate_wait
     peak=(gate_peak hooks "${wt:?}" timeout -k 60 "${secs:?}")
-    … the block of *The hooks run on the changed files*, which sets rc …
+    … *The hooks run on the changed files*: its fence of values, and …
+    … its fence that runs pre-commit, which sets rc …
     echo "EXIT_hooks=$rc"
     if [ "$rc" -eq 0 ]; then
       mark=$(mktemp "${TMPDIR:-/tmp}/mark.XXXXXX")
@@ -1081,16 +1125,19 @@ of the standard* says.
   found changes the tree and runs them all again. Each later gate goes
   before the second `TREE=` line, which reads `$mark`, and takes the
   same `if`, which reads the exit of the gate before it, so the first
-  gate that fails stops the block. Where the hooks ran on the staged
-  tree and their run carries over to the commit, or ran outside the
-  lock, as for a Markdown-only diff above, the gates that follow them
-  run in the block below, only once they exited `0`. The report gives a
-  gate the stop left out as not run.
+  gate that fails stops the rest. Where the hooks ran on the staged tree
+  and their run carries over to the commit, or ran outside the lock, as
+  for a Markdown-only diff above, the gates that follow them run in the
+  block below, only once they exited `0`. The report gives a gate the
+  stop left out as not run.
 
   ```shell
   wt=<wt>
   secs=<seconds>
   gate=<next gate>
+  ```
+
+  ```shell
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take "${wt:?}" && {
     echo "TREE=$(gated_tree)" "HEAD=$(git -C "${wt:?}" rev-parse HEAD)"
@@ -1252,6 +1299,9 @@ The findings of these local runs are answered as `/btclib-pr`'s
   wt=<wt>
   branch=<branch>
   built=<sha you built on>
+  ```
+
+  ```shell
   git -C "${wt:?}" push \
     "--force-with-lease=refs/heads/${branch:?}:${built:?}" \
     origin "HEAD:refs/heads/${branch:?}"

@@ -379,6 +379,9 @@ This section is in `every-session.md`, beside this file.
   ```shell
   checkout=<checkout>
   branch=<branch>
+  ```
+
+  ```shell
   git -C "${checkout:?}" branch -D "${branch:?}"
   ```
 
@@ -406,6 +409,9 @@ This section is in `every-session.md`, beside this file.
 
   ```shell
   checkout=<checkout>
+  ```
+
+  ```shell
   git -C "${checkout:?}" fetch origin
   ```
 
@@ -434,6 +440,9 @@ This section is in `every-session.md`, beside this file.
   ```shell
   checkout=<checkout>
   n=<n>
+  ```
+
+  ```shell
   git -C "${checkout:?}" fetch origin "refs/pull/${n:?}/head"
   ```
 

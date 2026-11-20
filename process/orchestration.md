@@ -142,6 +142,9 @@ which role reads this file, and where a section named in italics is.
 
   ```shell
   scratchpad=<the session's scratchpad>
+  ```
+
+  ```shell
   git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.next"
   ```
 
@@ -173,6 +176,9 @@ which role reads this file, and where a section named in italics is.
 
   ```shell
   scratchpad=<the session's scratchpad>
+  ```
+
+  ```shell
   mv "${scratchpad:?}/orchestrator/process.next" "${scratchpad:?}/orchestrator/process.sha"
   ```
 
@@ -486,6 +492,9 @@ not another login's is later:
 repo=<owner>/<repo>
 id=<id>
 record=<record file>
+```
+
+```shell
 gh api -X PATCH "repos/${repo:?}/issues/comments/${id:?}" \
   -F "body=@${record:?}"
 ```
@@ -496,6 +505,9 @@ Where no line does, it posts its own record:
 n=<n>
 repo=<owner>/<repo>
 record=<record file>
+```
+
+```shell
 gh pr comment "${n:?}" --repo "${repo:?}" --body-file "${record:?}"
 ```
 
@@ -676,27 +688,39 @@ verdict found there is the latest run's (`local-review.md`'s *The
 rounds*). The `-u` keeps the sync in the worktree's `.venv`, where the
 reviewer's `uv run` looks for it. On an outside contributor's branch the
 sync is the sandboxed one of `writing.md`'s *The gates*, in `<gate wt>`,
-instead of the second command:
+instead of the `uv sync --locked` below:
 
 ```shell
 dir=<work>/<name>
+```
+
+```shell
 mkdir -p "${dir:?}/tmp"
 ```
 
 ```shell
 wt=<wt>
 dir=<work>/<name>
+```
+
+```shell
 env -C "${wt:?}" -u UV_PROJECT_ENVIRONMENT \
   UV_CACHE_DIR="${dir:?}/uv-cache" uv sync --locked
 ```
 
 ```shell
 dir=<work>/<name>
+```
+
+```shell
 rm -f "${dir:?}.last.md"
 ```
 
 ```shell
 dir=<work>/<name>
+```
+
+```shell
 . "${PROCESS:?}/scripts/gate-lock.sh"
 gate_peak codex "${dir:?}" \
   env -i -C "${dir:?}" HOME="$HOME" PATH="$PATH" \
@@ -752,20 +776,26 @@ settings. Without a saved login the run prints `Not logged in · Please
 run /login` and exits `1`.
 
 The session creates the reviewer's directory, links the agent into it,
-and makes the run's temporary directory. `mktemp` prints its path,
-which stands for `<tmp>` in the two blocks after it. The session then
-starts the reviewer through `gate_peak`, as a Codex reviewer is started,
-and removes the temporary directory once the run ends. The run starts
-`claude` only where `CLAUDE_CODE_TMPDIR` names a directory, so an empty
-or missing value stops it:
+and makes the run's temporary directory. `mktemp` prints its path, which
+stands for `<tmp>` in `ctmp=<tmp>` and `rm -rf <tmp>` below. The session
+then starts the reviewer through `gate_peak`, as a Codex reviewer is
+started, and removes the temporary directory once the run ends. The run
+starts `claude` only where `CLAUDE_CODE_TMPDIR` names a directory, so an
+empty or missing value stops it:
 
 ```shell
 dir=<work>/<name>
+```
+
+```shell
 mkdir -p "${dir:?}/.claude/agents"
 ```
 
 ```shell
 dir=<work>/<name>
+```
+
+```shell
 ln -s "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/reviewer.md" \
   "${dir:?}/.claude/agents/reviewer.md"
 ```
@@ -777,6 +807,9 @@ mktemp -d /tmp/rv.XXXXXX
 ```shell
 dir=<work>/<name>
 ctmp=<tmp>
+```
+
+```shell
 sbx='{"sandbox":{"enabled":true,"failIfUnavailable":true,'
 sbx="${sbx}"'"allowUnsandboxedCommands":false,'
 sbx="${sbx}"'"network":{"strictAllowlist":true}}}'
@@ -833,14 +866,21 @@ request in an interactive session under `never` and `on-request`, and in
 `every-role.md`'s *Git writes under Codex* lists run that way, and an
 interactive session has no `--ignore-rules` to set it aside.
 
-Each run records its policy in its rollout, with credits or without,
-so this re-checks a setting before an escalation is relied on. It runs
-as one block, since Codex later compresses a rollout to `.jsonl.zst`,
-which the glob does not match. `<settings>` are the flags under test,
-`-s workspace-write` among them except with `--approve-for-me`:
+Each run records its policy in its rollout, with credits or without, so
+this re-checks a setting before an escalation is relied on. The `set --`
+that holds the flags runs in the same call as the `codex exec` that
+reads them in `"$@"`, since shell state does not survive between calls.
+The `jq` that reads the rollout runs right after `codex exec`, in that
+call, since Codex later compresses a rollout to `.jsonl.zst`, which the
+glob does not match.
+`<settings>` are the flags under test, `-s workspace-write` among them
+except with `--approve-for-me`:
 
 ```shell
 set -- <settings>
+```
+
+```shell
 id=$(codex exec --json --skip-git-repo-check "$@" 'Reply ok.' < /dev/null |
   jq -r 'select(.type == "thread.started") | .thread_id')
 jq -c 'select(.type == "turn_context") | .payload

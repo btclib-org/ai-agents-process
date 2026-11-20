@@ -25,6 +25,9 @@ two disagree.
   ```shell
   checkout=<checkout>
   branch=<branch>
+  ```
+
+  ```shell
   git -C "${checkout:?}" rev-parse --abbrev-ref HEAD
   git -C "${checkout:?}" status --porcelain
   git -C "${checkout:?}" fetch origin

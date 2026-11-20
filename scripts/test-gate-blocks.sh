@@ -5,21 +5,23 @@
 #   sh scripts/test-gate-blocks.sh [<writing.md>]
 #
 # From <writing.md>, by default process/writing.md beside this script,
-# it takes the block that defines gated_tree, the hooks block of *The
-# hooks run on the changed files* with the block before it, which
-# empties `peak`, the docs build's check, the sandbox's hooks gate, the
-# gate lock's block and the one for hooks whose run carries over. Their
-# placeholders become paths of a fixture: a repository whose `main`
-# holds `file`, `other`, `-i`, `!`, `docs/page.md`, which names `file`,
-# and a gitlink `sub`, whose directory holds `inner`, with `HEAD` a
-# commit on it that changes `file`, and a larger one, whose `git
-# ls-files -v` fills a pipe's buffer. The docs source is `docs`, and the
-# sandbox's command is empty. pre-commit is a script of the test's,
-# which records its directory and arguments. gated_tree runs under each
-# of sh, bash, zsh and dash on the PATH, and the other blocks under
-# bash, `/bin/bash`, which on macOS is bash 3.2, and zsh. The noclobber
-# cases also run under sh and dash, each where it has arrays, which the
-# hooks block and the sandbox's hooks gate use.
+# it takes the fence that defines gated_tree; from *The hooks run on the
+# changed files* the fence that empties `peak` and the hooks block, the
+# fence that runs pre-commit; the docs build's check; the sandbox's
+# hooks gate; the gate lock's fence; and the one for hooks whose run
+# carries over. Each comes with the fence just above it where that one
+# holds only assignments. Their placeholders become paths of a fixture:
+# a repository whose `main` holds `file`, `other`, `-i`, `!`,
+# `docs/page.md`, which names `file`, and a gitlink `sub`, whose
+# directory holds `inner`, with `HEAD` a commit on it that changes
+# `file`, and a larger one, whose `git ls-files -v` fills a pipe's
+# buffer. The docs source is `docs`, and the sandbox's command is empty.
+# pre-commit is a script of the test's, which records its directory and
+# arguments. gated_tree runs under each of sh, bash, zsh and dash on the
+# PATH, and the other blocks under bash, `/bin/bash`, which on macOS is
+# bash 3.2, and zsh. The noclobber cases also run under sh and dash,
+# each where it has arrays, which the hooks block and the sandbox's
+# hooks gate use.
 # A shell that is missing is skipped, and its line says so. The cases,
 # in order:
 #
@@ -62,6 +64,9 @@
 # - gate lock: the gate lock's block under `set -u`, its functions a
 #   stand-in's, as process/every-role.md's *A rehearsal of a block that
 #   takes the gate lock* says, and its next gate a script of the test's.
+#   The two `…` lines that stand for the hooks block are replaced by it,
+#   and the test fails where they are not there exactly, in order, or
+#   where any `…` is left in what it runs.
 #   Where pre-commit writes `file` again with the same bytes through a
 #   new file, and the next gate writes nothing, both `TREE=` lines name
 #   `HEAD`'s tree and the merge base. Where pre-commit writes nothing,
@@ -129,13 +134,16 @@ git init -q -b main "$big" &&
   git -C "$big" commit -q -m big && printf 'x\n' > "$big/f0000-of-a-larger-index" &&
   git -C "$big" update-index --assume-unchanged f0000-of-a-larger-index || exit 1
 
-# The shell fence whose lines match $1, its two-space indent removed, and
-# its placeholders filled.
+# The shell fence that, with the fence just above it where that one holds
+# only assignments, matches $1: the two, their two-space indent removed,
+# and their placeholders filled.
 block() {
-  awk -v re="$1" '/^ *```shell$/ { b = ""; on = 1; next }
-    on && /^ *```$/ { if (b ~ re) { printf "%s", b; exit }
-      on = 0; next }
-    on { sub(/^  /, ""); b = b $0 "\n" }' "$doc" |
+  awk -v re="$1" '/^ *```shell$/ { b = ""; on = 1; only = 1; next }
+    on && /^ *```$/ { if ((a b) ~ re) { printf "%s", a b; exit }
+      a = only ? b : ""; on = 0; next }
+    on { sub(/^  /, ""); b = b $0 "\n"
+      if ($0 !~ /^([A-Za-z_][A-Za-z0-9_]*=|set -- )/) only = 0; next }
+    /[^ ]/ { a = "" }' "$doc" |
     sed -e "s|<wt>|$wt|g" -e "s|<base>|$base|g" -e "s|<sha>|$head|g" \
       -e "s|<docs source>|docs|g" \
       -e "s|uvx pre-commit run|sh $tmp/pre-commit.sh|" \
@@ -156,7 +164,7 @@ grep -qx 'peak=()' "$tmp/empty.sh" ||
 block 'uvx pre-commit run' > "$tmp/hooks.sh"
 grep -q "sh $tmp/pre-commit.sh" "$tmp/hooks.sh" ||
   { no "no hooks block in $doc"; exit 1; }
-block '<docs source>' > "$tmp/docs.sh"
+block 'ls-files --error-unmatch' > "$tmp/docs.sh"
 grep -qx 'src=docs' "$tmp/docs.sh" ||
   { no "no docs build's check in $doc"; exit 1; }
 block 'uv run pre-commit run "[$][{]files' > "$tmp/sbx-hooks.sh"
@@ -363,13 +371,26 @@ for c in rewrite restore; do
   if [ "$c" = rewrite ]; then h=rewrite.sh; else h=pre-commit.sh; fi
   sed "s|sh $tmp/pre-commit.sh|sh $tmp/$h|" "$tmp/hooks.sh" \
     > "$tmp/hooks-lock-$c.sh"
-  awk -v h="$tmp/hooks-lock-$c.sh" '/the block of .*which sets rc/ {
-      while ((getline l < h) > 0) print l; next }
-    { print }' "$tmp/lock.sh" |
+  # the two lines that stand for the hooks block, exactly and in order;
+  # $tmp/lacks-$c is written where they are not
+  awk -v h="$tmp/hooks-lock-$c.sh" -v bad="$tmp/lacks-$c" \
+    -v a='  … *The hooks run on the changed files*: its fence of values, and …' \
+    -v b='  … its fence that runs pre-commit, which sets rc …' '
+    $0 == a && !s { while ((getline l < h) > 0) print l; s = 1; next }
+    s == 1 { s = $0 == b ? 2 : 3; if (s == 2) next }
+    { print }
+    END { if (s != 2) print s > bad }' "$tmp/lock.sh" |
     sed -e "s|^\. .*/scripts/gate-lock\.sh\"\$|. $tmp/slots.sh|" \
       -e 's|^secs=<seconds>$|secs=60|' -e 's|^gate=<next gate>$|gate=next|' \
       -e "s|[^ ]* the next gate [^ ]*|sh $tmp/next-$c.sh|" \
       > "$tmp/lock-$c.sh"
+  if [ -e "$tmp/lacks-$c" ]; then
+    no "gate lock, $c: the lock fence lacks the hooks block's two lines"
+    exit 1
+  fi
+  if grep -q '…' "$tmp/lock-$c.sh"; then
+    no "gate lock, $c: a line of $doc's gate lock fence still holds …"; exit 1
+  fi
   if [ "$(grep -cw -e gate-lock -e PROCESS "$tmp/lock-$c.sh")" -ne 0 ] ||
     ! grep -q "sh $tmp/next-$c.sh" "$tmp/lock-$c.sh" ||
     ! grep -q "sh $tmp/$h" "$tmp/lock-$c.sh"; then
