@@ -1316,13 +1316,13 @@ The findings of these local runs are answered as `/btclib-pr`'s
   lacks it gets it from `git rebase --signoff <base>`, or at the tip from
   `git commit --amend --no-edit -s`.
 
-  A session makes no commit with signing turned off, a scratch
-  repository built for a measurement included: not by `--no-gpg-sign`,
-  by `commit.gpgsign=false` at any scope, by `git commit-tree` without
-  `-S`, which `commit.gpgsign` does not reach, or under an emptied or
-  replaced git config. A fixture commit that a test of the tree writes,
-  as `scripts/test-sweep.sh` does, is not a session's commit. A
-  measurement that needs no commit goes without one: `git diff
+  A session writes no unsigned commit, a scratch repository built for a
+  measurement included, whatever writes it: as `--no-gpg-sign`,
+  `commit.gpgsign=false` at any scope, `git commit-tree` without `-S` or
+  `git hash-object -t commit`, which `commit.gpgsign` does not reach, or
+  an emptied or replaced git config. A fixture commit that a test of the
+  tree writes, as `scripts/test-sweep.sh` does, is not a session's
+  commit. A measurement that needs no commit goes without one: `git diff
   --no-index` compares two directories, and `git add` then `git
   write-tree`, with `GIT_INDEX_FILE` naming a path that does not exist
   yet, give a tree without touching the repository's index. `index` in a
