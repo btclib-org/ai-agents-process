@@ -212,7 +212,12 @@ the sha's `process/` but this file, byte for byte:
 ```
 
 A forge finding gives a case its head, the commit its thread names, and
-the head gives its base, the merge base with `main`:
+the head gives its base, the merge base with the branch the pull request
+targets, its `baseRefName`: `main`, or a stacked pull request's parent,
+whose commits a merge base with `main` would carry into the case's tree
+and diff. The base is read while the parent is open: once it lands, its
+branch is deleted and the pull request retargeted to `main`, and
+`baseRefName` then prints `main`.
 
 ```shell
 repo=<owner>/<repo>
@@ -223,8 +228,16 @@ gh api "repos/${repo:?}/pulls/comments/${id:?}" \
 
 ```shell
 repo=<owner>/<repo>
+n=<n>
+gh pr view "${n:?}" --repo "${repo:?}" --json baseRefName \
+  --jq .baseRefName
+```
+
+```shell
+repo=<owner>/<repo>
+base=<baseRefName>
 head=<head>
-gh api "repos/${repo:?}/compare/main...${head:?}" \
+gh api "repos/${repo:?}/compare/${base:?}...${head:?}" \
   --jq .merge_base_commit.sha
 ```
 
