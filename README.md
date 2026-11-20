@@ -55,18 +55,23 @@ The process the btclib-org maintainers follow with the coding agents
   fixed set of `git -C` commands;
 - `scripts/gate-lock.sh` — the gate lock every worker of every session
   takes before its heavy gates, and `gate_peak`, which records the peak
-  memory of what runs through it: the gates of the lock's block, and the
-  reviewers an orchestrator starts as a command;
+  memory and the wall time of what runs through it: the gates of the
+  lock's block, and the reviewers an orchestrator starts as a command;
 - `scripts/test-gate-lock.sh` — `sh scripts/test-gate-lock.sh` shows
   sessions taking that lock's slots and waiting while every slot is
   held, and `gate_peak` recording a peak;
 - `scripts/gate-sandbox.sb` — the sandbox an outside contributor's gates
   run in, as `process/writing.md`'s *The gates* says;
-- `scripts/test-gate-sandbox.sh` — the gate blocks of *The gates* on
-  macOS, with a gate that writes a repository under a gitlink's
-  directory and forges the clean-tree check: which git calls outside the
-  sandbox read that repository, and whether the check refuses the
-  forgery, run by the `test-gate-sandbox` hook;
+- `scripts/test-gate-sandbox.sh` — the gate blocks of
+  `process/writing.md`'s *The gates* on macOS, with a gate that writes a
+  repository under a gitlink's directory and forges the clean-tree
+  check: which git calls outside the sandbox read that repository, and
+  whether the check refuses the forgery, run by the `test-gate-sandbox`
+  hook;
+- `scripts/test-gate-blocks.sh` — `gated_tree` and the hooks block of
+  `process/writing.md`'s *The gates* under each shell it finds: the
+  trees `gated_tree` refuses, a signal while it runs, and the hooks
+  block under `set -u`, run by the `test-gate-blocks` hook;
 - `scripts/sweep.sh` — the script that removes the directory of a piece
   of work, which `process/every-role.md`'s *Debris goes when its work
   ends* runs;
@@ -87,7 +92,17 @@ The process the btclib-org maintainers follow with the coding agents
 - `scripts/port-check.py` — the check of a tree's batch of ports against
   the standard (`/btclib-iss`'s *Ports of the standard*);
 - `scripts/test-port-check.py` — the fixture repositories
-  `port-check.py` must answer, run by the `test-port-check` hook.
+  `port-check.py` must answer, run by the `test-port-check` hook;
+- `scripts/pointer-files.py` — the check that a pointer to another
+  file's section names that file, as `process/every-role.md`'s opening
+  says, run by the `pointer-files` hook;
+- `scripts/test-pointer-files.py` — the trees `pointer-files.py` must
+  answer, run by the `test-pointer-files` hook;
+- `scripts/placeholder-last.py` — the check that a bare placeholder of a
+  shell fence is the last word of its line, run by the
+  `placeholder-last` hook;
+- `scripts/test-placeholder-last.py` — the fences `placeholder-last.py`
+  must answer, run by the `test-placeholder-last` hook.
 
 `process/every-role.md`'s opening says how these files divide the
 process, and its *Clients*, with `process/orchestration.md`'s *Agents in
@@ -326,7 +341,8 @@ as their author.
 answers what the reviewers raised, gets CI green, and takes them to the
 decision to approve and to `main`. With no argument it sweeps the
 organization's open pull requests: by day it proposes which to work, at
-night it works them without asking, as its *The sweep* says.
+night it works them without asking, as `skills/btclib-pr/SKILL.md`'s
+*The sweep* says.
 
 ```text
 /btclib-inbox [--since <hours> | <time>]

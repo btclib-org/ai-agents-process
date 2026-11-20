@@ -33,8 +33,8 @@ you say so in the verdict.
 - **You do not modify the tree.** Read with `git show <sha>:<path>`,
   `git diff` and `git merge-tree` against explicit shas. Where you need a
   worktree, give it a name that is yours — the issue or branch and your
-  role — and remove it when you finish, as the process's *Debris goes when its
-  work ends* says.
+  role — and remove it when you finish, as `every-role.md`'s *Debris
+  goes when its work ends* says.
 - **No commit with signing turned off** (`--no-gpg-sign`,
   `commit.gpgsign=false`, `git commit-tree` without `-S`, an emptied or
   replaced git config), not even in a scratch repository. What is not

@@ -23,14 +23,18 @@ two disagree.
   reference checkout (not your own worktree) is read after:
 
   ```shell
-  git -C <checkout> rev-parse --abbrev-ref HEAD    # main or master
-  git -C <checkout> status --porcelain             # empty
-  git -C <checkout> fetch origin
-  git -C <checkout> pull --ff-only
-  git -C <checkout> rev-parse HEAD origin/<branch> # equal
+  checkout=<checkout>
+  branch=<branch>
+  git -C "${checkout:?}" rev-parse --abbrev-ref HEAD
+  git -C "${checkout:?}" status --porcelain
+  git -C "${checkout:?}" fetch origin
+  git -C "${checkout:?}" pull --ff-only
+  git -C "${checkout:?}" rev-parse HEAD "origin/${branch:?}"
   ```
 
-  Where it is not on its default branch or not clean, stop and say so.
+  The first `git` command prints `main` or `master`, the second nothing,
+  and the last the same sha twice. Where it is not on its default branch
+  or not clean, stop and say so.
 - **Write plainly.** Everything written — code comments, docs, these
   process files, commit messages, pull request and issue bodies,
   comments, reports — must be clear, simple and no longer than it needs
@@ -121,12 +125,14 @@ two disagree.
   pre-commit hooks about 1 GiB (0.94 to 1.12 GiB that day). Each is the
   largest resident set of a single process, as `/usr/bin/time -l` prints
   it, so a lower bound for a job of several processes, as both are. A
-  job whose peak is not measured, an agent among them, adds none: in
+  job whose peak is not measured adds none, an agent among them. In
   Claude Code an agent shares the session's own process, which `time`
-  cannot isolate. So after starting any job, the session starts the next
-  only on a fresh reading, taken `GATE_LOCK_SETTLE` seconds (60) after
-  the start, or, for an agent or a Codex run, once its first tool call
-  has returned.
+  cannot isolate. A Claude Code reviewer that Codex starts with
+  `claude -p` is a process of its own, and has no figure above. So
+  after starting any job, the session starts the next only on a fresh
+  reading, taken at the first of these: the job has ended,
+  `GATE_LOCK_SETTLE` seconds (60) have passed since its start, or, for
+  an agent or a Codex run, its first tool call has returned.
 - **The forge's quota is shared.** Every session and agent on this
   machine calls the forge through the same `gh` login, and so draws on
   the same hourly quotas: `core` for REST, `graphql` for what `gh pr

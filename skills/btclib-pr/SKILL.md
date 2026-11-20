@@ -18,8 +18,8 @@ the note below goes unnoticed, a window the session accepts.
 
 **Then note where the process stands**, before reading the rest of it:
 the session keeps `$PROCESS`'s `HEAD` in a directory of its scratchpad,
-for the shared *The process is re-read when `main` changes it*.
-`echo "$PROCESS"` prints the clone's path.
+for `orchestration.md`'s *The process is re-read when `main` changes
+it*. `echo "$PROCESS"` prints the clone's path.
 
 ```shell
 scratchpad=<the session's scratchpad>
@@ -40,7 +40,7 @@ again, whole and once, from `$PROCESS/skills/btclib-pr/SKILL.md`.
 What the session writes, and this file, follow `every-session.md`'s
 *Write plainly*.
 
-The shared *Where you work* says how the repository is named.
+`every-role.md`'s *Where you work* says how the repository is named.
 
 **Which sections are yours**, beyond `every-role.md`'s map:
 
@@ -66,11 +66,12 @@ gh search prs --owner btclib-org --state open --review-requested @me \
 ```
 
 `gh search prs` has no size fields, so each repository with open pull
-requests gives their diff balance (the shared *How an issue and a pull
-request are named*):
+requests gives their diff balance (`every-role.md`'s *How an issue and a
+pull request are named*):
 
 ```shell
-gh pr list --repo <owner>/<repo> --state open --limit 200 \
+repo=<owner>/<repo>
+gh pr list --repo "${repo:?}" --state open --limit 200 \
   --json number,additions,deletions,changedFiles
 ```
 
@@ -98,10 +99,10 @@ Show the human one table, grouped:
 - bots';
 - the rest: by day, listed and not worked.
 
-Each row is a `PR` link with its diff balance (the shared *How an issue
-and a pull request are named*) and what it waits on. A pull request may
-wait on one that carries `release-hold`, as *Landing* says, and this
-lists the open or merged ones that carry it:
+Each row is a `PR` link with its diff balance (`every-role.md`'s *How an
+issue and a pull request are named*) and what it waits on. A pull
+request may wait on one that carries `release-hold`, as *Landing* says,
+and this lists the open or merged ones that carry it:
 
 ```shell
 gh search prs --owner btclib-org --label release-hold --limit 200 \
@@ -137,12 +138,14 @@ gh api user --jq .login
 ```
 
 ```shell
-gh pr view <n> --repo <owner>/<repo> --json author,state,isDraft,\
+n=<n>
+repo=<owner>/<repo>
+gh pr view "${n:?}" --repo "${repo:?}" --json author,state,isDraft,\
 isCrossRepository,maintainerCanModify,headRefName,headRefOid,baseRefName
 ```
 
-Then the shared *Before starting*, on the pull request. Which case it
-is:
+Then `writing.md`'s *Before starting*, on the pull request. Which case
+it is:
 
 - **The human's.** The session works it as its author, and ends it at
   *The human's own pull request*.
@@ -156,10 +159,10 @@ is:
   force, before it opens the pull request, and the review bot's token
   has `contents: read`. So every fix the approval needs is the
   session's own signed commit, added on top: the agent's commit stays as
-  it is (the shared *Signed and signed off*). The body's `## Evidence`
-  gives the gates of the agent's run, on the agent's commit, so once
-  the session pushes a fix it updates that section with its own runs on
-  the new head. *The decision* leaves the approval to the human.
+  it is (`writing.md`'s *Signed and signed off*). The body's `##
+  Evidence` gives the gates of the agent's run, on the agent's commit,
+  so once the session pushes a fix it updates that section with its own
+  runs on the new head. *The decision* leaves the approval to the human.
 - **Left by a session that no longer runs**: the shared take-over, the
   branch becoming the writer's own. Where a session still holds it,
   stop.
@@ -240,8 +243,11 @@ where a page comes back full.
 - **Review threads**, inline, with whether each is resolved:
 
   ```shell
-  gh api graphql --paginate -F owner=<owner> -F repo=<repo> -F n=<n> \
-    -f query='
+  owner=<owner>
+  name=<repo>
+  n=<n>
+  gh api graphql --paginate -F owner="${owner:?}" -F repo="${name:?}" \
+    -F n="${n:?}" -f query='
     query($owner: String!, $repo: String!, $n: Int!, $endCursor: String) {
       repository(owner: $owner, name: $repo) {
         pullRequest(number: $n) {
@@ -290,8 +296,8 @@ open thread does, across pushes (*The reviews on GitHub*).
 **Each item is re-measured first**, the whole of it, not its cheap
 half, then answered one of three ways:
 
-- **accept**: fixed as the shared *Committing and rebasing* says, and
-  the answer says what changed.
+- **accept**: fixed as `writing.md`'s *Committing and rebasing* says,
+  and the answer says what changed.
 - **decline**: with the measurement that refutes it, or that shows it a
   refinement (below).
 - **decision**: a choice the tree does not settle — design, scope, a
@@ -310,44 +316,52 @@ a decision:
   applies it and leads no reader to a wrong step, or it is a matter of
   taste (`REVIEWING.md`'s *The standard an ack is given against*).
 - **filed or declined, never accepted, where it is a refinement**, which
-  names no defect on any input and no sentence the shared *Which prose
-  is worth a round* blocks on, or where the shared *The rounds* keeps it
-  off the branch: it adds no text to the branch. A defect *The rounds*
-  keeps off the branch is filed as the shared *Collateral* says, and the
-  reply names its issue, whether or not the branch adds the defect. A
-  refinement of prose is declined with its ground, not filed, since
-  `REVIEWING.md`'s *What is filed, and what is not* files no prose; any
-  other finding of this route is filed the same way, or else declined
-  with its ground. Repeated after the reply, it is answered by pointing
-  to the first reply, and resolved.
+  names no defect on any input and no sentence `every-role.md`'s *Which
+  prose is worth a round* blocks on, or where `local-review.md`'s *The
+  rounds* keeps it off the branch: it adds no text to the branch. A
+  defect `local-review.md`'s *The rounds* keeps off the branch is filed
+  as `every-role.md`'s *Collateral* says, and the reply names its issue,
+  whether or not the branch adds the defect. A refinement of prose is
+  declined with its ground, not filed, since `REVIEWING.md`'s *What is
+  filed, and what is not* files no prose; any other finding of this
+  route is filed the same way, or else declined with its ground.
+  Repeated after the reply, it is answered by pointing to the first
+  reply, and resolved.
 - **accepted** where it is the branch's own: a defect or a false
-  sentence its diff or its pull request body adds, or anything else the
-  shared *Collateral* counts as the branch's subject (the shared *A pull
-  request's rounds* says how a fix to the branch is reviewed). A
-  sentence of the body is weighed as the shared *Which prose is worth a
-  round* says, and is fixed by editing the body, which the reply names.
+  sentence its diff or its pull request body adds, or anything else
+  `every-role.md`'s *Collateral* counts as the branch's subject
+  (`local-review.md`'s *A pull request's rounds* says how a fix to the
+  branch is reviewed). A sentence of the body is weighed as
+  `every-role.md`'s *Which prose is worth a round* says, and is fixed by
+  editing the body, which the reply names.
 - **filed** where it is older than the branch, holding on the file at
   the merge base too, and the branch does not make it materially worse:
-  it goes where the shared *Collateral* says, and the reply names the
-  issue where one is filed. A line the branch rewrote can carry an older
-  limit, so the case is read on the base's file, not the line looked for
-  in the diff. The first command prints `<base>`, the merge base with
-  the pull request's base branch, `baseRefName` (*Whose pull request it
-  is*), and the second the file there. `<path>` is the file's path at
-  `<base>`, the old one where `git diff --name-status -M <base> <head>`
-  shows a rename:
+  it goes where `every-role.md`'s *Collateral* says, and the reply names
+  the issue where one is filed. A line the branch rewrote can carry an
+  older limit, so the case is read on the base's file, not the line
+  looked for in the diff. `git merge-base` prints `<base>`, the merge
+  base with the pull request's base branch, `baseRefName` (*Whose pull
+  request it is*), and `git show` the file there. `<path>` is the file's
+  path at `<base>`, the old one where
+  `git diff --name-status -M <base> <head>` shows a rename:
 
   ```shell
-  git -C <wt> merge-base origin/<baseRefName> <head>
+  wt=<wt>
+  baseref=<baseRefName>
+  head=<head>
+  git -C "${wt:?}" merge-base "origin/${baseref:?}" "${head:?}"
   ```
 
   ```shell
-  git -C <wt> show <base>:<path>
+  wt=<wt>
+  base=<base>
+  file=<path>
+  git -C "${wt:?}" show "${base:?}:${file:?}"
   ```
 
 **A reply to a bot's finding goes through the branch's rounds before it
-is posted**, with the route it took, as the shared *A pull request's
-rounds* says.
+is posted**, with the route it took, as `local-review.md`'s *A pull
+request's rounds* says.
 
 **Every inline `suggestion` that is accepted is applied in the
 worktree.** It is not applied with GitHub's button, so that the gates
@@ -360,7 +374,9 @@ resolved once that arrives. The reply meets `every-session.md`'s *What
 is posted on a forge*. Write the reply to a file of your own, then:
 
 ```shell
-gh api graphql -F t=<thread id> -F b=@<reply file> -f query='
+thread=<thread id>
+reply=<reply file>
+gh api graphql -F t="${thread:?}" -F b="@${reply:?}" -f query='
   mutation($t: ID!, $b: String!) {
     addPullRequestReviewThreadReply(
       input: {pullRequestReviewThreadId: $t, body: $b}) { comment { url } }
@@ -368,7 +384,8 @@ gh api graphql -F t=<thread id> -F b=@<reply file> -f query='
 ```
 
 ```shell
-gh api graphql -F t=<thread id> -f query='
+thread=<thread id>
+gh api graphql -F t="${thread:?}" -f query='
   mutation($t: ID!) {
     resolveReviewThread(input: {threadId: $t}) { thread { isResolved } }
   }'
@@ -396,10 +413,10 @@ every fix the approval needs itself**, blocking findings and nits
 alike: every item is answered as *Answering it* says, with no split
 between minor and substantial changes.
 
-Before pushing, the session claims the branch (the shared *A claim holds
-a pull request's branch*) and pushes with the lease of the shared
-*Committing and rebasing*, on the sha it built on. Where the branch
-moved, they are working: stop and ask.
+Before pushing, the session claims the branch (`writing.md`'s *A claim
+holds a pull request's branch*) and pushes with the lease of
+`writing.md`'s *Committing and rebasing*, on the sha it built on. Where
+the branch moved, they are working: stop and ask.
 
 Where the session has no write access to the branch, the findings are
 posted to the author as a review comment, and the pull request waits on
@@ -415,8 +432,8 @@ them.
   `CONTRIBUTING.md`'s *Landing it* says, or for a retarget.** An outside
   contributor's branch, or the agent's, is never rebased: *Outside
   contributors* brings `main` in by a merge.
-- **After a rebase or a merge of `main`, run the gates the shared *The
-  gates* asks, and push.** Ask the merge the forge will compute,
+- **After a rebase or a merge of `main`, run the gates `writing.md`'s
+  *The gates* asks, and push.** Ask the merge the forge will compute,
   locally: `git -C <wt> -c merge.union.driver=false merge-tree
   origin/main <branch>` exits `1` where GitHub will refuse. `gh pr view
   --json mergeable` is a cached value.
@@ -439,19 +456,21 @@ them.
   *One subject, opened as soon as it is written* says.
 
   ```shell
+  n=<n>
+  repo=<owner>/<repo>
   for i in $(seq 16); do
     low=$(gh api rate_limit --jq '.resources | {core, graphql}
       | to_entries[] | select(.value.remaining < 500)
       | "\(.key) \(.value.remaining) reset \(.value.reset | todate)"') ||
       low=unread
     [ -z "$low" ] || break
-    [ "$(gh pr checks <n> --repo <owner>/<repo> --json bucket \
+    [ "$(gh pr checks "${n:?}" --repo "${repo:?}" --json bucket \
       --jq 'length > 0 and all(.[]; .bucket != "pending")')" = true ] &&
       break
     [ "$i" = 16 ] || sleep 120
   done
   case $low in
-    '') gh pr checks <n> --repo <owner>/<repo> ;;
+    '') gh pr checks "${n:?}" --repo "${repo:?}" ;;
     unread) (exit 5) ;;
     *) echo "$low"; (exit 3) ;;
   esac
@@ -481,7 +500,12 @@ them.
   exit `0`:
 
   ```shell
-  gh api graphql --paginate -F owner=<owner> -F repo=<repo> -F n=<n> -f query='
+  owner=<owner>
+  name=<repo>
+  n=<n>
+  red=<red file>
+  gh api graphql --paginate -F owner="${owner:?}" -F repo="${name:?}" \
+    -F n="${n:?}" -f query='
     query($owner: String!, $repo: String!, $n: Int!, $endCursor: String) {
       repository(owner: $owner, name: $repo) {
         pullRequest(number: $n) {
@@ -501,7 +525,7 @@ them.
     | .commits.nodes[0].commit.statusCheckRollup.contexts.nodes[]
     | select(.name and (.status != "COMPLETED" or (.startedAt >= $reopened
       and (.conclusion | IN("SUCCESS", "SKIPPED", "NEUTRAL") | not))))
-    | .name' > <red file>
+    | .name' > "${red:?}"
   ```
 
   A `cancelled` run is not a `failure`.
@@ -518,8 +542,10 @@ them.
       (`CONTRIBUTING.md`'s *Landing it* says why):
 
       ```shell
-      gh pr close <n> --repo <owner>/<repo>
-      gh pr reopen <n> --repo <owner>/<repo>
+      n=<n>
+      repo=<owner>/<repo>
+      gh pr close "${n:?}" --repo "${repo:?}"
+      gh pr reopen "${n:?}" --repo "${repo:?}"
       ```
 
       The reopen's runs can still test the merge with the old `main`:
@@ -530,7 +556,10 @@ them.
       log, and the second prints the line that names it:
 
       ```shell
-      gh run view --repo <owner>/<repo> --log <run id> > <log file>
+      repo=<owner>/<repo>
+      run=<run id>
+      log=<log file>
+      gh run view --repo "${repo:?}" --log "${run:?}" > "${log:?}"
       ```
 
       ```shell
@@ -549,9 +578,9 @@ them.
 
       *The decision* reads the bot's review of the reopen. A check that
       only reports is named in the decision;
-    - **not reproducing**: the shared *A failure that does not reproduce
-      is measured*. One re-run measures it (`gh run rerun <run id>
-      --repo <owner>/<repo> --failed`); two different answers are an
+    - **not reproducing**: `writing.md`'s *A failure that does not
+      reproduce is measured*. One re-run measures it (`gh run rerun <run
+      id> --repo <owner>/<repo> --failed`); two different answers are an
       issue, not a green;
     - **never given a runner**: a job cancelled with the annotation `The
       job was not acquired by Runner of type hosted even after multiple
@@ -561,13 +590,17 @@ them.
       prints one job's annotations:
 
       ```shell
+      repo=<owner>/<repo>
+      run=<run id>
       gh api --jq '.jobs[] | select(.conclusion == "cancelled") | .id' \
-        --paginate repos/<owner>/<repo>/actions/runs/<run id>/jobs
+        --paginate "repos/${repo:?}/actions/runs/${run:?}/jobs"
       ```
 
       ```shell
+      repo=<owner>/<repo>
+      job=<job id>
       gh api --jq '.[].message' \
-        --paginate repos/<owner>/<repo>/check-runs/<job id>/annotations
+        --paginate "repos/${repo:?}/check-runs/${job:?}/annotations"
       ```
 
       Each job cancelled this way takes up to four re-runs, by the id
@@ -579,7 +612,9 @@ them.
       which *not reproducing* bounds:
 
       ```shell
-      gh run rerun --repo <owner>/<repo> --job <job id>
+      repo=<owner>/<repo>
+      job=<job id>
+      gh run rerun --repo "${repo:?}" --job "${job:?}"
       ```
 
       On PR btclib-org/btclib-secp256k1#1360 a macOS job of the `test`
@@ -651,7 +686,9 @@ head, the latest counts. This prints `ack` where that one is
 is absent, where no verdict line names the head:
 
 ```shell
-gh pr view <n> --repo <owner>/<repo> --json headRefOid,reviews \
+n=<n>
+repo=<owner>/<repo>
+gh pr view "${n:?}" --repo "${repo:?}" --json headRefOid,reviews \
   --jq '.headRefOid as $h
   | [.reviews[] | select(.author.login == "claude")
     | ((.body // "") + "\n" | split("\n")[0])
@@ -700,8 +737,9 @@ step's local action does not. It lists nothing where that file calls
 none:
 
 ```shell
+repo=<owner>/<repo>
 gh api -H 'Accept: application/vnd.github.raw' \
-  repos/<owner>/<repo>/contents/.github/workflows/claude-review.yml \
+  "repos/${repo:?}/contents/.github/workflows/claude-review.yml" \
   | uv run --isolated --no-config --no-project --python 3.15 \
     --with pyyaml==6.0.3 python -I -c '
 import sys, yaml
@@ -853,17 +891,25 @@ head `<sha>`. The diff is read once, by two commands that must each
 exit `0`:
 
 ```shell
-gh pr diff <n> --repo <owner>/<repo> --name-only > <list file>
+n=<n>
+repo=<owner>/<repo>
+list=<list file>
+gh pr diff "${n:?}" --repo "${repo:?}" --name-only > "${list:?}"
 ```
 
 ```shell
-gh pr diff <n> --repo <owner>/<repo> > <diff file>
+n=<n>
+repo=<owner>/<repo>
+diff=<diff file>
+gh pr diff "${n:?}" --repo "${repo:?}" > "${diff:?}"
 ```
 
 The list omits the old path of a renamed file, so add it from the diff:
 
 ```shell
-grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
+diff=<diff file>
+list=<list file>
+grep '^rename from ' "${diff:?}" | cut -d' ' -f3- >> "${list:?}"
 ```
 
 - [ ] the author is not the human: `.author.login` differs from
@@ -923,10 +969,11 @@ grep '^rename from ' <diff file> | cut -d' ' -f3- >> <list file>
       only move pins: the fifth command below prints nothing, and the
       sixth, where it runs, exits `0`
 - [ ] a major move of a dependency, a hook or an action has the latest
-      fresh reviewer's `CLEARED` answer the shared *The verdict*'s item
-      on it, saying that nothing in the notes breaks the tree; where the
-      other client is unavailable, the dedicated reviewer's does
-      (`orchestration.md`'s *Where the other client is unavailable*)
+      fresh reviewer's `CLEARED` answer `local-review.md`'s *The
+      verdict*'s item on it, saying that nothing in the notes breaks the
+      tree; where the other client is unavailable, the dedicated
+      reviewer's does (`orchestration.md`'s *Where the other client is
+      unavailable*)
 
 The first prints each file under `.github/` or any `.claude/`, any top-level
 `RELEASING.md`, `REPOSITORY.md` or `SECURITY.md`, and any `AGENTS.md`,
@@ -952,11 +999,13 @@ The second prints the readme where the list holds it, and exits `0`
 only where it does not:
 
 ```shell
+toml=<toml file>
+list=<list file>
 uv run --no-project --python 3.15 python -c 'import sys, tomllib
 r = tomllib.load(open(sys.argv[1], "rb"))["project"].get("readme", "")
 r = r if isinstance(r, str) else r.get("file", "")
 sys.exit(bool(r) and r in open(sys.argv[2]).read().splitlines() and r)' \
-  <toml file> <list file>
+  "${toml:?}" "${list:?}"
 ```
 
 The third prints each file that fails its item, and exits `1` where
@@ -970,8 +1019,10 @@ none does. The third reads `<export file>`. This writes it empty;
 Once *The exported lock*, below, has run where it applies, the third:
 
 ```shell
-grep -Ev '^(docs|tests)/|\.md$|^(pyproject\.toml|uv\.lock)$' <list file> |
-  grep -vxFf <export file>
+list=<list file>
+exported=<export file>
+grep -Ev '^(docs|tests)/|\.md$|^(pyproject\.toml|uv\.lock)$' "${list:?}" |
+  grep -vxFf "${exported:?}"
 ```
 
 The fourth prints the diff of `pyproject.toml`:
@@ -994,8 +1045,10 @@ read the list without them, which this writes, in place of `<list
 file>`. Any other path under `.github/` still fails the first:
 
 ```shell
+list=<list file>
+rest=<rest file>
 grep -Ev '^(\.pre-commit-config\.yaml|\.github/workflows/[^/]+\.yml)$' \
-  <list file> > <rest file>
+  "${list:?}" > "${rest:?}"
 ```
 
 The fifth prints each line a pin file changes that does not read as a
@@ -1105,10 +1158,10 @@ sys.exit(repr(b) != repr(h))' "${base:?}" "${head:?}"
 **The clone.** *The exported lock* and *The reproduced lock* run in one
 clone of `<sha>`, made once where either applies, before both. The
 clone directory is a new one of your own. Shell state does not survive
-between calls (*Where you work*), so each fence sets the values it reads
-at its head: fill them in every fence. `<base>` is the merge base of
-`<sha>` with `baseRefName` (*Whose pull request it is*), which this
-prints:
+between calls (`every-role.md`'s *Where you work*), so each fence sets
+the values it reads at its head: fill them in every fence. `<base>` is
+the merge base of `<sha>` with `baseRefName` (*Whose pull request it
+is*), which this prints:
 
 ```shell
 gh api --jq .merge_base_commit.sha \
@@ -1260,16 +1313,20 @@ clone=<clone dir>
 rm -rf "${clone:?}"
 ```
 
-The shared *The verdict* says what a major move is. Where the notes show
-a known problem, its item fails and the human decides (*Where it is not
-obvious*).
+`local-review.md`'s *The verdict* says what a major move is. Where the
+notes show a known problem, its item fails and the human decides (*Where
+it is not obvious*).
 
 **Where it is obvious, approve `<sha>`, pinned.** `gh pr review` cannot
 pin a commit, so the call is the API's:
 
 ```shell
-gh api repos/<owner>/<repo>/pulls/<n>/reviews -f event=APPROVE \
-  -f commit_id=<sha> -F body=@<body file>
+n=<n>
+repo=<owner>/<repo>
+sha=<sha>
+body=<body file>
+gh api "repos/${repo:?}/pulls/${n:?}/reviews" -f event=APPROVE \
+  -f commit_id="${sha:?}" -F "body=@${body:?}"
 ```
 
 The body is a one-line summary naming the head it approves, `<sha>`,
@@ -1285,8 +1342,11 @@ Then land it, pinned to the same `<sha>` (*Landing*).
 **Read the approval back**:
 
 ```shell
+n=<n>
+repo=<owner>/<repo>
 login=$(gh api user --jq .login)
-gh pr view <n> --repo <owner>/<repo> --json headRefOid,reviewDecision,reviews |
+gh pr view "${n:?}" --repo "${repo:?}" \
+  --json headRefOid,reviewDecision,reviews |
   jq -r --arg l "${login:?}" '.headRefOid, .reviewDecision,
   ([.reviews[] | select(.state == "APPROVED" and .author.login == $l)]
   | last | .commit.oid // "none")'
@@ -1301,14 +1361,16 @@ Request it from an owner who is neither the human nor the author and
 pushed no commit to the branch, and report whom it waits on. Where
 `main` requires a code owner's review and the author is the only code
 owner, no other approval meets it, and it lands only through a bypass of
-the rule that imposes it. `main` requires that review where either
-command prints `true` (a 404 from the second is no classic protection):
+the rule that imposes it. `main` requires that review where either `gh
+api` call prints `true` (a 404 from the second is no classic
+protection):
 
 ```shell
-gh api --paginate repos/<owner>/<repo>/rules/branches/main \
+repo=<owner>/<repo>
+gh api --paginate "repos/${repo:?}/rules/branches/main" \
   --jq '.[] | select(.type == "pull_request")
     | .parameters.require_code_owner_review | select(.)'
-gh api repos/<owner>/<repo>/branches/main/protection \
+gh api "repos/${repo:?}/branches/main/protection" \
   --jq '.required_pull_request_reviews.require_code_owner_reviews'
 ```
 
@@ -1330,11 +1392,12 @@ This prints each ruleset over `main` that imposes the review, with each
 of its bypass actors, or with `none`:
 
 ```shell
+repo=<owner>/<repo>
 (set -o pipefail
-gh api --paginate repos/<owner>/<repo>/rules/branches/main \
+gh api --paginate "repos/${repo:?}/rules/branches/main" \
   --jq '.[] | select(.type == "pull_request"
     and .parameters.require_code_owner_review) | .ruleset_id' \
-  | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{} \
+  | xargs -I{} gh api "repos/${repo:?}/rulesets/{}" \
     --jq '.id as $r | (.bypass_actors[]?
       | "\($r) \(.actor_type) \(.actor_id) \(.bypass_mode)")
       // "\($r) none"')
@@ -1356,28 +1419,29 @@ only the bot's quota fails the items, the human may run a Claude
 review locally. Record it as a hold (`every-session.md`'s *When the
 human has to decide*). On "approve", approve as above, with a body
 saying it follows the human's decision. At night it is a deferred item
-(the shared *Night mode*).
+(`orchestration.md`'s *Night mode*).
 
 ### The human's own pull request
 
 **Where the human is a bypass actor of an active ruleset, and is the
-maintainer (the shared *Three roles the process names*) or runs `--land`
-(*Landing*), the session lands it through the bypass, and requests no
-owner's review.** It lands once every item above holds but those on the
-author, the repository, the files in the list, `pyproject.toml` and
-`uv.lock`, a bot's pins and a major move, as *Landing* qualifies them,
-the bot's review and its check included or absent as *The reviews on
-GitHub* allows. *Landing* gives the command. `btclib-org/.github`'s
-`GOVERNANCE.md`, under *How a decision is made*, decides which
-repositories give the maintainer the bypass. This command prints the id
-of each user an active ruleset gives the bypass in `pull_request` mode.
-The human is a bypass actor where it prints the id
+maintainer (`every-role.md`'s *Three roles the process names*) or runs
+`--land` (*Landing*), the session lands it through the bypass, and
+requests no owner's review.** It lands once every item above holds but
+those on the author, the repository, the files in the list,
+`pyproject.toml` and `uv.lock`, a bot's pins and a major move, as
+*Landing* qualifies them, the bot's review and its check included or
+absent as *The reviews on GitHub* allows. *Landing* gives the command.
+`btclib-org/.github`'s `GOVERNANCE.md`, under *How a decision is made*,
+decides which repositories give the maintainer the bypass. This command
+prints the id of each user an active ruleset gives the bypass in
+`pull_request` mode. The human is a bypass actor where it prints the id
 `gh api user --jq .id` prints:
 
 ```shell
+repo=<owner>/<repo>
 (set -o pipefail
-gh api --paginate repos/<owner>/<repo>/rulesets --jq '.[].id' \
-  | xargs -I{} gh api repos/<owner>/<repo>/rulesets/{} \
+gh api --paginate "repos/${repo:?}/rulesets" --jq '.[].id' \
+  | xargs -I{} gh api "repos/${repo:?}/rulesets/{}" \
     --jq 'select(.enforcement == "active") | .bypass_actors[]?
       | select(.actor_type == "User" and .bypass_mode == "pull_request")
       | .actor_id')
@@ -1392,7 +1456,10 @@ never attempted. Once the same items hold, except the one a 429 fails:
   '.[].login'` lists them:
 
   ```shell
-  gh pr edit <n> --repo <owner>/<repo> --add-reviewer <login>
+  n=<n>
+  repo=<owner>/<repo>
+  login=<login>
+  gh pr edit "${n:?}" --repo "${repo:?}" --add-reviewer "${login:?}"
   ```
 
 - once an owner has approved `<sha>`, the approver merges it, or the
@@ -1417,9 +1484,9 @@ has, is put to the human before it lands through the bypass.
 While the pull request is open, no competing branch is opened for its
 issue, which its assignees hold, as the tree's `CONTRIBUTING.md` says
 in *Pull requests*. The reviewer reviews it against `REVIEWING.md`. Its
-gates run in the sandbox of the shared *The gates*, whoever runs them,
-and so do the dedicated reviewer's inputs, which the session runs there
-for it. Where `orchestration.md`'s *Where the other client is
+gates run in the sandbox of `writing.md`'s *The gates*, whoever runs
+them, and so do the dedicated reviewer's inputs, which the session runs
+there for it. Where `orchestration.md`'s *Where the other client is
 unavailable* has the body record something, the comment that section
 names records it instead.
 
@@ -1435,9 +1502,9 @@ the order, and the contributor is told on their pull request what moved
 and how to resolve it. Completing it:
 
 - **Add, never rewrite.** Their commits stay byte for byte. `main`
-  comes in by a signed merge, not a rebase, run with hooks off as the
-  shared *The gates* says. The fixes are a signed commit of ours on top,
-  signed off by us.
+  comes in by a signed merge, not a rebase, run with hooks off as
+  `writing.md`'s *The gates* says. The fixes are a signed commit of ours
+  on top, signed off by us.
 - **Push to their fork as a fast-forward only**: `git push <fork url>
   HEAD:refs/heads/<their branch>`, never with any `--force`. Before
   every push, `git ls-remote <fork url> refs/heads/<their branch>` must
@@ -1479,11 +1546,13 @@ warns of the closing, by a maintainer, a session or a job; where none
 does, it is the session's ask above. Such a comment can be a comment on
 the pull request, the body of a review or a comment of a review, which
 GitHub serves apart. These list each kind, every page read, with its
-time, author, URL and body, and the session reads them all and takes the
-earliest that asks and warns. A comment of a review takes its review's
-time, since GitHub shows the comments of a pending review only once it
-is submitted: the third listing prints the review's id, and the second
-that review's `submitted_at`:
+time, author and URL on one line and its body on the next, as a JSON
+string, so that a body holding a line of that shape adds no entry. The
+session reads them all and takes the earliest that asks and warns. A
+comment of a review takes its review's time, since GitHub shows the
+comments of a pending review only once it is submitted: the third
+listing prints the review's id, and the second that review's
+`submitted_at`:
 
 ```shell
 n=<n>
@@ -1492,19 +1561,20 @@ repo=<owner>/<repo>
 
 ```shell
 gh api --paginate "repos/${repo:?}/issues/${n:?}/comments" \
-  --jq '.[] | "\(.created_at) \(.user.login) \(.html_url)\n\(.body)\n"'
+  --jq '.[] | "\(.created_at) \(.user.login) \(.html_url)
+\(.body | @json)\n"'
 ```
 
 ```shell
 gh api --paginate "repos/${repo:?}/pulls/${n:?}/reviews" \
   --jq '.[] | "\(.submitted_at) \(.user.login) \(.html_url) review \(.id)
-\(.body)\n"'
+\(.body | @json)\n"'
 ```
 
 ```shell
 gh api --paginate "repos/${repo:?}/pulls/${n:?}/comments" \
   --jq '.[] | "review \(.pull_request_review_id) \(.user.login) \(.html_url)
-\(.body)\n"'
+\(.body | @json)\n"'
 ```
 
 This prints the time of the last reopen, and nothing where the pull
@@ -1525,14 +1595,14 @@ gh api graphql -f owner="${repo%%/*}" -f name="${repo#*/}" -F n="${n:?}" \
 ```
 
 On the closing day, the session reads the head's commits: the `Sign-off`
-check on the head, or, where it did not run, the shared *Signed and
+check on the head, or, where it did not run, `writing.md`'s *Signed and
 signed off*'s script on those commits. Where the check, or the script
 where the check did not run, refuses a commit, the session closes the
 pull request with a comment, from a file. The comment thanks them, names
 the commits refused, links the request, and gives the commands the check
-or the script printed. It points to *Pull requests* for how the pull
-request comes back, and says that a comment on each issue it cites,
-posted next, says who holds that issue:
+or the script printed. It points to `CONTRIBUTING.md`'s *Pull requests*
+for how the pull request comes back, and says that a comment on each
+issue it cites, posted next, says who holds that issue:
 
 ```shell
 comment=<comment file>
@@ -1542,13 +1612,13 @@ comment=<comment file>
 gh pr close "${n:?}" --repo "${repo:?}" --comment "$(cat "${comment:?}")"
 ```
 
-An issue is held by its assignees, as *Pull requests* says. The issues
-the pull request cites are those its `closingIssuesReferences` lists,
-and any its title or body says it is for. Each issue sits in the
-repository its reference names, which may not be the pull request's:
-`<issue repo>` is that repository, `<owner>/<repo>` for a bare `#N`.
-This prints each issue `closingIssuesReferences` lists, with its
-repository:
+An issue is held by its assignees, as `CONTRIBUTING.md`'s *Pull
+requests* says. The issues the pull request cites are those its
+`closingIssuesReferences` lists, and any its title or body says it is
+for. Each issue sits in the repository its reference names, which may
+not be the pull request's: `<issue repo>` is that repository,
+`<owner>/<repo>` for a bare `#N`. This prints each issue
+`closingIssuesReferences` lists, with its repository:
 
 ```shell
 gh pr view "${n:?}" --repo "${repo:?}" --json closingIssuesReferences \
@@ -1605,13 +1675,53 @@ gh pr checks "${pr:?}" --json name,bucket,completedAt \
     | select(.bucket == "pass") | .completedAt'
 ```
 
+A hit that passes is ranked by its first pass on any head it had, so a
+pull request pushed again after passing keeps its place. `gh pr checks`
+reads the current head alone. This prints the earliest time a `Sign-off`
+run passed, read from every `pull_request` workflow run on the hit's
+head branch, from a repository of its head owner, since it was opened,
+and nothing where none passed. Where a call fails it exits non-zero, and
+no taker is chosen until it has exited `0` for each hit that passes:
+
+```shell
+info=$(gh pr view "${pr:?}" \
+  --json url,headRefName,headRepositoryOwner,createdAt \
+  --jq '(.url | split("/")[3:5] | join("/")), .headRefName,
+    .headRepositoryOwner.login, .createdAt') &&
+  { read -r prepo && read -r branch && read -r from && read -r since; } \
+    <<< "$info" &&
+  ids=$(FROM=$from SINCE=$since gh api --paginate -X GET \
+    "repos/${prepo:?}/actions/runs" -f event=pull_request \
+    -f branch="${branch:?}" -F per_page=100 \
+    --jq '.workflow_runs[] | select(.head_repository.owner.login == env.FROM
+      and .created_at >= env.SINCE) | .check_suite_id') &&
+  times=$(while read -r id; do
+    [ -z "$id" ] || gh api --paginate -X GET -f filter=all \
+      "repos/${prepo:?}/check-suites/${id}/check-runs" \
+      --jq '.check_runs[] | select(.name | test("(^|/ )Sign-off$"))
+        | select(.conclusion == "success") | .completed_at' || exit
+  done <<< "$ids") &&
+  printf '%s' "$times" | sort | head -n 1
+```
+
+It matches the head's owner, not its repository: once a fork is
+deleted, `gh pr view` gives the pull request no head repository, while
+its runs still name it.
+
+GitHub caps the runs one query returns
+([*List workflow runs for a repository*](https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-repository)),
+and returns them newest first, so a branch name with more `pull_request`
+runs than the cap, from any repository, loses its oldest. The runs of
+another pull request opened by the same owner from a branch of that name
+count too, from the time this one was opened.
+
 GitHub assigns an outside login only to an issue it has commented on, as
-*Pull requests* says. This exits `0` where a hit's author can be
-assigned to the issue, and exits `1`, printing `User cannot be assigned
-to this issue. (HTTP 404)`, where they cannot. Any other failure, as
-another HTTP status or no answer, decides nothing, and no taker is
-chosen until the call has given one of those two answers for each hit's
-author:
+`CONTRIBUTING.md`'s *Pull requests* says. This exits `0` where a hit's
+author can be assigned to the issue, and exits `1`, printing `User
+cannot be assigned to this issue. (HTTP 404)`, where they cannot. Any
+other failure, as another HTTP status or no answer, decides nothing, and
+no taker is chosen until the call has given one of those two answers for
+each hit's author:
 
 ```shell
 author=<hit author login>
@@ -1621,9 +1731,9 @@ author=<hit author login>
 gh api --silent "repos/${irepo:?}/issues/${issue:?}/assignees/${author:?}"
 ```
 
-The taker is the author of the hit with the earliest time among those
-for whose author this call exits `0`. The session assigns them, then
-reads the issue's assignees back as after the removal:
+The taker is the author of the hit with the earliest first pass among
+those for whose author this call exits `0`. The session assigns them,
+then reads the issue's assignees back as after the removal:
 
 ```shell
 taker=<taker login>
@@ -1665,9 +1775,9 @@ gh issue comment "${issue:?}" --repo "${irepo:?}" --body-file "${note:?}"
 ```
 
 On the contributor's comment asking for a reopen, the session reopens
-the pull request in the order *Pull requests* gives. Where another
-contributor has been assigned to an issue it cites meanwhile, the human
-decides whether it is reopened:
+the pull request in the order `CONTRIBUTING.md`'s *Pull requests* gives.
+Where another contributor has been assigned to an issue it cites
+meanwhile, the human decides whether it is reopened:
 
 ```shell
 gh pr reopen "${n:?}" --repo "${repo:?}"
@@ -1722,7 +1832,9 @@ These steps, in order, show that every file the diff touches passes:
    files endpoint takes no sha, so the last step reads them again:
 
    ```shell
-   gh pr view <n> --repo <owner>/<repo> \
+   n=<n>
+   repo=<owner>/<repo>
+   gh pr view "${n:?}" --repo "${repo:?}" \
      --json headRefOid,baseRefName --jq '.headRefOid, .baseRefName'
    ```
 
@@ -1731,7 +1843,9 @@ These steps, in order, show that every file the diff touches passes:
    pass:
 
    ```shell
-   gh pr view <n> --repo <owner>/<repo> \
+   n=<n>
+   repo=<owner>/<repo>
+   gh pr view "${n:?}" --repo "${repo:?}" \
      --json changedFiles --jq .changedFiles
    ```
 
@@ -1739,8 +1853,11 @@ These steps, in order, show that every file the diff touches passes:
    `previous_filename` brings in the old name of a renamed file:
 
    ```shell
-   gh api --paginate repos/<owner>/<repo>/pulls/<n>/files \
-     --jq '.[] | .filename, (.previous_filename // empty)' > <files file>
+   n=<n>
+   repo=<owner>/<repo>
+   files=<files file>
+   gh api --paginate "repos/${repo:?}/pulls/${n:?}/files" \
+     --jq '.[] | .filename, (.previous_filename // empty)' > "${files:?}"
    ```
 
 1. These exit `1`, printing nothing: the first, every file outside the
@@ -1774,20 +1891,28 @@ These steps, in order, show that every file the diff touches passes:
    This prints `<base sha>`:
 
    ```shell
-   gh api repos/<owner>/<repo>/commits/<base> --jq .sha
+   repo=<owner>/<repo>
+   base=<base>
+   gh api "repos/${repo:?}/commits/${base:?}" --jq .sha
    ```
 
    This exits `0`:
 
    ```shell
-   git -C <checkout> fetch -q origin <base>
+   checkout=<checkout>
+   base=<base>
+   git -C "${checkout:?}" fetch -q origin "${base:?}"
    ```
 
    This exits `0` or `1`:
 
    ```shell
-   git -C <checkout> grep -h -F -f <files file> <base sha> -- \
-     .github/workflows/ .github/actions/ pyproject.toml > <hits file>
+   checkout=<checkout>
+   files=<files file>
+   sha=<base sha>
+   hits=<hits file>
+   git -C "${checkout:?}" grep -h -F -f "${files:?}" "${sha:?}" -- \
+     .github/workflows/ .github/actions/ pyproject.toml > "${hits:?}"
    ```
 
    This exits `1`, printing nothing:
@@ -1804,7 +1929,8 @@ against another base runs the same head on another diff. This prints
 `1`, or the runs are the human's:
 
 ```shell
-gh pr list --repo <owner>/<repo> --state open --limit 200 \
+repo=<owner>/<repo>
+gh pr list --repo "${repo:?}" --state open --limit 200 \
   --json number,headRefOid \
   --jq '[.[] | select(.headRefOid == "<head>")] | length'
 ```
@@ -1818,14 +1944,18 @@ reviews on GitHub*). `head_sha` matches only the full sha the first step
 prints; an abbreviated one lists nothing:
 
 ```shell
-gh api --paginate -X GET repos/<owner>/<repo>/actions/runs \
-  -f head_sha=<head> -f status=action_required -F per_page=100 \
+repo=<owner>/<repo>
+head=<head>
+gh api --paginate -X GET "repos/${repo:?}/actions/runs" \
+  -f head_sha="${head:?}" -f status=action_required -F per_page=100 \
   --jq '.workflow_runs[] | select(.event != "pull_request_review_comment")
     | {id, name, event}'
 ```
 
 ```shell
-gh api -X POST repos/<owner>/<repo>/actions/runs/<id>/approve
+repo=<owner>/<repo>
+id=<id>
+gh api -X POST "repos/${repo:?}/actions/runs/${id:?}/approve"
 ```
 
 ## Merging
@@ -1838,13 +1968,16 @@ approvals. A pull request found armed is disarmed at once, and the human
 is told. This lists the armed ones, and the second command disarms one:
 
 ```shell
-gh pr list --repo <owner>/<repo> --limit 200 \
+repo=<owner>/<repo>
+gh pr list --repo "${repo:?}" --limit 200 \
   --json number,autoMergeRequest \
   --jq '.[] | select(.autoMergeRequest) | .number'
 ```
 
 ```shell
-gh pr merge <n> --repo <owner>/<repo> --disable-auto
+n=<n>
+repo=<owner>/<repo>
+gh pr merge "${n:?}" --repo "${repo:?}" --disable-auto
 ```
 
 **The merge is an explicit act after the approval**: the approver's own,
@@ -1903,8 +2036,10 @@ first command writes them, and `<required file>` must not be empty. The
 second writes each check that passed or was skipped on the head:
 
 ```shell
-gh api repos/<owner>/<repo>/branches/main/protection/required_status_checks \
-  --jq '.contexts[]' > <required file>
+repo=<owner>/<repo>
+required=<required file>
+gh api "repos/${repo:?}/branches/main/protection/required_status_checks" \
+  --jq '.contexts[]' > "${required:?}"
 ```
 
 Where it answers `Branch not protected` (HTTP 404) and exits `1`, `main`
@@ -1912,18 +2047,25 @@ has no protection yet: that is not an empty list, and the pull request
 is not merged but held, as *The decision* says.
 
 ```shell
-gh pr checks <n> --repo <owner>/<repo> --json name,bucket --jq '.[]
-  | select(.bucket == "pass" or .bucket == "skipping") | .name' > <green file>
+n=<n>
+repo=<owner>/<repo>
+green=<green file>
+gh pr checks "${n:?}" --repo "${repo:?}" --json name,bucket --jq '.[]
+  | select(.bucket == "pass" or .bucket == "skipping") | .name' \
+  > "${green:?}"
 ```
 
 *Rebase and CI*'s command that writes `<red file>` exits `0`. The first
-command below prints each required check that has not passed or been
+`grep` below prints each required check that has not passed or been
 skipped, and the second each one written to `<red file>`. Each exits `1`
 where it prints nothing:
 
 ```shell
-grep -vxFf <green file> <required file>
-grep -xFf <red file> <required file>
+green=<green file>
+red=<red file>
+required=<required file>
+grep -vxFf "${green:?}" "${required:?}"
+grep -xFf "${red:?}" "${required:?}"
 ```
 
 `gh pr checks --required` is not enough: it omits a required check that
@@ -1944,7 +2086,8 @@ has not reported yet.
   carrying the label:
 
   ```shell
-  gh api repos/<owner>/<repo> --jq .full_name
+  repo=<owner>/<repo>
+  gh api "repos/${repo:?}" --jq .full_name
   ```
 
   ```shell
@@ -1989,24 +2132,33 @@ has not reported yet.
   fetching a pull request's ref leaves `origin/main` where it was:
 
   ```shell
-  git -C <checkout> fetch origin
+  checkout=<checkout>
+  git -C "${checkout:?}" fetch origin
   ```
 
   The next command is run for each pull request. `<main sha>` is the
-  `origin/main` that fetch left, pinned (the shared *How you establish a
-  fact*), and each `<head>` is a `headRefOid`:
+  `origin/main` that fetch left, pinned (`every-role.md`'s *How you
+  establish a fact*), and `<the heads>` are their `headRefOid`s, a space
+  between each two:
 
   ```shell
-  git -C <checkout> fetch origin refs/pull/<n>/head
+  checkout=<checkout>
+  n=<n>
+  git -C "${checkout:?}" fetch origin "refs/pull/${n:?}/head"
   ```
 
   ```shell
-  git -C <checkout> worktree add --detach <wt> <main sha>
+  checkout=<checkout>
+  wt=<wt>
+  main=<main sha>
+  git -C "${checkout:?}" worktree add --detach "${wt:?}" "${main:?}"
   ```
 
   ```shell
-  git -C <wt> -c core.hooksPath=/dev/null \
-    merge --no-ff --no-commit <head> <head> …
+  wt=<wt>
+  set -- <the heads>
+  git -C "${wt:?}" -c core.hooksPath=/dev/null \
+    merge --no-ff --no-commit "$@"
   ```
 
   With several heads `git merge` ignores `merge=union`, so it needs no
@@ -2014,16 +2166,19 @@ has not reported yet.
   what the heads hold. Exit `0` leaves the merge staged and uncommitted.
   The tree's gates run on it whole, as `CONTRIBUTING.md`'s last section
   gives them, under the gate lock with `gate_wait`, and in the sandbox
-  of the shared *The gates* where any head is an outside contributor's.
-  A push to one of the pull requests voids the run.
+  of `writing.md`'s *The gates* where any head is an outside
+  contributor's. A push to one of the pull requests voids the run.
 
   **Where the merge exits non-zero, `merge-tree` says why.** This
   exits `1` where `<a>` and `<b>` conflict. It runs on `<main sha>` with
   each head, and on each pair of heads:
 
   ```shell
-  git -C <wt> -c merge.union.driver=false \
-    merge-tree --write-tree --name-only <a> <b>
+  wt=<wt>
+  a=<a>
+  b=<b>
+  git -C "${wt:?}" -c merge.union.driver=false \
+    merge-tree --write-tree --name-only "${a:?}" "${b:?}"
   ```
 
   A head that conflicts with `main` leaves the set and is rebased now.
@@ -2047,18 +2202,18 @@ has not reported yet.
 
   **A gate red on the merge and green on `main`** is a clash no merge
   shows. The pull request it names gets the fix, in a new commit through
-  the shared *The rounds*, and the test runs again. A gate red on `main`
-  too is `main`'s, and *Landing*'s first bullet holds. That red can hide
-  a clash on that gate.
+  `local-review.md`'s *The rounds*, and the test runs again. A gate red
+  on `main` too is `main`'s, and *Landing*'s first bullet holds. That
+  red can hide a clash on that gate.
 
   Whatever the outcome, `git -C <wt> merge --abort` ends the merge. It
   exits `128` where an octopus stopped before its last head and left
-  nothing to abort. The worktree then goes (the shared *Debris goes when
-  its work ends*). Where a fixer left changes, the abort can exit `128`
-  too, and the worktree goes with `--force`. Where any head is an
-  outside contributor's and a gate has run, no abort runs, and the
+  nothing to abort. The worktree then goes (`every-role.md`'s *Debris
+  goes when its work ends*). Where a fixer left changes, the abort can
+  exit `128` too, and the worktree goes with `--force`. Where any head
+  is an outside contributor's and a gate has run, no abort runs, and the
   worktree goes with `git -C <checkout> worktree remove --force <wt>`
-  (the shared *The gates*).
+  (`writing.md`'s *The gates*).
 
   The test covers those heads on that `main`, and nothing that lands
   from outside the set afterwards.
@@ -2068,18 +2223,22 @@ has not reported yet.
   the message are written, not inherited:
 
   ```shell
-  gh pr merge <n> --repo <owner>/<repo> --squash \
-    --match-head-commit <the head that lands> \
-    --subject "<title> (closes #<issue>) (#<n>)" --body-file <message>
+  n=<n>
+  repo=<owner>/<repo>
+  head=<the head that lands>
+  message=<message>
+  gh pr merge "${n:?}" --repo "${repo:?}" --squash \
+    --match-head-commit "${head:?}" \
+    --subject "<title> (closes #<issue>) (#${n:?})" --body-file "${message:?}"
   ```
 
-  The subject is the pull request's title with its citation (the shared
-  *Citations and closing keywords*) and `(#<n>)`, except for a batch of
-  ports (`/btclib-iss`'s *Ports of the standard*); `--subject` replaces
-  the whole subject. The message says what the change does, and keeps
-  every `Signed-off-by:` and `Co-authored-by:` line of the commits it
-  squashes. A finding that lives only in the commit message is fixed
-  here, with no new round.
+  The subject is the pull request's title with its citation
+  (`writing.md`'s *Citations and closing keywords*) and `(#<n>)`, except
+  for a batch of ports (`/btclib-iss`'s *Ports of the standard*);
+  `--subject` replaces the whole subject. The message says what the
+  change does, and keeps every `Signed-off-by:` and `Co-authored-by:`
+  line of the commits it squashes. A finding that lives only in the
+  commit message is fixed here, with no new round.
 
   Never land through the bypass (`--admin`, or any other route to it)
   except where *The human's own pull request* says. It merges with no
@@ -2087,9 +2246,13 @@ has not reported yet.
   of the command above:
 
   ```shell
-  gh pr merge <n> --repo <owner>/<repo> --squash --admin \
-    --match-head-commit <the head that lands> \
-    --subject "<title> (closes #<issue>) (#<n>)" --body-file <message>
+  n=<n>
+  repo=<owner>/<repo>
+  head=<the head that lands>
+  message=<message>
+  gh pr merge "${n:?}" --repo "${repo:?}" --squash --admin \
+    --match-head-commit "${head:?}" \
+    --subject "<title> (closes #<issue>) (#${n:?})" --body-file "${message:?}"
   ```
 
   **`--land` instructs it**, for the pull requests named with it, or
@@ -2270,8 +2433,8 @@ has not reported yet.
   The head branch is left to the human and named in the report:
   deleting a remote branch is hard to undo.
 
-  Then the session sweeps the pull request's `<work>` where the shared
-  *Debris goes when its work ends* says.
+  Then the session sweeps the pull request's `<work>` where
+  `every-role.md`'s *Debris goes when its work ends* says.
 
   Then run this section's first bullet again: where the merge turned
   `main` red, its repair comes first.
@@ -2280,16 +2443,16 @@ has not reported yet.
   checkout forward at once**, by the shared fast-forward. Where that
   checkout is the clone `$PROCESS` names, a session that starts reads
   the process through it, and reads the old one until then. A session
-  already running re-reads what changed as the shared *The process is
-  re-read when `main` changes it* says. Then read a landed line back
-  where sessions read it: under `$PROCESS`, or through the link of the
-  skill or agent it changed.
+  already running re-reads what changed as `orchestration.md`'s *The
+  process is re-read when `main` changes it* says. Then read a landed
+  line back where sessions read it: under `$PROCESS`, or through the
+  link of the skill or agent it changed.
 - **The collateral goes back now** (`orchestration.md`'s *Closing
   collateral*), before anything new starts.
 - **Remove the worktrees** — yours, and tell the writer to remove its
-  own (*Debris goes when its work ends*).
+  own (`every-role.md`'s *Debris goes when its work ends*).
 
-Then the shared *Wrap-up*.
+Then `orchestration.md`'s *Wrap-up*.
 
 [dependabot-rebase]: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/manage-dependabot-prs#allowing-dependabot-to-rebase-and-force-push-over-extra-commits
 [rulesets]: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets

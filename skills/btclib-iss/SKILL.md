@@ -18,8 +18,8 @@ the note below goes unnoticed, a window the session accepts.
 
 **Then note where the process stands**, before reading the rest of it:
 the session keeps `$PROCESS`'s `HEAD` in a directory of its scratchpad,
-for the shared *The process is re-read when `main` changes it*.
-`echo "$PROCESS"` prints the clone's path.
+for `orchestration.md`'s *The process is re-read when `main` changes
+it*. `echo "$PROCESS"` prints the clone's path.
 
 ```shell
 scratchpad=<the session's scratchpad>
@@ -43,7 +43,7 @@ What the session writes, and this file, follow `every-session.md`'s
 **Where $ARGUMENTS names no issue, ask the human which, before reading
 anything**: no tracker, no checkout, and no earlier context stands in for
 the answer. Where the repository is not named either, that question comes
-first (the shared *Where you work*).
+first (`every-role.md`'s *Where you work*).
 
 GitHub numbers issues and pull requests together, so `gh pr view <n>`
 says which a number is. A pull request among the arguments is
@@ -62,9 +62,9 @@ says which a number is. A pull request among the arguments is
 ## Several issues, several pull requests
 
 - **Never as a batch; never hold one that is ready.** Open each pull
-  request as soon as it is cleared, except an embargoed fix (the shared
-  *Committing and rebasing*). Ports of the standard are the one batch
-  (*Ports of the standard*).
+  request as soon as it is cleared, except an embargoed fix
+  (`writing.md`'s *Committing and rebasing*). Ports of the standard are
+  the one batch (*Ports of the standard*).
 - **Bundle by subject, not by file**, as the tree's `CONTRIBUTING.md`
   says in *One subject, opened as soon as it is written*. Issues one
   decision answers share a subject; issues that only touch the same file
@@ -128,14 +128,15 @@ to take lands there first, and reaches each other tree by a port.
   Each other change since the tree's last port is adapted as its issue
   says.
 - **The subject that lands records the port**: a batch's is
-  `Port btclib-org/.github@<S>` alone, with neither the citations of the
-  shared *Citations and closing keywords* nor the pull request's number.
-  The body of every port's pull request, a round of its own included,
-  cites each issue the port advances on an `Advances …` line. A round of
-  its own takes a subject of its own, so that the record does not pass
-  the changes still waiting. Before the first batch, no subject records
-  one: the script below guesses it from the copies, the writer checks
-  each change it lists against the tree, and the body names the guess.
+  `Port btclib-org/.github@<S>` alone, with neither the citations of
+  `writing.md`'s *Citations and closing keywords* nor the pull request's
+  number. The body of every port's pull request, a round of its own
+  included, cites each issue the port advances on an `Advances …` line.
+  A round of its own takes a subject of its own, so that the record does
+  not pass the changes still waiting. Before the first batch, no subject
+  records one: the script below guesses it from the copies, the writer
+  checks each change it lists against the tree, and the body names the
+  guess.
 - **`scripts/port-check.py` checks a batch against `<S>`.** Its
   docstring says which files it compares, what it prints and what each
   exit code means:
@@ -146,7 +147,8 @@ to take lands there first, and reaches each other tree by a port.
   tree=<the tree's worktree>
   base=<the batch's parent on main>
   head=<the batch's head>
-  python3 "${PROCESS:?}/scripts/port-check.py" "$std" "$s" "$tree" "$base" "$head"
+  python3 "${PROCESS:?}/scripts/port-check.py" \
+    "${std:?}" "${s:?}" "${tree:?}" "${base:?}" "${head:?}"
   ```
 
   `orchestration.md`'s *Running the rounds* says what its exit decides.
@@ -154,7 +156,7 @@ to take lands there first, and reaches each other tree by a port.
 ## What the issue still asks
 
 The writer does this for its issue; the orchestrator does it before
-briefing anybody, after the shared *Before starting*.
+briefing anybody, after `writing.md`'s *Before starting*.
 
 **Re-derive the issue's *Done when* and its central measurement against
 `origin/main`**, and say which parts are already answered. An issue
@@ -162,9 +164,11 @@ answered entirely is closed with the measurement. Within one repository
 this finds landed commits citing still-open issues:
 
 ```shell
-open=$(gh issue list --repo <owner>/<repo> --state open --limit 200 \
+repo=<owner>/<repo>
+wt=<wt>
+open=$(gh issue list --repo "${repo:?}" --state open --limit 200 \
   --json number -q '.[].number')
-git -C <wt> log --format='%h|%s' -80 origin/main |
+git -C "${wt:?}" log --format='%h|%s' -80 origin/main |
 while IFS='|' read -r sha subj; do
   echo "$subj" | grep -oE '#[0-9]+' | tr -d '#' | while read -r n; do
     echo "$open" | grep -qx "$n" && echo "$sha ISS $n  $subj"
@@ -178,7 +182,9 @@ names, in its body or a later comment: an upstream issue, pull request,
 release or draft. Read its state there.
 
 ```shell
-gh issue edit <n> --repo <owner>/<repo> --remove-label upstream-dependent
+n=<n>
+repo=<owner>/<repo>
+gh issue edit "${n:?}" --repo "${repo:?}" --remove-label upstream-dependent
 ```
 
 An issue with a reason label (`every-session.md`'s *When the human has
@@ -205,8 +211,9 @@ which exception applied:
   it, is not one.
 
 **Its brief** holds the issue with its comments, the repository, and the
-`origin/main` sha the designer reads the tree at, as the shared
-*Orchestration* says of a brief. It asks for this report:
+`origin/main` sha the designer reads the tree at, as
+`orchestration.md`'s *Orchestration* says of a brief. It asks for this
+report:
 
 1. the problem and the goal, stated without the solution;
 1. the baseline: what doing nothing costs, and what the tree already
@@ -234,15 +241,15 @@ becomes of it. The pull request body's `## Decision` records it
 The orchestrator's. **Before opening, and the last item once it is
 open:**
 
-- [ ] the latest fresh reviewer's `CLEARED` (the shared *Local review*)
-      names the branch's content, or `orchestration.md`'s *A rebase and
-      the clearance* carries it to the rebased branch; where the other
-      client is unavailable, the dedicated reviewer's does
+- [ ] the latest fresh reviewer's `CLEARED` (`local-review.md`'s *Local
+      review*) names the branch's content, or `orchestration.md`'s *A
+      rebase and the clearance* carries it to the rebased branch; where
+      the other client is unavailable, the dedicated reviewer's does
       (`orchestration.md`'s *Where the other client is unavailable*)
 - [ ] no conflict with `origin/main` (`/btclib-pr`'s *Rebase and CI*);
       where there was one, rebased and the gates re-run
       (`orchestration.md`'s *A rebase and the clearance*)
-- [ ] the subject that lands carries the right citation (the shared
+- [ ] the subject that lands carries the right citation (`writing.md`'s
       *Citations and closing keywords*)
 - [ ] the closing block comes after the sections, as the bullet below
       describes, and the sweep finds no other keyword
@@ -255,22 +262,23 @@ open:**
   by a local path, is its own pull request**: the bot reviews neither
   (`/btclib-pr`'s *The reviews on GitHub*).
 - **The body is the paragraphs, then sections, then the closing block
-  (the shared *Citations and closing keywords*).** The paragraphs keep
-  the body limit of `every-session.md`'s *What is posted on a forge* and
-  say what the change does and why. The sections do not count against
-  that limit, and each stays short.
+  (`writing.md`'s *Citations and closing keywords*).** The paragraphs
+  keep the body limit of `every-session.md`'s *What is posted on a
+  forge* and say what the change does and why. The sections do not count
+  against that limit, and each stays short.
 - **`## Evidence` is a short table or list**: the gates of the head,
-  with their exit codes, as the shared *The gates* reports them; the
-  rebase case the clearance is in; the review, with each finding the
-  shared *The rounds* files from the sixth round, as not covered; and,
-  once they have answered, each review on GitHub that is absent, with
-  its reason (`/btclib-pr`'s *The reviews on GitHub*). The records the
-  tree asks of a body go here too, each where its own text says it
-  applies: the command that verifies a rule (`CONTRIBUTING.md`), the
-  count that decided the change (the shared *What the prose that lands
-  may say*), the runs the bot can repeat (the shared *A pull request's
-  rounds*), the command that reads a setting back (the shared
-  *Collateral*), and the command that measured a claim (`REVIEWING.md`).
+  with their exit codes, as `writing.md`'s *The gates* reports them; the
+  rebase case the clearance is in; the review, with each finding
+  `local-review.md`'s *The rounds* files from the third round, as not
+  covered; and, once they have answered, each review on GitHub that is
+  absent, with its reason (`/btclib-pr`'s *The reviews on GitHub*). The
+  records the tree asks of a body go here too, each where its own text
+  says it applies: the command that verifies a rule (`CONTRIBUTING.md`),
+  the count that decided the change (`writing.md`'s *What the prose that
+  lands may say*), the runs the bot can repeat (`local-review.md`'s *A
+  pull request's rounds*), the command that reads a setting back
+  (`every-role.md`'s *Collateral*), and the command that measured a
+  claim (`REVIEWING.md`).
 - **`## Decision` is there only where the issue reserved one, or the
   design pass put one** (*The design pass*): it says what the branch
   takes, on what ground, and what the cut-back is.
@@ -290,16 +298,16 @@ restated here: *What was raised*, *Answering it*, *Rebase and CI*, *The
 reviews on GitHub*, *The human's own pull request*, *Merging*, and
 *Landing*'s bullets from *Read `main`'s latest push runs* to *The pin is
 the head as last pushed*, and its *Check what landed*. Under `--land`,
-all of *Landing* applies.
+all of `/btclib-pr`'s *Landing* applies.
 
 - **The `/btclib-pr` *Landing* bullets on the collateral and on the
-  worktrees hold here**, and *Debris goes when its work ends* removes
-  the worktrees once the session hands the pull request over to whom it
-  waits on.
+  worktrees hold here**, and `every-role.md`'s *Debris goes when its
+  work ends* removes the worktrees once the session hands the pull
+  request over to whom it waits on.
 - **Report to the human** each pull request as a `PR` link with its
-  diff balance (the shared *How an issue and a pull request are
+  diff balance (`every-role.md`'s *How an issue and a pull request are
   named*), what it closes, and whom it waits on or that it landed.
   What arrives after the session ends — a review, a conflict with
   `main` — is `/btclib-pr`'s.
 
-Then the shared *Wrap-up*.
+Then `orchestration.md`'s *Wrap-up*.

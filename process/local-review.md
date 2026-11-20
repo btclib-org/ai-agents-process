@@ -1,8 +1,7 @@
 # The btclib-org process: local review
 
 `every-role.md`, beside this file, opens the process: its opening says
-which role reads this file. A section named here in italics with no file
-is in one of the four files that opening names.
+which role reads this file, and where a section named in italics is.
 
 ## Local review
 
@@ -25,18 +24,18 @@ branch, or a text to be posted.
 - **A reviewer stays until it clears.** This holds for the dedicated
   reviewer and for every fresh one. Its `CHANGES REQUESTED` goes back to
   the writer, and the fix goes back to the same reviewer (resumed as
-  *Clients* and `orchestration.md`'s *Agents in each client* say), which
-  reads the delta from what it last read. No new reviewer starts before
-  the one in charge has answered `CLEARED`, except after a session
-  restart (`orchestration.md`'s *Running the rounds*).
-  `orchestration.md`'s *Where the other client is unavailable* says when
-  the dedicated reviewer takes over a fresh reviewer's findings. Where a
-  finding is declined and its reviewer still holds it, both positions go
-  to the human as one decision (`every-session.md`'s *When the human has
-  to decide*, `REVIEWING.md`'s *Re-review*), and the rounds wait for the
-  answer. Where the human upholds the finding, the fix goes back to that
-  reviewer. Where they decline it, their answer stands in for that
-  reviewer's `CLEARED`.
+  `every-role.md`'s *Clients* and `orchestration.md`'s *Agents in each
+  client* say), which reads the delta from what it last read. No new
+  reviewer starts before the one in charge has answered `CLEARED`,
+  except after a session restart (`orchestration.md`'s *Running the
+  rounds*). `orchestration.md`'s *Where the other client is unavailable*
+  says when the dedicated reviewer takes over a fresh reviewer's
+  findings. Where a finding is declined and its reviewer still holds it,
+  both positions go to the human as one decision (`every-session.md`'s
+  *When the human has to decide*, `REVIEWING.md`'s *Re-review*), and the
+  rounds wait for the answer. Where the human upholds the finding, the
+  fix goes back to that reviewer. Where they decline it, their answer
+  stands in for that reviewer's `CLEARED`.
 - **Then a fresh reviewer reads the whole of it.** It is a new worker,
   started once the reviewer before it has cleared. Where its first
   verdict is `CHANGES REQUESTED`, it stays until it clears, as above.
@@ -60,11 +59,11 @@ branch, or a text to be posted.
   of `git range-diff <old base>..<sha of the first verdict>
   <new base>..<cleared sha>`, to check that each fix is a prose-only fix.
 - **A fresh reviewer's `CLEARED` that names an input its sandbox left
-  unrun ends no rounds** (*Clients*). The `CLEARED` of the reviewer's
-  resumed run, with that input's result on the record, stands in for it
-  in the next bullet. `orchestration.md`'s *Where the other client is
-  unavailable* says what stands in for it where the client refuses that
-  run.
+  unrun ends no rounds** (`every-role.md`'s *Clients*). The `CLEARED` of
+  the reviewer's resumed run, with that input's result on the record,
+  stands in for it in the next bullet. `orchestration.md`'s *Where the
+  other client is unavailable* says what stands in for it where the
+  client refuses that run.
 - **The rounds end when a fresh reviewer's first verdict is `CLEARED`**,
   or at the `CLEARED` that the fresh-reviewer bullet above lets end
   them, or at the dedicated reviewer's `CLEARED` where the other client
@@ -73,24 +72,52 @@ branch, or a text to be posted.
 - **On an outside contributor's branch, only a `CLEARED` that came after
   the results of every input, and names none as not run, is the
   dedicated reviewer's `CLEARED`.**
-- **From the sixth round of a branch's local review, a finding on a
-  shape that no tree and no caller holds is filed as an issue and does
-  not block.** Each verdict of a local reviewer is a round, so a head
-  that two reviewers read is two rounds. The reviewer classifies the
-  finding, not the writer, and gives in its verdict the search that
-  shows no tree and no caller holds the shape: the command and what it
-  printed. The pull request's body lists each such finding as
-  `/btclib-iss`'s *Opening the pull request* says. A defect on the
-  ordinary case, a shape that a tree or a caller holds, blocks at any
-  round, and so do a false sentence and a crash.
-- **From the third round on the forge, only a defect on the ordinary
-  case, a false sentence or a crash is fixed on the branch.** A round on
-  the forge is a head the reviews on GitHub read (`/btclib-pr`'s *The
-  reviews on GitHub*): the head the pull request is opened on, then each
-  push to it. Every other finding stays off the branch, answered as
-  `/btclib-pr`'s *Answering it* says.
+- **From the third round of a branch's local review, a finding on a
+  shape that is not reachable, or whose worst outcome is on the safe
+  side, is filed as an issue and does not block.** The rounds are
+  numbered from one, as the forge's are in the next bullet. Each verdict
+  of a local reviewer is a round, so a head that two reviewers read is
+  two rounds. The count is the branch's, not a reviewer's: any reviewer
+  that starts later, after a rebase or at any other point, goes on from
+  the branch's last round.
+
+  A shape is reachable where a session following the process can produce
+  it, or where a tree or a caller holds it. A constructed shape, one
+  that only a reviewer's input holds, is not. The worst outcome is on
+  the safe side where it is a fresh review, a wait or another stop,
+  rather than a wrong result. A refusal is not on the safe side: a gate
+  or a command that exits non-zero or refuses, as a gate's block that,
+  followed as written, exits `127` on every branch. Neither is a crash
+  or a false sentence. On a reachable shape, all three block at any
+  round; on a constructed shape, they are filed.
+
+  The reviewer classifies the finding, not the writer. Its verdict marks
+  the finding `filed`, gives the ground, and carries the body of the
+  issue to file. For a shape that is not reachable, the ground is the
+  search that shows no tree and no caller holds it, the command and what
+  it printed, and why no step of the process produces it. For the safe
+  side, it is the input run, or the case a rule in prose was tried on,
+  and its outcome. The orchestrator files the issue with that body, and
+  the pull request's body lists it as `/btclib-iss`'s *Opening the pull
+  request* says.
+
+  Where the reviewer cannot run that search, as one that needs the
+  forge, which its sandbox does not reach (`every-role.md`'s *Clients*),
+  it gives the command and names it as not run. The orchestrator runs it
+  before filing, and records the command and what it printed in the
+  finding's entry (`orchestration.md`'s *The findings record*). Where
+  what it printed shows a tree or a caller holding the shape, or the
+  orchestrator cannot run it either, the finding blocks, and the verdict
+  counts as `CHANGES REQUESTED`.
+- **From the third round on the forge, only a defect on a shape that a
+  tree or a caller holds, a false sentence or a crash is fixed on the
+  branch.** A round on the forge is a head the reviews on GitHub read
+  (`/btclib-pr`'s *The reviews on GitHub*): the head the pull request is
+  opened on, then each push to it. Every other finding stays off the
+  branch, answered as `/btclib-pr`'s *Answering it* says.
 - A non-blocking finding that is not filed waits for the next change;
-  *Which prose is worth a round* says which prose blocks.
+  `every-role.md`'s *Which prose is worth a round* says which prose
+  blocks.
 - **A reviewer's first verdict is one wide pass.** It records every
   distinct, substantiated finding it makes, small ones included, each
   saying whether it blocks, and ends with its coverage list (*The
@@ -105,27 +132,28 @@ branch, or a text to be posted.
   what the tests do not reach. It runs them, except the dedicated
   reviewer of an outside contributor's branch, which runs none and names
   each in its verdict as not run, for the session to run in the sandbox
-  of *The gates*. A rule in prose is tried the same way, on the cases it
-  has to decide. Where the change makes more claims than a handful of
-  runs can try, the claims the tests reach least go first, after the
-  classes its brief lists and asks it to try first (`orchestration.md`'s
-  *The classes of defect found carry forward*). An input that breaks a
-  claim is a finding. It blocks where the claim is in the tree, or in a
-  text to be posted that the rounds review on its own, within the limits
-  the sixth round (above) and a differential *Done when* (below) set; a
-  claim of a branch's commit message, pull request body or reply is
-  weighed as *Which prose is worth a round* says. `writing.md`'s
-  *Writing work* says what the fix of a blocking one adds. The verdict
-  lists each claim tried, with the inputs run against it and what they
-  printed, and names the claims left untried.
+  of `writing.md`'s *The gates*. A rule in prose is tried the same way,
+  on the cases it has to decide. Where the change makes more claims than
+  a handful of runs can try, the claims the tests reach least go first,
+  after the classes its brief lists and asks it to try first
+  (`orchestration.md`'s *The classes of defect found carry forward*). An
+  input that breaks a claim is a finding. It blocks where the claim is
+  in the tree, or in a text to be posted that the rounds review on its
+  own, within the limits the third round (above) and a differential
+  *Done when* (below) set; a claim of a branch's commit message, pull
+  request body or reply is weighed as `every-role.md`'s *Which prose is
+  worth a round* says. `writing.md`'s *Writing work* says what the fix
+  of a blocking one adds. The verdict lists each claim tried, with the
+  inputs run against it and what they printed, and names the claims left
+  untried.
 - **Where an oracle is at hand, the inputs run through it**, rather than
   being read against a specification: a built reference implementation,
   such as Bitcoin Core or libsecp256k1, a second independent
   implementation, or the base for a claim of equivalence. A difference
   is a finding until it is explained. An oracle that would first have to
-  be built or installed is named in the verdict as not run. *Another
-  project's source is read from a checkout* says where a reference
-  implementation is found.
+  be built or installed is named in the verdict as not run.
+  `every-role.md`'s *Another project's source is read from a checkout*
+  says where a reference implementation is found.
 - **A command the change hands a reader is run on hostile names.** For
   each command a diff adds to prose or a script that reads names or text
   from the tree or a forge (a file name, a branch name, an issue body),
@@ -195,17 +223,17 @@ on GitHub that `/btclib-pr`'s *The reviews on GitHub* names: the review
 bot of `claude-review.yml`, Codex and CodeRabbit, where each reviews.
 They are a safety net under the local rounds: each finding they make
 costs a push, a CI run and another review. Sourcery and CodeRabbit also
-read the branch locally, as *Sourcery and CodeRabbit before a push*
-says.
+read the branch locally, as `writing.md`'s *Sourcery and CodeRabbit
+before a push* says.
 
 - **The fresh reviewer runs in the other client**, on a model of a
   vendor other than the writer's, because two models of one vendor share
   blind spots. Where the writer runs in Claude Code, the fresh reviewer
   runs in Codex, and the other way round. The dedicated reviewer runs in
   the writer's client, and so does the fresh reviewer of a text to be
-  posted that the rounds review on its own. *Clients* and
-  `orchestration.md`'s *Starting the reviewer in the other client* say
-  how each client starts and resumes a reviewer in the other.
+  posted that the rounds review on its own. `every-role.md`'s *Clients*
+  and `orchestration.md`'s *Starting the reviewer in the other client*
+  say how each client starts and resumes a reviewer in the other.
 - The fresh reviewer reads the branch's whole diff from its parent,
   briefed with *Local review* and with the bot's prompt: the `prompt:`
   block of `btclib-org/.github`'s `reusable-claude-review.yml` at the ref
@@ -215,7 +243,9 @@ says.
   on. The workflow is fetched by:
 
   ```shell
-  ref=$(git -C <wt> show <sha>:.github/workflows/claude-review.yml \
+  wt=<wt>
+  sha=<sha>
+  ref=$(git -C "${wt:?}" show "${sha:?}:.github/workflows/claude-review.yml" \
     | grep -oE 'reusable-claude-review\.yml@[^ ]+' | cut -d@ -f2)
   gh api -H 'Accept: application/vnd.github.raw' \
     "repos/btclib-org/.github/contents/.github/workflows/reusable-claude-review.yml?ref=${ref:?}"
@@ -235,15 +265,17 @@ says.
   GitHub applies**, the dedicated reviewer's as the fresh one's. It
   holds the `path_instructions` of the sha's `.coderabbit.yaml`, and
   asks the reviewer to apply each to the files its `path` matches. The
-  reviewer in the other client has no network (*Clients*), so the brief
-  also holds the text each instruction links to. The session reads it
-  from a checkout of `btclib-org/.github` brought forward
-  (`every-session.md`'s *Shell, checkouts and prose*): a link to that
-  repository with an anchor is the section of its `README.md` the anchor
-  names. This prints the file:
+  reviewer in the other client has no network (`every-role.md`'s
+  *Clients*), so the brief also holds the text each instruction links
+  to. The session reads it from a checkout of `btclib-org/.github`
+  brought forward (`every-session.md`'s *Shell, checkouts and prose*): a
+  link to that repository with an anchor is the section of its
+  `README.md` the anchor names. This prints the file:
 
   ```shell
-  git -C <wt> show <sha>:.coderabbit.yaml
+  wt=<wt>
+  sha=<sha>
+  git -C "${wt:?}" show "${sha:?}:.coderabbit.yaml"
   ```
 
   It lists these classes too, which CodeRabbit's review on GitHub has
@@ -274,8 +306,10 @@ says.
   line:
 
   ```shell
-  git -C <checkout> -c merge.union.driver=false \
-    merge-tree --write-tree origin/main <sha>
+  checkout=<checkout>
+  sha=<sha>
+  git -C "${checkout:?}" -c merge.union.driver=false \
+    merge-tree --write-tree origin/main "${sha:?}"
   ```
 
   With the `-c`, a path marked `merge=union` that both sides changed
@@ -285,14 +319,17 @@ says.
   in that tree:
 
   ```shell
-  git -C <checkout> show <tree>:<path>
+  checkout=<checkout>
+  tree=<tree>
+  file=<path>
+  git -C "${checkout:?}" show "${tree:?}:${file:?}"
   ```
 
-  A sentence true only at the base is a finding, weighed as *Which prose
-  is worth a round* says. The verdict names the `origin/main` sha it
-  read. Where the first command exits `1`, the merge conflicts, or a
-  union path changed on both sides needs a look: the verdict says so and
-  names the paths in its `CONFLICT` lines.
+  A sentence true only at the base is a finding, weighed as
+  `every-role.md`'s *Which prose is worth a round* says. The verdict
+  names the `origin/main` sha it read. Where `merge-tree` exits `1`, the
+  merge conflicts, or a union path changed on both sides needs a look:
+  the verdict says so and names the paths in its `CONFLICT` lines.
 - A branch a review on GitHub sends back, the bot's or a person's, goes
   through the same rounds before its fix is pushed.
 - **A reply to a bot's finding is read in the branch's rounds before it
@@ -301,16 +338,17 @@ says.
   `/btclib-pr`'s *Answering it*, whose routes the reply is judged by.
   Each reviewer tries the reply's ground as it tries a claim of the
   change, and checks the reply as *A text to be posted* says. The
-  reviewer in the other client has no network (*Clients*), so beside
-  what that section's brief carries, the brief holds the text of each
-  link, and each reference GitHub renders as one, the reply gives. A
-  ground that is false on an input the text applies to is a finding of
-  these rounds, and so is a reply that declines a finding which the
-  first route that fits files: *filed*, or a defect *The rounds* keeps
-  off the branch. Such a finding holds back the reply, not the branch:
-  it does not send a cleared branch back, as *Which prose is worth a
-  round* says of a sentence outside the tree, and the reply is posted
-  only once the reviewer has read its fix.
+  reviewer in the other client has no network (`every-role.md`'s
+  *Clients*), so beside what that section's brief carries, the brief
+  holds the text of each link, and each reference GitHub renders as one,
+  the reply gives. A ground that is false on an input the text applies
+  to is a finding of these rounds, and so is a reply that declines a
+  finding which the first route that fits files: `/btclib-pr`'s *filed*,
+  or a defect *The rounds* keeps off the branch. Such a finding holds
+  back the reply, not the branch: it does not send a cleared branch
+  back, as `every-role.md`'s *Which prose is worth a round* says of a
+  sentence outside the tree, and the reply is posted only once the
+  reviewer has read its fix.
 
 ### A text to be posted
 
@@ -325,7 +363,7 @@ brief carries beside the draft:
   read as `REVIEWING.md`'s *Does a pointer say what it promises?* reads
   a diff's pointers. One on GitHub opens through `gh`, and one that
   does not open is named as not checked;
-- the non-ASCII list of *Citations and closing keywords*;
+- the non-ASCII list of `writing.md`'s *Citations and closing keywords*;
 - every phrase of three words or more already used in those texts of
   the last 7 days, reworded where it reads as a formula;
 - nothing repeated from the description of the pull request or issue,
@@ -479,16 +517,16 @@ got=$(gh api "gists/${gist:?}/${rev:?}" --jq .id) &&
 - [ ] which gate case you were in, and whose runs you rely on
 - [ ] every finding carries its measurement, the lines it rests on
       quoted (*A finding quotes the lines it rests on*), and its weight
-      (*Which prose is worth a round*)
+      (`every-role.md`'s *Which prose is worth a round*)
 - [ ] in a first verdict, every distinct finding, small ones included
       (*The rounds*)
-- [ ] each finding *The rounds* files from the sixth round, with its
-      search
+- [ ] each finding *The rounds* files from the third round, marked
+      `filed`, with its ground and the body of the issue to file
 - [ ] the claims tried, as *Every reviewer tries to break the change*
       says
 - [ ] where the change touches a rule the tree states, or makes a
-      sentence false or narrower, the writer's search is complete (*A
-      rule stated more than once*)
+      sentence false or narrower, the writer's search is complete
+      (`writing.md`'s *A rule stated more than once*)
 - [ ] on a branch, the prose it adds was read on the merge with
       `origin/main`, whose sha it names (*A pull request's rounds*)
 - [ ] where the diff moves a dependency, a hook or an action to a new
@@ -507,7 +545,7 @@ got=$(gh api "gists/${gist:?}/${rev:?}" --jq .id) &&
       `CLEARED` defers nothing
 - [ ] `git status --porcelain` empty in the tree reviewed and in the
       primary checkout
-- [ ] collateral filed, as *Collateral* says
+- [ ] collateral filed, as `every-role.md`'s *Collateral* says
 
 **A finding quotes the lines it rests on**: the path, the first line's
 number, the sha they are read at, and the lines exactly as they read
@@ -521,12 +559,13 @@ the sentence that
 - **The gates are the writer's.** A run on this sha, reported with
   commands and exit codes, is relied on and attributed —
   `REVIEWING.md`'s *The gates are the evidence*. Where no run on this
-  sha is on the record, you run them yourself, as *The gates* says,
-  under the lock where it asks for it, and say so. A rebase or amend
-  since the run voids it. A branch that fails differently on every run
-  is not cleared (*A failure that does not reproduce is measured*).
+  sha is on the record, you run them yourself, as `writing.md`'s *The
+  gates* says, under the lock where it asks for it, and say so. A rebase
+  or amend since the run voids it. A branch that fails differently on
+  every run is not cleared (`writing.md`'s *A failure that does not
+  reproduce is measured*).
 - **A branch with a commit the `Sign-off` script refuses is not
-  cleared**, measured as *Signed and signed off* says.
+  cleared**, measured as `writing.md`'s *Signed and signed off* says.
 - **Look for the finding in the fix itself**, not only in what it
   replaced. A compound condition can be covered operand by operand and
   never in the combination that matters.
@@ -546,13 +585,17 @@ commit of `origin/main`, and its tree is the one this command prints on
 its first line, exiting `0`:
 
 ```shell
-git -C <wt> -c merge.union.driver=false \
-  merge-tree --write-tree <cleared sha> <new base>
+wt=<wt>
+cleared=<cleared sha>
+base=<new base>
+git -C "${wt:?}" -c merge.union.driver=false \
+  merge-tree --write-tree "${cleared:?}" "${base:?}"
 ```
 
 Otherwise a fresh reviewer reads the whole branch.
 `git -C <wt> rev-parse '<merge>^1' '<merge>^2' '<merge>^{tree}'` prints
 the three to compare, and
 `git -C <wt> merge-base --is-ancestor '<merge>^2' origin/main` exits
-`0`. The merge voids the check of *Signed and signed off*, as a rebase
-does, and the gates, unless *The gates* asks none of it.
+`0`. The merge voids the check of `writing.md`'s *Signed and signed
+off*, as a rebase does, and the gates, unless *The gates* asks none of
+it.
