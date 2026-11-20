@@ -1320,16 +1320,15 @@ The findings of these local runs are answered as `/btclib-pr`'s
   repository built for a measurement included: not by `--no-gpg-sign`,
   by `commit.gpgsign=false` at any scope, by `git commit-tree` without
   `-S`, which `commit.gpgsign` does not reach, or under an emptied or
-  replaced git config. A fixture commit that a test script of the tree
-  writes by plumbing, as `scripts/test-sweep.sh` does, is not a
-  session's commit. A measurement that needs no commit goes without one:
-  `git diff --no-index` compares two directories, and `git add` then
-  `git write-tree`, with `GIT_INDEX_FILE` naming a path that does not
-  exist yet, give a tree without touching the repository's index.
-  `index` in a directory that `mktemp -d` made is such a path. An empty
-  file, which `mktemp` makes, is refused: git exits `128`. Where a
-  commit is needed, it is a plain one, which `commit.gpgsign = true`
-  signs.
+  replaced git config. A fixture commit that a test of the tree writes,
+  as `scripts/test-sweep.sh` does, is not a session's commit. A
+  measurement that needs no commit goes without one: `git diff
+  --no-index` compares two directories, and `git add` then `git
+  write-tree`, with `GIT_INDEX_FILE` naming a path that does not exist
+  yet, give a tree without touching the repository's index. `index` in a
+  directory that `mktemp -d` made is such a path. An empty file, which
+  `mktemp` makes, is refused: git exits `128`. Where a commit is needed,
+  it is a plain one, which `commit.gpgsign = true` signs.
 - **A clean rebase is not a correct one.** Re-run the gates, and look for
   what `main` added around what you remove.
 - **A rebase continued after a conflict drops every body line beginning
