@@ -454,12 +454,16 @@ of the standard* says.
   They run on the commit, and their run counts for that commit only,
   which the report names. A run's log names the tree it read and the
   merge base its diffs start from, on a `TREE=` line before its first
-  gate and another after its last, `echo "TREE=$(gated_tree)"`, inside
-  the gate lock (*The gate lock*) or outside it. The run counts only
-  where both lines name the same pair. `gated_tree` prints the tree,
-  staged or committed, and the merge base of `<base>` and `HEAD`, only
-  where the working tree holds nothing the index lacks: no unstaged
-  change, no untracked file but those git ignores (`.gitignore`,
+  gate, `echo "TREE=$(gated_tree)"`, and another after its last, inside
+  the gate lock (*The gate lock*) or outside it. After the hooks alone
+  the second line is the first's command. Where the suite or the docs
+  build runs, it is `echo "TREE=$(gated_tree "$mark")"`, `$mark` being a
+  file made with `mktemp` after the hooks and before the first of those
+  gates, and removed after that line. The run counts only where both
+  lines name the same pair. `gated_tree` prints the tree, staged or
+  committed, and the merge base of `<base>` and `HEAD`, only where the
+  working tree holds nothing the index lacks: no unstaged change, no
+  untracked file but those git ignores (`.gitignore`,
   `.git/info/exclude` and `core.excludesFile`, which
   `--exclude-standard` reads), and no file marked assume-unchanged or
   skip-worktree, whose change `git diff` does not show (`git ls-files
@@ -478,9 +482,33 @@ of the standard* says.
   directory: zsh and dash run no `EXIT` trap where `TERM` ends the
   shell. In zsh a signal that arrives while `mktemp` runs still leaves
   the directory, since zsh runs the trap before it assigns `tmp`.
-  `scripts/test-gate-blocks.sh` shows each refusal, and a signal while
-  `cp` runs and while `mktemp` runs. The shell that runs the gates
-  defines it:
+
+  Given a file, as `$mark`, `gated_tree` takes a third reading: it also
+  prints nothing where a path the index tracks has an inode change time
+  newer than `$mark`, as `find -cnewer` reads it, or where `find` fails.
+  The two `TREE=` lines read the worktree only when they run, so a file
+  written and restored between them leaves both naming the same tree.
+  The write still moves that file's inode change time, which a restore
+  that keeps the modification time, as `cp -p` or Python's
+  `shutil.copy2` does, cannot set back. A gate that rewrites a tracked
+  file with the same bytes empties the line too; a file git does not
+  track, as a cache, is not read. Each path goes to `find` as
+  `./<path>`, so that a name starting with `-`, `!` or `(` is not read
+  as an expression, and `-prune` keeps it out of a gitlink's directory.
+  `-cnewer` is not POSIX; GNU and BSD `find` both have it. On a file
+  system whose times count whole seconds, a write in the second `$mark`
+  was made is not seen.
+
+  The hooks run before `$mark` is made, since a hook may write by
+  design: btclib's `uv-export` writes `.clusterfuzzlite/requirements.txt`
+  with the same bytes through a new file, which the third reading would
+  list. A hook's write that changes a file's bytes already empties the
+  second line, as an unstaged change. `scripts/test-gate-blocks.sh`
+  shows each refusal, a tracked file written and restored after `$mark`
+  was made, a signal while `cp` runs and while `mktemp` runs, and, in
+  the gate lock's block, a suite that writes and restores a tracked file
+  refused, and hooks that rewrite one with the same bytes not. The shell
+  that runs the gates defines it:
 
   ```shell
   wt=<wt>
@@ -500,6 +528,12 @@ of the standard* says.
         --git-path objects) &&
       tmp=$(mktemp -d "${TMPDIR:-/tmp}/gated.XXXXXX") &&
       mkdir "$tmp/obj" && cp "$ix" "$tmp/index" &&
+      { [ "$#" -eq 0 ] || {
+        git -C "${wt:?}" ls-files -z --format='./%(path)' > "$tmp/ls" &&
+          c=$(cd "${wt:?}" && xargs -0 sh -c 'm=$1; shift
+            [ "$#" -eq 0 ] || find "$@" -prune -cnewer "$m" -print
+            ' sh "${1:?}" < "$tmp/ls") &&
+          [ -z "$c" ]; }; } &&
       t=$(GIT_INDEX_FILE=$tmp/index GIT_OBJECT_DIRECTORY=$tmp/obj \
         GIT_ALTERNATE_OBJECT_DIRECTORIES=$ob git -C "${wt:?}" write-tree) &&
       m=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) &&
@@ -534,6 +568,16 @@ of the standard* says.
   run there: the pair is `<sha>`'s tree and merge base, read in `<wt>`
   before the first gate, and the status file of each gate stands in for
   the second `TREE=` line.
+- **Nothing writes in a worktree while a gate runs there.** A writer
+  runs a mutant, an edited fixture or any other input in a copy of the
+  commit, made with `git archive <sha> | tar -x -C <dir>` in the scratch
+  directory, never in the worktree a gate is reading. A gate that reads
+  a file written there while it runs tests neither tree, and can pass
+  where the tree fails. Where the suite or the docs build ran, the third
+  reading of `gated_tree` (above) empties the second `TREE=` line once a
+  tracked file was written after `$mark`, even where it was restored. It
+  does not see a write while the hooks run, before `$mark`, nor a file
+  git does not track.
 - **The writer runs the hooks on the staged tree, and signs one commit,
   at hand-over**, never one at each iteration: each signature can be a
   prompt the human has to answer. It stages its change, runs the fixers
@@ -1028,12 +1072,16 @@ of the standard* says.
     … the block of *The hooks run on the changed files*, which sets rc …
     echo "EXIT_hooks=$rc"
     if [ "$rc" -eq 0 ]; then
+      mark=$(mktemp "${TMPDIR:-/tmp}/mark.XXXXXX")
       gate_wait; rc=0
       gate_peak "${gate:?}" "${wt:?}" \
         timeout -k 60 "${secs:?}" … the next gate … || rc=$?
       echo "EXIT_${gate:?}=$rc"
+      echo "TREE=$(gated_tree "$mark")"
+      rm -f "$mark"
+    else
+      echo "TREE=$(gated_tree)"
     fi
-    echo "TREE=$(gated_tree)"
     gate_release
   }
   ```
@@ -1042,13 +1090,15 @@ of the standard* says.
   stops the gate**: on an outside contributor's branch they follow `uv
   sync --locked`, the sandbox's first gate. The suite and the docs build
   run only where the hooks exited `0`, since a fix to what the hooks
-  found changes the tree and runs them all again. Each later gate takes
-  the same `if`, which reads the exit of the gate before it, so the
-  first gate that fails stops the block. Where the hooks ran on the
-  staged tree and their run carries over to the commit, or ran outside
-  the lock, as for a Markdown-only diff above, the block starts at the
-  next gate, and only once they exited `0`. The report gives a gate the
-  stop left out as not run.
+  found changes the tree and runs them all again. Each later gate goes
+  before the second `TREE=` line, which reads `$mark`, and takes the
+  same `if`, which reads the exit of the gate before it, so the first
+  gate that fails stops the block. Where the hooks ran on the staged
+  tree and their run carries over to the commit, or ran outside the
+  lock, as for a Markdown-only diff above, the block keeps its first
+  `TREE=` line and then starts at the `mark=` line before the next gate,
+  so that `$mark` is set, and it runs only once they exited `0`. The
+  report gives a gate the stop left out as not run.
 
   `gate_peak` runs the gate, returns its exit code, and records its peak
   memory and its wall time, as the script's header comment says. On an

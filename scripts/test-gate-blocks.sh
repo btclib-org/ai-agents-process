@@ -1,19 +1,21 @@
 #!/bin/sh
-# What two blocks of *The gates* that run outside the sandbox do with
-# the trees and shells they meet:
+# What the blocks of *The gates* named below, which run outside the
+# sandbox, do with the trees and shells they meet:
 #
 #   sh scripts/test-gate-blocks.sh [<writing.md>]
 #
 # From <writing.md>, by default process/writing.md beside this script,
-# it takes the block that defines gated_tree, and the hooks block of
-# *The hooks run on the changed files* with the block before it, which
-# empties `peak`. Their placeholders become paths of a fixture: a
-# repository whose `main` holds `file` and `other`, with `HEAD` a commit
-# on it that changes `file`, and a larger one, whose `git ls-files -v`
-# fills a pipe's buffer. pre-commit is a script of the test's, which
-# records its directory and arguments. gated_tree runs under each of
-# sh, bash, zsh and dash on the PATH, and the hooks block, which needs
-# arrays, under bash, `/bin/bash`, which on macOS is bash 3.2, and zsh.
+# it takes the block that defines gated_tree, the hooks block of *The
+# hooks run on the changed files* with the block before it, which
+# empties `peak`, and the gate lock's block. Their placeholders become
+# paths of a fixture: a repository whose `main` holds `file`, `other`,
+# `-i`, `!` and a gitlink `sub`, whose directory holds `inner`, with
+# `HEAD` a commit on it that changes `file`, and a larger one, whose
+# `git ls-files -v` fills a pipe's buffer. pre-commit is a script of the
+# test's, which records its directory and arguments. gated_tree runs
+# under each of sh, bash, zsh and dash on the PATH, and the hooks block
+# and the gate lock's block, which need arrays, under bash, `/bin/bash`,
+# which on macOS is bash 3.2, and zsh.
 # A shell that is missing is skipped, and its line says so. The cases,
 # in order:
 #
@@ -22,6 +24,13 @@
 #   `other` holds a change git diff shows; then a new file `new` is
 #   untracked; then `other` holds the change with each bit set on it.
 #   It prints nothing, and exits other than 0.
+# - gated_tree, mark: given a file made before, with `cache`, which
+#   `.git/info/exclude` names, and `sub/inner` written after it, it
+#   prints the tree.
+#   Then `file` is written and restored with `cp -p`, which keeps its
+#   bytes and its modification time: without the file gated_tree still
+#   prints the tree; given the file, it prints nothing, and exits other
+#   than 0.
 # - gated_tree, pipefail: under `set -o pipefail`, in the larger
 #   repository, whose first entry is marked assume-unchanged and
 #   changed. It prints nothing, and exits other than 0. Skipped in a
@@ -39,6 +48,14 @@
 #   empty, then with `peak` a script of the test's, which records that
 #   it ran and runs the rest. Each exits 0, pre-commit runs in the
 #   worktree with `--files ./file`, and only the second runs the script.
+# - gate lock: the gate lock's block under `set -u`, its functions a
+#   stand-in's, as process/every-role.md's *A rehearsal of a block that
+#   takes the gate lock* says, and its next gate a script of the test's.
+#   Where pre-commit writes `file` again with the same bytes through a
+#   new file, and the next gate writes nothing, both `TREE=` lines name
+#   `HEAD`'s tree and the merge base. Where pre-commit writes nothing,
+#   and the next gate writes `file` and restores it with `cp -p`, the
+#   second `TREE=` line is empty.
 #
 # Each line it prints starts `ok`, `skip` or `FAIL`, and it exits 1 where
 # a check failed.
@@ -65,10 +82,17 @@ export GIT_CONFIG_GLOBAL GIT_CONFIG_NOSYSTEM GIT_AUTHOR_NAME \
 wt=$tmp/wt
 git init -q -b main "$wt" &&
   printf 'a\n' > "$wt/file" && printf 'o\n' > "$wt/other" &&
-  git -C "$wt" add file other && git -C "$wt" commit -q -m base &&
+  printf 'h\n' > "$wt/-i" && printf 'h\n' > "$wt/!" &&
+  mkdir "$wt/sub" && printf 's\n' > "$wt/sub/inner" &&
+  git -C "$wt" add file other ./-i ./! &&
+  git -C "$wt" update-index --add --cacheinfo \
+    160000,0123456789012345678901234567890123456789,sub &&
+  git -C "$wt" commit -q -m base &&
   base=$(git -C "$wt" rev-parse HEAD) &&
   printf 'b\n' > "$wt/file" && git -C "$wt" commit -q -am change &&
-  tree=$(git -C "$wt" rev-parse 'HEAD^{tree}') || exit 1
+  tree=$(git -C "$wt" rev-parse 'HEAD^{tree}') &&
+  mkdir -p "$wt/.git/info" && printf 'cache\n' >> "$wt/.git/info/exclude" ||
+  exit 1
 # A larger index, whose `git ls-files -v` fills a pipe's buffer, its
 # first entry marked assume-unchanged and changed
 big=$tmp/big
@@ -90,6 +114,8 @@ block() {
 }
 block 'gated_tree[(][)]' > "$tmp/gated.sh"
 { cat "$tmp/gated.sh"; echo gated_tree; } > "$tmp/gated-run.sh"
+{ cat "$tmp/gated.sh"; printf "gated_tree '%s'\n" "$tmp/mark"; } \
+  > "$tmp/gated-mark.sh"
 grep -q 'gated_tree()' "$tmp/gated.sh" ||
   { no "no block in $doc defines gated_tree"; exit 1; }
 block '^peak=[(][)]\n$' > "$tmp/empty.sh"
@@ -98,6 +124,13 @@ grep -qx 'peak=()' "$tmp/empty.sh" ||
 block 'uvx pre-commit run' > "$tmp/hooks.sh"
 grep -q "sh $tmp/pre-commit.sh" "$tmp/hooks.sh" ||
   { no "no hooks block in $doc"; exit 1; }
+block 'gate_take ' > "$tmp/lock.sh"
+grep -q 'gate_take' "$tmp/lock.sh" ||
+  { no "no gate lock block in $doc"; exit 1; }
+# The check of *A rehearsal of a block that takes the gate lock*, whose
+# control is the block as extracted
+[ "$(grep -cw -e gate-lock -e PROCESS "$tmp/lock.sh")" -ne 0 ] ||
+  { no "the gate lock's block names neither gate-lock nor PROCESS"; exit 1; }
 
 mkdir "$tmp/bin" "$tmp/bin-mktemp" "$tmp/t" || exit 1
 cat > "$tmp/bin/cp" <<EOF
@@ -160,6 +193,31 @@ for s in sh bash zsh dash; do
       git -C "$wt" update-index "--no-$c" other || exit 1 ;; esac
     rm -f "$wt/new" && git -C "$wt" checkout -q -- other || exit 1
   done
+  # The sleep makes each write after the mark newer than it, where the
+  # file system counts whole seconds.
+  : > "$tmp/mark" && sleep 1 && : > "$wt/cache" &&
+    printf 's\n' >> "$wt/sub/inner" || exit 1
+  gated "$s" "$PATH" "$tmp/gated-mark.sh"
+  if [ "$rc" -eq 0 ] && [ "$out" = "$tree $base" ]; then
+    ok "$s, mark, ignored file and sub/inner written: gated_tree prints" \
+      "the tree"
+  else no "$s, mark, ignored file and sub/inner written: exit $rc," \
+    "prints '$out'"; fi
+  emptied "$s, mark, ignored file and sub/inner written"
+  "$real_cp" -p "$wt/file" "$tmp/saved" && printf 'x\n' > "$wt/file" &&
+    "$real_cp" -p "$tmp/saved" "$wt/file" || exit 1
+  gated "$s" "$PATH"
+  if [ "$rc" -eq 0 ] && [ "$out" = "$tree $base" ]; then
+    ok "$s, written and restored, no mark: gated_tree prints the tree"
+  else no "$s, written and restored, no mark: exit $rc, prints '$out'"; fi
+  emptied "$s, written and restored, no mark"
+  gated "$s" "$PATH" "$tmp/gated-mark.sh"
+  if [ "$rc" -ne 0 ] && [ -z "$out" ]; then
+    ok "$s, written and restored, mark: gated_tree prints nothing," \
+      "exits $rc"
+  else no "$s, written and restored, mark: exit $rc, prints '$out'"; fi
+  emptied "$s, written and restored, mark"
+  rm -f "$wt/cache" "$tmp/mark" "$tmp/saved" || exit 1
   if "$s" -c 'set -o pipefail' 2> /dev/null; then
     { cat "$tmp/gated.sh"
       printf 'wt=%s base=HEAD\nset -o pipefail\ngated_tree\n' "$big"; } \
@@ -212,6 +270,68 @@ for s in bash /bin/bash zsh; do
     else no "$s, set -u, peak $c: exit $rc, the peak script ran: $ran," \
       "pre-commit ran with: $(printf '%s' "$got" | tr '\n' ' ')" \
       "$(tr '\n' ' ' < "$tmp/hooks-$n-$c.log")"; fi
+  done
+done
+
+# The gate lock's stand-in, and the hooks and the next gate of each case:
+# `rewrite` writes `file` again through a new file, and `restore`, a
+# second after the mark, writes it and restores it
+# shellcheck disable=SC2016
+printf '%s\n' 'gate_take() { :; }' 'gate_wait() { :; }' \
+  'gate_release() { :; }' \
+  'gate_peak() { shift 2; [ "$1" != timeout ] || shift 4; "$@"; }' \
+  > "$tmp/slots.sh"
+printf 'cat file > .file.new && mv .file.new file\n' > "$tmp/rewrite.sh"
+: > "$tmp/next-rewrite.sh"
+printf "sleep 1 && cp -p '%s' '%s' && echo x > '%s' && cp -p '%s' '%s'\\n" \
+  "$wt/file" "$tmp/saved" "$wt/file" "$tmp/saved" "$wt/file" \
+  > "$tmp/next-restore.sh"
+for c in rewrite restore; do
+  if [ "$c" = rewrite ]; then h=rewrite.sh; else h=pre-commit.sh; fi
+  sed "s|sh $tmp/pre-commit.sh|sh $tmp/$h|" "$tmp/hooks.sh" \
+    > "$tmp/hooks-lock-$c.sh"
+  awk -v h="$tmp/hooks-lock-$c.sh" '/the block of .*which sets rc/ {
+      while ((getline l < h) > 0) print l; next }
+    { print }' "$tmp/lock.sh" |
+    sed -e "s|^\. .*/scripts/gate-lock\.sh\"\$|. $tmp/slots.sh|" \
+      -e 's|^secs=<seconds>$|secs=60|' -e 's|^gate=<next gate>$|gate=next|' \
+      -e "s|[^ ]* the next gate [^ ]*|sh $tmp/next-$c.sh|" \
+      > "$tmp/lock-$c.sh"
+  if [ "$(grep -cw -e gate-lock -e PROCESS "$tmp/lock-$c.sh")" -ne 0 ] ||
+    ! grep -q "sh $tmp/next-$c.sh" "$tmp/lock-$c.sh" ||
+    ! grep -q "sh $tmp/$h" "$tmp/lock-$c.sh"; then
+    no "gate lock, $c: the stand-in block is not the one built"; exit 1
+  fi
+  { echo 'set -u'; cat "$tmp/gated.sh" "$tmp/lock-$c.sh"; } \
+    > "$tmp/lock-run-$c.sh"
+done
+for s in bash /bin/bash zsh; do
+  if ! command -v "$s" > /dev/null; then
+    echo "skip: the gate lock's block under $s, which is missing"
+    continue
+  fi
+  for c in rewrite restore; do
+    i=$(ls -i "$wt/file") || exit 1
+    gated "$s" "$PATH" "$tmp/lock-run-$c.sh"
+    trees=$(printf '%s\n' "$out" | sed -n 's/^TREE=//p')
+    t1=$(printf '%s\n' "$trees" | sed -n 1p)
+    t2=$(printf '%s\n' "$trees" | sed -n 2p)
+    n=$(printf '%s\n' "$out" | grep -c '^TREE=')
+    if [ "$c" = rewrite ]; then
+      if [ "$(ls -i "$wt/file")" != "$i" ] && [ "$n" -eq 2 ] &&
+        [ "$t1" = "$tree $base" ] && [ "$t2" = "$tree $base" ] &&
+        printf '%s\n' "$out" | grep -qx 'EXIT_next=0'; then
+        ok "$s, gate lock, hooks write file with the same bytes:" \
+          "both TREE= lines name the tree"
+      else no "$s, gate lock, hooks write file with the same bytes:" \
+        "exit $rc, prints $(printf '%s' "$out" | tr '\n' ' ')"; fi
+    elif [ "$n" -eq 2 ] && [ "$t1" = "$tree $base" ] && [ -z "$t2" ] &&
+      printf '%s\n' "$out" | grep -qx 'EXIT_next=0'; then
+      ok "$s, gate lock, next gate writes and restores file:" \
+        "the second TREE= line is empty"
+    else no "$s, gate lock, next gate writes and restores file:" \
+      "exit $rc, prints $(printf '%s' "$out" | tr '\n' ' ')"; fi
+    emptied "$s, gate lock, $c"
   done
 done
 exit "$fail"
