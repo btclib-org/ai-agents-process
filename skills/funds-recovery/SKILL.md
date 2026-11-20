@@ -87,7 +87,7 @@ in its name, and prints its path:
 bundle=$(mktemp "$PWD/bundle-$(date -u +%Y%m%dT%H%M%SZ)-XXXXXX") &&
   printf '%s\n' "$bundle" &&
   uvx --offline --exclude-newer 2026-11-16T23:16:00Z seed-scan@2026.11.17 \
-  identify > "$bundle"
+  identify >| "$bundle"
 ```
 
 Where they know an address the mnemonic gave, `--address` followed by
