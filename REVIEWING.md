@@ -563,7 +563,9 @@ question names it.
   session cannot find.
 - **Is each new command one a session can paste?** A placeholder is bare
   and last, and a line that writes has a fence of its own, as section 9
-  of the standard says; `unquoted-placeholder` reads the first half.
+  of the standard says; `unquoted-placeholder` reads the first half, and
+  `assignment-fence` keeps the values a reader sets out of a fence that
+  writes.
 - **Was the claim measured?** A sentence about what a command prints or
   what a setting answers was read from the command or the endpoint, and
   the pull request says which.

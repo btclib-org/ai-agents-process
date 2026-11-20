@@ -100,7 +100,12 @@ The process the btclib-org maintainers follow with the coding agents
   shell fence is the last word of its line, run by the
   `placeholder-last` hook;
 - `scripts/test-placeholder-last.py` — the fences `placeholder-last.py`
-  must answer, run by the `test-placeholder-last` hook.
+  must answer, run by the `test-placeholder-last` hook;
+- `scripts/assignment-fence.py` — the check that a value the reader sets
+  shares no shell fence with a line that writes, run by the
+  `assignment-fence` hook;
+- `scripts/test-assignment-fence.py` — the fences `assignment-fence.py`
+  must answer, run by the `test-assignment-fence` hook.
 
 `process/every-role.md`'s opening says how these files divide the
 process, and its *Clients*, with `process/orchestration.md`'s *Agents in
