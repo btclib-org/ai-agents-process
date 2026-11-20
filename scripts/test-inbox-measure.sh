@@ -27,6 +27,24 @@
 #   `issueCount` as null, the issue search gives none, or the pull
 #   request search gives no page at all. Each exits 1 with
 #   `error: <search>: the search gave no count of matches`.
+# - bots: a member's pull requests, with what bots left on them, and a
+#   closed issue a person spoke on. Exits 0, with a row in group 5 for
+#   each of these: an unresolved CodeRabbit thread whose latest comment
+#   is the bot's, beside an empty and a blank CodeRabbit review; Codex's
+#   two threads and the review bot's one, aged from the oldest; and a
+#   CodeRabbit thread beside a CodeRabbit review newer than the
+#   maintainer's latest comment. None for a thread a person answered
+#   last, a resolved thread of the review bot, a CodeRabbit review older
+#   than that comment or made at the same time, a thread of another bot
+#   or of a person whose login is the review bot's, or a thread of the
+#   review bot whose latest comment is CodeRabbit's. The agent's pull
+#   request with an unresolved CodeRabbit thread stays in group 4, the
+#   closed issue is in group 6, and the groups' headings come in order.
+# - bots cap: one pull request has more review threads than the search
+#   of them reads, another more CodeRabbit reviews. Exits 1 with
+#   `error: over 100`, naming both.
+# - bots fail: the search of review threads gives no page. Exits 1 with
+#   `error: bots:`.
 # - same head: the mergeability is unknown, and the second read finds it
 #   mergeable on the same head. Exits 0, with the pull request in group 4.
 # - still unknown: the second read finds it unknown again. Exits 0, with
@@ -34,10 +52,11 @@
 # - head moved: the second read finds it mergeable on another head. Exits
 #   0, with the pull request in no group and linked on the last line.
 #
-# Then the cases run again on two copies of measure.sh, each with one
-# field taken out of its queries: `issueCount` from both searches, and
-# `headRefOid` from the second read of a mergeability. A copy is caught,
-# and prints `ok`, where some case fails on it.
+# Then the cases run again on three copies of measure.sh, each with one
+# field taken out of its queries: `issueCount` from the searches,
+# `isResolved` from the search of review threads, and `headRefOid` from
+# the second read of a mergeability. A copy is caught, and prints `ok`,
+# where some case fails on it.
 #
 # Each line it prints starts `ok` or `FAIL`; a failed case is followed by
 # what measure.sh printed. It exits 1 where a case failed or a copy was
@@ -83,9 +102,11 @@ case ${what}:${q}:${query} in
   user:*) file=user.json ;;
   repos:*) file=repos.json ;;
   comments:*) file=comments.json ;;
+  graphql:*is:pr*reviewThreads*) file=bots.json ;;
   graphql:*is:pr*) file=prs.json ;;
   graphql:*is:issue*) file=issues.json ;;
   graphql::*"pullRequest(number"*) file=merge.${r}.${n}.json ;;
+  graphql::*"issueOrPullRequest(number"*) file=item.${r}.${n}.json ;;
   *) echo "gh stand-in: no answer for: $*" >&2; exit 1 ;;
 esac
 if [ "${what}" = graphql ]; then
@@ -148,6 +169,7 @@ new() {
   echo '[]' > "${tmp}/$1/comments.json"
   page 1 false "$(issue)" > "${tmp}/$1/issues.json"
   page 1 false "$(pr 7 "${a}" MERGEABLE)" > "${tmp}/$1/prs.json"
+  page 0 false > "${tmp}/$1/bots.json"
 }
 
 new ordinary
@@ -170,6 +192,101 @@ for c in same-head still-unknown head-moved; do
   new "${c}"
   page 1 false "$(pr 7 "${a}" UNKNOWN)" > "${tmp}/${c}/prs.json"
 done
+# member <n> [<time>]: a member's pull request, with the maintainer's
+# comment at that time where one is given
+member() {
+  pr "$1" "${a}" MERGEABLE | jq -c --arg t "${2-}" '
+    .author = {__typename: "User", login: "bob"} | .authorAssociation = "MEMBER"
+    | if $t == "" then . else .comments.nodes = [{createdAt: $t,
+        author: {__typename: "User", login: "maintainer"}}] end'
+}
+# thread <opener> <latest> <time> [<resolved>]: a review thread, each
+# author written <type>:<login>, its latest comment at that time
+thread() {
+  jq -nc --arg o "$1" --arg l "$2" --arg t "$3" --argjson r "${4:-false}" '
+    def who: split(":") | {__typename: .[0], login: .[1]};
+    {isResolved: $r, opener: {nodes: [{author: ($o | who)}]},
+      latest: {nodes: [{author: ($l | who), createdAt: $t}]}}'
+}
+# review <time> <body>: a CodeRabbit review
+review() {
+  jq -nc --arg t "$1" --arg b "$2" '{submittedAt: $t, body: $b}'
+}
+# seen <n> <thread>... [-- <review>...]: a pull request as the search of
+# review threads returns it
+seen() {
+  sn=$1 st='' sr='' sx=t
+  shift
+  for x in "$@"; do
+    if [ "${x}" = -- ]; then
+      sx=r
+    elif [ "${sx}" = t ]; then
+      st="${st}${x}"
+    else
+      sr="${sr}${x}"
+    fi
+  done
+  jq -nc --argjson n "${sn}" --arg u "${u}" \
+    --argjson t "$(printf '%s' "${st}" | jq -sc .)" \
+    --argjson r "$(printf '%s' "${sr}" | jq -sc .)" '{url: "\($u)/pull/\($n)",
+    reviewThreads: {pageInfo: {hasPreviousPage: false}, nodes: $t},
+    coderabbit: {pageInfo: {hasPreviousPage: false}, nodes: $r}}'
+}
+cr=Bot:coderabbitai
+codex=Bot:chatgpt-codex-connector
+old=2026-01-03T00:00:00Z
+later=$(jq -nr 'now - 3600 | todate')
+earlier=$(jq -nr 'now - 7200 | todate')
+found="**Actionable comments posted: 1**"
+new bots
+page 9 false "$(pr 7 "${a}" MERGEABLE)" "$(member 11)" "$(member 12)" \
+  "$(member 13)" "$(member 14)" "$(member 15 2026-01-04T00:00:00Z)" \
+  "$(member 16 2026-01-06T00:00:00Z)" "$(member 17)" \
+  "$(member 18 2026-01-05T00:00:00Z)" > "${tmp}/bots/prs.json"
+page 9 false "$(seen 7 "$(thread "${cr}" "${cr}" "${old}")")" \
+  "$(seen 11 "$(thread "${cr}" "${cr}" "${old}")" \
+    -- "$(review "${old}" "")" "$(review "${old}" "$(printf ' \t\n ')")")" \
+  "$(seen 12 "$(thread "${cr}" User:alice "${old}")")" \
+  "$(seen 13 "$(thread Bot:claude Bot:claude "${old}" true)")" \
+  "$(seen 14 "$(thread "${codex}" "${codex}" "${earlier}")" \
+    "$(thread "${codex}" "${codex}" "${later}")" \
+    "$(thread Bot:claude Bot:claude "${later}")")" \
+  "$(seen 15 "$(thread "${cr}" "${cr}" "${old}")" \
+    -- "$(review 2026-01-05T00:00:00Z "${found}")")" \
+  "$(seen 16 -- "$(review 2026-01-05T00:00:00Z "${found}")")" \
+  "$(seen 17 "$(thread Bot:sourcery-ai Bot:sourcery-ai "${old}")" \
+    "$(thread User:claude User:claude "${old}")" \
+    "$(thread Bot:claude "${cr}" "${old}")")" \
+  "$(seen 18 -- "$(review 2026-01-05T00:00:00Z "${found}")")" \
+  > "${tmp}/bots/bots.json"
+jq -nc --arg t "${later}" '[{user: {type: "User", login: "alice"},
+  created_at: $t, body: "Hi",
+  issue_url: "https://api.github.com/repos/btclib-org/repo-a/issues/9"}]' \
+  > "${tmp}/bots/comments.json"
+jq -nc --arg u "${u}" '{data: {repository: {issueOrPullRequest: {number: 9,
+  title: "Issue 9", url: "\($u)/issues/9", state: "CLOSED",
+  repository: {name: "repo-a"}}}}}' > "${tmp}/bots/item.repo-a.9.json"
+# order <case> <heading>...: the case printed these groups' headings, and
+# no other, in this order
+order() {
+  oc=$1
+  shift
+  if [ "$(grep '^[*][*]' "${tmp}/${oc}/out")" = "$(printf '**%s**\n' "$@")" ]
+  then
+    echo "ok ${oc} order"
+  else
+    echo "FAIL ${oc} order"
+    grep '^[*][*]' "${tmp}/${oc}/out" | sed 's/^/  | /'
+    fail=1
+  fi
+}
+new bots-cap
+page 2 false \
+  "$(seen 7 | jq -c '.reviewThreads.pageInfo.hasPreviousPage = true')" \
+  "$(seen 8 | jq -c '.coderabbit.pageInfo.hasPreviousPage = true')" \
+  > "${tmp}/bots-cap/bots.json"
+new bots-fail
+: > "${tmp}/bots-fail/bots.json"
 merge 7 "${a}" MERGEABLE > "${tmp}/same-head/merge.repo-a.7.json"
 merge 7 "${a}" UNKNOWN > "${tmp}/still-unknown/merge.repo-a.7.json"
 merge 7 "${b}" MERGEABLE > "${tmp}/head-moved/merge.repo-a.7.json"
@@ -224,6 +341,21 @@ cases() {
   run null-count 1 "error: prs: ${nocount}"
   run no-count 1 "error: issues: ${nocount}"
   run no-page 1 "error: prs: ${nocount}"
+  pull="1 file, +2/-1 —"
+  both="chatgpt-codex-connector 2 threads, claude 1 thread (new)"
+  run bots 0 "**A bot waits on an answer**" "$(row 7)" \
+    "[PR repo-a#11](${u}/pull/11) ${pull} coderabbitai 1 thread — Pull 11" \
+    "- 2 h [PR repo-a#14](${u}/pull/14) ${pull} ${both} — Pull 14" \
+    "(${u}/pull/15) ${pull} coderabbitai 1 thread and 1 review — Pull 15" \
+    "[ISS repo-a#9](${u}/issues/9) — alice spoke last — Issue 9" \
+    -- "[PR repo-a#12]" "[PR repo-a#13]" "[PR repo-a#16]" "[PR repo-a#17]" \
+    "[PR repo-a#18]" "pull/7) ${pull} coderabbitai" "error:"
+  order bots "A person waits on an answer" \
+    "The bot's ACK, needs your approval" "A bot waits on an answer" \
+    "A person spoke on a closed item"
+  run bots-cap 1 "error: over 100 review threads or CodeRabbit reviews:" \
+    "${u}/pull/7 ${u}/pull/8"
+  run bots-fail 1 "error: bots: the search gave no count of matches"
   run same-head 0 "$(row 7)" -- "mergeability unknown"
   run still-unknown 0 "${unknown}" -- "ACK, needs your approval" "error:"
   run head-moved 0 "${unknown}" -- "ACK, needs your approval" "error:"
@@ -253,6 +385,7 @@ mutant() {
   fi
 }
 mutant no-issueCount 's/issueCount pageInfo/pageInfo/' 'issueCount pageInfo'
+mutant no-isResolved 's/isResolved opener/opener/' 'isResolved opener'
 mutant no-headRefOid 's/{ url mergeable headRefOid }/{ url mergeable }/' \
   '{ url mergeable headRefOid }'
 exit "${fail}"

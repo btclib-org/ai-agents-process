@@ -1,6 +1,6 @@
 ---
 name: btclib-inbox
-description: "btclib-inbox — what waits on the maintainer across btclib-org, read now: a person waiting for an answer, a question put to him, his review requested, the agent's pull request waiting for his approval, a person speaking on a closed item"
+description: "btclib-inbox — what waits on the maintainer across btclib-org, read now: a person waiting for an answer, a question put to him, his review requested, the agent's pull request waiting for his approval, a bot's finding nobody answered, a person speaking on a closed item"
 argument-hint: "[--since <hours> | <ISO-8601 time>]"
 ---
 
@@ -41,7 +41,8 @@ His login is the one `gh api user --jq .login` prints. Sessions post
 under it, so no comment under it counts as his own act: groups 2 to 4
 read a label, a review request and an approval, which no comment
 changes. In group 1 a comment under it is an answer, since the person
-waiting sees one, whoever wrote it.
+waiting sees one, whoever wrote it. In group 5 such a comment answers
+the CodeRabbit reviews before it.
 
 The script puts each open issue and pull request in the first group that
 holds it, and a closed one in the last. *A person* is an author GitHub
@@ -70,6 +71,19 @@ gives the type `User`, not a bot:
    still unknown is linked at the end of the last line, after
    `; mergeability unknown:`, and so is one whose head moved in between,
    whose verdict and checks were read on the earlier head.
+1. **A bot waits on an answer.** A pull request with an unresolved
+   review thread, outdated or not, that a bot of `/btclib-pr`'s *The
+   reviews on GitHub* opened and whose latest comment is that bot's. Or
+   one with a review by CodeRabbit whose body holds more than white
+   space, which counts as listing findings, and that came after his
+   latest comment among the pull request's latest 30, or where none of
+   those is his. A bot is an author GitHub gives the type `Bot`, under
+   one of that section's logins. The script reads each pull request's
+   latest 100 threads and latest 100 reviews by CodeRabbit, and one with
+   more prints `error:` and its URL, and exits `1`. Aged from the oldest
+   of those threads' latest comments and those reviews, so that a new
+   finding hides no old one. The row names each bot by its login, with
+   how many of its threads and reviews wait.
 1. **A person spoke on a closed item.** A closed issue or pull request
    whose latest comment by a person, among those created since the
    `--since` time, is another login's. Aged from that comment.
