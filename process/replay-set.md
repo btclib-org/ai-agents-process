@@ -211,8 +211,7 @@ the sha's `process/` but this file, byte for byte:
   echo copied
 ```
 
-A forge finding gives a case its head, the commit its thread names, and
-the head gives its base, the merge base with `main`:
+A forge finding gives a case its head, the commit its thread names:
 
 ```shell
 repo=<owner>/<repo>
@@ -221,12 +220,90 @@ gh api "repos/${repo:?}/pulls/comments/${id:?}" \
   --jq .original_commit_id
 ```
 
+The head gives its base: the commit the head was built on, on the branch
+its pull request targets, `main` or a stacked branch's parent. So a
+stacked case leaves out its parent's change. That branch can have moved
+off the head's history since. A stacked parent rewritten after the head
+no longer holds the commit the head was built on. A parent that lands is
+squashed onto `main`. Its child is then retargeted onto `main`
+(`CONTRIBUTING.md`'s *One subject, opened as soon as it is written*),
+where the head's merge base comes before the parent's commits.
+
+The base is therefore read from the tips of the target that the forge
+recorded:
+
+- `baseRefOid`, the target's tip as the forge last recorded it;
+- the commits before and after each force-push of the target;
+- the heads of the pull requests opened from each branch the target was
+  changed from.
+
+For each tip, this prints how many commits the head is ahead of it, their
+merge base, and how many merges lie between the two, the smallest count
+first. It reads a branch's name from the forge, never from a paste,
+since a name may hold `;`. It then prints the base, the merge base on
+the first line whose count is above `0`. It prints no base, and exits
+non-zero, where:
+
+- a read fails, or a force-push it reads lacks a commit;
+- the compare lists fewer commits than it counts;
+- a merge lies between that merge base and the head.
+
 ```shell
 repo=<owner>/<repo>
+n=<n>
 head=<head>
-gh api "repos/${repo:?}/compare/main...${head:?}" \
-  --jq .merge_base_commit.sha
+(set -o pipefail
+  tips=$(gh api graphql --paginate -F owner="${repo%%/*}" \
+    -F repo="${repo#*/}" -F n="${n:?}" -f query='query($owner: String!,
+      $repo: String!, $n: Int!, $endCursor: String) {
+      repository(owner: $owner, name: $repo) { pullRequest(number: $n) {
+        baseRefOid timelineItems(first: 100, after: $endCursor,
+          itemTypes: [BASE_REF_FORCE_PUSHED_EVENT, BASE_REF_CHANGED_EVENT,
+            AUTOMATIC_BASE_CHANGE_SUCCEEDED_EVENT]) {
+          pageInfo { hasNextPage endCursor } nodes { __typename
+            ... on BaseRefForcePushedEvent {
+              beforeCommit { oid } afterCommit { oid } }
+            ... on BaseRefChangedEvent { previousRefName }
+            ... on AutomaticBaseChangeSucceededEvent { oldBase } } } } } }' \
+    --jq '.data.repository.pullRequest | (.baseRefOid // error("no base")),
+      (.timelineItems.nodes[] | if .__typename == "BaseRefForcePushedEvent"
+      then (.beforeCommit.oid // error("a force-push without its before")),
+        (.afterCommit.oid // error("a force-push without its after"))
+      else "left \(.previousRefName // .oldBase // error("no branch"))"
+      end)' |
+  while IFS= read -r tip; do
+    case $tip in
+      ('left '*) gh api -X GET --paginate "repos/${repo:?}/pulls" \
+        -f state=all -f head="${repo%%/*}:${tip#left }" \
+        --jq '.[].head.sha' || exit ;;
+      (*) printf '%s\n' "$tip" ;;
+    esac
+  done | sort -u) &&
+  lines=$(printf '%s\n' "$tips" | while IFS= read -r tip; do
+    gh api "repos/${repo:?}/compare/${tip}...${head:?}" --jq '[.ahead_by,
+      .merge_base_commit.sha, if (.commits | length) == .ahead_by
+      then [.commits[] | select(.parents | length > 1)] | length
+      else "?" end] | map(tostring) | join(" ")' || exit
+  done | sort -n) &&
+  printf '%s\n' "$lines" | awk '{ print }
+    $1 > 0 && !n { n = 1; m = $3; b = $2 }
+    END { if (!n) e = "no tip leaves the head ahead"
+      else if (m == "?") e = "the compare lists fewer commits than it counts"
+      else if (m != "0") e = "a merge lies between the base and the head"
+      if (e) { print e > "/dev/stderr"; exit 1 }
+      print "base " b }')
 ```
+
+Where the head's commits since the base hold no merge, a tip that
+descends from the commit the head was built on, and holds none of the
+head's own commits, gives that commit. A tip that does not descend from
+it, as a rewritten parent or `main` after a parent's landing, gives one
+further from the head. A count of `0` is a tip that holds the head.
+
+A head that merged its target has no one commit it was built on, as a
+branch that merges `main` once its parent lands. Ranking its counts can
+pick a merge base whose diff carries what the target gained, so such a
+case is left out of the set.
 
 **A clean change belongs in the set too**, so that a change which only
 makes the reviewer raise more shows as false findings. PR
