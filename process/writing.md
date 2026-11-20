@@ -454,10 +454,12 @@ of the standard* says.
   They run on the commit, and their run counts for that commit only,
   which the report names. A run's log names the tree it read and the
   merge base its diffs start from, on a `TREE=` line before its first
-  gate, `echo "TREE=$(gated_tree)"`, and another after its last, `echo
-  "TREE=$(gated_tree "$mark")"`, inside the gate lock (*The gate lock*)
-  or outside it. `$mark` is a file made with `mktemp` before the first
-  line and removed after the second. The run counts only where both
+  gate, `echo "TREE=$(gated_tree)"`, and another after its last, inside
+  the gate lock (*The gate lock*) or outside it. After the hooks alone
+  the second line is the first's command. Where the suite or the docs
+  build runs, it is `echo "TREE=$(gated_tree "$mark")"`, `$mark` being a
+  file made with `mktemp` after the hooks and before the first of those
+  gates, and removed after that line. The run counts only where both
   lines name the same pair. `gated_tree` prints the tree,
   staged or committed, and the merge base of `<base>` and `HEAD`, only
   where the working tree holds nothing the index lacks: no unstaged
@@ -495,10 +497,18 @@ of the standard* says.
   as an expression, and `-prune` keeps it out of a gitlink's directory.
   `-cnewer` is not POSIX; GNU and BSD `find` both have it. On a file
   system whose times count whole seconds, a write in the second `$mark`
-  was made is not seen. `scripts/test-gate-blocks.sh` shows each
-  refusal, a tracked file written and restored after `$mark` was made,
-  and a signal while `cp` runs and while `mktemp` runs. The shell that
-  runs the gates defines it:
+  was made is not seen.
+
+  The hooks run before `$mark` is made, since a hook may write by
+  design: btclib's `uv-export` writes `.clusterfuzzlite/requirements.txt`
+  with the same bytes through a new file, which the third reading would
+  list. A hook's write that changes a file's bytes already empties the
+  second line, as an unstaged change. `scripts/test-gate-blocks.sh`
+  shows each refusal, a tracked file written and restored after `$mark`
+  was made, a signal while `cp` runs and while `mktemp` runs, and, in
+  the gate lock's block, a suite that writes and restores a tracked file
+  refused, and hooks that rewrite one with the same bytes not. The shell
+  that runs the gates defines it:
 
   ```shell
   wt=<wt>
@@ -519,9 +529,8 @@ of the standard* says.
       tmp=$(mktemp -d "${TMPDIR:-/tmp}/gated.XXXXXX") &&
       mkdir "$tmp/obj" && cp "$ix" "$tmp/index" &&
       { [ "$#" -eq 0 ] || {
-        git -C "${wt:?}" ls-files -z > "$tmp/ls" &&
+        git -C "${wt:?}" ls-files -z --format='./%(path)' > "$tmp/ls" &&
           c=$(cd "${wt:?}" && xargs -0 sh -c 'm=$1; shift
-            for f do set -- "$@" "./$f"; shift; done
             [ "$#" -eq 0 ] || find "$@" -prune -cnewer "$m" -print
             ' sh "${1:?}" < "$tmp/ls") &&
           [ -z "$c" ]; }; } &&
@@ -562,13 +571,13 @@ of the standard* says.
 - **Nothing writes in a worktree while a gate runs there.** A writer
   runs a mutant, an edited fixture or any other input in a copy of the
   commit, made with `git archive <sha> | tar -x -C <dir>` in the scratch
-  directory, as a reviewer does (`every-role.md`'s *Measure, do not
-  assert*), never in the worktree a gate is reading. A gate that reads a
-  file written there while it runs tests neither tree, and can pass
-  where the tree fails; restored before the second `TREE=` line, the
-  file leaves both lines naming the tree. The third reading of
-  `gated_tree` (above) empties the second line where a tracked file was
-  written.
+  directory, never in the worktree a gate is reading. A gate that reads
+  a file written there while it runs tests neither tree, and can pass
+  where the tree fails. Where the suite or the docs build ran, the third
+  reading of `gated_tree` (above) empties the second `TREE=` line once a
+  tracked file was written after `$mark`, even where it was restored. It
+  does not see a write while the hooks run, before `$mark`, nor a file
+  git does not track.
 - **The writer runs the hooks on the staged tree, and signs one commit,
   at hand-over**, never one at each iteration: each signature can be a
   prompt the human has to answer. It stages its change, runs the fixers
@@ -1057,20 +1066,22 @@ of the standard* says.
   gate=<next gate>
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take "${wt:?}" && {
-    mark=$(mktemp "${TMPDIR:-/tmp}/mark.XXXXXX")
     echo "TREE=$(gated_tree)"
     gate_wait
     peak=(gate_peak hooks "${wt:?}" timeout -k 60 "${secs:?}")
     … the block of *The hooks run on the changed files*, which sets rc …
     echo "EXIT_hooks=$rc"
     if [ "$rc" -eq 0 ]; then
+      mark=$(mktemp "${TMPDIR:-/tmp}/mark.XXXXXX")
       gate_wait; rc=0
       gate_peak "${gate:?}" "${wt:?}" \
         timeout -k 60 "${secs:?}" … the next gate … || rc=$?
       echo "EXIT_${gate:?}=$rc"
+      echo "TREE=$(gated_tree "$mark")"
+      rm -f "$mark"
+    else
+      echo "TREE=$(gated_tree)"
     fi
-    echo "TREE=$(gated_tree "$mark")"
-    rm -f "$mark"
     gate_release
   }
   ```
@@ -1079,9 +1090,10 @@ of the standard* says.
   stops the gate**: on an outside contributor's branch they follow `uv
   sync --locked`, the sandbox's first gate. The suite and the docs build
   run only where the hooks exited `0`, since a fix to what the hooks
-  found changes the tree and runs them all again. Each later gate takes
-  the same `if`, which reads the exit of the gate before it, so the
-  first gate that fails stops the block. Where the hooks ran on the
+  found changes the tree and runs them all again. Each later gate goes
+  before the second `TREE=` line, which reads `$mark`, and takes the
+  same `if`, which reads the exit of the gate before it, so the first
+  gate that fails stops the block. Where the hooks ran on the
   staged tree and their run carries over to the commit, or ran outside
   the lock, as for a Markdown-only diff above, the block starts at the
   next gate, and only once they exited `0`. The report gives a gate the
