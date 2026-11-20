@@ -460,10 +460,10 @@ of the standard* says.
   build runs, it is `echo "TREE=$(gated_tree "$mark")"`, `$mark` being a
   file made with `mktemp` after the hooks and before the first of those
   gates, and removed after that line. The run counts only where both
-  lines name the same pair. `gated_tree` prints the tree,
-  staged or committed, and the merge base of `<base>` and `HEAD`, only
-  where the working tree holds nothing the index lacks: no unstaged
-  change, no untracked file but those git ignores (`.gitignore`,
+  lines name the same pair. `gated_tree` prints the tree, staged or
+  committed, and the merge base of `<base>` and `HEAD`, only where the
+  working tree holds nothing the index lacks: no unstaged change, no
+  untracked file but those git ignores (`.gitignore`,
   `.git/info/exclude` and `core.excludesFile`, which
   `--exclude-standard` reads), and no file marked assume-unchanged or
   skip-worktree, whose change `git diff` does not show (`git ls-files
@@ -1093,11 +1093,12 @@ of the standard* says.
   found changes the tree and runs them all again. Each later gate goes
   before the second `TREE=` line, which reads `$mark`, and takes the
   same `if`, which reads the exit of the gate before it, so the first
-  gate that fails stops the block. Where the hooks ran on the
-  staged tree and their run carries over to the commit, or ran outside
-  the lock, as for a Markdown-only diff above, the block starts at the
-  next gate, and only once they exited `0`. The report gives a gate the
-  stop left out as not run.
+  gate that fails stops the block. Where the hooks ran on the staged
+  tree and their run carries over to the commit, or ran outside the
+  lock, as for a Markdown-only diff above, the block keeps its first
+  `TREE=` line and then starts at the `mark=` line before the next gate,
+  so that `$mark` is set, and it runs only once they exited `0`. The
+  report gives a gate the stop left out as not run.
 
   `gate_peak` runs the gate, returns its exit code, and records its peak
   memory and its wall time, as the script's header comment says. On an
