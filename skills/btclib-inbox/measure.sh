@@ -125,6 +125,35 @@ query($q: String!, $endCursor: String) {
 }
 EOF_ISSUES
 
+# the open pull requests' review threads and CodeRabbit's reviews, in a
+# search of their own that runs beside the other two
+cat > "${d}/bots.graphql" <<'EOF_BOTS'
+query($q: String!, $endCursor: String) {
+  search(query: $q, type: ISSUE, first: 40, after: $endCursor) {
+    issueCount pageInfo { hasNextPage endCursor }
+    nodes {
+      ... on PullRequest {
+        url
+        reviewThreads(last: 100) {
+          pageInfo { hasPreviousPage }
+          nodes {
+            isResolved opener: comments(first: 1) {
+              nodes { author { __typename login } }
+            }
+            latest: comments(last: 1) {
+              nodes { author { __typename login } createdAt }
+            }
+          }
+        }
+        coderabbit: reviews(author: "coderabbitai[bot]", last: 100) {
+          pageInfo { hasPreviousPage } nodes { submittedAt body }
+        }
+      }
+    }
+  }
+}
+EOF_BOTS
+
 # one issue or pull request, for "A person spoke on a closed item"
 cat > "${d}/item.graphql" <<'EOF_ITEM'
 query($o: String!, $r: String!, $n: Int!) {
@@ -232,6 +261,28 @@ def ack: .headRefOid as $h
 def agentack: kind == "PR" and .author.login == "claude"
   and .author.__typename == "Bot" and (.isDraft | not) and green
   and (.reviewDecision // "REVIEW_REQUIRED") == "REVIEW_REQUIRED" and ack;
+# a bot of /btclib-pr's "The reviews on GitHub"
+def reviewbot: .__typename == "Bot"
+  and (.login | IN("coderabbitai", "chatgpt-codex-connector", "claude"));
+# each bot's thread and CodeRabbit review that waits on an answer, as
+# SKILL.md's "Measure" says
+def botwaits: .url as $u
+  | ([$bots[].data.search.nodes[] | select(.url? == $u)] | first) as $b
+  | ([.comments.nodes[] | select(answer and .author.login == $me)
+      | .createdAt] | last) as $mine
+  | [($b.reviewThreads.nodes[]? | select(.isResolved | not)
+      | .opener.nodes[0].author as $o
+      | select(($o | reviewbot) and .latest.nodes[0].author == $o)
+      | {login: $o.login, t: .latest.nodes[0].createdAt, review: false}),
+    ($b.coderabbit.nodes[]? | select((.body // "") | test("\\S"))
+      | select($mine == null or .submittedAt > $mine)
+      | {login: "coderabbitai", t: .submittedAt, review: true})];
+def botline: group_by(.login) | map(.[0].login + " "
+    + ([(map(select(.review | not)) | length | select(. > 0)
+        | "\(.) thread" + (if . == 1 then "" else "s" end)),
+      (map(select(.review)) | length | select(. > 0)
+        | "\(.) review" + (if . == 1 then "" else "s" end))] | join(" and ")))
+  | join(", ");
 def age: if . == null then "?" else
   [0, ($at | fromdate) - fromdate] | max / 3600 | floor
   | if . < 48 then "\(.) h" else "\(. / 24 | floor) d" end end;
@@ -299,17 +350,20 @@ def row($g; $t; $why; $mark): {g: $g, t: $t,
       # group 4's but for a mergeability GitHub has not computed yet:
       # named on the last line, not left out unsaid
       elif agentack and .mergeable == "UNKNOWN" then row(0; null; ""; false)
+      # aged from the longest wait, so that a new finding hides no old one
+      elif botwaits | length > 0 then
+        botwaits as $w | row(5; $w | map(.t) | min; $w | botline; true)
       else empty end),
   (($spoke | map({(.k): .}) | add // {}) as $s
     | $closed[] | select(. != null and .state != "OPEN")
     | .claimline = claimline($by; $links)
     | $s["\(.repository.name)/\(.number)"] as $c
-    | row(5; $c.t; "\($c.login) spoke last"; false)) ]
+    | row(6; $c.t; "\($c.login) spoke last"; false)) ]
 # the groups, then one line holding a JSON array of those of unknown
 # mergeability
 | (map(select(.g > 0)) | group_by(.g) | .[]
     | ["A person waits on an answer", "Asked of you", "Your review requested",
-       "The bot's ACK, needs your approval",
+       "The bot's ACK, needs your approval", "A bot waits on an answer",
        "A person spoke on a closed item"][.[0].g - 1] as $h
     | "**\($h)**", "", (sort_by(.t) | reverse | .[].line), ""),
   (map(select(.g == 0) | {slug, link}) | sort_by(.slug) | tojson)
@@ -325,14 +379,16 @@ sh "${d}/run.sh" prs gh api graphql --paginate -f q="org:${o} is:open is:pr" \
   -F query=@"${d}/prs.graphql" &
 sh "${d}/run.sh" issues gh api graphql --paginate \
   -f q="org:${o} is:open is:issue" -F query=@"${d}/issues.graphql" &
+sh "${d}/run.sh" bots gh api graphql --paginate -f q="org:${o} is:open is:pr" \
+  -F query=@"${d}/bots.graphql" &
 # GNU xargs runs its command once on empty input; BSD xargs does not
 [ ! -s "${d}/repos.out" ] ||
   xargs -n 1 -P 6 sh "${d}/comments.sh" < "${d}/repos.out" &
 wait
-check prs issues
+check prs issues bots
 # a search with no count of matches, or cut short at GitHub's cap on
 # results, as SKILL.md says
-for n in prs issues; do
+for n in prs issues bots; do
   short=$(jq -nr '[inputs | .data.search]
     | if length == 0 or any(.[]; .issueCount == null) then
         "the search gave no count of matches"
@@ -346,6 +402,17 @@ for n in prs issues; do
     exit 1
   fi
 done
+# review threads and CodeRabbit's reviews are read 100 at a time, and
+# never cut short
+more=$(jq -r '.data.search.nodes[]
+    | select(.reviewThreads.pageInfo.hasPreviousPage
+      or .coderabbit.pageInfo.hasPreviousPage) | .url' "${d}/bots.out") ||
+  exit 1
+if [ -n "${more}" ]; then
+  printf 'error: over 100 review threads or CodeRabbit reviews: %s\n' \
+    "$(printf '%s' "${more}" | tr '\n' ' ')"
+  exit 1
+fi
 while read -r r; do
   check "comments.${r}"
 done < "${d}/repos.out"
@@ -384,7 +451,8 @@ many "${d}/closed.json" 'select(. != null)'
 rows() {
   jq -nr --arg me "${me}" --arg since "${since}" --arg at "${at}" \
     --slurpfile open "${d}/open.json" --slurpfile spoke "${d}/spoke.json" \
-    --slurpfile closed "${d}/closed.json" -f "${d}/rows.jq" \
+    --slurpfile closed "${d}/closed.json" --slurpfile bots "${d}/bots.out" \
+    -f "${d}/rows.jq" \
     > "${d}/rows.md" || exit 1
   tail -n 1 "${d}/rows.md" > "${d}/unknown.json"
   jq -r '.[].slug' "${d}/unknown.json" > "${d}/unknown.keys" || exit 1
