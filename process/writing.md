@@ -304,10 +304,10 @@ of the standard* says.
   `--all-files` where the diff only deletes. A hook with
   `pass_filenames: false` or `always_run: true` still reads what its own
   command reads, as btclib-node's `core-citation-pin` reads what `git
-  ls-files` lists. Where the suite is left to CI and the diff changes
-  only Markdown, the hooks run outside the gate lock. The block runs
-  pre-commit behind the array `peak`: outside the lock it is empty, as
-  the first block below sets it, and *The gate lock* sets it to
+  ls-files` lists. Where the tree's gates hold no suite and the diff
+  changes only Markdown, the hooks run outside the gate lock. The block
+  runs pre-commit behind the array `peak`: outside the lock it is empty,
+  as the first block below sets it, and *The gate lock* sets it to
   `gate_peak` and the timeout. It expands `peak` as
   `${peak[@]+"${peak[@]}"}`: under `set -u`, macOS's `/bin/bash` 3.2
   reads an empty `"${peak[@]}"` as an unbound variable and exits. The
@@ -349,26 +349,6 @@ of the standard* says.
   fi
   rm -f "$list"
   (exit "$rc")
-  ```
-
-- **The suite is left to CI where no test of the tree reads a file of
-  the diff.** This prints each place where a pytest suite may read one,
-  a renamed file under both its names, and prints nothing and exits `0`
-  where none does. Any line, or another exit, runs the suite, and so
-  does a suite that is not pytest's. The script's header says what it
-  misses, which CI's run reads. Its `--paths` form takes the paths of
-  the diff, since its other form reads `<base>...HEAD`, which a staged
-  tree leaves out. It runs outside the gate lock:
-
-  ```shell
-  scratch=<scratch>
-  wt=<wt>
-  base=<base>
-  (set -o pipefail
-    mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) &&
-    git -C "${wt:?}" diff --cached -z --name-only --no-renames "${mb:?}" |
-    xargs -0 env -C "${scratch:?}" uv run --no-project --python 3.15 \
-      python -I "${PROCESS:?}/scripts/suite-reads.py" "${wt:?}" --paths)
   ```
 
 - **The docs build runs only where the diff touches what it builds**: a
