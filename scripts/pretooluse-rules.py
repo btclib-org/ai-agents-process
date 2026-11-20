@@ -16,7 +16,10 @@ refuses what the words show for certain, and some spellings that break
 no rule, named below. Where options repeat, the last decides, as the
 program reads them. A word holding an unexpanded `$` might be any word,
 so a command passes where such a word could make it comply, and a
-spelling the script cannot read passes. So does a help request to git,
+spelling the script cannot read passes. That holds where an earlier
+command of the same text assigns the name a literal value, which is not
+carried into later commands: after `sha=FETCH_HEAD`,
+`git worktree add --detach /x/gwt "${sha:?}"` passes. So does a help request to git,
 gh, uv, pytest or coderabbit, a version request to git, uv or pytest,
 input it cannot parse, and text with a quote, a substitution or a group
 it never closes. Of `PYTEST_ADDOPTS` it reads only a literal value

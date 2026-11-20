@@ -27,8 +27,8 @@
 # so it records no call inside the sandbox. The cases, in order:
 #
 # - fetch: each fetch block, `uv sync` and `uvx pre-commit
-#   install-hooks`, starts `env -i -C <main wt>` and assigns the names
-#   the sandbox block assigns, `UV_OFFLINE` aside.
+#   install-hooks`, sets `mwt=<main wt>`, runs `env -i -C "${mwt:?}"`
+#   and assigns the names the sandbox block assigns, `UV_OFFLINE` aside.
 # - fixer: the gate writes a file. The status file holds `?? fixed`,
 #   then `EXIT_status=0`.
 # - forged: the gate tries to overwrite `.git`, makes `sub/.git` a
@@ -151,15 +151,17 @@ block() {
       on = 0; next }
     on { sub(/^  /, ""); b = b $0 "\n" }' "$doc" |
     sed -e "s|<gate wt>|$gwt|g" -e "s|<wt>|$wt|g" -e "s|<sbx>|$sbx|g" \
-      -e "s|<scratch>/<name>-|$tmp/gate-|g" -e "s|\${PROCESS:?}|$proc|g" \
+      -e "s|\${PROCESS:?}|$proc|g" \
+      -e "s|^scratch=<scratch>\$|scratch=$tmp|" \
+      -e "s|^name=<name>\$|name=gate|" \
       -e "s|uv sync --locked\$|sh $tmp/gate.sh|"
 }
 block '--git-common-dir >' > "$tmp/prep.sh"
 { block 'sandbox-exec -f'; block '^"[$]@" uv sync --locked'
   block 'porcelain'; } > "$tmp/gate-only.sh"
-block '^gwt=.*\nst=' > "$tmp/find.sh"
+block '^gwt=.*\nscratch=.*\nname=.*\nst=' > "$tmp/find.sh"
 { block 'sandbox-exec -f'
-  block 'porcelain' | sed "s|$tmp/gate-status|$tmp/gate-base|g"; } \
+  block 'porcelain' | sed 's|^st=\(.*\)-status$|st=\1-base|'; } \
   > "$tmp/base.sh"
 { block 'sandbox-exec -f'
   block 'pre-commit run "[$][{]files' |
@@ -179,10 +181,12 @@ names() {
 want=$(block 'sandbox-exec -f' | names)
 for re in 'uv sync --locked --all-groups' 'uvx pre-commit install-hooks'; do
   b=$(block "$re")
+  # shellcheck disable=SC2016
   if [ -z "$b" ]; then no "fetch: no block runs '$re'"
-  elif [ "$(printf '%s\n' "$b" | head -n 1 | cut -d " " -f 1-5)" != \
-    'env -i -C <main wt>' ]; then
-    no "fetch: '$re' does not start env -i -C <main wt>"
+  elif ! printf '%s\n' "$b" | grep -qx 'mwt=<main wt>' ||
+    [ "$(printf '%s\n' "$b" | grep -m 1 '^env ' | cut -d " " -f 1-4)" != \
+    'env -i -C "${mwt:?}"' ]; then
+    no "fetch: '$re' does not run env -i -C in <main wt>"
   elif [ "$(printf '%s\n' "$b" | names)" != "$want" ]; then
     no "fetch: '$re' sets" "$(printf '%s\n' "$b" | names | tr '\n' ' ')"
   else ok "fetch: '$re' runs from <main wt> with the gates' variables"; fi
