@@ -140,9 +140,9 @@ branch, or a text to be posted.
   line, or kills its mutant, or the script's docstring names it out of
   reach. It takes no `good first issue` label, which would keep every
   branch from taking it (`every-role.md`'s *Issues left to newcomers*).
-  A line is worked when a file in a tree meets its shape, or when the
-  script is next changed for another reason; a mutant's line has no
-  shape to meet, and waits for that change.
+  A line is worked when a file in a tree or a caller meets its shape, or
+  when the script is next changed for another reason; a mutant's line
+  has no shape to meet, and waits for that change.
 
   A line filed from the rounds of a branch that changes the script is
   not that branch's to work, and a known-limits issue the branch filed
