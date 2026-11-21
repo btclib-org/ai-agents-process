@@ -161,14 +161,14 @@ with no path or query.
 
 A proxy passes every address on to each node or Electrum server behind
 it, which the report does not name, and it can forward to more than one,
-as a primary and a failover. Its URL can read as the user's own node's
-does: `http://127.0.0.1:8545` names either. So ask of each node URL, and
-of each Electrum server, the one for `scan` and each one for `forks`,
-whether it forwards to other services, whether or not the user calls it
-a proxy. Where it does, ask for every service it forwards to, and run
-`scan` or `forks` with it only once the user has named each and agreed
-that each learns every address. The answer names each of those services
-beside the report.
+as a primary and a failover. Its address can read as the user's own
+node's or server's does: `http://127.0.0.1:8545` names either. So ask of
+each node URL, and of each Electrum server, the one for `scan` and each
+one for `forks`, whether it forwards to other services, whether or not
+the user calls it a proxy. Where it does, ask for every service it
+forwards to, and run `scan` or `forks` with it only once the user has
+named each and agreed that each learns every address. The answer names
+each of those services beside the report.
 
 ```shell
 server=<the Electrum server, as host:port>
