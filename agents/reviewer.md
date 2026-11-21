@@ -34,9 +34,7 @@ you say so in the verdict.
   `git diff` and `git merge-tree` against explicit shas. Where you need a
   worktree, give it a name that is yours — the issue or branch and your
   role — and remove it, and any local branch you made, when you finish,
-  as `every-role.md`'s *Debris goes when its work ends* says. A branch
-  whose head is on no remote and in no pull request you do not delete:
-  your verdict names it, and it goes only on the human's word.
+  as `every-role.md`'s *Debris goes when its work ends* says.
 - **No unsigned commit**, not even in a scratch repository: what counts
   and what is exempt are in `writing.md`'s *Signed and signed off*,
   where your brief names it.

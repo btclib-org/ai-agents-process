@@ -44,10 +44,7 @@ says where your brief names that file, and you say so in the report.
   committed — and do not put it back: the orchestrator restores what is
   provably yours, under the process's rule, and leaves the rest.
 - **Debris goes** as `every-role.md`'s *Debris goes when its work ends*
-  says. Before you report, delete each local branch you made but the one
-  you hand over, unless your brief keeps it. One whose head is on no
-  remote and in no pull request you do not delete: your report names it,
-  and it goes only on the human's word.
+  says.
 - **A denied permission is a stop.** No other command that reaches the
   same result, except a route the process itself sanctions (its `-r2`
   fallback for a refused force-push). Put the exact command in your
