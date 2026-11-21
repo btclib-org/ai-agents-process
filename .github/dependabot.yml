@@ -10,6 +10,11 @@
 # .pre-commit-config.yaml has its weekly autoupdate rewriting `rev:`, so
 # a second bot on the same pin would only compete with it.
 #
+# The markdown-it-py pin in .pre-commit-config.yaml, of the link hooks
+# and of mypy, sits in `additional_dependencies`, which autoupdate never
+# rewrites, whatever the repo: it moves with the standard's ports, at
+# the version of the standard's test group (its section 4).
+#
 # Grouped, so an update week is one pull request rather than one per
 # action. No target-branch: without one dependabot opens against the
 # default branch, which is the only branch a change lands on.

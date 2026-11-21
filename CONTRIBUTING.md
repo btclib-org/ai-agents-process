@@ -86,7 +86,9 @@ words, one fact per sentence. On the forge, the title and the first
 sentence carry the point; a body is at most two short paragraphs before
 any code block or template section; a comment is about 250 words, and
 never more than 300, with no list and no heading; a review's summary
-takes the shape `REVIEWING.md`'s *The verdict* gives it.
+takes the shape `REVIEWING.md`'s *The verdict* gives it, and a pull
+request's findings record takes the shape `ai-agents-process`'s
+[*The findings record*][p-findings] gives it.
 
 ## Pull requests
 
@@ -113,24 +115,27 @@ comment says how the pull request comes back: comment on it asking for a
 reopen, and once a maintainer has reopened it, add the trailers as the
 check's failure says for each author, and force-push. The comment comes
 first because GitHub does not reopen a pull request whose branch was
-force-pushed while it was closed. A new pull request that passes the
-check is as good. An issue is held by its assignees. The closed pull
-request's author is unassigned from each issue it cites. Where that
-leaves an issue with no assignee, of the open pull requests that cite
-it, pass the `Sign-off` check and have an author GitHub can assign, the
-author of the first to pass the check is assigned to it. Where there is
-none, the issue stays unassigned and open to every contributor. [GitHub
-assigns][gh-assign] a contributor who has no write access and is not a
-member of the organization only to an issue they have commented on, so
-comment on the issue your pull request is for. A pull request whose
-author cannot be assigned does not hold the issue, even where it passed
-the check first, and its author commenting later does not displace the
-assignee.
+force-pushed while it was closed. A reopened pull request is not closed
+for its sign-off before seven days after its last reopen. A new pull
+request that passes the check is as good. An issue is held by its
+assignees. The closed pull request's author is unassigned from each
+issue it cites. Where that leaves an issue with no assignee, of the open
+pull requests that cite it, pass the `Sign-off` check and have an author
+GitHub can assign, the author of the first to pass the check is assigned
+to it. Where there is none, the issue stays unassigned and open to every
+contributor. [GitHub assigns][gh-assign] a contributor who has no write
+access and is not a member of the organization only to an issue they
+have commented on, so comment on the issue your pull request is for. A
+pull request whose author cannot be assigned does not hold the issue,
+even where it passed the check first, and its author commenting later
+does not displace the assignee.
 
 Counting from the opening was set aside: a contributor who never saw the
 check fail would have had no chance to fix it. Left open, a pull request
 nobody can land would keep its issue from every other contributor with
-no end, so it is closed, and it can come back.
+no end, so it is closed, and it can come back. Once back, it still meets
+the closing condition, so without the week from its last reopen it could
+be closed again before its author pushes the trailers.
 
 What a pull request's title and description have to say about the issues
 it closes, and why a manual link in the Development panel is a trap
@@ -156,12 +161,25 @@ is being written, and a tree's own landed subjects are not what to copy
 it from: nothing already landed is rewritten, so what a repository wrote
 before the rule stays where it is.
 
+**A batch of ports of the standard is the exception**: its subject cites
+no issue, and its description cites the issues it advances, as
+`ai-agents-process`'s [*Ports of the standard*][p-ports] says, and
+[the standard's *What a pull request says it is*][s-title] says why.
+
 `REVIEWING.md` is the standard a review is written against, and is this
 file's other half. Read before opening a pull request, it is what the
 pull request will be answered against.
 
 A pull request adds no entry to `CHANGELOG.md` or `RELEASE_NOTES.md`, a
-release's own pull request excepted ([section 9][s9], [section 12][s12]).
+release's own pull request excepted, and the one that moves an entry left
+in `changelog/next/` into that release's section. In a tree that
+publishes, one that changes what a user gets adds its entry as a file
+under `changelog/next/` instead, which the release assembles
+([section 9][s9], [section 12][s12]).
+The file is named for the pull request's number and the issues its text
+cites, `pr<N>-iss<Y>.md`. Write the number you expect the pull request to
+get; where it gets another, rename the file in a second commit, to the
+name the `changelog-entry` check prints.
 
 ### One subject, opened as soon as it is written
 
@@ -288,8 +306,8 @@ merge waits until both answer.
 
 The check and the merge are two calls, and none of the [rules a GitHub
 ruleset offers][rulesets] reads a label, so a label put on between them
-does not stop the merge. Until the release merges, its own check that
-`main` has not moved catches such a merge, as *Release to PyPI* says.
+does not stop the merge. The release catches such a merge before its
+tag, as *Release to PyPI* says.
 
 **Where the repository has a bypass, the maintainer may land without
 that approval, through it**: [`GOVERNANCE.md`][governance]'s *How a
@@ -352,6 +370,8 @@ settings and why they are what they are.
 [governance]: https://github.com/btclib-org/.github/blob/main/GOVERNANCE.md
 [roadmap]: https://github.com/btclib-org/.github/blob/main/ROADMAP.md
 [good-first]: https://github.com/search?q=org%3Abtclib-org+label%3A%22good+first+issue%22+is%3Aopen&type=issues
+[p-ports]: https://github.com/btclib-org/ai-agents-process/blob/main/skills/btclib-iss/SKILL.md#ports-of-the-standard
+[p-findings]: https://github.com/btclib-org/ai-agents-process/blob/main/process/btclib-common.md
 
 ## This repository in particular
 
@@ -386,8 +406,8 @@ posted on a forge* says what binds it.
 
 uv is the only thing that has to be installed; it fetches interpreters
 and tools itself. There is no project here — no `pyproject.toml` and no
-`uv.lock`, the Python being standalone scripts under `scripts/` — so
-nothing is synced and every command is a `uvx`:
+`uv.lock`, the Python being standalone scripts under `scripts/` and
+`.github/scripts/` — so nothing is synced and every command is a `uvx`:
 
 ```shell
 uvx pre-commit run --all-files
@@ -453,6 +473,11 @@ any other.
 
 `verified-signatures.yml` reports after each push to `main` whether every
 commit pushed is `verified`; [the standard's *Signatures*][s-sigs] has the rule.
+
+`sign-off-comment.yml` runs once `lint` has run on a pull request. It
+posts one comment where the pull request's commits are not all signed
+off, edits it on each push after, and edits it to say so once they are:
+the `Sign-off` job is what gates.
 
 ### A version, and no release
 
