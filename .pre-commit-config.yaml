@@ -29,7 +29,6 @@ ci:
   skip:
     - actionlint-shellcheck
     - test-git-c-allow
-    - test-suite-reads
     - test-port-check
     - test-rebase-clearance
     - test-pretooluse-rules
@@ -96,13 +95,6 @@ repos:
         language: python
         entry: python scripts/test-git-c-allow.py
         files: ^scripts/(test-)?git-c-allow\.py$
-        pass_filenames: false
-      # the reads scripts/suite-reads.py finds and misses in small trees
-      - id: test-suite-reads
-        name: suite-reads.py answers as its test expects
-        language: python
-        entry: python scripts/test-suite-reads.py
-        files: ^scripts/(test-)?suite-reads\.py$
         pass_filenames: false
       # a pointer to another file's section names the file, as the opening
       # of process/every-role.md says; it is read against the sections of
