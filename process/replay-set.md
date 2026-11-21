@@ -58,6 +58,85 @@ test rewrites such a sentence, its case is recorded as unable to
 evaluate the change, beside a case that tests the instruction without
 stating its answer, where one is needed.
 
+**A reviewer carries more than its brief.** Claude Code loads into each
+agent it starts the installed agent definition, the instruction files,
+as `~/.claude/CLAUDE.md`, and the session's memory index, `MEMORY.md` in
+`~/.claude/projects/<project>/memory/`. Its documentation says a
+subagent does not load the index ([*What loads at
+startup*](https://code.claude.com/docs/en/sub-agents#what-loads-at-startup)),
+but in the runs of 2026-11-20 `reviewer` agents cited a line of it. No
+switch keeps the index from one reviewer alone. Claude Code turns auto
+memory off with the `CLAUDE_CODE_DISABLE_AUTO_MEMORY` variable or the
+`autoMemoryEnabled` setting. The agent runs in the session's process
+(`every-session.md`'s *The machine is shared*), so the variable turns it
+off for the orchestrator too, and the setting sits in a settings file
+that the orchestrator and other sessions read. The agent definition
+belongs to the configuration under test. The instruction files and the
+index belong to neither the configuration nor the case, and either can
+state the change under test or a case's finding, as a note of the
+maintainer's answer that a candidate turns into a rule does.
+
+So the reviewer may carry them, and may rest no finding on them. Before
+the first reviewer starts, and again after the last verdict, since other
+sessions write the index meanwhile, the orchestrator reads the
+instruction files and the index the session loaded. The run's entry
+names, in its own words and quoting none of it, each note of either that
+states the change under test or a case's finding, or says that none
+does. The brief says that neither is a ground for a finding, and has the
+verdict end with the line `Outside the brief: none`, or with `Outside
+the brief:` followed by each note of either that the verdict relies on
+or quotes. The orchestrator saves each verdict to a file. This prints
+`unaided` only where the file's last line that holds text is `Outside
+the brief: none` and no line names the memory or an instruction file:
+
+```shell
+v=<verdict>
+```
+
+```shell
+last=$(grep -v '^[[:space:]]*$' "${v:?}" | tail -n 1) &&
+  [ "$last" = 'Outside the brief: none' ] &&
+  { rc=0; grep -n -i -E \
+    'memory\.md|auto.?memory|session[^[:space:]]* memory|claude\.md' \
+    "$v" || rc=$?; [ "$rc" -eq 1 ]; } && echo unaided
+```
+
+The orchestrator reads each verdict for which it prints nothing. One
+that rests a finding on a note of the index or of an instruction file,
+or quotes one, is discarded and run again, as one that reads a copy of
+this file is (*A case's tree can hold this file*); one that names them
+only as not relied on is kept. Where the repeat rests on such a note
+too, the case is recorded as unable to evaluate the change.
+
+**Each reviewer writes in a scratch directory of its own**, which its
+brief names: `<work>/reviewer/<name>`, in the reviewer's `<scratch>`
+(`every-role.md`'s *The scratchpad is shared*), under a `<name>` that no
+other reviewer of the run uses. Two reviewers left to choose can choose
+the same name, and the cleanup of one then removes the other's inputs.
+The run makes `<work>/reviewer` as that section says, then the directory
+before the reviewer starts, with a `mkdir` that refuses a path that
+exists:
+
+```shell
+dir=<work>/reviewer/<name>
+```
+
+```shell
+mkdir -- "${dir:?}"
+```
+
+The run removes it once the verdict is saved, since the sweep of
+`every-role.md`'s *Debris goes when its work ends* refuses a `<work>`
+that holds a repository an input made there:
+
+```shell
+dir=<work>/reviewer/<name>
+```
+
+```shell
+rm -rf "${dir:?}"
+```
+
 The case's tree is built at a new path from a checkout that holds the
 head, named by its path, so that the fetch needs no network and the
 tree keeps no remote. The first command refuses a path that exists,
@@ -400,7 +479,8 @@ baseline's entry names that sha.
 Each run is an entry: the date, the `$PROCESS` sha, the factor changed
 and its value, the client, the model and the effort, a hit or a miss for
 each defect or why its case was left out (*A case's tree can hold this
-file*), and each false finding on any case apart.
+file*), each false finding on any case apart, and the notes outside the
+brief that *A reviewer carries more than its brief* has it name.
 
 **An entry whose `$PROCESS` sha is not on `main` also records the tree
 the copy is built from**, which `git rev-parse '<sha>:process'` prints.
