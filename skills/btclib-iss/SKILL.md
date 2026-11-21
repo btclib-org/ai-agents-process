@@ -69,20 +69,22 @@ says which a number is. A pull request among the arguments is
 
 - **Never as a batch; never hold one that is ready.** Open each pull
   request as soon as it is cleared, except an embargoed fix
-  (`writing.md`'s *Committing and rebasing*). Ports of the standard are
-  the one batch (*Ports of the standard*).
+  (`writing.md`'s *Committing and rebasing*). Beyond the issues the next
+  bullet lets one pull request take, ports of the standard are the one
+  batch (*Ports of the standard*).
 - **Bundle by subject or by file**, as the standard's `CONTRIBUTING.md`
   says in *One subject, opened as soon as it is written*: issues that
   share a subject are one pull request, and issues that change the same
   file may be one too. Issues one decision answers share a subject.
   Before assigning a worker, look for open issues of both kinds beside
   the one at hand (`gh issue view` each): take those sharing its subject
-  with it, and you may take those changing the same file. A known-limits
-  issue (`local-review.md`'s *The rounds*) is taken with every branch
-  whose issues change its script, unless a pull request is already open
-  for it (next bullet). A branch that changes a script its issues did
-  not name does not take that script's known-limits issue, whose lines
-  wait for the next branch whose issues change the script.
+  with it, and you may take those changing the same file. For each
+  script the issues name, or the test of one, look up the script's
+  known-limits issue with the command of `local-review.md`'s *The
+  rounds*, and take it with them, unless a pull request is already open
+  for it (next bullet). A branch that changes a script its issues do not
+  name does not take that script's known-limits issue, whose lines wait
+  for the next branch whose issues name the script or its test.
 - **Where a pull request is already open for an issue**, this skill
   opens no competing branch: that pull request is `/btclib-pr`'s.
 

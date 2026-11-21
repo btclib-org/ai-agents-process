@@ -2606,9 +2606,26 @@ has not reported yet.
   deleting a remote branch is hard to undo.
 
   Where the pull request closed a known-limits issue
-  (`local-review.md`'s *The rounds*), the session files each line of it
-  that the body's `## Evidence` does not list as answered in a new
-  known-limits issue for the script, as *The rounds* says.
+  (`local-review.md`'s *The rounds*), the session reads which of its
+  lines the landed diff answers: from the list of `## Evidence` where
+  the body gives one, and otherwise from the diff and the body's own
+  account. It adds each line the branch did not answer to the script's
+  open known-limits issue, found with the command of `local-review.md`'s
+  *The rounds*, and files one where none is open. A line it cannot tell
+  was answered counts as one the branch did not answer, and the report
+  names it. These print the body, the diff and the closed issue's lines:
+
+  ```shell
+  repo=<owner>/<repo>
+  n=<n>
+  issue=<issue>
+  ```
+
+  ```shell
+  gh pr view "${n:?}" --repo "${repo:?}" --json body --jq .body
+  gh pr diff "${n:?}" --repo "${repo:?}"
+  gh issue view "${issue:?}" --repo "${repo:?}" --json body --jq .body
+  ```
 
   Then the session sweeps the pull request's `<work>` where
   `every-role.md`'s *Debris goes when its work ends* says.

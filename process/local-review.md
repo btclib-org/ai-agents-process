@@ -163,9 +163,10 @@ branch, or a text to be posted.
   from its own rounds is not taken with it. The orchestrator still adds
   the line as above, to the issue the branch takes where it takes one.
   Where the branch closes that issue, each line on it the branch did not
-  answer, from its own rounds or added by another branch meanwhile, goes
-  into a new known-limits issue once the branch lands, as `/btclib-pr`'s
-  *Check what landed* says.
+  answer, from its own rounds or added by another branch meanwhile, is
+  added again as above once the branch lands, to the script's open
+  known-limits issue or to one filed where none is open, as
+  `/btclib-pr`'s *Check what landed* says.
 - **From the third round on the forge, a finding the bullet above would
   file is filed, not fixed, and of the rest only a defect, a false
   sentence or a crash on a reachable shape is fixed on the branch.** A
