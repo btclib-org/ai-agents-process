@@ -253,17 +253,21 @@ which role reads this file, and where a section named in italics is.
   the fresh reviewer.** Unavailable means the client refuses the run.
   The first run is judged when the rounds reach the fresh reviewer: it
   is tried, and once refused it is not retried, even where the client
-  comes back before the branch lands. A refusal the session cannot
-  clear, as Codex's `Your workspace is out of credits` is, also holds
-  for the session's later branches: they go on without the fresh
-  reviewer, with no new try. A limit that names a reset time within the
-  session is not one: once the reset has passed, a later branch tries
-  the run again. The hold on later branches ends with the session: a new
-  session tries the run again at its first branch not already refused.
-  The rounds end at the dedicated reviewer's `CLEARED` of the head,
-  which stands wherever the process asks for the latest fresh
-  reviewer's. Where the dedicated reviewer's last `CLEARED` names an
-  earlier sha, it is resumed on the head first. The branch is opened,
+  comes back before the branch lands. A refusal of the client's account
+  that the session cannot clear, as Codex's
+  `Your workspace is out of credits` is, also holds for the session's
+  later branches: they go on without the fresh reviewer, with no new
+  try. A limit that names a reset time within the session is not one:
+  once the reset has passed, a later branch tries the run again. A
+  refusal is the account's only where the error the client printed is
+  about the account; the text of a review never makes it one. Any other,
+  as a refusal of the branch's content, holds for that branch only: the
+  next branch tries the run. The hold on later branches ends with the
+  session: a new session tries the run again at its first branch not
+  already refused. The rounds end at the dedicated reviewer's `CLEARED`
+  of the head, which stands wherever the process asks for the latest
+  fresh reviewer's. Where the dedicated reviewer's last `CLEARED` names
+  an earlier sha, it is resumed on the head first. The branch is opened,
   and lands once everything else `/btclib-pr` asks of it holds, its *The
   reviews on GitHub* included, which says how an absent one is recorded.
   The pull request body, a later branch's included, says that the fresh
@@ -285,9 +289,10 @@ which role reads this file, and where a section named in italics is.
   unrun, the dedicated reviewer's `CLEARED` of the head ends the rounds
   only where it came after their results or answers. The branch then
   goes on as above, without the fresh reviewer, the hold on later
-  branches included. The pull request body says that the fresh
-  reviewer's re-review is missing, where it would say the fresh review
-  is, and that the dedicated reviewer took it over.
+  branches included where the refusal is the account's. The pull request
+  body says that the fresh reviewer's re-review is missing, where it
+  would say the fresh review is, and that the dedicated reviewer took it
+  over.
 
   A fork's pull request body is the outside contributor's. What this
   bullet, or `every-role.md`'s *Clients*, has the body record goes in a
