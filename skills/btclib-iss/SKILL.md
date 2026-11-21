@@ -129,6 +129,13 @@ to take lands there first, and reaches each other tree by a port.
   a `## This repository in particular` heading takes the part above it.
   Each other change since the tree's last port is adapted as its issue
   says.
+- **A batch that moves the tree's calls into `btclib-org/.github` to a
+  new tag moves `claude-review.yml`'s with them**, in the same pull
+  request, since section 10 of the standard pins `btclib-org/.github`
+  at one commit throughout a tree's workflows. The bot does not review
+  that pull request, which lands as the second case of `/btclib-pr`'s
+  *The reviews on GitHub* says: on the local review, in place of the
+  bot's ACK.
 - **The subject that lands records the port**: a batch's is
   `Port btclib-org/.github@<S>` alone, with neither the citations of
   `writing.md`'s *Citations and closing keywords* nor the pull request's
@@ -262,7 +269,9 @@ open:**
 
 - **A change to `claude-review.yml`, or to a reusable workflow it calls
   by a local path, is its own pull request**: the bot reviews neither
-  (`/btclib-pr`'s *The reviews on GitHub*).
+  (`/btclib-pr`'s *The reviews on GitHub*). A batch of ports that moves
+  the tree's calls to a new tag is the exception (*Ports of the
+  standard*).
 - **The body is the paragraphs, then sections, then the closing block
   (`writing.md`'s *Citations and closing keywords*).** The paragraphs
   keep the body limit of `every-session.md`'s *What is posted on a
