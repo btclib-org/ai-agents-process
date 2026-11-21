@@ -70,22 +70,30 @@ but in the runs of 2026-11-20 `reviewer` agents cited a line of it.
 
 A switch keeps the index from one reviewer. One is `omitClaudeMd: true`
 in the agent's definition, which drops the instruction files too. The
-others serve a reviewer that `claude -p` starts as a process of its own,
-as `orchestration.md`'s *Starting the reviewer in the other client*
-starts one: the variable `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`, or
-`--settings '{"autoMemoryEnabled":false}'`. On 2026-11-21, at Claude
+others serve a reviewer that `claude -p` starts as a process of its own:
+the variable `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`, or `autoMemoryEnabled`
+set to `false` in the settings that `--settings` passes. A later
+`--settings` replaces an earlier one, so the setting goes inside the one
+the run already passes, as the sandbox's in `orchestration.md`'s
+*Starting the reviewer in the other client*. On 2026-11-21, at Claude
 Code 2.1.330, a subagent defined with `omitClaudeMd: true` reported
 neither a `MEMORY.md` nor a `CLAUDE.md` block in its context, and one
-with `false` reported both; a `claude -p` session with either of the
-other switches reported no `MEMORY.md` block, and one without reported
-one. `agents/reviewer.md` sets no `omitClaudeMd`, so a reviewer the
-`Agent` tool starts from it carries the index, and the run records and
-discards as below. Whether a run should start its reviewers with one is
-the question of ISS btclib-org/ai-agents-process#739. The agent
-definition belongs to the configuration under test. The instruction
-files and the index belong to neither the configuration nor the case,
-and either can state the change under test or a case's finding, as a
-note of the maintainer's answer that a candidate turns into a rule does.
+with `false` reported both. A plain `claude -p` session, started from a
+directory whose project holds an index, reported no `MEMORY.md` block
+with either of the other switches, and reported one without them. The
+reviewer that section starts, run from its own new directory, whose
+project holds no index, reported none with no switch; with the same
+flags from a directory whose project holds one, and the definition
+passed by `--agents`, it reported one, and none with the setting inside
+the sandbox's settings. `agents/reviewer.md` sets no `omitClaudeMd`, so
+a reviewer the `Agent` tool starts from it carries the index, and the
+run records and discards as below. Whether a run should start its
+reviewers with a switch is the question of ISS
+btclib-org/ai-agents-process#739. The agent definition belongs to the
+configuration under test. The instruction files and the index belong to
+neither the configuration nor the case, and either can state the change
+under test or a case's finding, as a note of the maintainer's answer
+that a candidate turns into a rule does.
 
 So the reviewer may carry them, and may rest no finding on them. Before
 the first reviewer starts, and again after the last verdict, since other
@@ -96,9 +104,11 @@ states the change under test or a case's finding, or says that none
 does. The brief says that neither is a ground for a finding, and has the
 verdict end with the line `Outside the brief: none`, or with `Outside
 the brief:` followed by each note of either that the verdict relies on
-or quotes. The orchestrator saves each verdict to a file. This prints
-`unaided` only where the file's last line that holds text is `Outside
-the brief: none`, and where no line holds, case ignored, any of these:
+or quotes. The orchestrator saves each verdict to a file in its own
+`<scratch>`, outside `<work>/reviewer/<name>`, which the run removes.
+This prints `unaided` only where the file's last line that holds text is
+`Outside the brief: none`, and where no line holds, case ignored, any of
+these:
 
 - `memory.md` or `claude.md`;
 - `auto` and `memory` with at most one character between them;
@@ -116,9 +126,9 @@ v=<verdict>
 last=$(grep -v '^[[:space:]]*$' "${v:?}" | tail -n 1) &&
   [ "$last" = 'Outside the brief: none' ] &&
   { rc=0; grep -n -i -E -e 'memory\.md|claude\.md|auto.?memory' \
-    -e 'memory (index|note|file|director)|session[^[:space:]]* memory' \
+    -e 'memory (index|note|file|director)|session[^ ]* memory' \
     -e 'instruction file|global instruction|persistent note' \
-    -e 'projects/[^[:space:]]*/memory' "$v" || rc=$?; [ "$rc" -eq 1 ]; } &&
+    -e 'projects/[^ ]*/memory' "$v" || rc=$?; [ "$rc" -eq 1 ]; } &&
   echo unaided
 ```
 
@@ -126,8 +136,10 @@ It is a first screen: a verdict can name the index or an instruction
 file in other words, or across a line break, so `unaided` does not show
 it free of them. The orchestrator therefore reads every verdict for a
 ground outside the brief as it scores it (*How a run is scored*),
-whatever the block printed. One that rests a finding on a note of the
-index or of an instruction file, or quotes one, is discarded and run
+whatever the block printed. It reads first each verdict for which the
+block prints nothing, one without the closing line included, starting
+from the lines the block lists. One that rests a finding on a note of
+the index or of an instruction file, or quotes one, is discarded and run
 again, as one that reads a copy of this file is (*A case's tree can hold
 this file*); one that names them only as not relied on is kept. Where
 the repeat is discarded too, the case is recorded as unable to evaluate
@@ -504,9 +516,12 @@ baseline's entry names that sha.
 
 Each run is an entry: the date, the `$PROCESS` sha, the factor changed
 and its value, the client, the model and the effort, a hit or a miss for
-each defect or why its case was left out (*A case's tree can hold this
-file*), each false finding on any case apart, and the notes outside the
-brief that *A reviewer carries more than its brief* has it name.
+each defect, or why its case was left out (*A case's tree can hold this
+file*) or recorded as unable to evaluate the change (*The expected
+finding is kept out of the reviewer's input* and *A reviewer carries
+more than its brief*), each false finding on any case apart, and the
+notes outside the brief that *A reviewer carries more than its brief*
+has it name.
 
 **An entry whose `$PROCESS` sha is not on `main` also records the tree
 the copy is built from**, which `git rev-parse '<sha>:process'` prints.
