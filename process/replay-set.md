@@ -1745,6 +1745,105 @@ forbade the gates, so no reviewer had a gate run to judge by the change.
 The run shows that the change costs no hit and adds no blocking finding
 on these cases, not that it finds anything.
 
+- **Candidate**, 2026-11-21, for ISS btclib-org/ai-agents-process#726:
+  `$PROCESS` `ff060302514bb60fddbab2cedfb79f622afcf4de`, tree
+  `9c3199205b60e010fdb6dce4d087a69b95d3eaeb`, the factor changed being
+  the brief: the change of ISS btclib-org/ai-agents-process#726 and ISS
+  btclib-org/ai-agents-process#718, which `git diff dce9c38
+  ff060302514bb60fddbab2cedfb79f622afcf4de -- process` makes in
+  `every-role.md` and `local-review.md`. `every-role.md`'s *Collateral*
+  no longer says that a shared file or subsystem is not a shared
+  subject: a defect is not a branch's subject because it sits in a file
+  the branch changes, and `/btclib-iss` says which issues one branch may
+  take. In `local-review.md`'s *The rounds*, a known-limits line is
+  worked by a branch that takes the issue, the orchestrator adds a line
+  from a branch's rounds to the known-limits issue that branch takes,
+  and where the branch closes that issue, each line it did not answer is
+  added again once it lands. The baseline is the candidate's merge base,
+  `dce9c38`, and was not run again. The candidate's runs at
+  `43acfa66891d109417da8d4c7fd3b5edb2cb4eff` in the entry above stand
+  for it: `git diff 43acfa6 dce9c38 -- process
+  ':(exclude)process/replay-set.md' agents skills` prints nothing, so a
+  reviewer at `dce9c38` reads the copy, the agent and the skills those
+  runs read. Those runs were made earlier the same day, not interleaved
+  with the candidate's. Claude Code, the `reviewer` agent, Opus, effort
+  `high`, one run per case. In both: PR
+  btclib-org/ai-agents-process#444: hit. PR btclib-org/ecc#484: hit. PR
+  btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
+  miss. PR btclib-org/btclib-node#2516: miss. PR btclib-org/ecc#580:
+  miss. PR btclib-org/ai-agents-process#526: miss. PR
+  btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with no
+  blocking finding.
+
+On PR btclib-org/ecc#484 both block on perl's `<>` running or rewriting
+hostile tracked names, which an outside contributor's branch can supply.
+On PR btclib-org/ai-agents-process#444 both block on the skills that
+still arm with `--auto`. On PR btclib-org/ai-agents-process#317 the
+candidate blocks on "tied to the account" covering refusals that clear
+within the session, a finding that holds, as the baseline at `4f8000a`
+above did, and the baseline names it only as non-blocking and clears
+the head. Both list among the claims that hold that "None of this" now
+also covers the new hold, and neither names it as a defect. On PR
+btclib-org/.github#2288 both name whitespace other than one space only
+as `filed`. On PR btclib-org/ai-agents-process#526 the baseline names
+the item indented after a paragraph only as `filed`, and the candidate
+does not name it. On PR btclib-org/btclib-secp256k1#1331 the baseline
+names only as non-blocking that any exit `42` reads as reported, and
+the candidate does not name it. On PR btclib-org/btclib-node#2516 the
+baseline names "`i` sums the length fields" only in a non-blocking
+finding on the commit message, and the candidate raises no finding. On
+PR btclib-org/ecc#580 neither names what the comment over `_AFF_CALLS`
+leaves out. The other findings outside the cases' defects were not
+measured.
+
+Every verdict ends `Outside the brief: none`, the screen of *A reviewer
+carries more than its brief* prints `unaided` for each, and none rests
+on or quotes a note of an instruction file or of the memory index. The
+session's memory index, last written at 00:58 UTC that day, before
+either run, holds a note that states the change to `every-role.md`'s
+*Collateral*: issues that change the same file may be one pull request.
+So the reviewers of both runs carried it. No case's defect concerns
+which issues a branch takes, and no verdict names the note. The index
+states neither the change to `local-review.md` nor a case's finding,
+and the instruction file states none of them.
+
+Each candidate reviewer read the process from a copy of `process/` at
+its sha without this file, for which its check prints `copied`, the
+case from the tree of the runs above, at the same head, for which the
+checks still print `isolated` and `unnamed`, and its brief from a file
+in the run's directory. Each brief is the baseline's as its file stands
+once the baseline's run removed the line on saving a verdict (the entry
+above), with the candidate's copy and scratch directory in place of the
+baseline's. The baseline's reviewers of PR
+btclib-org/ai-agents-process#317, PR btclib-org/ai-agents-process#522
+and PR btclib-org/ai-agents-process#526 read that line and declined it.
+The candidate's reviewer of PR btclib-org/ai-agents-process#522 read its
+case tree's own copy of this file down to line 80, the head's own, and
+no case entry, so its verdict stands. No verdict lists or quotes another
+copy. The candidate's reviewer of PR btclib-org/btclib-secp256k1#1331
+kept its inputs in its scratch directory, reading the brief's "leave it
+as it is" as asking it to, and the run removed them with the directory.
+The copies hold `process/` alone, so the run left out the change's
+edits to `/btclib-iss` and `/btclib-pr`. Nothing was withheld: the
+change edits no `REVIEWING.md` and nothing in `agents/`. `git diff
+43acfa6 dce9c38 -- REVIEWING.md` adds a clause on the `assignment-fence`
+hook to this tree's `REVIEWING.md`, which no reviewer of either run
+read: each read its case's own `REVIEWING.md` at the head.
+
+Every candidate reviewer named the conflict between the brief, which
+forbids the gates, and `local-review.md`'s *The gates are the writer's*,
+which has a reviewer run them where none is on the record, and ran none,
+as in the runs above.
+
+The candidate has the baseline's hits on PR
+btclib-org/ai-agents-process#444 and PR btclib-org/ecc#484, loses none
+and gains none, and blocks on nothing in the clean case. No case alone
+decides the comparison, so none ran again. No case's defect concerns
+which issues a branch takes or which branch works a known-limits line.
+The run shows that the change costs no hit on these cases, not that it
+finds anything.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
