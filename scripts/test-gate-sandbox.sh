@@ -67,9 +67,10 @@
 #   then `--files ./file ./id ./sub`, and then `--all-files` for the
 #   empty diff.
 # - hooks, peak: with the parent again, under bash, `peak` is
-#   `gate_peak hooks <gate wt>`, and pre-commit holds 100 MiB. Outside
-#   the sandbox, `gate.peaks` gains one line, for `hooks` and `<gate
-#   wt>`, with a peak of 100 MiB or more and an exit of 0.
+#   `gate_peak hooks <wt>`, as the gate lock's block sets it, and
+#   pre-commit holds 100 MiB. Outside the sandbox, `gate.peaks` gains one
+#   line, for `hooks` and `<wt>`, with a peak of 100 MiB or more and an
+#   exit of 0.
 # - octopus: `<gate wt>` merges two heads with `--no-commit`, which
 #   stages a change to `file` and a new file `new`, and the status block
 #   runs before the gate into a base file. With a gate that writes
@@ -353,7 +354,7 @@ for c in diff empty diff-3.2 empty-3.2 peak; do
     if [ "$c" = peak ]; then
       : > "$sbx/home/alloc"
       printf 'GATE_LOCK_DIR=%s\n. %s\npeak=(gate_peak hooks %s)\n' \
-        "$tmp/lock" "$proc/scripts/gate-lock.sh" "$gwt"
+        "$tmp/lock" "$proc/scripts/gate-lock.sh" "$wt"
     fi
     sed "s|<base>|$b|g" "$tmp/hooks-gate.sh"; } > "$tmp/hooks-$c.sh"
   "$sh" "$tmp/hooks-$c.sh" > "$tmp/hooks-$c.log" 2>&1
@@ -366,7 +367,7 @@ for c in diff empty diff-3.2 empty-3.2 peak; do
     "$(printf '%s' "$got" | tr '\n' ' ')" \
     "$(tr '\n' ' ' < "$tmp/hooks-$c.log")"; fi
 done
-if awk -F '\t' -v t="$gwt" 'NR == 1 && $2 == "hooks" && $3 == t &&
+if awk -F '\t' -v t="$wt" 'NR == 1 && $2 == "hooks" && $3 == t &&
   $4 ~ /^[0-9]+$/ && $4 + 0 >= 102400 && $5 == 0 { f = 1 }
   END { exit !(f && NR == 1) }' \
   "$tmp/lock/gate.peaks" 2>/dev/null; then

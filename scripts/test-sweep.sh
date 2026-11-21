@@ -237,7 +237,7 @@ pullcmd=$(awk '
   on && /^  ```$/ { if (b ~ /refs\/pull\//) printf "%s", a b
     a = only ? b : ""; on = 0; next }
   on { sub(/^  /, ""); b = b $0 "\n"
-    if ($0 !~ /^[A-Za-z_][A-Za-z0-9_]*=/) only = 0; next }
+    if ($0 !~ /^([A-Za-z_][A-Za-z0-9_]*=|set -- )/) only = 0; next }
   /[^ ]/ { a = "" }' "$prose" |
   sed 's/<checkout>/"$1"/; s/<n>/$2/')
 # shellcheck disable=SC2016
