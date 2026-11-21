@@ -225,13 +225,17 @@ movecmd='work=$1
   /^  ```shell$/ { b = ""; on = 1; next }
   /^  ```$/ { if (on && b ~ /findings-/) printf "%s", b; on = 0; next }
   on { sub(/^  /, ""); b = b $0 "\n" }' "$prose")
-# and the line that fetches a pull request's head, with <checkout> and
-# <n> as its first and second arguments
+# and the line that fetches a pull request's head, with the fence just
+# above it where that one holds only assignments, and <checkout> and <n>
+# as its first and second arguments
 # shellcheck disable=SC2016
 pullcmd=$(awk '
-  /^  ```shell$/ { b = ""; on = 1; next }
-  /^  ```$/ { if (on && b ~ /refs\/pull\//) printf "%s", b; on = 0; next }
-  on { sub(/^  /, ""); b = b $0 "\n" }' "$prose" |
+  /^  ```shell$/ { b = ""; on = 1; only = 1; next }
+  on && /^  ```$/ { if (b ~ /refs\/pull\//) printf "%s", a b
+    a = only ? b : ""; on = 0; next }
+  on { sub(/^  /, ""); b = b $0 "\n"
+    if ($0 !~ /^[A-Za-z_][A-Za-z0-9_]*=/) only = 0; next }
+  /[^ ]/ { a = "" }' "$prose" |
   sed 's/<checkout>/"$1"/; s/<n>/$2/')
 # shellcheck disable=SC2016
 case $pullcmd in

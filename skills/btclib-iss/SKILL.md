@@ -23,11 +23,17 @@ it*. `echo "$PROCESS"` prints the clone's path.
 
 ```shell
 scratchpad=<the session's scratchpad>
+```
+
+```shell
 mkdir -p "${scratchpad:?}/orchestrator"
 ```
 
 ```shell
 scratchpad=<the session's scratchpad>
+```
+
+```shell
 git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.sha"
 ```
 
@@ -193,6 +199,9 @@ release or draft. Read its state there.
 ```shell
 n=<n>
 repo=<owner>/<repo>
+```
+
+```shell
 gh issue edit "${n:?}" --repo "${repo:?}" --remove-label upstream-dependent
 ```
 

@@ -33,6 +33,9 @@ scratch=<scratch>
 workers=<n>
 wt=<worktree>
 set -- <the measured run>
+```
+
+```shell
 . "${PROCESS:?}/scripts/gate-lock.sh"
 out=${scratch:?}/gen.out pids=${scratch:?}/gen.pids
 : "${workers:?}" && gate_take_all "${wt:?}" > "$out" 2>&1 && {
