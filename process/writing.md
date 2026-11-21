@@ -316,7 +316,10 @@ of the standard* says.
   branch*), which that branch's own hooks block, its status check and
   its other gates run behind, and elsewhere no gate reads it. Its
   `mktemp` takes a template under `$TMPDIR`, as `gated_tree`'s does
-  (*Every commit you hand over is gated, on its tree*):
+  (*Every commit you hand over is gated, on its tree*). It writes the
+  file `mktemp` made with `>|`, as the docs build's check and the
+  sandbox's hooks gate below do: a shell with noclobber set (`set -C`)
+  refuses `>` on a file that exists:
 
   ```shell
   peak=()
@@ -330,7 +333,7 @@ of the standard* says.
   list=$(mktemp "${TMPDIR:-/tmp}/hooks.XXXXXX")
   if ! mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) ||
     ! git -C "${wt:?}" diff -z --cached --name-only --diff-filter=d \
-      "${mb:?}" > "$list"; then
+      "${mb:?}" >| "$list"; then
     rc=2
   else
     while IFS= read -r -d '' name; do
@@ -392,7 +395,7 @@ of the standard* says.
     rc=2
   elif ! mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) ||
     ! git -C "${wt:?}" diff -z --cached --name-only --no-renames \
-      "${mb:?}" > "$list"; then
+      "${mb:?}" >| "$list"; then
     rc=2
   else
     while IFS= read -r -d '' name; do
@@ -452,15 +455,20 @@ of the standard* says.
   HEAD:uv.lock` and btclib's `tests/declared_version_test.py` compares
   `HEAD` with a release tag, so on a staged tree they read the parent.
   They run on the commit, and their run counts for that commit only,
-  which the report names. A run's log names the tree it read and the
-  merge base its diffs start from, on a `TREE=` line before its first
-  gate, `echo "TREE=$(gated_tree)"`, and another after its last, inside
-  the gate lock (*The gate lock*) or outside it. After the hooks alone
-  the second line is the first's command. Where the suite or the docs
-  build runs, it is `echo "TREE=$(gated_tree "$mark")"`, `$mark` being a
-  file made with `mktemp` after the hooks and before the first of those
-  gates, and removed after that line. The run counts only where both
-  lines name the same pair. `gated_tree` prints the tree, staged or
+  which the report names. A run's log names the tree it read, the merge
+  base its diffs start from and the commit `HEAD` names, on a `TREE=`
+  line before its first gate, `echo "TREE=$(gated_tree)" "HEAD=$(git -C
+  "${wt:?}" rev-parse HEAD)"`, and another after its last, inside the
+  gate lock (*The gate lock*) or outside it. After the hooks alone the
+  second line is the first's command. Where the suite or the docs build
+  runs, it takes `gated_tree "$mark"` in place of `gated_tree`, `$mark`
+  being a file made with `mktemp` after the hooks and before the first
+  of those gates, and removed after that line. A line is empty where its
+  `gated_tree` printed nothing, whatever `HEAD=` follows. The run counts
+  only where both lines name the same pair. A run of the suite or the
+  docs build counts only where both lines also name, as `HEAD`, the
+  commit the report names, since a staged tree and the commit made from
+  it give the same pair. `gated_tree` prints the tree, staged or
   committed, and the merge base of `<base>` and `HEAD`, only where the
   working tree holds nothing the index lacks: no unstaged change, no
   untracked file but those git ignores (`.gitignore`,
@@ -878,7 +886,7 @@ of the standard* says.
   files=()
   list=$(mktemp)
   if ! git -C "${wt:?}" diff -z --name-only --diff-filter=d \
-    "${base:?}...${sha:?}" > "$list"; then
+    "${base:?}...${sha:?}" >| "$list"; then
     rc=2
   else
     while IFS= read -r -d '' name; do
@@ -1065,7 +1073,7 @@ of the standard* says.
   gate=<next gate>
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take "${wt:?}" && {
-    echo "TREE=$(gated_tree)"
+    echo "TREE=$(gated_tree)" "HEAD=$(git -C "${wt:?}" rev-parse HEAD)"
     gate_wait
     peak=(gate_peak hooks "${wt:?}" timeout -k 60 "${secs:?}")
     … the block of *The hooks run on the changed files*, which sets rc …
@@ -1076,10 +1084,11 @@ of the standard* says.
       gate_peak "${gate:?}" "${wt:?}" \
         timeout -k 60 "${secs:?}" … the next gate … || rc=$?
       echo "EXIT_${gate:?}=$rc"
-      echo "TREE=$(gated_tree "$mark")"
+      echo "TREE=$(gated_tree "$mark")" \
+        "HEAD=$(git -C "${wt:?}" rev-parse HEAD)"
       rm -f "$mark"
     else
-      echo "TREE=$(gated_tree)"
+      echo "TREE=$(gated_tree)" "HEAD=$(git -C "${wt:?}" rev-parse HEAD)"
     fi
     gate_release
   }
@@ -1094,10 +1103,28 @@ of the standard* says.
   same `if`, which reads the exit of the gate before it, so the first
   gate that fails stops the block. Where the hooks ran on the staged
   tree and their run carries over to the commit, or ran outside the
-  lock, as for a Markdown-only diff above, the block keeps its first
-  `TREE=` line and then starts at the `mark=` line before the next gate,
-  so that `$mark` is set, and it runs only once they exited `0`. The
-  report gives a gate the stop left out as not run.
+  lock, as for a Markdown-only diff above, the gates that follow them
+  run in the block below, only once they exited `0`. The report gives a
+  gate the stop left out as not run.
+
+  ```shell
+  wt=<wt>
+  secs=<seconds>
+  gate=<next gate>
+  . "${PROCESS:?}/scripts/gate-lock.sh"
+  gate_take "${wt:?}" && {
+    echo "TREE=$(gated_tree)" "HEAD=$(git -C "${wt:?}" rev-parse HEAD)"
+    mark=$(mktemp "${TMPDIR:-/tmp}/mark.XXXXXX")
+    gate_wait; rc=0
+    gate_peak "${gate:?}" "${wt:?}" \
+      timeout -k 60 "${secs:?}" … the next gate … || rc=$?
+    echo "EXIT_${gate:?}=$rc"
+    echo "TREE=$(gated_tree "$mark")" \
+      "HEAD=$(git -C "${wt:?}" rev-parse HEAD)"
+    rm -f "$mark"
+    gate_release
+  }
+  ```
 
   `gate_peak` runs the gate, returns its exit code, and records its peak
   memory and its wall time, as the script's header comment says. On an

@@ -7,15 +7,19 @@
 # From <writing.md>, by default process/writing.md beside this script,
 # it takes the block that defines gated_tree, the hooks block of *The
 # hooks run on the changed files* with the block before it, which
-# empties `peak`, and the gate lock's block. Their placeholders become
-# paths of a fixture: a repository whose `main` holds `file`, `other`,
-# `-i`, `!` and a gitlink `sub`, whose directory holds `inner`, with
-# `HEAD` a commit on it that changes `file`, and a larger one, whose
-# `git ls-files -v` fills a pipe's buffer. pre-commit is a script of the
-# test's, which records its directory and arguments. gated_tree runs
-# under each of sh, bash, zsh and dash on the PATH, and the hooks block
-# and the gate lock's block, which need arrays, under bash, `/bin/bash`,
-# which on macOS is bash 3.2, and zsh.
+# empties `peak`, the docs build's check, the sandbox's hooks gate, the
+# gate lock's block and the one for hooks whose run carries over. Their
+# placeholders become paths of a fixture: a repository whose `main`
+# holds `file`, `other`, `-i`, `!`, `docs/page.md`, which names `file`,
+# and a gitlink `sub`, whose directory holds `inner`, with `HEAD` a
+# commit on it that changes `file`, and a larger one, whose `git
+# ls-files -v` fills a pipe's buffer. The docs source is `docs`, and the
+# sandbox's command is empty. pre-commit is a script of the test's,
+# which records its directory and arguments. gated_tree runs under each
+# of sh, bash, zsh and dash on the PATH, and the other blocks under
+# bash, `/bin/bash`, which on macOS is bash 3.2, and zsh. The noclobber
+# cases also run under sh and dash, each where it has arrays, which the
+# hooks block and the sandbox's hooks gate use.
 # A shell that is missing is skipped, and its line says so. The cases,
 # in order:
 #
@@ -62,7 +66,21 @@
 #   new file, and the next gate writes nothing, both `TREE=` lines name
 #   `HEAD`'s tree and the merge base. Where pre-commit writes nothing,
 #   and the next gate writes `file` and restores it with `cp -p`, the
-#   second `TREE=` line is empty.
+#   second `TREE=` line is empty. Each `TREE=` line ends `HEAD=` and
+#   `HEAD`'s commit.
+# - noclobber: the hooks block, the docs build's check and the sandbox's
+#   hooks gate, each run as is and then after `set -C`. Each exits 0
+#   both times, prints the same, runs pre-commit with the same
+#   arguments, and leaves $TMPDIR empty.
+# - carried over: the block for hooks whose run carries over, under
+#   `set -u`, with a stand-in that records the slot taken, the gate run
+#   and the slot released, and a next gate that exits 0, then 3. It
+#   exits 0 and prints two `TREE=` lines naming `HEAD`'s tree, the merge
+#   base and `HEAD`, around `EXIT_next=` and the gate's exit.
+# - staged, then committed: `file` changed and staged, the carried-over
+#   block runs; the change committed, it runs again. Both runs name the
+#   same tree and merge base, the first `HEAD` as the parent and the
+#   second as the new commit. This commit is the fixture's last.
 #
 # Each line it prints starts `ok`, `skip` or `FAIL`, and it exits 1 where
 # a check failed.
@@ -90,14 +108,16 @@ wt=$tmp/wt
 git init -q -b main "$wt" &&
   printf 'a\n' > "$wt/file" && printf 'o\n' > "$wt/other" &&
   printf 'h\n' > "$wt/-i" && printf 'h\n' > "$wt/!" &&
-  mkdir "$wt/sub" && printf 's\n' > "$wt/sub/inner" &&
-  git -C "$wt" add file other ./-i ./! &&
+  mkdir "$wt/sub" "$wt/docs" && printf 's\n' > "$wt/sub/inner" &&
+  printf 'see file\n' > "$wt/docs/page.md" &&
+  git -C "$wt" add file other ./-i ./! docs/page.md &&
   git -C "$wt" update-index --add --cacheinfo \
     160000,0123456789012345678901234567890123456789,sub &&
   git -C "$wt" commit -q -m base &&
   base=$(git -C "$wt" rev-parse HEAD) &&
   printf 'b\n' > "$wt/file" && git -C "$wt" commit -q -am change &&
   tree=$(git -C "$wt" rev-parse 'HEAD^{tree}') &&
+  head=$(git -C "$wt" rev-parse HEAD) &&
   mkdir -p "$wt/.git/info" && printf 'cache\n' >> "$wt/.git/info/exclude" ||
   exit 1
 # A larger index, whose `git ls-files -v` fills a pipe's buffer, its
@@ -116,8 +136,10 @@ block() {
     on && /^ *```$/ { if (b ~ re) { printf "%s", b; exit }
       on = 0; next }
     on { sub(/^  /, ""); b = b $0 "\n" }' "$doc" |
-    sed -e "s|<wt>|$wt|g" -e "s|<base>|$base|g" \
-      -e "s|uvx pre-commit run|sh $tmp/pre-commit.sh|"
+    sed -e "s|<wt>|$wt|g" -e "s|<base>|$base|g" -e "s|<sha>|$head|g" \
+      -e "s|<docs source>|docs|g" \
+      -e "s|uvx pre-commit run|sh $tmp/pre-commit.sh|" \
+      -e "s|uv run pre-commit run|sh $tmp/pre-commit.sh|"
 }
 block 'gated_tree[(][)]' > "$tmp/gated.sh"
 { cat "$tmp/gated.sh"; echo gated_tree; } > "$tmp/gated-run.sh"
@@ -134,13 +156,27 @@ grep -qx 'peak=()' "$tmp/empty.sh" ||
 block 'uvx pre-commit run' > "$tmp/hooks.sh"
 grep -q "sh $tmp/pre-commit.sh" "$tmp/hooks.sh" ||
   { no "no hooks block in $doc"; exit 1; }
+block '<docs source>' > "$tmp/docs.sh"
+grep -qx 'src=docs' "$tmp/docs.sh" ||
+  { no "no docs build's check in $doc"; exit 1; }
+block 'uv run pre-commit run "[$][{]files' > "$tmp/sbx-hooks.sh"
+grep -q "sh $tmp/pre-commit.sh" "$tmp/sbx-hooks.sh" ||
+  { no "no sandbox's hooks gate in $doc"; exit 1; }
+# Where it is missing, its cases are left out, and the test fails
+block 'HEAD[)]"\n *mark=[$]' > "$tmp/carried.sh"
+grep -q 'gate_take' "$tmp/carried.sh" ||
+  no "no block in $doc for hooks whose run carries over"
 block 'gate_take ' > "$tmp/lock.sh"
 grep -q 'gate_take' "$tmp/lock.sh" ||
   { no "no gate lock block in $doc"; exit 1; }
 # The check of *A rehearsal of a block that takes the gate lock*, whose
-# control is the block as extracted
+# control is each block as extracted
 [ "$(grep -cw -e gate-lock -e PROCESS "$tmp/lock.sh")" -ne 0 ] ||
   { no "the gate lock's block names neither gate-lock nor PROCESS"; exit 1; }
+if grep -q 'gate_take' "$tmp/carried.sh" &&
+  [ "$(grep -cw -e gate-lock -e PROCESS "$tmp/carried.sh")" -eq 0 ]; then
+  no "the carried-over block names neither gate-lock nor PROCESS"; exit 1
+fi
 
 mkdir "$tmp/bin" "$tmp/bin-mktemp" "$tmp/bin-awk" "$tmp/t" || exit 1
 printf '#!/bin/sh\nexit 2\n' > "$tmp/bin-awk/awk"
@@ -177,6 +213,17 @@ emptied() {
   left=$(find "$tmp/t" -mindepth 1 -maxdepth 1 -exec basename {} \;)
   if [ -z "$left" ]; then ok "$1: \$TMPDIR is empty"
   else no "$1: \$TMPDIR holds $(printf '%s' "$left" | tr '\n' ' ')"; fi
+}
+
+# Reads the TREE= lines of $1: sets nl, their count, t1 and t2, what
+# gated_tree printed in each, and h1 and h2, the HEAD each names.
+lines() {
+  _l=$(printf '%s\n' "$1" | grep '^TREE=')
+  nl=$(printf '%s\n' "$1" | grep -c '^TREE=')
+  t1=$(printf '%s\n' "$_l" | sed -n '1s/^TREE=\(.*\) HEAD=.*$/\1/p')
+  t2=$(printf '%s\n' "$_l" | sed -n '2s/^TREE=\(.*\) HEAD=.*$/\1/p')
+  h1=$(printf '%s\n' "$_l" | sed -n '1s/^TREE=.* HEAD=//p')
+  h2=$(printf '%s\n' "$_l" | sed -n '2s/^TREE=.* HEAD=//p')
 }
 
 perl=$(command -v perl)
@@ -339,25 +386,129 @@ for s in bash /bin/bash zsh; do
   for c in rewrite restore; do
     i=$(ls -i "$wt/file") || exit 1
     gated "$s" "$PATH" "$tmp/lock-run-$c.sh"
-    trees=$(printf '%s\n' "$out" | sed -n 's/^TREE=//p')
-    t1=$(printf '%s\n' "$trees" | sed -n 1p)
-    t2=$(printf '%s\n' "$trees" | sed -n 2p)
-    n=$(printf '%s\n' "$out" | grep -c '^TREE=')
+    lines "$out"
     if [ "$c" = rewrite ]; then
-      if [ "$(ls -i "$wt/file")" != "$i" ] && [ "$n" -eq 2 ] &&
+      if [ "$(ls -i "$wt/file")" != "$i" ] && [ "$nl" -eq 2 ] &&
         [ "$t1" = "$tree $base" ] && [ "$t2" = "$tree $base" ] &&
+        [ "$h1" = "$head" ] && [ "$h2" = "$head" ] &&
         printf '%s\n' "$out" | grep -qx 'EXIT_next=0'; then
         ok "$s, gate lock, hooks write file with the same bytes:" \
-          "both TREE= lines name the tree"
+          "both TREE= lines name the tree and HEAD"
       else no "$s, gate lock, hooks write file with the same bytes:" \
         "exit $rc, prints $(printf '%s' "$out" | tr '\n' ' ')"; fi
-    elif [ "$n" -eq 2 ] && [ "$t1" = "$tree $base" ] && [ -z "$t2" ] &&
+    elif [ "$nl" -eq 2 ] && [ "$t1" = "$tree $base" ] && [ -z "$t2" ] &&
+      [ "$h1" = "$head" ] && [ "$h2" = "$head" ] &&
       printf '%s\n' "$out" | grep -qx 'EXIT_next=0'; then
       ok "$s, gate lock, next gate writes and restores file:" \
-        "the second TREE= line is empty"
+        "the second TREE= line is empty, both name HEAD"
     else no "$s, gate lock, next gate writes and restores file:" \
       "exit $rc, prints $(printf '%s' "$out" | tr '\n' ' ')"; fi
     emptied "$s, gate lock, $c"
   done
 done
+
+for s in sh bash /bin/bash zsh dash; do
+  if ! command -v "$s" > /dev/null; then
+    echo "skip: noclobber under $s, which is missing"
+    continue
+  elif ! "$s" -c 'a=()' 2> /dev/null; then
+    echo "skip: noclobber under $s, which has no arrays"
+    continue
+  fi
+  n=$(printf '%s' "$s" | tr / _)
+  for b in hooks docs sbx-hooks; do
+    for c in plain noclobber; do
+      { [ "$c" = plain ] || echo 'set -C'
+        [ "$b" = docs ] || cat "$tmp/empty.sh"
+        cat "$tmp/$b.sh"; } > "$tmp/nc-$n-$b-$c.sh"
+      rm -f "$tmp/pre-commit-args"
+      gated "$s" "$PATH" "$tmp/nc-$n-$b-$c.sh"
+      got="exit $rc, prints '$out', pre-commit ran with:"
+      got="$got '$(cat "$tmp/pre-commit-args" 2> /dev/null)'"
+      [ "$c" = noclobber ] || { want=$got; want_rc=$rc; }
+      emptied "$s, $b, $c"
+    done
+    if [ "$want_rc" -eq 0 ] && [ "$got" = "$want" ]; then
+      ok "$s, $b, noclobber: exit 0, as without it, the same output"
+    else no "$s, $b: without noclobber $(printf '%s' "$want" | tr '\n' ' ')," \
+      "with it $(printf '%s' "$got" | tr '\n' ' ')"; fi
+  done
+done
+
+# The carried-over block, where the test found it: its stand-in records
+# the slot and the gate, and its next gate exits 0 or 3
+# shellcheck disable=SC2016
+printf '%s\n' "gate_take() { echo take >> '$tmp/slot-log'; }" \
+  'gate_wait() { :; }' "gate_release() { echo release >> '$tmp/slot-log'; }" \
+  "gate_peak() { echo \"peak \$1\" >> '$tmp/slot-log'; shift 2" \
+  '  [ "$1" != timeout ] || shift 4; "$@"; }' > "$tmp/slots-log.sh"
+for c in 0 3; do
+  printf 'exit %s\n' "$c" > "$tmp/next-$c.sh"
+  { echo 'set -u'; cat "$tmp/gated.sh"
+    sed -e "s|^\. .*/scripts/gate-lock\.sh\"\$|. $tmp/slots-log.sh|" \
+      -e 's|^secs=<seconds>$|secs=60|' -e 's|^gate=<next gate>$|gate=next|' \
+      -e "s|[^ ]* the next gate [^ ]*|sh $tmp/next-$c.sh|" "$tmp/carried.sh"
+  } > "$tmp/carried-$c.sh"
+done
+# Runs the carried-over block whose gate exits $2 under shell $1; sets
+# out, rc and slot
+carried() {
+  rm -f "$tmp/slot-log"
+  gated "$1" "$PATH" "$tmp/carried-$2.sh"
+  slot=$(cat "$tmp/slot-log" 2> /dev/null)
+}
+if grep -q 'gate_take' "$tmp/carried.sh"; then
+  if [ "$(grep -cw -e gate-lock -e PROCESS "$tmp/carried-0.sh")" -ne 0 ] ||
+    ! grep -q "sh $tmp/next-0.sh" "$tmp/carried-0.sh"; then
+    no "carried over: the stand-in block is not the one built"; exit 1
+  fi
+  for s in bash /bin/bash zsh; do
+    if ! command -v "$s" > /dev/null; then
+      echo "skip: the carried-over block under $s, which is missing"
+      continue
+    fi
+    for c in 0 3; do
+      carried "$s" "$c"
+      if [ "$rc" -eq 0 ] && [ "$out" = "$(printf '%s\n' \
+        "TREE=$tree $base HEAD=$head" "EXIT_next=$c" \
+        "TREE=$tree $base HEAD=$head")" ] &&
+        [ "$slot" = "$(printf '%s\n' take 'peak next' release)" ]; then
+        ok "$s, carried over, next gate exits $c: EXIT_next=$c between" \
+          "two TREE= lines naming the tree and HEAD, in a slot released"
+      else no "$s, carried over, next gate exits $c: exit $rc, prints" \
+        "$(printf '%s' "$out" | tr '\n' ' '), the slot:" \
+        "$(printf '%s' "$slot" | tr '\n' ' ')"; fi
+      emptied "$s, carried over, next gate exits $c"
+    done
+  done
+
+  printf 'c\n' > "$wt/file" && git -C "$wt" add file || exit 1
+  for s in bash /bin/bash zsh; do
+    command -v "$s" > /dev/null || continue
+    n=$(printf '%s' "$s" | tr / _)
+    carried "$s" 0
+    printf '%s\n' "$out" > "$tmp/staged-$n"
+  done
+  git -C "$wt" commit -q -m staged && new=$(git -C "$wt" rev-parse HEAD) ||
+    exit 1
+  for s in bash /bin/bash zsh; do
+    if ! command -v "$s" > /dev/null; then
+      echo "skip: staged, then committed, under $s, which is missing"
+      continue
+    fi
+    n=$(printf '%s' "$s" | tr / _)
+    lines "$(cat "$tmp/staged-$n")"
+    st1=$t1 st2=$t2 sh1=$h1 sh2=$h2
+    carried "$s" 0
+    lines "$out"
+    if [ -n "$st1" ] && [ "$st1" = "$st2" ] && [ "$t1" = "$st1" ] &&
+      [ "$t2" = "$st1" ] && [ "$sh1" = "$head" ] && [ "$sh2" = "$head" ] &&
+      [ "$h1" = "$new" ] && [ "$h2" = "$new" ]; then
+      ok "$s, staged, then committed: the same tree and merge base," \
+        "HEAD the parent, then the commit"
+    else no "$s, staged, then committed: staged run prints" \
+      "$(tr '\n' ' ' < "$tmp/staged-$n"), committed run prints" \
+      "$(printf '%s' "$out" | tr '\n' ' ')"; fi
+  done
+fi
 exit "$fail"
