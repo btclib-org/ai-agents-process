@@ -137,13 +137,12 @@ file in other words, or across a line break, so `unaided` does not show
 it free of them. The orchestrator therefore reads every verdict for a
 ground outside the brief as it scores it (*How a run is scored*),
 whatever the block printed. It reads first each verdict for which the
-block prints nothing, one without the closing line included, starting
-from the lines the block lists. One that rests a finding on a note of
-the index or of an instruction file, or quotes one, is discarded and run
-again, as one that reads a copy of this file is (*A case's tree can hold
-this file*); one that names them only as not relied on is kept. Where
-the repeat is discarded too, the case is recorded as unable to evaluate
-the change.
+block does not print `unaided`, starting from the lines it lists where
+it lists any. One that rests a finding on a note of the index or of an
+instruction file, or quotes one, is discarded and run again, as one that
+reads a copy of this file is (*A case's tree can hold this file*); one
+that names them only as not relied on is kept. Where the repeat is
+discarded too, the case is recorded as unable to evaluate the change.
 
 **Each reviewer writes in a scratch directory of its own**, which its
 brief names: `<work>/reviewer/<name>`, in the reviewer's `<scratch>`
