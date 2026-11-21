@@ -304,19 +304,22 @@ of the standard* says.
   `--all-files` where the diff only deletes. A hook with
   `pass_filenames: false` or `always_run: true` still reads what its own
   command reads, as btclib-node's `core-citation-pin` reads what `git
-  ls-files` lists. Where the suite is left to CI and the diff changes
-  only Markdown, the hooks run outside the gate lock. The block runs
-  pre-commit behind the array `peak`: outside the lock it is empty, as
-  the first block below sets it, and *The gate lock* sets it to
-  `gate_peak` and the timeout. It expands `peak` as
-  `${peak[@]+"${peak[@]}"}`: under `set -u`, macOS's `/bin/bash` 3.2
-  reads an empty `"${peak[@]}"` as an unbound variable and exits. The
-  block neither reads nor sets `"$@"`: on an outside contributor's
+  ls-files` lists. Where the tree's gates hold no suite and the diff
+  changes only Markdown, the hooks run outside the gate lock. The fence
+  that runs pre-commit runs it behind the array `peak`: outside the lock
+  it is empty, as the fence that holds only `peak=()` sets it, and *The
+  gate lock* sets it to `gate_peak` and the timeout. It expands `peak`
+  as `${peak[@]+"${peak[@]}"}`: under `set -u`, macOS's `/bin/bash` 3.2
+  reads an empty `"${peak[@]}"` as an unbound variable and exits. That
+  fence neither reads nor sets `"$@"`: on an outside contributor's
   branch `"$@"` holds the sandbox's command (*An outside contributor's
   branch*), which that branch's own hooks block, its status check and
   its other gates run behind, and elsewhere no gate reads it. Its
   `mktemp` takes a template under `$TMPDIR`, as `gated_tree`'s does
-  (*Every commit you hand over is gated, on its tree*):
+  (*Every commit you hand over is gated, on its tree*). It writes the
+  file `mktemp` made with `>|`, as the docs build's check and the
+  sandbox's hooks gate below do: a shell with noclobber set (`set -C`)
+  refuses `>` on a file that exists:
 
   ```shell
   peak=()
@@ -325,12 +328,15 @@ of the standard* says.
   ```shell
   wt=<wt>
   base=<base>
+  ```
+
+  ```shell
   rc=0
   args=()
   list=$(mktemp "${TMPDIR:-/tmp}/hooks.XXXXXX")
   if ! mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) ||
     ! git -C "${wt:?}" diff -z --cached --name-only --diff-filter=d \
-      "${mb:?}" > "$list"; then
+      "${mb:?}" >| "$list"; then
     rc=2
   else
     while IFS= read -r -d '' name; do
@@ -346,26 +352,6 @@ of the standard* says.
   fi
   rm -f "$list"
   (exit "$rc")
-  ```
-
-- **The suite is left to CI where no test of the tree reads a file of
-  the diff.** This prints each place where a pytest suite may read one,
-  a renamed file under both its names, and prints nothing and exits `0`
-  where none does. Any line, or another exit, runs the suite, and so
-  does a suite that is not pytest's. The script's header says what it
-  misses, which CI's run reads. Its `--paths` form takes the paths of
-  the diff, since its other form reads `<base>...HEAD`, which a staged
-  tree leaves out. It runs outside the gate lock:
-
-  ```shell
-  scratch=<scratch>
-  wt=<wt>
-  base=<base>
-  (set -o pipefail
-    mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) &&
-    git -C "${wt:?}" diff --cached -z --name-only --no-renames "${mb:?}" |
-    xargs -0 env -C "${scratch:?}" uv run --no-project --python 3.15 \
-      python -I "${PROCESS:?}/scripts/suite-reads.py" "${wt:?}" --paths)
   ```
 
 - **The docs build runs only where the diff touches what it builds**: a
@@ -384,6 +370,9 @@ of the standard* says.
   wt=<wt>
   base=<base>
   src=<docs source>
+  ```
+
+  ```shell
   rc=1
   list=$(mktemp "${TMPDIR:-/tmp}/docs.XXXXXX")
   if ! git -C "${wt:?}" ls-files --error-unmatch -- "${src:?}" > /dev/null
@@ -392,7 +381,7 @@ of the standard* says.
     rc=2
   elif ! mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) ||
     ! git -C "${wt:?}" diff -z --cached --name-only --no-renames \
-      "${mb:?}" > "$list"; then
+      "${mb:?}" >| "$list"; then
     rc=2
   else
     while IFS= read -r -d '' name; do
@@ -418,12 +407,13 @@ of the standard* says.
   completed push run of each of its workflows succeeded, read when the
   session looks, with no wait for a run in progress. CI gates the merged
   head. Each command below holds only where it prints nothing and exits
-  `0`. The first prints each file both sides change, and `pipefail`
-  makes a stage that fails fail it. The second prints each workflow
-  whose latest completed run did not succeed, or `no runs` where none
-  has completed. It reads the newest 200 completed push runs, so a
-  workflow whose last run is older than those, or that has no completed
-  run, is not read:
+  `0`. The fence that lists the files the branch changes and the files
+  the merge brings in prints, through `uniq -d`, each file in both
+  lists, and `pipefail` makes a stage that fails fail it. `gh run list`
+  prints each workflow whose latest completed run did not succeed, or
+  `no runs` where none has completed. It reads the newest 200 completed
+  push runs, so a workflow whose last run is older than those, or that
+  has no completed run, is not read:
 
   ```shell
   wt=<wt>
@@ -452,39 +442,74 @@ of the standard* says.
   HEAD:uv.lock` and btclib's `tests/declared_version_test.py` compares
   `HEAD` with a release tag, so on a staged tree they read the parent.
   They run on the commit, and their run counts for that commit only,
-  which the report names. A run's log names the tree it read and the
-  merge base its diffs start from, on a `TREE=` line before its first
-  gate and another after its last, `echo "TREE=$(gated_tree)"`, inside
-  the gate lock (*The gate lock*) or outside it. The run counts only
-  where both lines name the same pair. `gated_tree` prints the tree,
-  staged or committed, and the merge base of `<base>` and `HEAD`, only
-  where the working tree holds nothing the index lacks: no unstaged
-  change, no untracked file but those git ignores (`.gitignore`,
+  which the report names. A run's log names the tree it read, the merge
+  base its diffs start from and the commit `HEAD` names, on a `TREE=`
+  line before its first gate, `echo "TREE=$(gated_tree)" "HEAD=$(git -C
+  "${wt:?}" rev-parse HEAD)"`, and another after its last, inside the
+  gate lock (*The gate lock*) or outside it. After the hooks alone the
+  second line is the first's command. Where the suite or the docs build
+  runs, it takes `gated_tree "$mark"` in place of `gated_tree`, `$mark`
+  being a file made with `mktemp` after the hooks and before the first
+  of those gates, and removed after that line. A line is empty where its
+  `gated_tree` printed nothing, whatever `HEAD=` follows. The run counts
+  only where both lines name the same pair. A run of the suite or the
+  docs build counts only where both lines also name, as `HEAD`, the
+  commit the report names, since a staged tree and the commit made from
+  it give the same pair. `gated_tree` prints the tree, staged or
+  committed, and the merge base of `<base>` and `HEAD`, only where the
+  working tree holds nothing the index lacks: no unstaged change, no
+  untracked file but those git ignores (`.gitignore`,
   `.git/info/exclude` and `core.excludesFile`, which
   `--exclude-standard` reads), and no file marked assume-unchanged or
   skip-worktree, whose change `git diff` does not show (`git ls-files
   -v` tags it in lower case or `S`). It prints nothing otherwise, so a
-  file the branch adds is gated only once staged. Its `awk` reads every
-  line: one that exits early can leave `printf` writing to a closed
-  pipe, which under `set -o pipefail` fails the pipeline, and `!` then
-  passes the tree. It writes the tree from a copy of the index into a
-  temporary object directory, since `git write-tree` takes `index.lock`
-  in the git directory, which a Codex sandbox keeps read-only
-  (`every-role.md`'s *Git writes under Codex*). Its `mktemp` takes a
-  template under `$TMPDIR`: without one, macOS's `mktemp -d` ignores
-  `$TMPDIR` and writes in the directory `getconf DARWIN_USER_TEMP_DIR`
-  prints, which a sandbox that allows only `$TMPDIR` refuses. `HUP`,
-  `INT` or `TERM` makes it exit, so that its `EXIT` trap removes the
-  directory: zsh and dash run no `EXIT` trap where `TERM` ends the
-  shell. In zsh a signal that arrives while `mktemp` runs still leaves
-  the directory, since zsh runs the trap before it assigns `tmp`.
-  `scripts/test-gate-blocks.sh` shows each refusal, and a signal while
-  `cp` runs and while `mktemp` runs. The shell that runs the gates
-  defines it:
+  file the branch adds is gated only once staged. Its `awk` exits `0`
+  only where no entry is marked, so an `awk` that fails refuses the tree
+  too. It writes the tree from a copy of the index into a temporary
+  object directory, since `git write-tree` takes `index.lock` in the git
+  directory, which a Codex sandbox keeps read-only (`every-role.md`'s
+  *Git writes under Codex*). Its `mktemp` takes a template under
+  `$TMPDIR`: without one, macOS's `mktemp -d` ignores `$TMPDIR` and
+  writes in the directory `getconf DARWIN_USER_TEMP_DIR` prints, which a
+  sandbox that allows only `$TMPDIR` refuses. `HUP`, `INT` or `TERM`
+  makes it exit, so that its `EXIT` trap removes the directory: zsh and
+  dash run no `EXIT` trap where `TERM` ends the shell. In zsh a signal
+  that arrives while `mktemp` runs still leaves the directory, since zsh
+  runs the trap before it assigns `tmp`.
+
+  Given a file, as `$mark`, `gated_tree` takes a third reading: it also
+  prints nothing where a path the index tracks has an inode change time
+  newer than `$mark`, as `find -cnewer` reads it, or where `find` fails.
+  The two `TREE=` lines read the worktree only when they run, so a file
+  written and restored between them leaves both naming the same tree.
+  The write still moves that file's inode change time, which a restore
+  that keeps the modification time, as `cp -p` or Python's
+  `shutil.copy2` does, cannot set back. A gate that rewrites a tracked
+  file with the same bytes empties the line too; a file git does not
+  track, as a cache, is not read. Each path goes to `find` as
+  `./<path>`, so that a name starting with `-`, `!` or `(` is not read
+  as an expression, and `-prune` keeps it out of a gitlink's directory.
+  `-cnewer` is not POSIX; GNU and BSD `find` both have it. On a file
+  system whose times count whole seconds, a write in the second `$mark`
+  was made is not seen.
+
+  The hooks run before `$mark` is made, since a hook may write by
+  design: btclib's `uv-export` writes `.clusterfuzzlite/requirements.txt`
+  with the same bytes through a new file, which the third reading would
+  list. A hook's write that changes a file's bytes already empties the
+  second line, as an unstaged change. `scripts/test-gate-blocks.sh`
+  shows each refusal, a tracked file written and restored after `$mark`
+  was made, a signal while `cp` runs and while `mktemp` runs, and, in
+  the gate lock's block, a suite that writes and restores a tracked file
+  refused, and hooks that rewrite one with the same bytes not. The shell
+  that runs the gates defines it:
 
   ```shell
   wt=<wt>
   base=<base>
+  ```
+
+  ```shell
   gated_tree() (
     tmp=
     trap '[ -z "$tmp" ] || rm -rf "$tmp"' EXIT
@@ -492,14 +517,20 @@ of the standard* says.
     git -C "${wt:?}" diff --quiet &&
       [ -z "$(git -C "${wt:?}" ls-files --others --exclude-standard)" ] &&
       v=$(git -C "${wt:?}" ls-files -v) &&
-      ! printf '%s\n' "$v" |
-        awk '/^([a-z]|S) / { f = 1 } END { exit !f }' &&
+      printf '%s\n' "$v" |
+        awk '/^([a-z]|S) / { f = 1 } END { exit f }' &&
       ix=$(git -C "${wt:?}" rev-parse --path-format=absolute \
         --git-path index) &&
       ob=$(git -C "${wt:?}" rev-parse --path-format=absolute \
         --git-path objects) &&
       tmp=$(mktemp -d "${TMPDIR:-/tmp}/gated.XXXXXX") &&
       mkdir "$tmp/obj" && cp "$ix" "$tmp/index" &&
+      { [ "$#" -eq 0 ] || {
+        git -C "${wt:?}" ls-files -z --format='./%(path)' > "$tmp/ls" &&
+          c=$(cd "${wt:?}" && xargs -0 sh -c 'm=$1; shift
+            [ "$#" -eq 0 ] || find "$@" -prune -cnewer "$m" -print
+            ' sh "${1:?}" < "$tmp/ls") &&
+          [ -z "$c" ]; }; } &&
       t=$(GIT_INDEX_FILE=$tmp/index GIT_OBJECT_DIRECTORY=$tmp/obj \
         GIT_ALTERNATE_OBJECT_DIRECTORIES=$ob git -C "${wt:?}" write-tree) &&
       m=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) &&
@@ -528,12 +559,30 @@ of the standard* says.
   a reviewer relies only on a run on the sha it reviews, as
   `REVIEWING.md`'s *The gates are the evidence* says. Where a gate's
   fixer changes files, the tree has changed and the second `TREE=` line
-  is empty: stage the change and run the gates again. On an outside
-  contributor's branch the gates run on the commit `<sha>` in `<gate
-  wt>`, where no git command runs outside the sandbox once a gate has
-  run there: the pair is `<sha>`'s tree and merge base, read in `<wt>`
-  before the first gate, and the status file of each gate stands in for
-  the second `TREE=` line.
+  is empty: stage the change and run the gates again.
+
+  On an outside contributor's branch the gates run on the commit `<sha>`
+  in `<gate wt>`, where no git command runs outside the sandbox once a
+  gate has run there: the pair is `<sha>`'s tree and merge base, read in
+  `<wt>` before the first gate, and the status file of each gate stands
+  in for the second `TREE=` line. The status file names no `HEAD`. The
+  gate lock's block takes `<wt>` as `wt` there, so both lines' `HEAD=`
+  name the commit `<wt>` holds, whatever `<gate wt>` holds, as
+  `scripts/test-gate-blocks.sh` shows. The commit the gates ran on is
+  the one `git worktree add --detach <gate wt> <sha>` named, `<gate wt>`
+  being new for each head (*An outside contributor's branch*). So a run
+  there counts for `<sha>` where `<gate wt>` was added at `<sha>` and
+  both lines name `<sha>` as `HEAD`.
+- **Nothing writes in a worktree while a gate runs there.** A writer
+  runs a mutant, an edited fixture or any other input in a copy of the
+  commit, made with `git archive <sha> | tar -x -C <dir>` in the scratch
+  directory, never in the worktree a gate is reading. A gate that reads
+  a file written there while it runs tests neither tree, and can pass
+  where the tree fails. Where the suite or the docs build ran, the third
+  reading of `gated_tree` (above) empties the second `TREE=` line once a
+  tracked file was written after `$mark`, even where it was restored. It
+  does not see a write while the hooks run, before `$mark`, nor a file
+  git does not track.
 - **The writer runs the hooks on the staged tree, and signs one commit,
   at hand-over**, never one at each iteration: each signature can be a
   prompt the human has to answer. It stages its change, runs the fixers
@@ -542,6 +591,9 @@ of the standard* says.
 
   ```shell
   wt=<wt>
+  ```
+
+  ```shell
   git -C "${wt:?}" add --all
   ```
 
@@ -562,20 +614,20 @@ of the standard* says.
   `.pre-commit-config.yaml`*) has every hook that has a fix mode run
   with it turned on, so the tree's own hooks are its fixers, at the
   versions and with the arguments its `.pre-commit-config.yaml` gives,
-  and no list of them is kept here. The command of *The hooks run on the
-  changed files* runs them. A fixer writes its fix into the working
-  tree, and pre-commit then fails its hook, prints `files were modified
-  by this hook` under it and exits `1`, even where the fixer exited `0`,
-  as `ruff format` does. The fix is staged and the hooks run again,
-  until they exit `0`: in that run no fixer wrote, so it is the check,
-  and it is the hooks gate of its tree where its `TREE=` lines agree.
-  What a hook reports and cannot fix is fixed by hand. On an outside
-  contributor's branch no fixer runs before the commit: pre-commit would
-  run the branch's own hooks outside the sandbox, with the network and
-  the credentials, and the sandbox's gates run only on a commit, in
-  `<gate wt>`. There the hooks gate runs the fixers, and a fixer's
-  change is read with `git diff` and made again in `<wt>`, as *An
-  outside contributor's branch* says.
+  and no list of them is kept here. The fence of *The hooks run on the
+  changed files* that runs pre-commit, with its values, runs them. A
+  fixer writes its fix into the working tree, and pre-commit then fails
+  its hook, prints `files were modified by this hook` under it and exits
+  `1`, even where the fixer exited `0`, as `ruff format` does. The fix
+  is staged and the hooks run again, until they exit `0`: in that run no
+  fixer wrote, so it is the check, and it is the hooks gate of its tree
+  where its `TREE=` lines agree. What a hook reports and cannot fix is
+  fixed by hand. On an outside contributor's branch no fixer runs before
+  the commit: pre-commit would run the branch's own hooks outside the
+  sandbox, with the network and the credentials, and the sandbox's gates
+  run only on a commit, in `<gate wt>`. There the hooks gate runs the
+  fixers, and a fixer's change is read with `git diff` and made again in
+  `<wt>`, as *An outside contributor's branch* says.
 - **Read exit codes, not output.** `… > log 2>&1; echo $?`. A
   multi-batch hook's tail can show a clean batch after a failed one.
 - **A local gate run that fails because the network is down has not
@@ -612,12 +664,18 @@ of the standard* says.
 
   ```shell
   sbx=<sbx>
+  ```
+
+  ```shell
   mkdir -p "${sbx:?}/home" "${sbx:?}/tmp"
   ```
 
   ```shell
   mwt=<main wt>
   sbx=<sbx>
+  ```
+
+  ```shell
   env -i -C "${mwt:?}" HOME="${sbx:?}/home" PATH="$PATH" \
     TMPDIR="${sbx:?}/tmp" UV_PYTHON_INSTALL_DIR="$(uv python dir)" \
     UV_CACHE_DIR="${sbx:?}/uv-cache" UV_TOOL_DIR="${sbx:?}/uv-tools" \
@@ -636,6 +694,9 @@ of the standard* says.
   ```shell
   mwt=<main wt>
   sbx=<sbx>
+  ```
+
+  ```shell
   env -i -C "${mwt:?}" HOME="${sbx:?}/home" PATH="$PATH" \
     TMPDIR="${sbx:?}/tmp" UV_PYTHON_INSTALL_DIR="$(uv python dir)" \
     UV_CACHE_DIR="${sbx:?}/uv-cache" UV_TOOL_DIR="${sbx:?}/uv-tools" \
@@ -656,6 +717,9 @@ of the standard* says.
   wt=<wt>
   gwt=<gate wt>
   sha=<sha>
+  ```
+
+  ```shell
   git -C "${wt:?}" worktree add --detach "${gwt:?}" "${sha:?}"
   ```
 
@@ -663,6 +727,9 @@ of the standard* says.
   gwt=<gate wt>
   scratch=<scratch>
   name=<name>
+  ```
+
+  ```shell
   dirs=${scratch:?}/${name:?}-git-dirs
   links=${scratch:?}/${name:?}-gitlinks
   conf=${scratch:?}/${name:?}-config
@@ -706,7 +773,9 @@ of the standard* says.
   sandboxed call of its own. Its output goes to a file of the scratch
   directory outside `<sbx>`, which the sandbox lets no process open for
   writing, and the shell outside opens it and appends the exit, so no
-  process the gate left holds it. It reads no file the gate can write
+  process the gate left holds it. The status block of every gate writes
+  that same file, with `>|`, which noclobber lets through (*The hooks run
+  on the changed files*). `git status` reads no file the gate can write
   but the tree itself, and a file an `include` or `includeIf` of the
   repository's configuration names, which can lie under `<sbx>/home`:
 
@@ -728,11 +797,14 @@ of the standard* says.
   ```shell
   scratch=<scratch>
   name=<name>
+  ```
+
+  ```shell
   st=${scratch:?}/${name:?}-status
   "$@" env GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 \
     git -c core.attributesFile=/dev/null -c core.excludesFile=/dev/null \
     -c core.fsmonitor=false status --porcelain --ignored \
-    --ignore-submodules=all > "${st:?}"
+    --ignore-submodules=all >| "${st:?}"
   echo "EXIT_status=$?" >> "${st:?}"
   ```
 
@@ -747,6 +819,9 @@ of the standard* says.
   gwt=<gate wt>
   scratch=<scratch>
   name=<name>
+  ```
+
+  ```shell
   st=${scratch:?}/${name:?}-status
   links=${scratch:?}/${name:?}-gitlinks
   conf=${scratch:?}/${name:?}-config
@@ -831,11 +906,14 @@ of the standard* says.
   wt=<wt>
   sha=<sha>
   base=<base>
+  ```
+
+  ```shell
   rc=0
   files=()
   list=$(mktemp)
   if ! git -C "${wt:?}" diff -z --name-only --diff-filter=d \
-    "${base:?}...${sha:?}" > "$list"; then
+    "${base:?}...${sha:?}" >| "$list"; then
     rc=2
   else
     while IFS= read -r -d '' name; do
@@ -934,16 +1012,20 @@ of the standard* says.
   of the gate, which `grep -F 'deny(1) network-'` finds. `log show` can
   lose those lines, so `log stream` records them while the gate runs,
   into a file of the scratch directory outside `<sbx>`, where the gate
-  cannot write. The session starts it in the gate's shell, after the
-  gate's `gate_wait`:
+  cannot write. Every gate's `log stream` writes that same file, with
+  `>|`, as the status block does. The session starts it in the gate's
+  shell, after the gate's `gate_wait`:
 
   ```shell
   scratch=<scratch>
   name=<name>
+  ```
+
+  ```shell
   slog=${scratch:?}/${name:?}-sandbox.log
   /usr/bin/log stream --style compact \
     --predicate 'sender == "Sandbox" AND eventMessage CONTAINS "network"' \
-    > "${slog:?}" & stream=$!
+    >| "${slog:?}" & stream=$!
   ```
 
   The gate then runs as *The gate lock*'s block says, and the session
@@ -1020,20 +1102,29 @@ of the standard* says.
   wt=<wt>
   secs=<seconds>
   gate=<next gate>
+  ```
+
+  ```shell
   . "${PROCESS:?}/scripts/gate-lock.sh"
   gate_take "${wt:?}" && {
-    echo "TREE=$(gated_tree)"
+    echo "TREE=$(gated_tree)" "HEAD=$(git -C "${wt:?}" rev-parse HEAD)"
     gate_wait
     peak=(gate_peak hooks "${wt:?}" timeout -k 60 "${secs:?}")
-    … the block of *The hooks run on the changed files*, which sets rc …
+    … *The hooks run on the changed files*: its fence of values, and …
+    … its fence that runs pre-commit, which sets rc …
     echo "EXIT_hooks=$rc"
     if [ "$rc" -eq 0 ]; then
+      mark=$(mktemp "${TMPDIR:-/tmp}/mark.XXXXXX")
       gate_wait; rc=0
       gate_peak "${gate:?}" "${wt:?}" \
         timeout -k 60 "${secs:?}" … the next gate … || rc=$?
       echo "EXIT_${gate:?}=$rc"
+      echo "TREE=$(gated_tree "$mark")" \
+        "HEAD=$(git -C "${wt:?}" rev-parse HEAD)"
+      rm -f "$mark"
+    else
+      echo "TREE=$(gated_tree)" "HEAD=$(git -C "${wt:?}" rev-parse HEAD)"
     fi
-    echo "TREE=$(gated_tree)"
     gate_release
   }
   ```
@@ -1042,13 +1133,36 @@ of the standard* says.
   stops the gate**: on an outside contributor's branch they follow `uv
   sync --locked`, the sandbox's first gate. The suite and the docs build
   run only where the hooks exited `0`, since a fix to what the hooks
-  found changes the tree and runs them all again. Each later gate takes
-  the same `if`, which reads the exit of the gate before it, so the
-  first gate that fails stops the block. Where the hooks ran on the
-  staged tree and their run carries over to the commit, or ran outside
-  the lock, as for a Markdown-only diff above, the block starts at the
-  next gate, and only once they exited `0`. The report gives a gate the
+  found changes the tree and runs them all again. Each later gate goes
+  before the second `TREE=` line, which reads `$mark`, and takes the
+  same `if`, which reads the exit of the gate before it, so the first
+  gate that fails stops the rest. Where the hooks ran on the staged tree
+  and their run carries over to the commit, or ran outside the lock, as
+  for a Markdown-only diff above, the gates that follow them run in the
+  block below, only once they exited `0`. The report gives a gate the
   stop left out as not run.
+
+  ```shell
+  wt=<wt>
+  secs=<seconds>
+  gate=<next gate>
+  ```
+
+  ```shell
+  . "${PROCESS:?}/scripts/gate-lock.sh"
+  gate_take "${wt:?}" && {
+    echo "TREE=$(gated_tree)" "HEAD=$(git -C "${wt:?}" rev-parse HEAD)"
+    mark=$(mktemp "${TMPDIR:-/tmp}/mark.XXXXXX")
+    gate_wait; rc=0
+    gate_peak "${gate:?}" "${wt:?}" \
+      timeout -k 60 "${secs:?}" … the next gate … || rc=$?
+    echo "EXIT_${gate:?}=$rc"
+    echo "TREE=$(gated_tree "$mark")" \
+      "HEAD=$(git -C "${wt:?}" rev-parse HEAD)"
+    rm -f "$mark"
+    gate_release
+  }
+  ```
 
   `gate_peak` runs the gate, returns its exit code, and records its peak
   memory and its wall time, as the script's header comment says. On an
@@ -1193,9 +1307,14 @@ The findings of these local runs are answered as `/btclib-pr`'s
 - **A force-push with lease, to a branch the session works only**:
 
   ```shell
+  wt=<wt>
   branch=<branch>
   built=<sha you built on>
-  git push "--force-with-lease=refs/heads/${branch:?}:${built:?}" \
+  ```
+
+  ```shell
+  git -C "${wt:?}" push \
+    "--force-with-lease=refs/heads/${branch:?}:${built:?}" \
     origin "HEAD:refs/heads/${branch:?}"
   ```
 
@@ -1204,8 +1323,10 @@ The findings of these local runs are answered as `/btclib-pr`'s
   under the grant, push the rewritten, gated commit without force to
   `<branch>-r2` and report both names; the orchestrator opens the pull
   request from it and closes the old one. This is the one route around a
-  refusal the process sanctions. The old branch is deleted once its
-  replacement has landed on `main`.
+  refusal the process sanctions. The old branch on origin is the
+  human's: once its replacement has landed on `main`, the report names
+  it. Locally, `<branch>` and `<branch>-r2` each go as a pull request's
+  branch does (`every-role.md`'s *Debris goes when its work ends*).
 - **A claim holds a pull request's branch.** Before every push to an
   open pull request's branch, read the claim that stands on it, made by
   a login other than its author's:
@@ -1313,6 +1434,20 @@ The findings of these local runs are answered as `/btclib-pr`'s
   An amend with `--no-edit` and a rebase keep the trailer. A commit that
   lacks it gets it from `git rebase --signoff <base>`, or at the tip from
   `git commit --amend --no-edit -s`.
+
+  A session writes no unsigned commit, a scratch repository built for a
+  measurement included, whatever writes it: as `--no-gpg-sign`,
+  `commit.gpgsign=false` at any scope, `git commit-tree` without `-S` or
+  `git hash-object -t commit`, which `commit.gpgsign` does not reach, or
+  an emptied or replaced git config. A fixture commit that a test of the
+  tree writes, as `scripts/test-sweep.sh` does, is not a session's
+  commit. A measurement that needs no commit goes without one: `git diff
+  --no-index` compares two directories, and `git add` then `git
+  write-tree`, with `GIT_INDEX_FILE` naming a path that does not exist
+  yet, give a tree without touching the repository's index. `index` in a
+  directory that `mktemp -d` made is such a path. An empty file, which
+  `mktemp` makes, is refused: git exits `128`. Where a commit is needed,
+  it is a plain one, which `commit.gpgsign = true` signs.
 - **A clean rebase is not a correct one.** Re-run the gates, and look for
   what `main` added around what you remove.
 - **A rebase continued after a conflict drops every body line beginning

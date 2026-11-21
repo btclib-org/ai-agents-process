@@ -58,6 +58,122 @@ test rewrites such a sentence, its case is recorded as unable to
 evaluate the change, beside a case that tests the instruction without
 stating its answer, where one is needed.
 
+**A reviewer carries more than its brief.** Claude Code loads into the
+`reviewer` agent, as this tree's `agents/reviewer.md` defines it, the
+installed agent definition, the instruction files, as
+`~/.claude/CLAUDE.md`, and the session's memory index, `MEMORY.md` in
+`~/.claude/projects/<project>/memory/`. Its documentation says that the
+main conversation's auto memory is not loaded into a non-fork subagent
+([*What loads at
+startup*](https://code.claude.com/docs/en/sub-agents#what-loads-at-startup)),
+but in the runs of 2026-11-20 `reviewer` agents cited a line of it.
+
+A switch keeps the index from one reviewer. One is `omitClaudeMd: true`
+in the agent's definition, which drops the instruction files too. The
+others serve a reviewer that `claude -p` starts as a process of its own:
+the variable `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`, or `autoMemoryEnabled`
+set to `false` in the settings that `--settings` passes. A later
+`--settings` replaces an earlier one, so the setting goes inside the one
+the run already passes, as the sandbox's in `orchestration.md`'s
+*Starting the reviewer in the other client*. On 2026-11-21, at Claude
+Code 2.1.330, a subagent defined with `omitClaudeMd: true` reported
+neither a `MEMORY.md` nor a `CLAUDE.md` block in its context, and one
+with `false` reported both. A plain `claude -p` session, started from a
+directory whose project holds an index, reported no `MEMORY.md` block
+with either of the other switches, and reported one without them. The
+reviewer that section starts, run from its own new directory, whose
+project holds no index, reported none with no switch; with the same
+flags from a directory whose project holds one, and the definition
+passed by `--agents`, it reported one, and none with the setting inside
+the sandbox's settings. `agents/reviewer.md` sets no `omitClaudeMd`, so
+a reviewer the `Agent` tool starts from it carries the index, and the
+run records and discards as below. Whether a run should start its
+reviewers with a switch is the question of ISS
+btclib-org/ai-agents-process#739. The agent definition belongs to the
+configuration under test. The instruction files and the index belong to
+neither the configuration nor the case, and either can state the change
+under test or a case's finding, as a note of the maintainer's answer
+that a candidate turns into a rule does.
+
+So the reviewer may carry them, and may rest no finding on them. Before
+the first reviewer starts, and again after the last verdict, since other
+sessions write the index meanwhile, the orchestrator reads the
+instruction files and the index the session loaded. The run's entry
+names, in its own words and quoting none of it, each note of either that
+states the change under test or a case's finding, or says that none
+does. The brief says that neither is a ground for a finding, and has the
+verdict end with the line `Outside the brief: none`, or with `Outside
+the brief:` followed by each note of either that the verdict relies on
+or quotes. The orchestrator saves each verdict to a file in its own
+`<scratch>`, outside `<work>/reviewer/<name>`, which the run removes.
+This prints `unaided` only where the file's last line that holds text is
+`Outside the brief: none`, and where no line holds, case ignored, any of
+these:
+
+- `memory.md` or `claude.md`;
+- `auto` and `memory` with at most one character between them;
+- `memory`, a space, and `index`, `note`, `file` or `director`;
+- `session`, then any characters other than a space, or none, then a
+  space and `memory`, as in "session's memory";
+- `instruction file`, `global instruction` or `persistent note`;
+- `projects/` and then `/memory` with no space between them.
+
+```shell
+v=<verdict>
+```
+
+```shell
+last=$(grep -v '^[[:space:]]*$' "${v:?}" | tail -n 1) &&
+  [ "$last" = 'Outside the brief: none' ] &&
+  { rc=0; grep -n -i -E -e 'memory\.md|claude\.md|auto.?memory' \
+    -e 'memory (index|note|file|director)|session[^ ]* memory' \
+    -e 'instruction file|global instruction|persistent note' \
+    -e 'projects/[^ ]*/memory' "$v" || rc=$?; [ "$rc" -eq 1 ]; } &&
+  echo unaided
+```
+
+It is a first screen: a verdict can name the index or an instruction
+file in other words, or across a line break, so `unaided` does not show
+it free of them. The orchestrator therefore reads every verdict for a
+ground outside the brief as it scores it (*How a run is scored*),
+whatever the block printed. It reads first each verdict for which the
+block does not print `unaided`, starting from the lines it lists where
+it lists any. One that rests a finding on a note of the index or of an
+instruction file, or quotes one, is discarded and run again, as one that
+reads a copy of this file is (*A case's tree can hold this file*); one
+that names them only as not relied on is kept. Where the repeat is
+discarded too, the case is recorded as unable to evaluate the change.
+
+**Each reviewer writes in a scratch directory of its own**, which its
+brief names: `<work>/reviewer/<name>`, in the reviewer's `<scratch>`
+(`every-role.md`'s *The scratchpad is shared*), under a `<name>` that no
+other reviewer of the run uses. Two reviewers left to choose can choose
+the same name, and the cleanup of one then removes the other's inputs.
+The run makes `<work>/reviewer` as that section says, then the directory
+before the reviewer starts, with a `mkdir` that refuses a path that
+exists:
+
+```shell
+dir=<work>/reviewer/<name>
+```
+
+```shell
+mkdir -- "${dir:?}"
+```
+
+Where it refuses, the run takes another `<name>` and makes that one. The
+run removes the directory once the verdict is saved, since the sweep of
+`every-role.md`'s *Debris goes when its work ends* refuses a `<work>`
+that holds a repository an input made there:
+
+```shell
+dir=<work>/reviewer/<name>
+```
+
+```shell
+rm -rf "${dir:?}"
+```
+
 The case's tree is built at a new path from a checkout that holds the
 head, named by its path, so that the fetch needs no network and the
 tree keeps no remote. The first command refuses a path that exists,
@@ -211,8 +327,7 @@ the sha's `process/` but this file, byte for byte:
   echo copied
 ```
 
-A forge finding gives a case its head, the commit its thread names, and
-the head gives its base, the merge base with `main`:
+A forge finding gives a case its head, the commit its thread names:
 
 ```shell
 repo=<owner>/<repo>
@@ -221,12 +336,120 @@ gh api "repos/${repo:?}/pulls/comments/${id:?}" \
   --jq .original_commit_id
 ```
 
+The head gives its base: the commit the head was built on, on the branch
+its pull request targets, `main` or a stacked branch's parent. So a
+stacked case leaves out its parent's change. That branch can have moved
+off the head's history since. A stacked parent rewritten after the head
+no longer holds the commit the head was built on. A parent that lands is
+squashed onto `main`. Its child is then retargeted onto `main`
+(`CONTRIBUTING.md`'s *One subject, opened as soon as it is written*),
+where the head's merge base comes before the parent's commits.
+
+The base is therefore read from the tips of the target that the forge
+recorded:
+
+- `baseRefOid`, the target's tip as the forge last recorded it;
+- the commits before and after each force-push of the target;
+- the heads of the pull requests opened from the target and from each
+  branch the target was changed from, and the commits before and after
+  each force-push of those pull requests' heads.
+
+For each tip, this prints how many commits the head is ahead of it, their
+merge base, and how many merges lie between the two, the smallest count
+first. It reads a branch's name from the forge, never from a paste,
+since a name may hold `;`. It then prints the base, the merge base on
+the first line whose count is above `0`. It prints no base, and exits
+non-zero, where:
+
+- a read fails, or a force-push it reads lacks a commit;
+- no tip leaves the head ahead;
+- that line's compare lists fewer commits than it counts;
+- a merge lies between that merge base and the head.
+
 ```shell
 repo=<owner>/<repo>
+n=<n>
 head=<head>
-gh api "repos/${repo:?}/compare/main...${head:?}" \
-  --jq .merge_base_commit.sha
+(set -o pipefail
+  tips=$(gh api graphql --paginate -F owner="${repo%%/*}" \
+    -F repo="${repo#*/}" -F n="${n:?}" -f query='query($owner: String!,
+      $repo: String!, $n: Int!, $endCursor: String) {
+      repository(owner: $owner, name: $repo) { pullRequest(number: $n) {
+        baseRefName baseRefOid timelineItems(first: 100, after: $endCursor,
+          itemTypes: [BASE_REF_FORCE_PUSHED_EVENT, BASE_REF_CHANGED_EVENT,
+            AUTOMATIC_BASE_CHANGE_SUCCEEDED_EVENT]) {
+          pageInfo { hasNextPage endCursor } nodes { __typename
+            ... on BaseRefForcePushedEvent {
+              beforeCommit { oid } afterCommit { oid } }
+            ... on BaseRefChangedEvent { previousRefName }
+            ... on AutomaticBaseChangeSucceededEvent { oldBase } } } } } }' \
+    --jq '.data.repository.pullRequest | (.baseRefOid // error("no base")),
+      "branch \(.baseRefName // error("no base"))",
+      (.timelineItems.nodes[] | if .__typename == "BaseRefForcePushedEvent"
+      then (.beforeCommit.oid // error("a force-push without its before")),
+        (.afterCommit.oid // error("a force-push without its after"))
+      else "branch \(.previousRefName // .oldBase // error("no branch"))"
+      end)' | awk '!s[$0]++' |
+  while IFS= read -r tip; do
+    case $tip in
+      ('branch '*) gh api -X GET --paginate "repos/${repo:?}/pulls" \
+        -f state=all -f head="${repo%%/*}:${tip#branch }" \
+        --jq '.[] | "\(.number) \(.head.sha)"' |
+        while read -r p sha; do
+          printf '%s\n' "$sha"
+          gh api graphql --paginate -F owner="${repo%%/*}" \
+            -F repo="${repo#*/}" -F n="$p" -f query='query($owner: String!,
+              $repo: String!, $n: Int!, $endCursor: String) {
+              repository(owner: $owner, name: $repo) {
+                pullRequest(number: $n) { timelineItems(first: 100,
+                  after: $endCursor, itemTypes: [HEAD_REF_FORCE_PUSHED_EVENT]) {
+                  pageInfo { hasNextPage endCursor } nodes {
+                    ... on HeadRefForcePushedEvent {
+                      beforeCommit { oid } afterCommit { oid } } } } } } }' \
+            --jq '.data.repository.pullRequest.timelineItems.nodes[] |
+              (.beforeCommit.oid // error("a force-push without its before")),
+              (.afterCommit.oid // error("a force-push without its after"))' ||
+            exit
+        done || exit ;;
+      (*) printf '%s\n' "$tip" ;;
+    esac
+  done | sort -u) &&
+  lines=$(printf '%s\n' "$tips" | while IFS= read -r tip; do
+    gh api "repos/${repo:?}/compare/${tip}...${head:?}" --jq '[.ahead_by,
+      .merge_base_commit.sha, if (.commits | length) == .ahead_by
+      then [.commits[] | select(.parents | length > 1)] | length
+      else "?" end] | map(tostring) | join(" ")' || exit
+  done | sort -n) &&
+  printf '%s\n' "$lines" | awk '{ print }
+    $1 > 0 && !n { n = 1; m = $3; b = $2 }
+    END { if (!n) e = "no tip leaves the head ahead"
+      else if (m == "?") e = "the compare lists fewer commits than it counts"
+      else if (m != "0") e = "a merge lies between the base and the head"
+      if (e) { print e > "/dev/stderr"; exit 1 }
+      print "base " b }')
 ```
+
+Where the head's commits since the base hold no merge, a tip that
+descends from the commit the head was built on, and holds none of the
+head's own commits, gives that commit. A tip that does not descend from
+it, as a rewritten parent or `main` after a parent's landing, gives one
+further from the head. A count of `0` is a tip that holds the head.
+
+A head that merged its target has no one commit it was built on, as a
+branch that merges `main` once its parent lands. Ranking its counts can
+pick a merge base whose diff carries what the target gained, so such a
+case is left out of the set.
+
+The tips are only what the forge recorded. A pull request's timeline
+records the force-pushes of its own branch, and those of a branch while
+that branch is its target. The block reads no push made without force,
+as a commit added to the parent, and sees one only through a later tip
+that descends from it. So the commit the head was built on can be on no
+tip and in no tip's history, where a force-push that none of these
+timelines recorded replaced it: one made while the branch was not the
+target, before a pull request was opened from it or on a branch none was
+opened from. The block can then print a base below that commit and exit
+`0`.
 
 **A clean change belongs in the set too**, so that a change which only
 makes the reviewer raise more shows as false findings. PR
@@ -276,20 +499,28 @@ the human scores where it cannot tell. The cases are chosen, not drawn
 at random, so a run says how a configuration did on them and not how
 often it finds a defect.
 
-**One factor at a time.** A run changes one thing from the baseline,
-the brief, the model, the effort or the tools, and is compared with the
+**One factor at a time.** A run changes one thing from the baseline, the
+brief, the model, the effort or the tools, and is compared with the
 baseline's run on the same cases. One configuration can answer
 differently on two runs, so a case that alone decides the comparison is
 run again first. A run that changes the brief is compared with a
-baseline at the commit before the change under test's first commit, so
-that only that change differs, and the baseline's entry names that sha.
+baseline at the candidate's merge base with the branch it targets,
+`main` or a stacked branch's parent. That is the target's commit the
+candidate's branch last merged or, with no merge, the parent of the
+branch's first commit, so that `git diff <baseline> <candidate> --
+process agents skills REVIEWING.md` shows that change alone. The
+baseline's entry names that sha.
 
 ## Runs
 
 Each run is an entry: the date, the `$PROCESS` sha, the factor changed
 and its value, the client, the model and the effort, a hit or a miss for
-each defect or why its case was left out (*A case's tree can hold this
-file*), and each false finding on any case apart.
+each defect, or why its case was left out (*A case's tree can hold this
+file*) or recorded as unable to evaluate the change (*The expected
+finding is kept out of the reviewer's input* and *A reviewer carries
+more than its brief*), each false finding on any case apart, and the
+notes outside the brief that *A reviewer carries more than its brief*
+has it name.
 
 **An entry whose `$PROCESS` sha is not on `main` also records the tree
 the copy is built from**, which `git rev-parse '<sha>:process'` prints.
@@ -1177,6 +1408,343 @@ once and the candidate twice. That case has gone both ways before under
 configurations that differ in nothing it concerns (the runs above), so
 the run shows no gain from the change.
 
+- **Baseline and candidate**, 2026-11-20: `$PROCESS` `80b7f26` and
+  `341cc33e60e89ee9c74fd536fe84a4d1359b8ddf`, tree
+  `6ac4631eee6d6252ebdc1e38332f2bd15b254ec2`, the factor changed being
+  the brief: the change of ISS btclib-org/ai-agents-process#612 and ISS
+  btclib-org/ai-agents-process#614, which `git diff 80b7f26
+  341cc33e60e89ee9c74fd536fe84a4d1359b8ddf -- process` makes in
+  `local-review.md`: in its *The rounds*, and in the sentence of its *A
+  pull request's rounds* on a reply that declines a finding. A file
+  name, a text or a file's content is reachable where an outside
+  contributor's branch can put it where the code or a command of the
+  process reads it, a branch to another repository only where a command
+  of the process reads it before it lands. A reviewer's own test input
+  that reaches the code only through a call it writes is constructed.
+  From the third round on the forge, a finding the local rule files is
+  filed, not fixed. A reply that declines a false sentence the branch
+  adds, which the forge keeps off the branch, is a finding. Claude Code,
+  the `reviewer` agent, Opus, effort `high`, one run per case, and a
+  second in each configuration on PR btclib-org/ecc#484, which alone
+  decided the first runs. In both: PR btclib-org/ai-agents-process#444:
+  hit. PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
+  miss. PR btclib-org/btclib-node#2516: miss. PR
+  btclib-org/ai-agents-process#526: miss. PR btclib-org/ecc#580: miss.
+  PR btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with
+  no blocking finding. PR btclib-org/ecc#484: the baseline miss, then
+  hit; the candidate hit, then hit.
+
+On PR btclib-org/ecc#484 the candidate's runs block on perl's `<>`
+opening hostile file names, as `cmd|` runs and `-i` truncates, which an
+outside contributor's branch can supply. The baseline's first run names
+it only as `filed`, and its second blocks on it. On PR
+btclib-org/ai-agents-process#444 both block on the skills that still arm
+with `--auto`. On PR btclib-org/ai-agents-process#526 the candidate
+blocks on another finding, outside the defect: the item pattern refuses
+a wrapped prose line opening with `14.` and exits `2`. It does not name
+the item indented after a paragraph, which the baseline names only as
+`filed`. On PR btclib-org/ai-agents-process#317 the baseline blocks on
+the hold covering limits that reset, as in the runs above, and the
+candidate clears the head with non-blocking findings only. On PR
+btclib-org/.github#2288 both name whitespace other than one space only
+as `filed`. On PR btclib-org/btclib-secp256k1#1331 the baseline names
+only as `filed` that any exit `42` reads as a secret reaching a branch,
+and the candidate does not name it. On PR btclib-org/btclib-node#2516
+both name "`i` sums the length fields" only as non-blocking, and on PR
+btclib-org/ecc#580 neither names what the comment over `_AFF_CALLS`
+leaves out. The findings outside the cases' defects were not measured.
+
+Both of the baseline's verdicts on PR btclib-org/ecc#484 cite the
+session's auto-memory note of the maintainer's answer on ISS
+btclib-org/ai-agents-process#614, which states the candidate's rule, and
+the second's hit blocks on it. The note reached the reviewer from
+neither the copy nor the case's tree. ISS
+btclib-org/ai-agents-process#677 is filed for it.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, for which its check prints `copied`, and the case
+from a repository holding only the head and its ancestors, for which its
+check prints `isolated` and the check of *A case's tree can hold this
+file* prints `unnamed`. Each read its brief from a file in the run's
+directory, not inline. The copies hold `process/` alone, so the run left
+out the change's edit to `/btclib-pr`'s *Answering it*. Nothing was
+withheld: the change edits no `REVIEWING.md` and nothing in `agents/`. A
+baseline reviewer of PR btclib-org/ai-agents-process#522 read its case
+tree's own copy of this file down to line 60, which is the head's own
+(*A case's tree can hold this file*), so its verdict stands.
+
+The candidate has the baseline's hits and misses on eight cases, and
+loses none, and neither blocks on the clean case. PR btclib-org/ecc#484
+alone decided the first runs, so it ran again in both (*One factor at a
+time*), and over two runs the baseline hits it once and the candidate
+twice. The memory note confounds that difference, so the run cannot tie
+it to the change.
+
+- **Candidate**, 2026-11-20, for ISS btclib-org/ai-agents-process#588:
+  `$PROCESS` `80b7f26`, the factor changed being the effort: `medium`,
+  against the baseline at `80b7f26` above, at `high`. Claude Code, the
+  `reviewer` agent, Opus, one run per case. PR
+  btclib-org/ai-agents-process#444: hit. PR btclib-org/ecc#484: hit. PR
+  btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
+  miss. PR btclib-org/btclib-node#2516: miss. PR
+  btclib-org/ai-agents-process#526: miss. PR btclib-org/ecc#580: miss.
+  PR btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with
+  no blocking finding.
+
+Its reviewers read the process from the baseline's copy above, for which
+the check prints `copied`, the cases from the same trees, and each its
+brief from a file. The hit on PR btclib-org/ecc#484 rests on the same
+memory note as the baseline's second run (above). Effort `medium` has
+the baseline's hits and misses on eight cases, and loses none, and on PR
+btclib-org/ecc#484 it hits, as the baseline's second run does. Its
+findings outside the cases' defects were not measured either.
+
+- **Candidate**, 2026-11-20, for ISS btclib-org/ai-agents-process#620:
+  `$PROCESS` `3e291f3e9d03187113523cf9fa705400df72aa46`, tree
+  `1adc27f256ca9de6d8957c4fe1316a00ebff6b80`, the factor changed being
+  the brief: the change of ISS btclib-org/ai-agents-process#620, ISS
+  btclib-org/ai-agents-process#664 and ISS
+  btclib-org/ai-agents-process#668, which `git diff d469992
+  3e291f3e9d03187113523cf9fa705400df72aa46 -- process` makes in
+  `writing.md` alone, all of it in *Writing work*, which the reviewer's
+  map gives whole. Each `TREE=` line of a gate run names `HEAD`, and a
+  run of the suite or the docs build counts only where both lines name,
+  as `HEAD`, the commit the report names. The gate blocks write the file
+  `mktemp` made with `>|`, and the gates that follow hooks whose run
+  carries over run in a block of their own. The baseline is the run at
+  `80b7f26` for ISS btclib-org/ai-agents-process#612 and ISS
+  btclib-org/ai-agents-process#614, which PR
+  btclib-org/ai-agents-process#673 records, its runs reused but its
+  second on PR btclib-org/ecc#580, made in this run from a copy at
+  `80b7f26`, since that case alone decided the first runs (*One factor
+  at a time*): `git diff 80b7f26 d469992 -- process agents skills
+  REVIEWING.md`, from it to the candidate's merge base, prints nothing.
+  Claude Code, the `reviewer` agent, Opus, effort `high`, one run per
+  case, and the baseline's two on PR btclib-org/ecc#484 and two on PR
+  btclib-org/ecc#580. In both: PR btclib-org/ai-agents-process#444: hit.
+  PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
+  miss. PR btclib-org/btclib-node#2516: miss. PR
+  btclib-org/ai-agents-process#526: miss. PR
+  btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with no
+  blocking finding. PR btclib-org/ecc#484 and PR btclib-org/ecc#580: the
+  baseline miss, then hit; the candidate hit.
+
+On PR btclib-org/ecc#484 the candidate blocks on perl's `<>` opening
+hostile file names, as `-i` and `cmd|` show, which an outside
+contributor's branch can supply. The baseline's first run names it only
+as `filed`, and its second blocks on it. On PR btclib-org/ecc#580 the
+candidate blocks on the comment over `_AFF_CALLS`, which leaves out
+methods that take an affine point. The baseline's first run does not
+name it, and its second blocks on it. On PR
+btclib-org/ai-agents-process#444 both block on the skills that still arm
+with `--auto`. On PR btclib-org/ai-agents-process#317 the baseline
+blocks on the hold covering limits that reset, as in the runs above, and
+the candidate clears the head without blocking on it. On PR
+btclib-org/ai-agents-process#526 the baseline names the item indented
+after a paragraph only as `filed`, and the candidate does not name it.
+On PR btclib-org/.github#2288 the baseline names whitespace other than
+one space only as `filed`, and the candidate only in a non-blocking
+finding. On PR btclib-org/btclib-secp256k1#1331 the baseline names only
+as `filed` that any exit `42` reads as reported, and the candidate does
+not name it. On PR btclib-org/btclib-node#2516 the baseline names "`i`
+sums the length fields" only as non-blocking, and the candidate measures
+that `i` also counts the fixed-width fields and calls the sentence true.
+The findings outside the cases' defects were not measured.
+
+Both of the baseline's verdicts on PR btclib-org/ecc#484 cite the
+session's auto-memory note of the maintainer's answer on ISS
+btclib-org/ai-agents-process#614, for which ISS
+btclib-org/ai-agents-process#677 is filed. The candidate's verdict on it
+cites no memory note.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, for which its check prints `copied`, and the cases
+from the same trees as the baseline. Each read its brief from a file.
+The copies hold `process/` alone, and nothing was withheld: the change
+edits no `REVIEWING.md`, no skill and nothing in `agents/`.
+
+The candidate hits each case the baseline hits in either of its runs,
+and loses none, and neither blocks on the clean case. On PR
+btclib-org/ecc#580 the baseline's second run hits too, so the
+candidate's hit is within the baseline's spread, not a gain. On PR
+btclib-org/ecc#484 the memory note confounds the baseline, so the run
+does not compare the two there.
+
+- **Candidate**, 2026-11-20, for ISS btclib-org/ai-agents-process#634:
+  `$PROCESS` `0cc65b8`, tree `e386a4605299cdc6545eba1d5e5cb7a57c1737a8`,
+  the factor changed being the brief: the change of that issue, which
+  `git diff 80b7f26 0cc65b8 -- process` makes in `writing.md` alone, all
+  of it in *The gates*, under *Writing work*, which the reviewer's map
+  gives whole. The bullet that leaves the suite to CI where no test of
+  the tree reads a file of the diff goes, with its block, so the suite
+  runs locally as the other rules of `writing.md`'s *The gates* say, and
+  the hooks of a diff that changes only Markdown run outside the gate
+  lock only where the tree's gates hold no suite. The baseline is its
+  merge base, `80b7f26`: the runs at effort `high` made for ISS
+  btclib-org/ai-agents-process#612 and ISS
+  btclib-org/ai-agents-process#614 the same day, reused but for its
+  second run on PR btclib-org/ecc#580. Claude Code, the `reviewer`
+  agent, Opus, effort `high`, one run per case, a second in the baseline
+  on PR btclib-org/ecc#484, and a second in each configuration on PR
+  btclib-org/ecc#580, the baseline's made in this run. PR
+  btclib-org/ai-agents-process#444: hit in both. PR btclib-org/ecc#484:
+  the candidate hit; the baseline miss, then hit. PR
+  btclib-org/ai-agents-process#317: miss in both. PR
+  btclib-org/btclib-secp256k1#1331: miss in both. PR
+  btclib-org/.github#2288: miss in both. PR btclib-org/btclib-node#2516:
+  miss in both. PR btclib-org/ai-agents-process#526: miss in both. PR
+  btclib-org/ai-agents-process#522, the clean case: `CLEARED` in both,
+  with no blocking finding. PR btclib-org/ecc#580: the candidate hit,
+  then hit; the baseline miss, then hit.
+
+On PR btclib-org/ai-agents-process#444 both block on the skills that
+still arm with `--auto`. On PR btclib-org/ecc#484 the candidate blocks
+on perl's `<>` opening hostile file names, which the pull request's
+author can supply. On PR btclib-org/ecc#580 the candidate's runs and the
+baseline's second block on the comment over `_AFF_CALLS`, which leaves
+out `add_var`, `require_on_curve` and `is_on_curve`, and the baseline's
+first clears the head without naming it. On PR
+btclib-org/ai-agents-process#317 both block on "tied to the account"
+covering limits that reset, as in the runs above. On PR
+btclib-org/.github#2288 both name whitespace other than one space only
+as `filed`, and on PR btclib-org/ai-agents-process#526 both name the
+item indented after a paragraph only as `filed`. On PR
+btclib-org/btclib-secp256k1#1331 the baseline names only as `filed` that
+any exit `42` reads as a secret reaching a branch, and the candidate
+does not name it. On PR btclib-org/btclib-node#2516, where the baseline
+of 2026-11-19 above asks for changes only because no gate run is on
+record, both clear the head and name "`i` sums the length fields" only
+as non-blocking. The findings outside the cases' defects were not
+measured.
+
+Both of the baseline's verdicts on PR btclib-org/ecc#484 cite the
+session's auto-memory note of the maintainer's answer on ISS
+btclib-org/ai-agents-process#614, which reached the reviewer from
+neither the copy nor the case's tree (ISS
+btclib-org/ai-agents-process#677), and the second's hit rests on it.
+
+Each candidate reviewer read the process from a copy of `process/` at
+its sha without this file, for which its check prints `copied`, the case
+from the same tree as the baseline's reviewer, and its brief from a file
+in the run's directory, not inline. Nothing was withheld: the change
+edits no `REVIEWING.md` and nothing in `agents/` or `skills/`.
+
+The candidate has the baseline's hits on PR
+btclib-org/ai-agents-process#444 and PR btclib-org/ecc#484, loses none,
+and blocks on nothing in the clean case. On PR btclib-org/ecc#580 it
+hits twice where the baseline's first run misses, but the baseline's
+second run hits too, so the difference is within the baseline's spread
+and shows no gain from the change.
+
+- **Baseline and candidate**, 2026-11-21: `$PROCESS` `4f8000a` and
+  `43acfa66891d109417da8d4c7fd3b5edb2cb4eff`, tree
+  `96cd75be81487e6596295f6cf763fc7dc41eac85`, the factor changed being
+  the brief: the change of ISS btclib-org/ai-agents-process#694 and ISS
+  btclib-org/ai-agents-process#695, which `git diff 4f8000a
+  43acfa66891d109417da8d4c7fd3b5edb2cb4eff -- process agents skills
+  REVIEWING.md` makes in `writing.md` alone, all of it in *The gates*,
+  under *Writing work*, which the reviewer's map gives whole. On an
+  outside contributor's branch both `TREE=` lines' `HEAD=` name the
+  commit `<wt>` holds, and a run in `<gate wt>` counts for `<sha>` where
+  `<gate wt>` was added at `<sha>` and both lines name `<sha>` as
+  `HEAD`. The sandbox's status block and its `log stream` write their
+  file with `>|`. The baseline is the candidate's merge base, the parent
+  of `43acfa6`, run anew since the brief's files there differ from those
+  of every run above. Claude Code, the `reviewer` agent as
+  `agents/reviewer.md` defines it at both shas, Opus, effort `high`, one
+  run per case. In both: PR btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/ecc#484: hit. PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
+  miss. PR btclib-org/btclib-node#2516: miss. PR btclib-org/ecc#580:
+  miss. PR btclib-org/ai-agents-process#526: miss. PR
+  btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with no
+  blocking finding.
+
+On PR btclib-org/ecc#484 both block on perl's `<>` running or rewriting
+hostile tracked names, which an outside contributor's branch can supply,
+as `local-review.md`'s *The rounds* holds at both shas, which descend
+from the landing of PR btclib-org/ai-agents-process#673. Neither rests
+on a note outside the brief, unlike the hits at `80b7f26` above. On PR
+btclib-org/ai-agents-process#444 both block on the skills that still arm
+with `--auto`. On PR btclib-org/ai-agents-process#317 the baseline
+blocks on "tied to the account" covering limits that reset, a finding
+that holds, as in the runs above, and the candidate names it only as
+non-blocking and clears the head. On PR btclib-org/btclib-secp256k1#1331
+the baseline does not name that any exit `42` reads as reported, and the
+candidate names it only as non-blocking. On PR btclib-org/.github#2288
+both name whitespace other than one space only as `filed`, a constructed
+shape whose search of the other trees needs the forge. On PR
+btclib-org/btclib-node#2516 the baseline names "`i` sums the length
+fields" only as non-blocking, and the candidate only in a non-blocking
+finding on the commit message. On PR btclib-org/ecc#580 neither names
+what the comment over `_AFF_CALLS` leaves out. On PR
+btclib-org/ai-agents-process#526 the baseline does not name the item
+indented after a paragraph, and the candidate names it as `filed` and in
+a non-blocking finding. The searches the two `filed` findings name, of
+the other trees' justifications and of section 14 of
+btclib-org/.github's `README.md`, were run after the verdicts, in the
+local review of this entry, and found no tree holding either shape, so
+both findings stay filed. The other findings outside the cases' defects
+were not measured.
+
+Every verdict ends `Outside the brief: none`, the screen of *A reviewer
+carries more than its brief* prints `unaided` for each, and none rests
+on or quotes a note of an instruction file or of the memory index. The
+orchestrator read the instruction files and the index before the first
+reviewer and after the last verdict, and no note of either states the
+change under test or a case's finding.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, for which its check prints `copied`, the case from
+the tree of the 2026-11-20 runs above, at the same head, for which the
+checks still print `isolated` and `unnamed`, and its brief from a file
+in the run's directory. The brief was that of the runs above, with a
+scratch directory of the reviewer's own, which the orchestrator made
+with the `mkdir` that refuses a path that exists and removed once it
+saved the verdict, and with the paragraph that makes neither an
+instruction file nor the memory index a ground for a finding. The
+candidate's reviewer of PR btclib-org/ai-agents-process#522 read its
+case tree's own copy of this file down to line 60, the head's own, and
+no case entry, so its verdict stands. No verdict lists or quotes another
+copy. Nothing was withheld: the change edits no `REVIEWING.md` and
+nothing in `agents/` or `skills/`.
+
+The run departed from its plan. While the first reviewers ran, the
+orchestrator appended to every brief file a line asking each reviewer to
+also save its verdict to a file outside its scratch directory, and
+removed it from all of them once a reviewer reported it. The reviewers
+of PR btclib-org/ai-agents-process#317, PR
+btclib-org/ai-agents-process#522 and PR btclib-org/ai-agents-process#526
+started while it stood, and each declined it, citing the agent
+definition's rule that the verdict goes in the output only. So did the
+baseline's reviewer of PR btclib-org/ecc#580, which saw the brief change
+while it ran. The verdicts on PR btclib-org/ai-agents-process#444 and PR
+btclib-org/ecc#484, and the candidate's on PR btclib-org/ecc#580, do not
+mention the line, so on PR btclib-org/ecc#580 only the baseline's
+reviewer is shown to have read it. The reviewers of PR
+btclib-org/.github#2288, PR btclib-org/btclib-node#2516 and PR
+btclib-org/btclib-secp256k1#1331 had no such line. The line stood on
+both sides of each case it reached, so no case compares a brief with it
+against one without it.
+
+Every reviewer named the conflict between the brief, which forbids the
+gates, and `local-review.md`'s *The gates are the writer's*, which has a
+reviewer run them where none is on the record, and ran none, as in the
+runs above.
+
+The candidate has the baseline's hits on PR
+btclib-org/ai-agents-process#444 and PR btclib-org/ecc#484, loses none,
+and blocks on nothing in the clean case. No case alone decides the
+comparison, so none ran again. On PR btclib-org/ecc#580 one run per side
+can show no difference, since that case has gone both ways at one
+configuration in the runs above. No brief carried a gate run, and each
+forbade the gates, so no reviewer had a gate run to judge by the change.
+The run shows that the change costs no hit and adds no blocking finding
+on these cases, not that it finds anything.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
@@ -1187,8 +1755,9 @@ the run shows no gain from the change.
   *A pull request's rounds* and rewrites the next sentence to "None of
   this applies to the resumed run of a fresh reviewer…", which exempts
   that run from the hold too.
-- found by CodeRabbit on GitHub after the dedicated reviewer's `CLEARED`
-  ([thread](https://github.com/btclib-org/ai-agents-process/pull/317#discussion_r4498549481)),
+- found by CodeRabbit on GitHub after the dedicated reviewer's
+  `CLEARED`, in review comment `4498549481` on [the pull
+  request](https://github.com/btclib-org/ai-agents-process/pull/317),
   and fixed in `a290019`. `REVIEWING.md` on `main` describes this
   defect, and the copy at the head does not (*What a case holds*).
 
@@ -1201,8 +1770,8 @@ the run shows no gain from the change.
   where Valgrind gives that exit for every memcheck error, an invalid
   read included.
 - found by CodeRabbit on GitHub after the dedicated reviewer's
-  `CLEARED`
-  ([thread](https://github.com/btclib-org/btclib-secp256k1/pull/1331#discussion_r4493105492)),
+  `CLEARED`, in review comment `4493105492` on [the pull
+  request](https://github.com/btclib-org/btclib-secp256k1/pull/1331),
   and fixed in `49102ac`.
 
 ### PR btclib-org/ecc#484
@@ -1214,9 +1783,9 @@ the run shows no gain from the change.
   with perl's two-argument `open`, so a tracked name ending in `|` runs
   as a shell command and one starting with `-` is read as a switch.
 - found by CodeRabbit on GitHub after the dedicated reviewer's
-  `CLEARED`
-  ([thread](https://github.com/btclib-org/ecc/pull/484#discussion_r4503224613)),
-  and fixed in `2545806`.
+  `CLEARED`, in review comment `4503224613` on [the pull
+  request](https://github.com/btclib-org/ecc/pull/484), and fixed in
+  `2545806`.
 
 ### PR btclib-org/ai-agents-process#444
 

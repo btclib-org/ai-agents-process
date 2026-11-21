@@ -21,20 +21,21 @@ ci:
   # the hooks that would take pre-commit.ci past its time limit:
   # actionlint-shellcheck, and the tests of scripts/, which take most of
   # a run. test-gate-sandbox is not among them: with no sandbox-exec
-  # there it skips at once. Nor are test-pointer-files and
-  # test-placeholder-last, which read only small fixtures.
+  # there it skips at once. Nor are test-pointer-files,
+  # test-placeholder-last and test-assignment-fence, which read only small
+  # fixtures.
   # What the skip costs is nothing that decides a merge -- lint.yml runs
   # this file whole, with the command a developer runs, on every commit
   # and every pull request
   skip:
     - actionlint-shellcheck
     - test-git-c-allow
-    - test-suite-reads
     - test-port-check
     - test-rebase-clearance
     - test-pretooluse-rules
     - test-sweep
     - test-gate-blocks
+    - test-gate-lock
 
 repos:
   # this file checking itself, and the only two hooks with no environment
@@ -97,13 +98,6 @@ repos:
         entry: python scripts/test-git-c-allow.py
         files: ^scripts/(test-)?git-c-allow\.py$
         pass_filenames: false
-      # the reads scripts/suite-reads.py finds and misses in small trees
-      - id: test-suite-reads
-        name: suite-reads.py answers as its test expects
-        language: python
-        entry: python scripts/test-suite-reads.py
-        files: ^scripts/(test-)?suite-reads\.py$
-        pass_filenames: false
       # a pointer to another file's section names the file, as the opening
       # of process/every-role.md says; it is read against the sections of
       # every Markdown file, so the hook reads the whole tree
@@ -134,6 +128,22 @@ repos:
         language: python
         entry: python -I scripts/test-placeholder-last.py
         files: ^scripts/(test-)?placeholder-last\.py$
+        pass_filenames: false
+      # section 9's *A placeholder is bare, and last*: a value the reader
+      # sets has a fence of its own above a fence that writes.
+      # CHANGELOG.md is append-only (section 9), and the script reads only
+      # the tree's own part of CONTRIBUTING.md and REVIEWING.md
+      - id: assignment-fence
+        name: a value the reader sets shares no fence with a write
+        language: python
+        entry: python -I scripts/assignment-fence.py
+        types: [markdown]
+        exclude: ^CHANGELOG\.md$
+      - id: test-assignment-fence
+        name: assignment-fence.py answers as its test expects
+        language: python
+        entry: python -I scripts/test-assignment-fence.py
+        files: ^scripts/(test-)?assignment-fence\.py$
         pass_filenames: false
       # what scripts/port-check.py answers on fixture repositories
       - id: test-port-check
@@ -175,14 +185,28 @@ repos:
         files: ^(scripts/(test-gate-sandbox\.sh|gate-sandbox\.sb)|process/writing\.md)$
         pass_filenames: false
         verbose: true
-      # gated_tree and the hooks block of process/writing.md, under each
-      # shell the script finds
+      # the blocks of process/writing.md's *The gates* that the script's
+      # header names, under each shell it finds; it skips a shell it does
+      # not find, and a case it cannot run there, and verbose shows that
+      # it did
       - id: test-gate-blocks
         name: writing.md's gate blocks outside the sandbox pass their test
         language: unsupported_script
         entry: scripts/test-gate-blocks.sh
         files: ^(scripts/test-gate-blocks\.sh|process/writing\.md)$
         pass_filenames: false
+        verbose: true
+      # sessions taking and waiting for scripts/gate-lock.sh's slots, and
+      # gate_peak, in a lock directory of the test's own, so that it takes
+      # no slot of the real lock; it skips a shell it does not find, and a
+      # case it cannot run there, and verbose shows that it did
+      - id: test-gate-lock
+        name: gate-lock.sh answers as its test expects
+        language: unsupported_script
+        entry: scripts/test-gate-lock.sh
+        files: ^scripts/(test-)?gate-lock\.sh$
+        pass_filenames: false
+        verbose: true
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:

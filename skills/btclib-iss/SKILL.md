@@ -23,11 +23,17 @@ it*. `echo "$PROCESS"` prints the clone's path.
 
 ```shell
 scratchpad=<the session's scratchpad>
+```
+
+```shell
 mkdir -p "${scratchpad:?}/orchestrator"
 ```
 
 ```shell
 scratchpad=<the session's scratchpad>
+```
+
+```shell
 git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.sha"
 ```
 
@@ -70,7 +76,9 @@ says which a number is. A pull request among the arguments is
   decision answers share a subject; issues that only touch the same file
   do not. Before assigning a worker, look for open issues sharing a
   subject with the one at hand (`gh issue view` each) and take them
-  together.
+  together. The exception is a known-limits issue (`local-review.md`'s
+  *The rounds*), which shares a subject with any issue whose branch
+  changes its script, and is taken with it.
 - **Where a pull request is already open for an issue**, this skill
   opens no competing branch: that pull request is `/btclib-pr`'s.
 
@@ -127,6 +135,13 @@ to take lands there first, and reaches each other tree by a port.
   a `## This repository in particular` heading takes the part above it.
   Each other change since the tree's last port is adapted as its issue
   says.
+- **A batch that moves the tree's calls into `btclib-org/.github` to a
+  new tag moves `claude-review.yml`'s with them**, in the same pull
+  request, since section 10 of the standard pins `btclib-org/.github`
+  at one commit throughout a tree's workflows. The bot does not review
+  that pull request, which lands as the second case of `/btclib-pr`'s
+  *The reviews on GitHub* says: on the local review, in place of the
+  bot's ACK.
 - **The subject that lands records the port**: a batch's is
   `Port btclib-org/.github@<S>` alone, with neither the citations of
   `writing.md`'s *Citations and closing keywords* nor the pull request's
@@ -184,6 +199,9 @@ release or draft. Read its state there.
 ```shell
 n=<n>
 repo=<owner>/<repo>
+```
+
+```shell
 gh issue edit "${n:?}" --repo "${repo:?}" --remove-label upstream-dependent
 ```
 
@@ -260,7 +278,9 @@ open:**
 
 - **A change to `claude-review.yml`, or to a reusable workflow it calls
   by a local path, is its own pull request**: the bot reviews neither
-  (`/btclib-pr`'s *The reviews on GitHub*).
+  (`/btclib-pr`'s *The reviews on GitHub*). A batch of ports that moves
+  the tree's calls to a new tag is the exception (*Ports of the
+  standard*).
 - **The body is the paragraphs, then sections, then the closing block
   (`writing.md`'s *Citations and closing keywords*).** The paragraphs
   keep the body limit of `every-session.md`'s *What is posted on a
@@ -270,15 +290,15 @@ open:**
   with their exit codes, as `writing.md`'s *The gates* reports them; the
   rebase case the clearance is in; the review, with each finding
   `local-review.md`'s *The rounds* files from the third round, as not
-  covered; and, once they have answered, each review on GitHub that is
-  absent, with its reason (`/btclib-pr`'s *The reviews on GitHub*). The
-  records the tree asks of a body go here too, each where its own text
-  says it applies: the command that verifies a rule (`CONTRIBUTING.md`),
-  the count that decided the change (`writing.md`'s *What the prose that
-  lands may say*), the runs the bot can repeat (`local-review.md`'s *A
-  pull request's rounds*), the command that reads a setting back
-  (`every-role.md`'s *Collateral*), and the command that measured a
-  claim (`REVIEWING.md`).
+  covered, with the issue that holds it; and, once they have answered,
+  each review on GitHub that is absent, with its reason (`/btclib-pr`'s
+  *The reviews on GitHub*). The records the tree asks of a body go here
+  too, each where its own text says it applies: the command that
+  verifies a rule (`CONTRIBUTING.md`), the count that decided the change
+  (`writing.md`'s *What the prose that lands may say*), the runs the bot
+  can repeat (`local-review.md`'s *A pull request's rounds*), the
+  command that reads a setting back (`every-role.md`'s *Collateral*),
+  and the command that measured a claim (`REVIEWING.md`).
 - **`## Decision` is there only where the issue reserved one, or the
   design pass put one** (*The design pass*): it says what the branch
   takes, on what ground, and what the cut-back is.

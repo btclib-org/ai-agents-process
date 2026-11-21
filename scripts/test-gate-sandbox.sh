@@ -13,10 +13,11 @@
 # it takes the shell blocks of *The gates* that gate a commit, where they
 # are: the one that reads `<gate wt>`'s git directories, the one that
 # runs sandbox-exec, the one that starts `"$@" uv sync --locked`, the
-# one that runs `git status --porcelain`, the `find` check, and the
-# hooks gate. Their placeholders become paths of a fixture, and the gate
-# commands, `uv sync --locked` and `uv run pre-commit run`, scripts of
-# the test's. The fixture is a repository whose
+# one that runs `git status --porcelain`, the `find` check, the hooks
+# gate, and the two that start and stop `log stream`. Their
+# placeholders become paths of a fixture, and the commands
+# `uv sync --locked`, `uv run pre-commit run` and `/usr/bin/log stream`
+# scripts of the test's. The fixture is a repository whose
 # commit holds the gitlink `sub`, with `<wt>` detached at it, and for
 # each case a new `<gate wt>`, added from `<wt>`, and `<sbx>`. git reads
 # no global or system configuration, and no config written here runs a
@@ -80,6 +81,14 @@
 #   key there. The status file holds `EXIT_status=0` and an `include:`
 #   line. With a line with a syntax error there instead, it holds an
 #   `EXIT_status=` other than 0: git status read the included file.
+# - noclobber: under `set -C`, in sh and then zsh, two gates run in one
+#   shell, each between the start and the stop of the collector, and
+#   each followed by the status block. The collector prints
+#   `stream <n>` on its <n>th run, and the gate writes `fixed` on its
+#   second run only. The first status file is `EXIT_status=0`, the
+#   second `?? fixed` then `EXIT_status=0`; the collector's log is
+#   `stream 1`, then `stream 2`, and each stop finds its collector
+#   running.
 #
 # Where it runs the checks, each line it prints starts `ok` or `FAIL`,
 # and it exits 1 where a check failed.
@@ -143,13 +152,16 @@ STANDIN_LOG=$tmp/outside.log
 export PATH STANDIN_LOG
 : > "$STANDIN_LOG"
 
-# The shell fence whose lines match $1, its two-space indent removed, and
-# its placeholders filled.
+# The shell fence that, with the fence just above it where that one holds
+# only assignments, matches $1: the two, their two-space indent removed,
+# and their placeholders filled.
 block() {
-  awk -v re="$1" '/^ *```shell$/ { b = ""; on = 1; next }
-    on && /^ *```$/ { if (b ~ re) { printf "%s", b; exit }
-      on = 0; next }
-    on { sub(/^  /, ""); b = b $0 "\n" }' "$doc" |
+  awk -v re="$1" '/^ *```shell$/ { b = ""; on = 1; only = 1; next }
+    on && /^ *```$/ { if ((a b) ~ re) { printf "%s", a b; exit }
+      a = only ? b : ""; on = 0; next }
+    on { sub(/^  /, ""); b = b $0 "\n"
+      if ($0 !~ /^([A-Za-z_][A-Za-z0-9_]*=|set -- )/) only = 0; next }
+    /[^ ]/ { a = "" }' "$doc" |
     sed -e "s|<gate wt>|$gwt|g" -e "s|<wt>|$wt|g" -e "s|<sbx>|$sbx|g" \
       -e "s|\${PROCESS:?}|$proc|g" \
       -e "s|^scratch=<scratch>\$|scratch=$tmp|" \
@@ -414,4 +426,66 @@ if grep -q '^EXIT_status=[1-9]' "$st" 2>/dev/null; then
   ok "include: git status in the sandbox read the included file"
 else no "include: git status did not read the included file"; fi
 "$real" -C "$repo" config --unset include.path
+
+# Two gates in one shell under set -C, each between the start and the
+# stop of the collector, its status check after it. The collector's
+# stand-in counts its runs and prints `stream <n>`, and the shell waits
+# for that line before the gate runs. The gate writes `fixed` only on
+# its second run.
+cat > "$tmp/log.sh" <<EOF
+n=\$((\$(cat '$tmp/log-n' 2> /dev/null || echo 0) + 1))
+echo "\$n" > '$tmp/log-n.new' && mv '$tmp/log-n.new' '$tmp/log-n'
+echo "stream \$n"
+exec sleep 30
+EOF
+cat > "$tmp/wait.sh" <<'EOF'
+waitfor() {
+  i=0
+  while [ "$(cat "$slog" 2> /dev/null)" != "stream $1" ] && [ "$i" -lt 50 ]
+  do i=$((i + 1)); sleep 0.2; done
+}
+EOF
+start=$(block 'log stream' | sed "s|/usr/bin/log stream|sh $tmp/log.sh|")
+stop=$(block '^kill "[$][{]stream')
+printf '%s\n' "$start" | grep -q "sh $tmp/log.sh" ||
+  no "noclobber: no log stream block in $doc"
+[ -n "$stop" ] || no "noclobber: no block in $doc stops the collector"
+for s in sh zsh; do
+  if ! command -v "$s" > /dev/null; then
+    echo "skip: noclobber under $s, which is missing"
+    continue
+  fi
+  { echo 'set -C'; cat "$tmp/wait.sh"; block 'sandbox-exec -f'
+    for k in 1 2; do
+      printf '%s\nwaitfor %s\n' "$start" "$k"
+      block '^"[$]@" uv sync --locked'
+      printf '%s\n' "$stop"
+      block 'porcelain'
+      # shellcheck disable=SC2016
+      printf 'cp "$st" %s/nc-status-%s; cp "$slog" %s/nc-slog-%s\n' \
+        "$tmp" "$k" "$tmp" "$k"
+    done; } > "$tmp/nc-$s.sh"
+  fresh
+  rm -f "$tmp/log-n" "$sbx/home/first" "$tmp/gate-sandbox.log" \
+    "$tmp/nc-status-1" "$tmp/nc-status-2" "$tmp/nc-slog-1" "$tmp/nc-slog-2"
+  # shellcheck disable=SC2016
+  printf '%s\n' 'if [ -e "$HOME/first" ]; then : > fixed' \
+    'else : > "$HOME/first"; fi' > "$tmp/gate.sh"
+  "$s" "$tmp/nc-$s.sh" > "$tmp/nc-$s.log" 2>&1
+  if [ "$(cat "$tmp/nc-status-1" 2> /dev/null)" = EXIT_status=0 ] &&
+    [ "$(cat "$tmp/nc-status-2" 2> /dev/null)" = \
+    "$(printf '?? fixed\nEXIT_status=0')" ]; then
+    ok "noclobber, $s: the second gate's status file lists its change"
+  else no "noclobber, $s: the status files are" \
+    "$(tr '\n' ' ' < "$tmp/nc-status-1" 2> /dev/null), then" \
+    "$(tr '\n' ' ' < "$tmp/nc-status-2" 2> /dev/null)"; fi
+  if [ "$(cat "$tmp/nc-slog-1" 2> /dev/null)" = 'stream 1' ] &&
+    [ "$(cat "$tmp/nc-slog-2" 2> /dev/null)" = 'stream 2' ] &&
+    ! grep -q 'log stream had ended' "$tmp/nc-$s.log"; then
+    ok "noclobber, $s: the second collector wrote the log, each stopped"
+  else no "noclobber, $s: the collector's logs are" \
+    "'$(cat "$tmp/nc-slog-1" 2> /dev/null)', then" \
+    "'$(cat "$tmp/nc-slog-2" 2> /dev/null)':" \
+    "$(tr '\n' ' ' < "$tmp/nc-$s.log")"; fi
+done
 exit "$fail"

@@ -33,6 +33,9 @@ re-runs the failed run, and its result stands:
 ```shell
 repo=<owner>/<repo>
 run=<run id>
+```
+
+```shell
 gh run rerun --repo "${repo:?}" --failed "${run:?}"
 ```
 

@@ -162,7 +162,9 @@
 #   it, the branch is kept and printed naming that worktree, --check
 #   prints what the run does, line for line, and the directory is removed;
 #   where a second worktree of the directory is rebasing the branch, the
-#   branch is deleted;
+#   branch is deleted; so is the branch refs/heads/b<n> where a worktree
+#   outside is rebasing b<n>, and b<n> where one is bisecting from
+#   refs/heads/b<n>, the other branch being kept;
 # - where git worktree remove fails on the third worktree of the
 #   directory, the branches of the first two stay and the refusal names
 #   them, the directory is refused and keeps .sweep-unfinished, and the
@@ -214,22 +216,29 @@ export GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
 status=0
 
 # the lines of process/every-role.md's *Debris goes when its work ends*
-# that move the findings records, run after work=$1, with <work> as their
-# first argument; the $1 in quotes is the text those lines get
+# that move the findings records, with the fence just above them where
+# that one holds only assignments, and <work> as their first argument
 prose=$(cd -P "$(dirname "$0")/.." && pwd -P)/process/every-role.md
 # shellcheck disable=SC2016
-movecmd='work=$1
-'$(awk '
-  /^  ```shell$/ { b = ""; on = 1; next }
-  /^  ```$/ { if (on && b ~ /findings-/) printf "%s", b; on = 0; next }
-  on { sub(/^  /, ""); b = b $0 "\n" }' "$prose")
-# and the line that fetches a pull request's head, with <checkout> and
-# <n> as its first and second arguments
+movecmd=$(awk '
+  /^  ```shell$/ { b = ""; on = 1; only = 1; next }
+  on && /^  ```$/ { if (b ~ /findings-/) printf "%s", a b
+    a = only ? b : ""; on = 0; next }
+  on { sub(/^  /, ""); b = b $0 "\n"
+    if ($0 !~ /^[A-Za-z_][A-Za-z0-9_]*=/) only = 0; next }
+  /[^ ]/ { a = "" }' "$prose" |
+  sed 's/^work=<work>$/work="$1"/')
+# and the line that fetches a pull request's head, with the fence just
+# above it where that one holds only assignments, and <checkout> and <n>
+# as its first and second arguments
 # shellcheck disable=SC2016
 pullcmd=$(awk '
-  /^  ```shell$/ { b = ""; on = 1; next }
-  /^  ```$/ { if (on && b ~ /refs\/pull\//) printf "%s", b; on = 0; next }
-  on { sub(/^  /, ""); b = b $0 "\n" }' "$prose" |
+  /^  ```shell$/ { b = ""; on = 1; only = 1; next }
+  on && /^  ```$/ { if (b ~ /refs\/pull\//) printf "%s", a b
+    a = only ? b : ""; on = 0; next }
+  on { sub(/^  /, ""); b = b $0 "\n"
+    if ($0 !~ /^[A-Za-z_][A-Za-z0-9_]*=/) only = 0; next }
+  /[^ ]/ { a = "" }' "$prose" |
   sed 's/<checkout>/"$1"/; s/<n>/$2/')
 # shellcheck disable=SC2016
 case $pullcmd in
@@ -259,9 +268,13 @@ case $lookcmd in
     exit 1
     ;;
 esac
+# shellcheck disable=SC2016
 case $movecmd in
-  *'findings-'*) ;;
-  *) echo "FAIL: no lines that move the findings records in $prose"; exit 1 ;;
+  'work="$1"'*'findings-'*) ;;
+  *)
+    echo "FAIL: no lines that move the findings records after work=<work> in $prose"
+    exit 1
+    ;;
 esac
 
 # The stand-in for git. Before `update-ref -d` it moves $SHIM_MOVE_REF of
@@ -392,9 +405,11 @@ registered() {
   fi
 }
 
-# branch <case> yes|no <branch>
+# branch <case> yes|no <branch>, read with show-ref, which takes the ref
+# as named: where refs/heads/<branch> is gone, rev-parse falls back to
+# refs/heads/refs/heads/<branch>
 branch() {
-  if git -C "$m" rev-parse -q --verify "refs/heads/$3" > /dev/null; then
+  if git -C "$m" show-ref -q --verify "refs/heads/$3"; then
     [ "$2" = yes ] || fail "$1: branch $3 is still there"
   else
     [ "$2" = no ] || fail "$1: branch $3 was deleted"
@@ -1312,6 +1327,56 @@ b"
   git -C "$far" bisect reset -q > /dev/null 2>&1
   git -C "$m" worktree remove "$far"
   git -C "$m" branch -q -D "$br" 2> /dev/null
+
+  # the branch refs/heads/b<n>, whose full ref is refs/heads/refs/heads/b<n>,
+  # while a worktree outside is stopped in a rebase of the branch b<n>,
+  # whose head-name holds refs/heads/b<n>
+  n=$((n + 1))
+  w=$sp/rebase-other-name wt=$sp/rebase-other-name/wt br=refs/heads/b$n
+  mkdir -p "$w/writer"
+  echo note > "$w/writer/msg.txt"
+  git -C "$m" worktree add -q -b "$br" "$wt" origin/main 2> /dev/null ||
+    fail 'rebase other name: no worktree'
+  far=$base/rebase-other-name
+  git -C "$m" worktree add -q -b "b$n" "$far" origin/main 2> /dev/null ||
+    fail 'rebase other name: no worktree outside'
+  commit "$far" 'rebase other name'
+  ! git -C "$far" rebase -q -x false HEAD~1 > /dev/null 2>&1 ||
+    fail 'rebase other name: the rebase did not stop'
+  y=$(git -C "$far" rev-parse --path-format=absolute \
+    --git-path rebase-merge/head-name)
+  [ "$(cat "$y")" = "refs/heads/b$n" ] ||
+    fail "rebase other name: head-name holds $(cat "$y"), not refs/heads/b$n"
+  run "$base" work "$w"
+  expect 'rebase other name' 0 "deleted branch: refs/heads/$br of $m/.git"
+  expect 'rebase other name' 0 "removed: $w"
+  same 'rebase other name'
+  branch 'rebase other name' no "$br"
+  branch 'rebase other name' yes "b$n"
+  git -C "$far" rebase --abort
+  git -C "$m" worktree remove "$far"
+  git -C "$m" branch -q -D "b$n" "$br" 2> /dev/null
+
+  # the branch b<n>, while a worktree outside bisects from the branch
+  # refs/heads/b<n>, whose BISECT_START holds refs/heads/b<n>
+  mkwork "$m" bisect-other-name
+  far=$base/bisect-other-name
+  { git -C "$m" worktree add -q -b "refs/heads/$br" "$far" origin/main \
+    2> /dev/null &&
+    git -C "$far" bisect start > /dev/null 2>&1 &&
+    git -C "$far" checkout -q --detach; } || fail 'bisect other name: no bisect'
+  y=$(git -C "$far" rev-parse --path-format=absolute --git-path BISECT_START)
+  [ "$(cat "$y")" = "refs/heads/$br" ] ||
+    fail "bisect other name: BISECT_START holds $(cat "$y"), not refs/heads/$br"
+  run "$base" work "$w"
+  expect 'bisect other name' 0 "deleted branch: refs/heads/$br of $m/.git"
+  expect 'bisect other name' 0 "removed: $w"
+  same 'bisect other name'
+  branch 'bisect other name' no "$br"
+  branch 'bisect other name' yes "refs/heads/$br"
+  git -C "$far" bisect reset -q > /dev/null 2>&1
+  git -C "$m" worktree remove "$far"
+  git -C "$m" branch -q -D "$br" "refs/heads/$br" 2> /dev/null
 
   # the repository's own worktree, stopped in a rebase of the branch
   git clone -q "$o" "$base/main5"

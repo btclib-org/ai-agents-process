@@ -33,9 +33,12 @@ scratch=<scratch>
 workers=<n>
 wt=<worktree>
 set -- <the measured run>
+```
+
+```shell
 . "${PROCESS:?}/scripts/gate-lock.sh"
 out=${scratch:?}/gen.out pids=${scratch:?}/gen.pids
-gate_take_all "${wt:?}" > "$out" 2>&1 && {
+: "${workers:?}" && gate_take_all "${wt:?}" > "$out" 2>&1 && {
   idle=$(tail -n 1 "$out" | sed 's/.* at \([0-9]*\)% CPU idle.*/\1/')
   case $idle in ''|*[!0-9]*) idle=0 ;; esac
   free=$(( $(getconf _NPROCESSORS_ONLN) * idle / 100 - ${workers:?} ))
@@ -97,6 +100,10 @@ gate_take_all "${wt:?}" > "$out" 2>&1 && {
   gate_release_all
 }
 ```
+
+`workers` is checked on the line of `gate_take_all`, chained to it: an
+interactive shell that fails a `:?` goes on to the next line, so a check
+on a line of its own would still take every slot.
 
 `gen_stop` runs when the measured run ends, and from the trap when the
 shell exits or receives SIGHUP, SIGINT or SIGTERM. It sends SIGTERM,

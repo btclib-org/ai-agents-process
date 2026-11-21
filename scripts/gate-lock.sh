@@ -81,7 +81,7 @@
 # it takes none within GATE_LOCK_STAGGER seconds of the last take recorded
 # in gate.last, so that the idle reading shows the gate just started. While
 # a slot is held, it also takes none within GATE_LOCK_SETTLE seconds (60) of
-# that take, unless it read GATE_LOCK_FREE plus GATE_LOCK_MARGIN percent (35
+# that take, unless it read GATE_LOCK_FREE plus GATE_LOCK_MARGIN percent (30
 # plus 15) of memory or more free: a gate reaches its peak memory after it
 # starts, so gates taken seconds apart would each see the same free memory
 # and together exceed it. A slot is held while its owner file names a live
@@ -90,10 +90,10 @@
 # until GATE_LOCK_IDLE percent or more of the CPU was idle over the last
 # GATE_LOCK_POLL seconds, the 1-minute load is under GATE_LOCK_LOAD,
 # GATE_LOCK_DISK GB or more of disk is free where $GATE_LOCK_DIR sits (/tmp
-# when it is unset), and memory is admissible: pressure level 1 with
-# GATE_LOCK_FREE percent (35) of memory or more free, which leaves room for
-# the peak a gate has yet to reach, never level 2 or 4 (macOS answers 1
-# normal, 2 warn, 4 critical). Where the level cannot be read, the
+# when it is unset), and memory is admissible: a pressure level below 4
+# (macOS answers 1 normal, 2 warn, 4 critical) with GATE_LOCK_FREE percent
+# (30) of memory or more free. It adds no peak to that reading, since it is
+# not told which gate follows. Where the level cannot be read, the
 # percentage free decides alone. Where any other read fails, as off macOS,
 # it does not wait on that read. It prints the idle percentage, the load,
 # the level, the percentage free and the disk free, `?` for each read that
@@ -169,7 +169,7 @@ GATE_LOCK_LOAD=${GATE_LOCK_LOAD:-$((_gl_cpus * 3))}
 GATE_LOCK_IDLE=${GATE_LOCK_IDLE:-30}
 GATE_LOCK_WORKERS=${GATE_LOCK_WORKERS:-$((_gl_cpus / GATE_LOCK_SLOTS))}
 [ "$GATE_LOCK_WORKERS" -ge 1 ] || GATE_LOCK_WORKERS=1
-GATE_LOCK_FREE=${GATE_LOCK_FREE:-35}
+GATE_LOCK_FREE=${GATE_LOCK_FREE:-30}
 GATE_LOCK_DISK=${GATE_LOCK_DISK:-20}
 GATE_LOCK_STAGGER=${GATE_LOCK_STAGGER:-15}
 GATE_LOCK_SETTLE=${GATE_LOCK_SETTLE:-60}
@@ -356,7 +356,7 @@ _gl_admit() {
   [ -z "$_gl_u" ] || [ "$_gl_u" -ge "$GATE_LOCK_IDLE" ] || return 1
   [ -z "${_gl_l%.*}" ] || [ "${_gl_l%.*}" -lt "$GATE_LOCK_LOAD" ] || return 1
   [ -z "$_gl_g" ] || [ "$_gl_g" -ge "$GATE_LOCK_DISK" ] || return 1
-  [ -z "$_gl_p" ] || [ "$_gl_p" -le 1 ] || return 1
+  [ -z "$_gl_p" ] || [ "$_gl_p" -lt 4 ] || return 1
   [ -z "$_gl_f" ] || [ "$_gl_f" -ge "$GATE_LOCK_FREE" ]
 }
 

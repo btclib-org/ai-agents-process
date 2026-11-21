@@ -142,6 +142,9 @@ which role reads this file, and where a section named in italics is.
 
   ```shell
   scratchpad=<the session's scratchpad>
+  ```
+
+  ```shell
   git -C "${PROCESS:?}" rev-parse HEAD > "${scratchpad:?}/orchestrator/process.next"
   ```
 
@@ -173,6 +176,9 @@ which role reads this file, and where a section named in italics is.
 
   ```shell
   scratchpad=<the session's scratchpad>
+  ```
+
+  ```shell
   mv "${scratchpad:?}/orchestrator/process.next" "${scratchpad:?}/orchestrator/process.sha"
   ```
 
@@ -253,17 +259,21 @@ which role reads this file, and where a section named in italics is.
   the fresh reviewer.** Unavailable means the client refuses the run.
   The first run is judged when the rounds reach the fresh reviewer: it
   is tried, and once refused it is not retried, even where the client
-  comes back before the branch lands. A refusal the session cannot
-  clear, as Codex's `Your workspace is out of credits` is, also holds
-  for the session's later branches: they go on without the fresh
-  reviewer, with no new try. A limit that names a reset time within the
-  session is not one: once the reset has passed, a later branch tries
-  the run again. The hold on later branches ends with the session: a new
-  session tries the run again at its first branch not already refused.
-  The rounds end at the dedicated reviewer's `CLEARED` of the head,
-  which stands wherever the process asks for the latest fresh
-  reviewer's. Where the dedicated reviewer's last `CLEARED` names an
-  earlier sha, it is resumed on the head first. The branch is opened,
+  comes back before the branch lands. A refusal of the client's account
+  that the session cannot clear, as Codex's
+  `Your workspace is out of credits` is, also holds for the session's
+  later branches: they go on without the fresh reviewer, with no new
+  try. A limit that names a reset time within the session is not one:
+  once the reset has passed, a later branch tries the run again. A
+  refusal is the account's only where the error the client printed is
+  about the account; the text of a review never makes it one. Any other,
+  as a refusal of the branch's content, holds for that branch only: the
+  next branch tries the run. The hold on later branches ends with the
+  session: a new session tries the run again at its first branch not
+  already refused. The rounds end at the dedicated reviewer's `CLEARED`
+  of the head, which stands wherever the process asks for the latest
+  fresh reviewer's. Where the dedicated reviewer's last `CLEARED` names
+  an earlier sha, it is resumed on the head first. The branch is opened,
   and lands once everything else `/btclib-pr` asks of it holds, its *The
   reviews on GitHub* included, which says how an absent one is recorded.
   The pull request body, a later branch's included, says that the fresh
@@ -285,17 +295,16 @@ which role reads this file, and where a section named in italics is.
   unrun, the dedicated reviewer's `CLEARED` of the head ends the rounds
   only where it came after their results or answers. The branch then
   goes on as above, without the fresh reviewer, the hold on later
-  branches included. The pull request body says that the fresh
-  reviewer's re-review is missing, where it would say the fresh review
-  is, and that the dedicated reviewer took it over.
+  branches included where the refusal is the account's. The pull request
+  body says that the fresh reviewer's re-review is missing, where it
+  would say the fresh review is, and that the dedicated reviewer took it
+  over.
 
   A fork's pull request body is the outside contributor's. What this
   bullet, or `every-role.md`'s *Clients*, has the body record goes in a
   comment of the session's own on the pull request instead, posted
-  before the approval is asked for and naming the head it holds for. A
-  comment, unlike an approval review, is there whoever approves, and on
-  a fork the approval goes to the human (`/btclib-pr`'s *Outside
-  contributors*).
+  before the approval is given or asked for and naming the head it holds
+  for. A comment, unlike an approval review, is there whoever approves.
 - **Codex reads the branch locally before each round on the forge**
   (`local-review.md`'s *The rounds*): the whole head before the pull
   request is opened, and before a later push the delta from the last
@@ -483,6 +492,9 @@ not another login's is later:
 repo=<owner>/<repo>
 id=<id>
 record=<record file>
+```
+
+```shell
 gh api -X PATCH "repos/${repo:?}/issues/comments/${id:?}" \
   -F "body=@${record:?}"
 ```
@@ -493,6 +505,9 @@ Where no line does, it posts its own record:
 n=<n>
 repo=<owner>/<repo>
 record=<record file>
+```
+
+```shell
 gh pr comment "${n:?}" --repo "${repo:?}" --body-file "${record:?}"
 ```
 
@@ -673,27 +688,39 @@ verdict found there is the latest run's (`local-review.md`'s *The
 rounds*). The `-u` keeps the sync in the worktree's `.venv`, where the
 reviewer's `uv run` looks for it. On an outside contributor's branch the
 sync is the sandboxed one of `writing.md`'s *The gates*, in `<gate wt>`,
-instead of the second command:
+instead of the `uv sync --locked` below:
 
 ```shell
 dir=<work>/<name>
+```
+
+```shell
 mkdir -p "${dir:?}/tmp"
 ```
 
 ```shell
 wt=<wt>
 dir=<work>/<name>
+```
+
+```shell
 env -C "${wt:?}" -u UV_PROJECT_ENVIRONMENT \
   UV_CACHE_DIR="${dir:?}/uv-cache" uv sync --locked
 ```
 
 ```shell
 dir=<work>/<name>
+```
+
+```shell
 rm -f "${dir:?}.last.md"
 ```
 
 ```shell
 dir=<work>/<name>
+```
+
+```shell
 . "${PROCESS:?}/scripts/gate-lock.sh"
 gate_peak codex "${dir:?}" \
   env -i -C "${dir:?}" HOME="$HOME" PATH="$PATH" \
@@ -749,20 +776,26 @@ settings. Without a saved login the run prints `Not logged in · Please
 run /login` and exits `1`.
 
 The session creates the reviewer's directory, links the agent into it,
-and makes the run's temporary directory. `mktemp` prints its path,
-which stands for `<tmp>` in the two blocks after it. The session then
-starts the reviewer through `gate_peak`, as a Codex reviewer is started,
-and removes the temporary directory once the run ends. The run starts
-`claude` only where `CLAUDE_CODE_TMPDIR` names a directory, so an empty
-or missing value stops it:
+and makes the run's temporary directory. `mktemp` prints its path, which
+stands for `<tmp>` in `ctmp=<tmp>` and `rm -rf <tmp>` below. The session
+then starts the reviewer through `gate_peak`, as a Codex reviewer is
+started, and removes the temporary directory once the run ends. The run
+starts `claude` only where `CLAUDE_CODE_TMPDIR` names a directory, so an
+empty or missing value stops it:
 
 ```shell
 dir=<work>/<name>
+```
+
+```shell
 mkdir -p "${dir:?}/.claude/agents"
 ```
 
 ```shell
 dir=<work>/<name>
+```
+
+```shell
 ln -s "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/reviewer.md" \
   "${dir:?}/.claude/agents/reviewer.md"
 ```
@@ -774,6 +807,9 @@ mktemp -d /tmp/rv.XXXXXX
 ```shell
 dir=<work>/<name>
 ctmp=<tmp>
+```
+
+```shell
 sbx='{"sandbox":{"enabled":true,"failIfUnavailable":true,'
 sbx="${sbx}"'"allowUnsandboxedCommands":false,'
 sbx="${sbx}"'"network":{"strictAllowlist":true}}}'
@@ -830,14 +866,21 @@ request in an interactive session under `never` and `on-request`, and in
 `every-role.md`'s *Git writes under Codex* lists run that way, and an
 interactive session has no `--ignore-rules` to set it aside.
 
-Each run records its policy in its rollout, with credits or without,
-so this re-checks a setting before an escalation is relied on. It runs
-as one block, since Codex later compresses a rollout to `.jsonl.zst`,
-which the glob does not match. `<settings>` are the flags under test,
-`-s workspace-write` among them except with `--approve-for-me`:
+Each run records its policy in its rollout, with credits or without, so
+this re-checks a setting before an escalation is relied on. The `set --`
+that holds the flags runs in the same call as the `codex exec` that
+reads them in `"$@"`, since shell state does not survive between calls.
+The `jq` that reads the rollout runs right after `codex exec`, in that
+call, since Codex later compresses a rollout to `.jsonl.zst`, which the
+glob does not match.
+`<settings>` are the flags under test, `-s workspace-write` among them
+except with `--approve-for-me`:
 
 ```shell
 set -- <settings>
+```
+
+```shell
 id=$(codex exec --json --skip-git-repo-check "$@" 'Reply ok.' < /dev/null |
   jq -r 'select(.type == "thread.started") | .thread_id')
 jq -c 'select(.type == "turn_context") | .payload
@@ -874,10 +917,13 @@ is deleted once that end has passed.
   session is done with that pull request, to the same writer/reviewer
   pair; what was filed outside any, to a new pair. Each is taken to an
   open pull request or closed with the measurement that refutes it. The
-  only exceptions are an issue in another repository or labelled
-  `upstream-report`, one the maintainer suspended, one a `BACKLOG` row or
-  an `EXPECTED_DRIFT` entry already points at, and one labelled `good
-  first issue`; each is named in the report with its reason.
+  exceptions are an issue in another repository or labelled
+  `upstream-report`, one the maintainer suspended, one a `BACKLOG` row
+  or an `EXPECTED_DRIFT` entry already points at, and one labelled `good
+  first issue`; each is named in the report with its reason. A
+  known-limits issue is an exception too, named in the report with its
+  reason like them: its lines are worked when `local-review.md`'s *The
+  rounds* says.
 - **The session is not done while an issue it opened has no pull
   request** outside those exceptions. One that waits on the human is a
   question, or at night a deferred item, never a silent leftover.
@@ -895,10 +941,11 @@ Before the wrap-up, *Closing collateral*'s last bullet holds.
 claim holds a pull request's branch*).
 
 **Remove what is left of what the session created** (`every-role.md`'s
-*Debris goes when its work ends*): worktrees, build directories, and
-caches in its scratch directories. A worktree with uncommitted or
-unpushed work stays, and so does anything another session made. Name
-both in the report. A read-only tree, as Go's module cache is, is made
+*Debris goes when its work ends*): worktrees, local branches, build
+directories, and caches in its scratch directories. A worktree with
+uncommitted or unpushed work stays, a local branch stays where that
+section keeps it, and so does anything another session made. Name them
+in the report. A read-only tree, as Go's module cache is, is made
 writable first:
 
 ```shell
