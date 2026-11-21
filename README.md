@@ -81,6 +81,13 @@ The process the btclib-org maintainers follow with the coding agents
   ends* runs;
 - `scripts/test-sweep.sh` — the fixture directories `sweep.sh` must
   remove and must refuse, run by the `test-sweep` hook;
+- `scripts/unpushed-branches.py` — the script that lists the local
+  branches of a checkout whose head no ref of origin reaches, and
+  deletes none, which `process/every-role.md`'s *Debris goes when its
+  work ends* names;
+- `scripts/test-unpushed-branches.py` — the fixture repositories whose
+  branches `unpushed-branches.py` must list and must not, run by the
+  `test-unpushed-branches` hook;
 - `scripts/test-git-c-allow.py` — the commands `git-c-allow.py` must
   approve and must refuse, run by the `test-git-c-allow` hook;
 - `scripts/pretooluse-rules.py` — the hook that refuses a command
