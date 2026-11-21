@@ -33,6 +33,9 @@
 #   ignored, or a modified file marked assume-unchanged or skip-worktree,
 #   is refused; one with an ignored file is removed;
 # - a worktree with an unpushed commit is refused, and its branch kept;
+# - so is one whose unpushed commit origin's main reaches only through a
+#   local replace ref, or only through a graft (where git still reads
+#   grafts; otherwise the test says it skipped it);
 # - one whose commit only a branch head, a pull request head or a tag of
 #   origin holds, and no remote-tracking ref reaches, is removed;
 # - one whose commit only a remote-tracking ref reaches, the branch being
@@ -189,11 +192,14 @@
 # would send the fixtures' git writes to the caller's repository
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR CDPATH
 unset GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE
+# and one that turns replace refs or grafts off would hide those the
+# fixtures make
+unset GIT_NO_REPLACE_OBJECTS GIT_REPLACE_REF_BASE GIT_GRAFT_FILE
 script=${1:-$(dirname "$0")/sweep.sh}
 script=$(cd -P "$(dirname "$script")" && pwd -P)/${script##*/}
 [ -f "$script" ] || { echo "FAIL: no script $script"; exit 1; }
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/test-sweep.XXXXXX") || exit 1
-readable='' noflag='' noorphan='' casefold=1
+readable='' noflag='' noorphan='' nograft='' casefold=1
 # the fixtures include an unreadable directory and, with chflags, an
 # immutable file, which a plain rm -rf cannot remove; the EXIT trap calls
 # it
@@ -562,6 +568,38 @@ cases() {
   kept unpushed "$wt/f.txt"
   registered unpushed yes "$wt"
   branch unpushed yes "$br"
+
+  # each in a clone of its own, since a replace ref and a graft are read
+  # across the repository: origin's main is replaced by a child of the
+  # unpushed commit, or grafted onto it
+  for how in replace graft; do
+    git clone -q "$o" "$base/$how"
+    mkwork "$base/$how" "$how"
+    commit "$wt" "$how"
+    tip=$c
+    om=$(git -C "$base/$how" rev-parse origin/main)
+    if [ "$how" = replace ]; then
+      newcommit "$wt" "$how child"
+      git -C "$base/$how" replace "$om" "$c" || fail "replace: no replace ref"
+    else
+      mkdir -p "$base/$how/.git/info"
+      printf '%s %s\n' "$om" "$tip" > "$base/$how/.git/info/grafts"
+    fi
+    if [ -z "$(git -C "$base/$how" rev-list -n 1 "$tip" "^$om" \
+      2> /dev/null)" ]; then
+      run "$base" work "$w"
+      expect "$how" 1 "commit $tip of $wt: no ref of origin"
+      kept "$how" "$wt/f.txt"
+      git -C "$base/$how" show-ref -q --verify "refs/heads/$br" ||
+        fail "$how: branch $br was deleted"
+    elif [ "$how" = graft ]; then
+      nograft=1
+    else
+      fail "replace: origin's main does not reach $tip"
+    fi
+    # the graft would make git advise on each later call in the clone
+    rm -f "$base/$how/.git/info/grafts"
+  done
 
   for ref in refs/heads/elsewhere refs/pull/7/head refs/tags/t; do
     mkwork "$m" "ref-${ref##*/}"
@@ -1535,7 +1573,8 @@ b"
   expect 'pull head ahead, fetched' 0 "removed: $w"
   lookups
 
-  for r in "$m" "$base/main2" "$base/main3" "$base/main4" "$base/main5"; do
+  for r in "$m" "$base/main2" "$base/main3" "$base/main4" "$base/main5" \
+    "$base/replace" "$base/graft"; do
     s=$(git -C "$r" worktree prune -n -v 2>&1)
     [ -z "$s" ] || fail "stale worktree entries in $r: $s"
   done
@@ -1571,5 +1610,7 @@ fi
   echo 'chflags uchg was refused: the immutable file case is skipped'
 [ -z "$noorphan" ] ||
   echo 'git worktree add --orphan fails: the orphan case is skipped'
+[ -z "$nograft" ] ||
+  echo 'git reads no graft: the graft case is skipped'
 [ "$status" = 0 ] && echo "sweep.sh answers as expected under:$shells"
 exit "$status"

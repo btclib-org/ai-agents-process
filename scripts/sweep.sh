@@ -46,7 +46,9 @@
 #   outlives the branch. The commits read are each worktree's HEAD and its
 #   own refs, refs/worktree, refs/bisect and refs/rewritten, the others
 #   being its repository's, outside. A commit that only a reflog or a
-#   pseudo-ref such as ORIG_HEAD holds is not read;
+#   pseudo-ref such as ORIG_HEAD holds is not read. Ancestry is read with
+#   replace refs and grafts off, which could make origin's commit look
+#   like a descendant of an unpushed one;
 # - one of those refs holds an object that is not a commit or a tag of one;
 # - one of its linked worktrees is locked, or its repository does not list
 #   it.
@@ -134,6 +136,11 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR CDPATH
 unset GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE
 GIT_TERMINAL_PROMPT=0 GIT_OPTIONAL_LOCKS=0
 export GIT_TERMINAL_PROMPT GIT_OPTIONAL_LOCKS
+# a local replace ref or graft can make a ref of origin reach an unpushed
+# commit, so neither is read: a graft file that cannot exist, which git
+# skips without the advice it prints on opening one
+GIT_NO_REPLACE_OBJECTS=1 GIT_GRAFT_FILE=/dev/null/no-grafts
+export GIT_NO_REPLACE_OBJECTS GIT_GRAFT_FILE
 
 # real <dir>: its path, every symbolic link resolved, each name spelled as
 # the file system holds it; the shells' own pwd prints the case as typed

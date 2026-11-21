@@ -367,14 +367,27 @@ This section is in `every-session.md`, beside this file.
 
   A branch goes only where a ref of origin reaches its head: a branch, a
   tag or a pull request's `refs/pull/<n>/head`, as `git ls-remote origin`
-  prints them, whose sha `git merge-base --is-ancestor <head> <sha>`
-  exits `0` on, the repository holding that sha's commit. A branch whose
-  head no such ref reaches, on no remote and in no pull request, is work
-  (*Before removing or discarding anything that could be work*): it is
-  named to the human, in a worker's report or the session's, at the
-  moment the list gives, and goes only on their word. Git refuses to
-  delete a branch a worktree holds, so its worktree goes first. This
-  deletes it:
+  prints them, whose sha the command below exits `0` on, the repository
+  holding that sha's commit. It reads no replace ref and, through a
+  graft file that cannot exist, no graft: either can make origin's
+  commit look like a descendant of an unpushed head.
+
+  ```shell
+  head=<head>
+  sha=<sha>
+  ```
+
+  ```shell
+  GIT_GRAFT_FILE=/dev/null/no-grafts git --no-replace-objects \
+    merge-base --is-ancestor "${head:?}" "${sha:?}"
+  ```
+
+  A branch whose head no such ref reaches, on no remote and in no pull
+  request, is work (*Before removing or discarding anything that could
+  be work*): it is named to the human, in a worker's report or the
+  session's, at the moment the list gives, and goes only on their word.
+  Git refuses to delete a branch a worktree holds, so its worktree goes
+  first. This deletes it:
 
   ```shell
   checkout=<checkout>
