@@ -35,6 +35,7 @@ ci:
     - test-pretooluse-rules
     - test-sweep
     - test-gate-blocks
+    - test-gate-lock
 
 repos:
   # this file checking itself, and the only two hooks with no environment
@@ -193,6 +194,17 @@ repos:
         language: unsupported_script
         entry: scripts/test-gate-blocks.sh
         files: ^(scripts/test-gate-blocks\.sh|process/writing\.md)$
+        pass_filenames: false
+        verbose: true
+      # sessions taking and waiting for scripts/gate-lock.sh's slots, and
+      # gate_peak, in a lock directory of the test's own, so that it takes
+      # no slot of the real lock; it skips a shell it does not find, and a
+      # case it cannot run there, and verbose shows that it did
+      - id: test-gate-lock
+        name: gate-lock.sh answers as its test expects
+        language: unsupported_script
+        entry: scripts/test-gate-lock.sh
+        files: ^scripts/(test-)?gate-lock\.sh$
         pass_filenames: false
         verbose: true
   - repo: https://github.com/pre-commit/pre-commit-hooks

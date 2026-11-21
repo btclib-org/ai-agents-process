@@ -59,7 +59,8 @@ The process the btclib-org maintainers follow with the coding agents
   lock's block, and the reviewers an orchestrator starts as a command;
 - `scripts/test-gate-lock.sh` — `sh scripts/test-gate-lock.sh` shows
   sessions taking that lock's slots and waiting while every slot is
-  held, and `gate_peak` recording a peak;
+  held, and `gate_peak` recording a peak, run by the `test-gate-lock`
+  hook;
 - `scripts/gate-sandbox.sb` — the sandbox an outside contributor's gates
   run in, as `process/writing.md`'s *The gates* says;
 - `scripts/test-gate-sandbox.sh` — the gate blocks of
