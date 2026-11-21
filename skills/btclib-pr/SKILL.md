@@ -1593,12 +1593,15 @@ and how to resolve it. Completing it:
   wt=<wt>
   fork=<fork url>
   branch=<their branch>
+  ```
+
+  ```shell
   git -C "${wt:?}" push "${fork:?}" "HEAD:refs/heads/${branch:?}"
   ```
 
-  Before every push, `git ls-remote <fork url> refs/heads/<their branch>` must
-  still answer the sha you built on; where it moved, they are working,
-  and you stop and ask.
+  Before every push, `git ls-remote <fork url>
+  refs/heads/<their branch>` must still answer the sha you built on;
+  where it moved, they are working, and you stop and ask.
 - **The same review and decision, then the squash of their pull
   request.** That keeps their authorship; a branch of ours
   cherry-picking them would leave their pull request closed rather than
