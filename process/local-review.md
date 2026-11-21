@@ -74,7 +74,7 @@ branch, or a text to be posted.
   dedicated reviewer's `CLEARED`.**
 - **From the third round of a branch's local review, a finding on a
   shape that is not reachable, or whose worst outcome is on the safe
-  side, is filed as an issue and does not block.** The rounds are
+  side, is filed in an issue and does not block.** The rounds are
   numbered from one, as the forge's are in the next bullet. Each verdict
   of a local reviewer is a round, so a head that two reviewers read is
   two rounds. The count is the branch's, not a reviewer's: any reviewer
@@ -82,24 +82,36 @@ branch, or a text to be posted.
   the branch's last round.
 
   A shape is reachable where a session following the process can produce
-  it, or where a tree or a caller holds it. A constructed shape, one
-  that only a reviewer's input holds, is not. The worst outcome is on
-  the safe side where it is a fresh review, a wait or another stop,
-  rather than a wrong result. A refusal is not on the safe side: a gate
-  or a command that exits non-zero or refuses, as a gate's block that,
-  followed as written, exits `127` on every branch. Neither is a crash
-  or a false sentence. On a reachable shape, all three block at any
-  round; on a constructed shape, they are filed.
+  it, where a tree or a caller holds it, or where it is a file name, a
+  text or a file's content that an outside contributor's branch to the
+  repository under review can put where its code or a command of the
+  process reads it. A branch to another repository counts too where a
+  command of the process reads that branch before it lands, as the gates
+  of `writing.md`'s *The gates* read an outside contributor's branch. It
+  does not count where its content reaches the code only once it lands,
+  as the `README.md` of `btclib-org/.github` that
+  `scripts/port-check.py` reads. Any other shape is constructed, and so
+  is a reviewer's own test input that reaches the code only through a
+  call the reviewer writes, though a session or such a branch could
+  write the same call. The worst outcome is on the safe side where it is
+  a fresh review, a wait or another stop, rather than a wrong result. A
+  refusal is not on the safe side: a gate or a command that exits
+  non-zero or refuses, as a gate's block that, followed as written,
+  exits `127` on every branch. Neither is a crash or a false sentence.
+  On a reachable shape, all three block at any round; on a constructed
+  shape, they are filed.
 
   The reviewer classifies the finding, not the writer. Its verdict marks
   the finding `filed`, gives the ground, and carries the body of the
   issue to file. For a shape that is not reachable, the ground is the
   search that shows no tree and no caller holds it, the command and what
-  it printed, and why no step of the process produces it. For the safe
-  side, it is the input run, or the case a rule in prose was tried on,
-  and its outcome. The orchestrator files the issue with that body, and
-  the pull request's body lists it as `/btclib-iss`'s *Opening the pull
-  request* says.
+  it printed, and then either why no step of the process produces it and
+  no outside contributor's branch that counts (above) can put it where
+  it is read, or the call the reviewer wrote that alone passes it. For
+  the safe side, it is the input run, or the case a rule in prose was
+  tried on, and its outcome. The orchestrator files the issue with that
+  body, and the pull request's body lists it as `/btclib-iss`'s *Opening
+  the pull request* says.
 
   Where the reviewer cannot run that search, as one that needs the
   forge, which its sandbox does not reach (`every-role.md`'s *Clients*),
@@ -109,12 +121,55 @@ branch, or a text to be posted.
   what it printed shows a tree or a caller holding the shape, or the
   orchestrator cannot run it either, the finding blocks, and the verdict
   counts as `CHANGES REQUESTED`.
-- **From the third round on the forge, only a defect on a shape that a
-  tree or a caller holds, a false sentence or a crash is fixed on the
-  branch.** A round on the forge is a head the reviews on GitHub read
+
+  A finding on a constructed shape of a script or its test, or a mutant
+  of a script that survives its test, is filed as a line of the script's
+  known-limits issue, not as an issue of its own. A mutant is a
+  constructed shape; its ground is the mutant and the test run it
+  survives. This covers scripts and their tests alone: a finding on any
+  other source file stays an issue of its own. A test's finding goes to
+  the issue of the script it tests. A script has one known-limits issue,
+  titled with the script's path from its tree's root, then
+  `: known limits`. This prints its number, and nothing where none is
+  open:
+
+  ```shell
+  repo=<owner>/<repo>
+  script=<path>
+  ```
+
+  ```shell
+  export t="${script:?}: known limits" &&
+    gh issue list --repo "${repo:?}" --state open --limit 1000 \
+      --json number,title --jq '.[] | select(.title == env.t) | .number'
+  ```
+
+  The body the verdict carries is the line, which names the branch the
+  finding came from, or its pull request where one is open. The
+  orchestrator adds the line, and files the known-limits issue where
+  none is open. Its body opens by saying what its lines list and when
+  one is worked, and closes with a *Done when*: a test case answers each
+  line, or kills its mutant, or the script's docstring names it out of
+  reach. It takes no `good first issue` label, which would keep every
+  branch from taking it (`every-role.md`'s *Issues left to newcomers*).
+  A line is worked when a file in a tree or a caller meets its shape, or
+  when the script is next changed for another reason; a mutant's line
+  has no shape to meet, and waits for that change.
+
+  A line filed from the rounds of a branch that changes the script is
+  not that branch's to work, and a known-limits issue the branch filed
+  from its own rounds is not taken with it. Where the branch closes the
+  known-limits issue, the orchestrator files the line in a new one once
+  the branch lands.
+- **From the third round on the forge, a finding the bullet above would
+  file is filed, not fixed, and of the rest only a defect, a false
+  sentence or a crash on a reachable shape is fixed on the branch.** A
+  round on the forge is a head the reviews on GitHub read
   (`/btclib-pr`'s *The reviews on GitHub*): the head the pull request is
   opened on, then each push to it. Every other finding stays off the
-  branch, answered as `/btclib-pr`'s *Answering it* says.
+  branch: one of a kind the bullet above files in a known-limits issue
+  goes there as a line, and the rest are answered as `/btclib-pr`'s
+  *Answering it* says.
 - A non-blocking finding that is not filed waits for the next change;
   `every-role.md`'s *Which prose is worth a round* says which prose
   blocks.
@@ -344,11 +399,11 @@ before a push* says.
   the reply gives. A ground that is false on an input the text applies
   to is a finding of these rounds, and so is a reply that declines a
   finding which the first route that fits files: `/btclib-pr`'s *filed*,
-  or a defect *The rounds* keeps off the branch. Such a finding holds
-  back the reply, not the branch: it does not send a cleared branch
-  back, as `every-role.md`'s *Which prose is worth a round* says of a
-  sentence outside the tree, and the reply is posted only once the
-  reviewer has read its fix.
+  or a defect, or a false sentence the branch adds, that *The rounds*
+  keeps off the branch. Such a finding holds back the reply, not the
+  branch: it does not send a cleared branch back, as `every-role.md`'s
+  *Which prose is worth a round* says of a sentence outside the tree,
+  and the reply is posted only once the reviewer has read its fix.
 
 ### A text to be posted
 
@@ -521,7 +576,8 @@ got=$(gh api "gists/${gist:?}/${rev:?}" --jq .id) &&
 - [ ] in a first verdict, every distinct finding, small ones included
       (*The rounds*)
 - [ ] each finding *The rounds* files from the third round, marked
-      `filed`, with its ground and the body of the issue to file
+      `filed`, with its ground and the body of the issue, or the line,
+      to file
 - [ ] the claims tried, as *Every reviewer tries to break the change*
       says
 - [ ] where the change touches a rule the tree states, or makes a

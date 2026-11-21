@@ -35,7 +35,7 @@ wt=<worktree>
 set -- <the measured run>
 . "${PROCESS:?}/scripts/gate-lock.sh"
 out=${scratch:?}/gen.out pids=${scratch:?}/gen.pids
-gate_take_all "${wt:?}" > "$out" 2>&1 && {
+: "${workers:?}" && gate_take_all "${wt:?}" > "$out" 2>&1 && {
   idle=$(tail -n 1 "$out" | sed -n 's/.* at \([0-9][0-9]*\)% CPU idle.*/\1/p')
   idle=${idle:-0}
   free=$(( $(getconf _NPROCESSORS_ONLN) * idle / 100 - ${workers:?} ))
@@ -93,6 +93,10 @@ that it runs when pasted into an interactive zsh: one without
 `interactive_comments` reads a `#` line as words, and one with history
 expansion reads that `!` as an event. `sed` prints the digits of the
 idle percentage or nothing, and nothing reads as 0.
+
+`workers` is checked on the line of `gate_take_all`, chained to it: an
+interactive shell that fails a `:?` goes on to the next line, so a check
+on a line of its own would still take every slot.
 
 `gen_gone` reads a PID as gone only where `kill -0` answers "No such
 process": Codex's sandbox refuses `ps`, and `kill -0` also fails for

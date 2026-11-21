@@ -253,17 +253,21 @@ which role reads this file, and where a section named in italics is.
   the fresh reviewer.** Unavailable means the client refuses the run.
   The first run is judged when the rounds reach the fresh reviewer: it
   is tried, and once refused it is not retried, even where the client
-  comes back before the branch lands. A refusal the session cannot
-  clear, as Codex's `Your workspace is out of credits` is, also holds
-  for the session's later branches: they go on without the fresh
-  reviewer, with no new try. A limit that names a reset time within the
-  session is not one: once the reset has passed, a later branch tries
-  the run again. The hold on later branches ends with the session: a new
-  session tries the run again at its first branch not already refused.
-  The rounds end at the dedicated reviewer's `CLEARED` of the head,
-  which stands wherever the process asks for the latest fresh
-  reviewer's. Where the dedicated reviewer's last `CLEARED` names an
-  earlier sha, it is resumed on the head first. The branch is opened,
+  comes back before the branch lands. A refusal of the client's account
+  that the session cannot clear, as Codex's
+  `Your workspace is out of credits` is, also holds for the session's
+  later branches: they go on without the fresh reviewer, with no new
+  try. A limit that names a reset time within the session is not one:
+  once the reset has passed, a later branch tries the run again. A
+  refusal is the account's only where the error the client printed is
+  about the account; the text of a review never makes it one. Any other,
+  as a refusal of the branch's content, holds for that branch only: the
+  next branch tries the run. The hold on later branches ends with the
+  session: a new session tries the run again at its first branch not
+  already refused. The rounds end at the dedicated reviewer's `CLEARED`
+  of the head, which stands wherever the process asks for the latest
+  fresh reviewer's. Where the dedicated reviewer's last `CLEARED` names
+  an earlier sha, it is resumed on the head first. The branch is opened,
   and lands once everything else `/btclib-pr` asks of it holds, its *The
   reviews on GitHub* included, which says how an absent one is recorded.
   The pull request body, a later branch's included, says that the fresh
@@ -285,17 +289,16 @@ which role reads this file, and where a section named in italics is.
   unrun, the dedicated reviewer's `CLEARED` of the head ends the rounds
   only where it came after their results or answers. The branch then
   goes on as above, without the fresh reviewer, the hold on later
-  branches included. The pull request body says that the fresh
-  reviewer's re-review is missing, where it would say the fresh review
-  is, and that the dedicated reviewer took it over.
+  branches included where the refusal is the account's. The pull request
+  body says that the fresh reviewer's re-review is missing, where it
+  would say the fresh review is, and that the dedicated reviewer took it
+  over.
 
   A fork's pull request body is the outside contributor's. What this
   bullet, or `every-role.md`'s *Clients*, has the body record goes in a
   comment of the session's own on the pull request instead, posted
-  before the approval is asked for and naming the head it holds for. A
-  comment, unlike an approval review, is there whoever approves, and on
-  a fork the approval goes to the human (`/btclib-pr`'s *Outside
-  contributors*).
+  before the approval is given or asked for and naming the head it holds
+  for. A comment, unlike an approval review, is there whoever approves.
 - **Codex reads the branch locally before each round on the forge**
   (`local-review.md`'s *The rounds*): the whole head before the pull
   request is opened, and before a later push the delta from the last
@@ -578,10 +581,12 @@ change() {
 change '<cleared sha>^' '<cleared sha>' | env -i PATH="$PATH" shasum
 change '<new tip>^' '<new tip>' | env -i PATH="$PATH" shasum
 { change '<cleared sha>^' '<cleared sha>'; change '<new tip>^' '<new tip>'; } \
-  | env -i PATH="$PATH" grep -c .   # not zero
+  | env -i PATH="$PATH" grep -c .
 ```
 
-Equal hashes over a non-empty stream, and the clearance stands. Where
+Equal hashes over a non-empty stream, and the clearance stands: the
+last command prints the stream's count of lines, which must not be
+zero. Where
 `git diff` fails, even after printing part of the diff, as on a
 `diff.<driver>.xfuncname` that is not a regular expression, `change`
 ends its stream with a line naming both revisions, so the hashes differ
@@ -872,10 +877,13 @@ is deleted once that end has passed.
   session is done with that pull request, to the same writer/reviewer
   pair; what was filed outside any, to a new pair. Each is taken to an
   open pull request or closed with the measurement that refutes it. The
-  only exceptions are an issue in another repository or labelled
-  `upstream-report`, one the maintainer suspended, one a `BACKLOG` row or
-  an `EXPECTED_DRIFT` entry already points at, and one labelled `good
-  first issue`; each is named in the report with its reason.
+  exceptions are an issue in another repository or labelled
+  `upstream-report`, one the maintainer suspended, one a `BACKLOG` row
+  or an `EXPECTED_DRIFT` entry already points at, and one labelled `good
+  first issue`; each is named in the report with its reason. A
+  known-limits issue is an exception too, named in the report with its
+  reason like them: its lines are worked when `local-review.md`'s *The
+  rounds* says.
 - **The session is not done while an issue it opened has no pull
   request** outside those exceptions. One that waits on the human is a
   question, or at night a deferred item, never a silent leftover.
@@ -893,10 +901,11 @@ Before the wrap-up, *Closing collateral*'s last bullet holds.
 claim holds a pull request's branch*).
 
 **Remove what is left of what the session created** (`every-role.md`'s
-*Debris goes when its work ends*): worktrees, build directories, and
-caches in its scratch directories. A worktree with uncommitted or
-unpushed work stays, and so does anything another session made. Name
-both in the report. A read-only tree, as Go's module cache is, is made
+*Debris goes when its work ends*): worktrees, local branches, build
+directories, and caches in its scratch directories. A worktree with
+uncommitted or unpushed work stays, a local branch stays where that
+section keeps it, and so does anything another session made. Name them
+in the report. A read-only tree, as Go's module cache is, is made
 writable first:
 
 ```shell

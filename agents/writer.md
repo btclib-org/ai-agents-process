@@ -69,6 +69,9 @@ says where your brief names that file, and you say so in the report.
   `writing.md`'s *Committing and rebasing* holds it. Where the process
   gates only a commit, as its sandbox does on an outside contributor's
   branch, commit first and gate that commit.
+- **No unsigned commit**, not even in a scratch repository: what counts
+  and what is exempt are in `writing.md`'s *Signed and signed off*,
+  where your brief names it.
 
 ## What you report
 

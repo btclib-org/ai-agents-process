@@ -68,10 +68,13 @@ The process the btclib-org maintainers follow with the coding agents
   check: which git calls outside the sandbox read that repository, and
   whether the check refuses the forgery, run by the `test-gate-sandbox`
   hook;
-- `scripts/test-gate-blocks.sh` — `gated_tree` and the hooks block of
-  `process/writing.md`'s *The gates* under each shell it finds: the
-  trees `gated_tree` refuses, a signal while it runs, and the hooks
-  block under `set -u`, run by the `test-gate-blocks` hook;
+- `scripts/test-gate-blocks.sh` — blocks of `process/writing.md`'s *The
+  gates* under each shell it finds: the trees `gated_tree` refuses, a
+  signal while it runs, the hooks block under `set -u`, the hooks block,
+  the docs build's check and the sandbox's hooks gate under noclobber,
+  the gate lock's block with hooks or a next gate that write a tracked
+  file, and the block for hooks whose run carries over, on a staged tree
+  and then on its commit, run by the `test-gate-blocks` hook;
 - `scripts/sweep.sh` — the script that removes the directory of a piece
   of work, which `process/every-role.md`'s *Debris goes when its work
   ends* runs;
@@ -79,11 +82,6 @@ The process the btclib-org maintainers follow with the coding agents
   remove and must refuse, run by the `test-sweep` hook;
 - `scripts/test-git-c-allow.py` — the commands `git-c-allow.py` must
   approve and must refuse, run by the `test-git-c-allow` hook;
-- `scripts/suite-reads.py` — where a tree's tests may read the files of
-  a diff, which `process/writing.md`'s *The gates* asks before it leaves
-  the suite to CI;
-- `scripts/test-suite-reads.py` — the reads `suite-reads.py` must find
-  and must not, run by the `test-suite-reads` hook;
 - `scripts/pretooluse-rules.py` — the hook that refuses a command
   breaking a rule `process/every-role.md`'s *Clients* names;
 - `scripts/test-pretooluse-rules.py` — the commands

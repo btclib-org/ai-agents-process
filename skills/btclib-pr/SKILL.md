@@ -319,14 +319,15 @@ a decision:
   names no defect on any input and no sentence `every-role.md`'s *Which
   prose is worth a round* blocks on, or where `local-review.md`'s *The
   rounds* keeps it off the branch: it adds no text to the branch. A
-  defect `local-review.md`'s *The rounds* keeps off the branch is filed
-  as `every-role.md`'s *Collateral* says, and the reply names its issue,
-  whether or not the branch adds the defect. A refinement of prose is
-  declined with its ground, not filed, since `REVIEWING.md`'s *What is
-  filed, and what is not* files no prose; any other finding of this
-  route is filed the same way, or else declined with its ground.
-  Repeated after the reply, it is answered by pointing to the first
-  reply, and resolved.
+  defect `local-review.md`'s *The rounds* keeps off the branch, whether
+  or not the branch adds it, and a false sentence it keeps off that the
+  branch adds, are filed as `every-role.md`'s *Collateral* says, or as a
+  line of a known-limits issue where *The rounds* says, and the reply
+  names its issue. A refinement of prose is declined with its ground,
+  not filed, since `REVIEWING.md`'s *What is filed, and what is not*
+  files no prose; any other finding of this route is filed the same way,
+  or else declined with its ground. Repeated after the reply, it is
+  answered by pointing to the first reply, and resolved.
 - **accepted** where it is the branch's own: a defect or a false
   sentence its diff or its pull request body adds, or anything else
   `every-role.md`'s *Collateral* counts as the branch's subject
@@ -722,9 +723,11 @@ head, or the dedicated reviewer's where the other client is unavailable
   in *Whose pull request it is*
   ([ISS 248](https://github.com/btclib-org/ai-agents-process/issues/248)).
   `btclib-org/.github`'s `reusable-claude-review.yml` skips the review
-  where `head.repo.full_name` is not the calling repository. The human
-  approves it, and the merge follows as *Merging* says (*Outside
-  contributors*).
+  where `head.repo.full_name` is not the calling repository. No session
+  asks for it with an `@claude` comment either: that run is handed the
+  credential while it reads the contributor's text. The `CLEARED` stands
+  for the bot's ACK, and the pull request is approved as *The decision*
+  says and merged as *Merging* says, as any other is.
 
 Where such a pull request lands through the bypass (*The human's own
 pull request*), every check but the bot's `Claude review` is green as
@@ -1524,6 +1527,8 @@ and how to resolve it. Completing it:
 - **Thank them in a comment of its own**: what their change does, what
   was added and why, in terms they can learn from, and the open issues
   they might take next.
+- **The local copy of their branch goes** as `every-role.md`'s *Debris
+  goes when its work ends* says.
 
 Both thanks, the findings' first line and the comment of its own, bind
 btclib-org only.
@@ -1647,10 +1652,11 @@ gh api "repos/${irepo:?}/issues/${issue:?}" --jq '[.assignees[].login]'
 
 Where it prints any login, the assignees it prints keep the issue. Where
 it prints none, the session looks for the next taker: of the open pull
-requests that cite the issue, pass the `Sign-off` check and have an
-author GitHub can assign to the issue, in any repository of the
-organization, the same author's included, the first to pass it. This
-lists the candidates:
+requests that cite the issue, have a pass of the `Sign-off` check that
+counts on their head (*A pass counts only on a head*, below) and have
+an author GitHub can assign to the issue, in any repository of the
+organization, the same author's included, the one with the earliest
+pass that counts. This lists the candidates:
 
 ```shell
 gh search prs --owner btclib-org --state open "${issue:?} in:title,body" \
@@ -1662,49 +1668,87 @@ The search matches the number as a word, so the session reads each
 hit's title, body and `closingIssuesReferences`, and keeps the hits
 that cite the issue, as `<issue repo>#<issue>`, by the issue's URL, or
 as a bare `#<issue>` in `<issue repo>` itself. This prints when the
-`Sign-off` check on a hit's head passed, and nothing where it does not
-pass:
+`Sign-off` check on a hit's head passed, and nothing where it did not or
+where the pass does not count. Where a call fails it exits non-zero,
+and no taker is chosen until it has exited `0` for each hit:
 
 ```shell
 pr=<hit url>
 ```
 
 ```shell
-gh pr checks "${pr:?}" --json name,bucket,completedAt \
-  --jq '.[] | select(.name | test("(^|/ )Sign-off$"))
-    | select(.bucket == "pass") | .completedAt'
+info=$(gh pr view "${pr:?}" --json url,headRefOid,baseRefName \
+  --jq '(.url | split("/")[3:5] | join("/")), .headRefOid, .baseRefName') &&
+  { read -r prepo && read -r sha && read -r base; } <<< "$info" &&
+  at=$(gh api --paginate "repos/${prepo:?}/commits/${sha:?}/check-runs" \
+    --jq '.check_runs[] | select(.name | test("(^|/ )Sign-off$"))
+      | select(.conclusion == "success") | .completed_at') &&
+  if [ -n "$at" ]; then
+    keep=$(gh api "repos/${prepo:?}/compare/${base:?}...${sha:?}" \
+      --jq '(.files | length) < 300 and all(.files[];
+        [.filename, .previous_filename // empty]
+        | all(.[]; startswith(".github/workflows/") | not))') &&
+      if [ "$keep" = true ]; then printf '%s\n' "$at"; fi
+  fi
 ```
 
-A hit that passes is ranked by its first pass on any head it had, so a
-pull request pushed again after passing keeps its place. `gh pr checks`
-reads the current head alone. This prints the earliest time a `Sign-off`
-run passed, read from every `pull_request` workflow run on the hit's
-head branch, from a repository of its head owner, since it was opened,
-and nothing where none passed. Where a call fails it exits non-zero, and
-no taker is chosen until it has exited `0` for each hit that passes:
+A hit that passes is ranked by its first pass that counts on any head it
+had (*A pass counts only on a head*, below), so a pull request pushed
+again after passing keeps its place. The block above reads the current
+head alone. This prints the earliest time a `Sign-off` run passed on a
+head that counts, read from every `pull_request` workflow run on the
+hit's head branch, from a repository of its head owner, since it was
+opened, and nothing where none did. Where a call fails it exits
+non-zero, and no taker is chosen until it has exited `0` for each hit
+that passes:
 
 ```shell
 info=$(gh pr view "${pr:?}" \
-  --json url,headRefName,headRepositoryOwner,createdAt \
+  --json url,headRefName,headRepositoryOwner,createdAt,baseRefName \
   --jq '(.url | split("/")[3:5] | join("/")), .headRefName,
-    .headRepositoryOwner.login, .createdAt') &&
-  { read -r prepo && read -r branch && read -r from && read -r since; } \
-    <<< "$info" &&
+    .headRepositoryOwner.login, .createdAt, .baseRefName') &&
+  { read -r prepo && read -r branch && read -r from && read -r since &&
+    read -r base; } <<< "$info" &&
   ids=$(FROM=$from SINCE=$since gh api --paginate -X GET \
     "repos/${prepo:?}/actions/runs" -f event=pull_request \
     -f branch="${branch:?}" -F per_page=100 \
     --jq '.workflow_runs[] | select(.head_repository.owner.login == env.FROM
       and .created_at >= env.SINCE) | .check_suite_id') &&
-  times=$(while read -r id; do
+  passes=$(while read -r id; do
     [ -z "$id" ] || gh api --paginate -X GET -f filter=all \
       "repos/${prepo:?}/check-suites/${id}/check-runs" \
       --jq '.check_runs[] | select(.name | test("(^|/ )Sign-off$"))
-        | select(.conclusion == "success") | .completed_at' || exit
+        | select(.conclusion == "success")
+        | "\(.completed_at) \(.head_sha)"' || exit
   done <<< "$ids") &&
+  times=$(while read -r at sha; do
+    [ -z "$sha" ] || {
+      keep=$(gh api "repos/${prepo:?}/compare/${base:?}...${sha}" \
+        --jq '(.files | length) < 300 and all(.files[];
+          [.filename, .previous_filename // empty]
+          | all(.[]; startswith(".github/workflows/") | not))') || exit
+      [ "$keep" != true ] || printf '%s\n' "$at"
+    }
+  done <<< "$passes") &&
   printf '%s' "$times" | sort | head -n 1
 ```
 
-It matches the head's owner, not its repository: once a fork is
+**A pass counts only on a head that changes no file under
+`.github/workflows/`.** A fork's run uses the workflows of the pull
+request's merge commit (*A fork's workflow runs can wait for approval*,
+below), so a fork can change a workflow on one head until its
+`Sign-off` job passes, then push an honest head over it. The fork names
+the job and sets its result, so both blocks also read the files each
+passing head changes, from GitHub's compare of the pull request's base
+and that head, which reads a head no longer on the branch too. A renamed
+file counts under both its names. GitHub caps the files one compare
+lists
+([*Compare two commits*](https://docs.github.com/en/rest/commits/commits#compare-two-commits)),
+so a head whose list reaches the cap counts as changing a workflow. A
+pass on such a head neither makes a hit a candidate nor gives it a
+time.
+
+The block matches the head's owner, not its repository: once a fork is
 deleted, `gh pr view` gives the pull request no head repository, while
 its runs still name it.
 
@@ -1790,10 +1834,13 @@ for the next taker as above, the reopened pull request among the hits,
 and says on the issue who holds it, with a comment from a file as
 above, which carries the retry's ask where no taker was assigned.
 
-Where the bot's review does not run — a fork's pull request, and any
-other where `gh pr checks` shows no review — that review is absent (*The
+On a fork's pull request the bot's review does not run, and the
+`CLEARED` that *The reviews on GitHub* asks for stands for its ACK.
+
+Where the bot's review does not run on another of their pull requests,
+as where `gh pr checks` shows no review, that review is absent (*The
 reviews on GitHub*), and the approval is never obvious: it goes to the
-human. A fork's pull request is merged as *Merging* says.
+human.
 
 **A fork's workflow runs can wait for approval as `action_required`**,
 as on PR btclib-org/btclib#2823. This prints the organization's
@@ -2449,8 +2496,9 @@ has not reported yet.
   link of the skill or agent it changed.
 - **The collateral goes back now** (`orchestration.md`'s *Closing
   collateral*), before anything new starts.
-- **Remove the worktrees** — yours, and tell the writer to remove its
-  own (`every-role.md`'s *Debris goes when its work ends*).
+- **Remove the worktrees and the local branches** — yours, the branch
+  the writer handed over among them, once the writer has removed its
+  worktree (`every-role.md`'s *Debris goes when its work ends*).
 
 Then `orchestration.md`'s *Wrap-up*.
 
