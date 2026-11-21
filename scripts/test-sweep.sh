@@ -162,7 +162,9 @@
 #   it, the branch is kept and printed naming that worktree, --check
 #   prints what the run does, line for line, and the directory is removed;
 #   where a second worktree of the directory is rebasing the branch, the
-#   branch is deleted;
+#   branch is deleted; so is the branch refs/heads/b<n> where a worktree
+#   outside is rebasing b<n>, and b<n> where one is bisecting from
+#   refs/heads/b<n>, the other branch being kept;
 # - where git worktree remove fails on the third worktree of the
 #   directory, the branches of the first two stay and the refusal names
 #   them, the directory is refused and keeps .sweep-unfinished, and the
@@ -392,9 +394,11 @@ registered() {
   fi
 }
 
-# branch <case> yes|no <branch>
+# branch <case> yes|no <branch>, read with show-ref, which takes the ref
+# as named: where refs/heads/<branch> is gone, rev-parse falls back to
+# refs/heads/refs/heads/<branch>
 branch() {
-  if git -C "$m" rev-parse -q --verify "refs/heads/$3" > /dev/null; then
+  if git -C "$m" show-ref -q --verify "refs/heads/$3"; then
     [ "$2" = yes ] || fail "$1: branch $3 is still there"
   else
     [ "$2" = no ] || fail "$1: branch $3 was deleted"
@@ -1312,6 +1316,56 @@ b"
   git -C "$far" bisect reset -q > /dev/null 2>&1
   git -C "$m" worktree remove "$far"
   git -C "$m" branch -q -D "$br" 2> /dev/null
+
+  # the branch refs/heads/b<n>, whose full ref is refs/heads/refs/heads/b<n>,
+  # while a worktree outside is stopped in a rebase of the branch b<n>,
+  # whose head-name holds refs/heads/b<n>
+  n=$((n + 1))
+  w=$sp/rebase-other-name wt=$sp/rebase-other-name/wt br=refs/heads/b$n
+  mkdir -p "$w/writer"
+  echo note > "$w/writer/msg.txt"
+  git -C "$m" worktree add -q -b "$br" "$wt" origin/main 2> /dev/null ||
+    fail 'rebase other name: no worktree'
+  far=$base/rebase-other-name
+  git -C "$m" worktree add -q -b "b$n" "$far" origin/main 2> /dev/null ||
+    fail 'rebase other name: no worktree outside'
+  commit "$far" 'rebase other name'
+  ! git -C "$far" rebase -q -x false HEAD~1 > /dev/null 2>&1 ||
+    fail 'rebase other name: the rebase did not stop'
+  y=$(git -C "$far" rev-parse --path-format=absolute \
+    --git-path rebase-merge/head-name)
+  [ "$(cat "$y")" = "refs/heads/b$n" ] ||
+    fail "rebase other name: head-name holds $(cat "$y"), not refs/heads/b$n"
+  run "$base" work "$w"
+  expect 'rebase other name' 0 "deleted branch: refs/heads/$br of $m/.git"
+  expect 'rebase other name' 0 "removed: $w"
+  same 'rebase other name'
+  branch 'rebase other name' no "$br"
+  branch 'rebase other name' yes "b$n"
+  git -C "$far" rebase --abort
+  git -C "$m" worktree remove "$far"
+  git -C "$m" branch -q -D "b$n" "$br" 2> /dev/null
+
+  # the branch b<n>, while a worktree outside bisects from the branch
+  # refs/heads/b<n>, whose BISECT_START holds refs/heads/b<n>
+  mkwork "$m" bisect-other-name
+  far=$base/bisect-other-name
+  { git -C "$m" worktree add -q -b "refs/heads/$br" "$far" origin/main \
+    2> /dev/null &&
+    git -C "$far" bisect start > /dev/null 2>&1 &&
+    git -C "$far" checkout -q --detach; } || fail 'bisect other name: no bisect'
+  y=$(git -C "$far" rev-parse --path-format=absolute --git-path BISECT_START)
+  [ "$(cat "$y")" = "refs/heads/$br" ] ||
+    fail "bisect other name: BISECT_START holds $(cat "$y"), not refs/heads/$br"
+  run "$base" work "$w"
+  expect 'bisect other name' 0 "deleted branch: refs/heads/$br of $m/.git"
+  expect 'bisect other name' 0 "removed: $w"
+  same 'bisect other name'
+  branch 'bisect other name' no "$br"
+  branch 'bisect other name' yes "refs/heads/$br"
+  git -C "$far" bisect reset -q > /dev/null 2>&1
+  git -C "$m" worktree remove "$far"
+  git -C "$m" branch -q -D "$br" "refs/heads/$br" 2> /dev/null
 
   # the repository's own worktree, stopped in a rebase of the branch
   git clone -q "$o" "$base/main5"
