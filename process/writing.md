@@ -559,12 +559,20 @@ of the standard* says.
   a reviewer relies only on a run on the sha it reviews, as
   `REVIEWING.md`'s *The gates are the evidence* says. Where a gate's
   fixer changes files, the tree has changed and the second `TREE=` line
-  is empty: stage the change and run the gates again. On an outside
-  contributor's branch the gates run on the commit `<sha>` in `<gate
-  wt>`, where no git command runs outside the sandbox once a gate has
-  run there: the pair is `<sha>`'s tree and merge base, read in `<wt>`
-  before the first gate, and the status file of each gate stands in for
-  the second `TREE=` line.
+  is empty: stage the change and run the gates again.
+
+  On an outside contributor's branch the gates run on the commit `<sha>`
+  in `<gate wt>`, where no git command runs outside the sandbox once a
+  gate has run there: the pair is `<sha>`'s tree and merge base, read in
+  `<wt>` before the first gate, and the status file of each gate stands
+  in for the second `TREE=` line. The status file names no `HEAD`. The
+  gate lock's block takes `<wt>` as `wt` there, so both lines' `HEAD=`
+  name the commit `<wt>` holds, whatever `<gate wt>` holds, as
+  `scripts/test-gate-blocks.sh` shows. The commit the gates ran on is
+  the one `git worktree add --detach <gate wt> <sha>` named, `<gate wt>`
+  being new for each head (*An outside contributor's branch*). So a run
+  there counts for `<sha>` where `<gate wt>` was added at `<sha>` and
+  both lines name `<sha>` as `HEAD`.
 - **Nothing writes in a worktree while a gate runs there.** A writer
   runs a mutant, an edited fixture or any other input in a copy of the
   commit, made with `git archive <sha> | tar -x -C <dir>` in the scratch
@@ -765,7 +773,9 @@ of the standard* says.
   sandboxed call of its own. Its output goes to a file of the scratch
   directory outside `<sbx>`, which the sandbox lets no process open for
   writing, and the shell outside opens it and appends the exit, so no
-  process the gate left holds it. It reads no file the gate can write
+  process the gate left holds it. The status block of every gate writes
+  that same file, with `>|`, which noclobber lets through (*The hooks run
+  on the changed files*). `git status` reads no file the gate can write
   but the tree itself, and a file an `include` or `includeIf` of the
   repository's configuration names, which can lie under `<sbx>/home`:
 
@@ -794,7 +804,7 @@ of the standard* says.
   "$@" env GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 \
     git -c core.attributesFile=/dev/null -c core.excludesFile=/dev/null \
     -c core.fsmonitor=false status --porcelain --ignored \
-    --ignore-submodules=all > "${st:?}"
+    --ignore-submodules=all >| "${st:?}"
   echo "EXIT_status=$?" >> "${st:?}"
   ```
 
@@ -1002,8 +1012,9 @@ of the standard* says.
   of the gate, which `grep -F 'deny(1) network-'` finds. `log show` can
   lose those lines, so `log stream` records them while the gate runs,
   into a file of the scratch directory outside `<sbx>`, where the gate
-  cannot write. The session starts it in the gate's shell, after the
-  gate's `gate_wait`:
+  cannot write. Every gate's `log stream` writes that same file, with
+  `>|`, as the status block does. The session starts it in the gate's
+  shell, after the gate's `gate_wait`:
 
   ```shell
   scratch=<scratch>
@@ -1014,7 +1025,7 @@ of the standard* says.
   slog=${scratch:?}/${name:?}-sandbox.log
   /usr/bin/log stream --style compact \
     --predicate 'sender == "Sandbox" AND eventMessage CONTAINS "network"' \
-    > "${slog:?}" & stream=$!
+    >| "${slog:?}" & stream=$!
   ```
 
   The gate then runs as *The gate lock*'s block says, and the session

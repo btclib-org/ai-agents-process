@@ -71,8 +71,13 @@
 #   new file, and the next gate writes nothing, both `TREE=` lines name
 #   `HEAD`'s tree and the merge base. Where pre-commit writes nothing,
 #   and the next gate writes `file` and restores it with `cp -p`, the
-#   second `TREE=` line is empty. Each `TREE=` line ends `HEAD=` and
-#   `HEAD`'s commit.
+#   second `TREE=` line is empty. Where pre-commit exits 1, the block
+#   prints an `EXIT_hooks=` other than 0, runs no next gate, and both
+#   `TREE=` lines name `HEAD`'s tree and the merge base. Where the next
+#   gate reads the commit of a worktree detached at `HEAD`'s parent, it
+#   reads the parent, and both `TREE=` lines name `HEAD`'s tree, the
+#   merge base and `HEAD`. Each `TREE=` line ends `HEAD=` and `HEAD`'s
+#   commit.
 # - noclobber: the hooks block, the docs build's check and the sandbox's
 #   hooks gate, each run as is and then after `set -C`. Each exits 0
 #   both times, prints the same, runs pre-commit with the same
@@ -81,7 +86,9 @@
 #   `set -u`, with a stand-in that records the slot taken, the gate run
 #   and the slot released, and a next gate that exits 0, then 3. It
 #   exits 0 and prints two `TREE=` lines naming `HEAD`'s tree, the merge
-#   base and `HEAD`, around `EXIT_next=` and the gate's exit.
+#   base and `HEAD`, around `EXIT_next=` and the gate's exit. With a next
+#   gate that writes `file` and restores it with `cp -p`, the second
+#   `TREE=` line names no tree and ends `HEAD=` and `HEAD`'s commit.
 # - staged, then committed: `file` changed and staged, the carried-over
 #   block runs; the change committed, it runs again. Both runs name the
 #   same tree and merge base, the first `HEAD` as the parent and the
@@ -355,8 +362,10 @@ for s in bash /bin/bash zsh; do
 done
 
 # The gate lock's stand-in, and the hooks and the next gate of each case:
-# `rewrite` writes `file` again through a new file, and `restore`, a
-# second after the mark, writes it and restores it
+# `rewrite` writes `file` again through a new file; `restore`, a second
+# after the mark, writes it and restores it; in `fail` the hooks exit 1
+# and the next gate records that it ran; in `gate` the next gate records
+# the commit of a worktree detached at the parent
 # shellcheck disable=SC2016
 printf '%s\n' 'gate_take() { :; }' 'gate_wait() { :; }' \
   'gate_release() { :; }' \
@@ -367,8 +376,17 @@ printf 'cat file > .file.new && mv .file.new file\n' > "$tmp/rewrite.sh"
 printf "sleep 1 && cp -p '%s' '%s' && echo x > '%s' && cp -p '%s' '%s'\\n" \
   "$wt/file" "$tmp/saved" "$wt/file" "$tmp/saved" "$wt/file" \
   > "$tmp/next-restore.sh"
-for c in rewrite restore; do
-  if [ "$c" = rewrite ]; then h=rewrite.sh; else h=pre-commit.sh; fi
+printf 'exit 1\n' > "$tmp/hooks-fail.sh"
+printf ": > '%s'\\n" "$tmp/next-ran" > "$tmp/next-fail.sh"
+git -C "$wt" worktree add -q --detach "$tmp/gate" "$base" || exit 1
+printf "git -C '%s' rev-parse HEAD > '%s'\\n" "$tmp/gate" "$tmp/gate-ran-at" \
+  > "$tmp/next-gate.sh"
+for c in rewrite restore fail gate; do
+  case $c in
+    rewrite) h=rewrite.sh ;;
+    fail) h=hooks-fail.sh ;;
+    *) h=pre-commit.sh ;;
+  esac
   sed "s|sh $tmp/pre-commit.sh|sh $tmp/$h|" "$tmp/hooks.sh" \
     > "$tmp/hooks-lock-$c.sh"
   # the two lines that stand for the hooks block, exactly and in order;
@@ -404,26 +422,49 @@ for s in bash /bin/bash zsh; do
     echo "skip: the gate lock's block under $s, which is missing"
     continue
   fi
-  for c in rewrite restore; do
+  for c in rewrite restore fail gate; do
     i=$(ls -i "$wt/file") || exit 1
+    rm -f "$tmp/next-ran" "$tmp/gate-ran-at"
     gated "$s" "$PATH" "$tmp/lock-run-$c.sh"
     lines "$out"
-    if [ "$c" = rewrite ]; then
-      if [ "$(ls -i "$wt/file")" != "$i" ] && [ "$nl" -eq 2 ] &&
-        [ "$t1" = "$tree $base" ] && [ "$t2" = "$tree $base" ] &&
-        [ "$h1" = "$head" ] && [ "$h2" = "$head" ] &&
-        printf '%s\n' "$out" | grep -qx 'EXIT_next=0'; then
-        ok "$s, gate lock, hooks write file with the same bytes:" \
-          "both TREE= lines name the tree and HEAD"
-      else no "$s, gate lock, hooks write file with the same bytes:" \
-        "exit $rc, prints $(printf '%s' "$out" | tr '\n' ' ')"; fi
-    elif [ "$nl" -eq 2 ] && [ "$t1" = "$tree $base" ] && [ -z "$t2" ] &&
-      [ "$h1" = "$head" ] && [ "$h2" = "$head" ] &&
-      printf '%s\n' "$out" | grep -qx 'EXIT_next=0'; then
-      ok "$s, gate lock, next gate writes and restores file:" \
-        "the second TREE= line is empty, both name HEAD"
-    else no "$s, gate lock, next gate writes and restores file:" \
-      "exit $rc, prints $(printf '%s' "$out" | tr '\n' ' ')"; fi
+    got="exit $rc, prints $(printf '%s' "$out" | tr '\n' ' ')"
+    both=no
+    [ "$nl" -eq 2 ] && [ "$h1" = "$head" ] && [ "$h2" = "$head" ] &&
+      [ "$t1" = "$tree $base" ] && both=yes
+    next0=no
+    printf '%s\n' "$out" | grep -qx 'EXIT_next=0' && next0=yes
+    case $c in
+      rewrite)
+        if [ "$(ls -i "$wt/file")" != "$i" ] && [ "$both" = yes ] &&
+          [ "$t2" = "$tree $base" ] && [ "$next0" = yes ]; then
+          ok "$s, gate lock, hooks write file with the same bytes:" \
+            "both TREE= lines name the tree and HEAD"
+        else no "$s, gate lock, hooks write file with the same bytes:" \
+          "$got"; fi ;;
+      restore)
+        if [ "$both" = yes ] && [ -z "$t2" ] && [ "$next0" = yes ]; then
+          ok "$s, gate lock, next gate writes and restores file:" \
+            "the second TREE= line is empty, both name HEAD"
+        else no "$s, gate lock, next gate writes and restores file:" \
+          "$got"; fi ;;
+      fail)
+        if [ "$both" = yes ] && [ "$t2" = "$tree $base" ] &&
+          printf '%s\n' "$out" | grep -qx 'EXIT_hooks=[1-9][0-9]*' &&
+          ! printf '%s\n' "$out" | grep -q '^EXIT_next=' &&
+          [ ! -e "$tmp/next-ran" ]; then
+          ok "$s, gate lock, hooks exit 1: no next gate, both TREE= lines" \
+            "name the tree and HEAD"
+        else no "$s, gate lock, hooks exit 1: the next gate ran:" \
+          "$([ -e "$tmp/next-ran" ] && echo yes || echo no), $got"; fi ;;
+      gate)
+        ran=$(cat "$tmp/gate-ran-at" 2> /dev/null)
+        if [ "$both" = yes ] && [ "$t2" = "$tree $base" ] &&
+          [ "$next0" = yes ] && [ "$ran" = "$base" ]; then
+          ok "$s, gate lock, next gate in a worktree at the parent:" \
+            "both TREE= lines name HEAD, not the commit it ran on"
+        else no "$s, gate lock, next gate in a worktree at the parent:" \
+          "it ran on '$ran', $got"; fi ;;
+    esac
     emptied "$s, gate lock, $c"
   done
 done
@@ -457,22 +498,23 @@ for s in sh bash /bin/bash zsh dash; do
 done
 
 # The carried-over block, where the test found it: its stand-in records
-# the slot and the gate, and its next gate exits 0 or 3
+# the slot and the gate, and its next gate exits 0 or 3, or writes and
+# restores `file` as in the gate lock's case
 # shellcheck disable=SC2016
 printf '%s\n' "gate_take() { echo take >> '$tmp/slot-log'; }" \
   'gate_wait() { :; }' "gate_release() { echo release >> '$tmp/slot-log'; }" \
   "gate_peak() { echo \"peak \$1\" >> '$tmp/slot-log'; shift 2" \
   '  [ "$1" != timeout ] || shift 4; "$@"; }' > "$tmp/slots-log.sh"
-for c in 0 3; do
-  printf 'exit %s\n' "$c" > "$tmp/next-$c.sh"
+for c in 0 3 restore; do
+  [ "$c" = restore ] || printf 'exit %s\n' "$c" > "$tmp/next-$c.sh"
   { echo 'set -u'; cat "$tmp/gated.sh"
     sed -e "s|^\. .*/scripts/gate-lock\.sh\"\$|. $tmp/slots-log.sh|" \
       -e 's|^secs=<seconds>$|secs=60|' -e 's|^gate=<next gate>$|gate=next|' \
       -e "s|[^ ]* the next gate [^ ]*|sh $tmp/next-$c.sh|" "$tmp/carried.sh"
   } > "$tmp/carried-$c.sh"
 done
-# Runs the carried-over block whose gate exits $2 under shell $1; sets
-# out, rc and slot
+# Runs the carried-over block whose gate is $2 under shell $1; sets out,
+# rc and slot
 carried() {
   rm -f "$tmp/slot-log"
   gated "$1" "$PATH" "$tmp/carried-$2.sh"
@@ -501,6 +543,16 @@ if grep -q 'gate_take' "$tmp/carried.sh"; then
         "$(printf '%s' "$slot" | tr '\n' ' ')"; fi
       emptied "$s, carried over, next gate exits $c"
     done
+    carried "$s" restore
+    if [ "$rc" -eq 0 ] && [ "$out" = "$(printf '%s\n' \
+      "TREE=$tree $base HEAD=$head" "EXIT_next=0" "TREE= HEAD=$head")" ] &&
+      [ "$slot" = "$(printf '%s\n' take 'peak next' release)" ]; then
+      ok "$s, carried over, next gate writes and restores file: the" \
+        "second TREE= line is empty, both name HEAD"
+    else no "$s, carried over, next gate writes and restores file: exit" \
+      "$rc, prints $(printf '%s' "$out" | tr '\n' ' '), the slot:" \
+      "$(printf '%s' "$slot" | tr '\n' ' ')"; fi
+    emptied "$s, carried over, next gate writes and restores file"
   done
 
   printf 'c\n' > "$wt/file" && git -C "$wt" add file || exit 1
