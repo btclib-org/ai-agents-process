@@ -1286,7 +1286,7 @@ the run shows no gain from the change.
   hit; the candidate hit, then hit.
 
 On PR btclib-org/ecc#484 the candidate's runs block on perl's `<>`
-opening hostile file names, as `x|cmd` runs and `-i` truncates, which an
+opening hostile file names, as `cmd|` runs and `-i` truncates, which an
 outside contributor's branch can supply. The baseline's first run names
 it only as `filed`, and its second blocks on it. On PR
 btclib-org/ai-agents-process#444 both block on the skills that still arm
