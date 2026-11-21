@@ -216,15 +216,18 @@ export GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0
 status=0
 
 # the lines of process/every-role.md's *Debris goes when its work ends*
-# that move the findings records, run after work=$1, with <work> as their
-# first argument; the $1 in quotes is the text those lines get
+# that move the findings records, with the fence just above them where
+# that one holds only assignments, and <work> as their first argument
 prose=$(cd -P "$(dirname "$0")/.." && pwd -P)/process/every-role.md
 # shellcheck disable=SC2016
-movecmd='work=$1
-'$(awk '
-  /^  ```shell$/ { b = ""; on = 1; next }
-  /^  ```$/ { if (on && b ~ /findings-/) printf "%s", b; on = 0; next }
-  on { sub(/^  /, ""); b = b $0 "\n" }' "$prose")
+movecmd=$(awk '
+  /^  ```shell$/ { b = ""; on = 1; only = 1; next }
+  on && /^  ```$/ { if (b ~ /findings-/) printf "%s", a b
+    a = only ? b : ""; on = 0; next }
+  on { sub(/^  /, ""); b = b $0 "\n"
+    if ($0 !~ /^[A-Za-z_][A-Za-z0-9_]*=/) only = 0; next }
+  /[^ ]/ { a = "" }' "$prose" |
+  sed 's/^work=<work>$/work="$1"/')
 # and the line that fetches a pull request's head, with the fence just
 # above it where that one holds only assignments, and <checkout> and <n>
 # as its first and second arguments
@@ -265,9 +268,13 @@ case $lookcmd in
     exit 1
     ;;
 esac
+# shellcheck disable=SC2016
 case $movecmd in
-  *'findings-'*) ;;
-  *) echo "FAIL: no lines that move the findings records in $prose"; exit 1 ;;
+  'work="$1"'*'findings-'*) ;;
+  *)
+    echo "FAIL: no lines that move the findings records after work=<work> in $prose"
+    exit 1
+    ;;
 esac
 
 # The stand-in for git. Before `update-ref -d` it moves $SHIM_MOVE_REF of
