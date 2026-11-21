@@ -21,8 +21,9 @@ ci:
   # the hooks that would take pre-commit.ci past its time limit:
   # actionlint-shellcheck, and the tests of scripts/, which take most of
   # a run. test-gate-sandbox is not among them: with no sandbox-exec
-  # there it skips at once. Nor are test-pointer-files and
-  # test-placeholder-last, which read only small fixtures.
+  # there it skips at once. Nor are test-pointer-files,
+  # test-placeholder-last and test-assignment-fence, which read only small
+  # fixtures.
   # What the skip costs is nothing that decides a merge -- lint.yml runs
   # this file whole, with the command a developer runs, on every commit
   # and every pull request
@@ -126,6 +127,22 @@ repos:
         language: python
         entry: python -I scripts/test-placeholder-last.py
         files: ^scripts/(test-)?placeholder-last\.py$
+        pass_filenames: false
+      # section 9's *A placeholder is bare, and last*: a value the reader
+      # sets has a fence of its own above a fence that writes.
+      # CHANGELOG.md is append-only (section 9), and the script reads only
+      # the tree's own part of CONTRIBUTING.md and REVIEWING.md
+      - id: assignment-fence
+        name: a value the reader sets shares no fence with a write
+        language: python
+        entry: python -I scripts/assignment-fence.py
+        types: [markdown]
+        exclude: ^CHANGELOG\.md$
+      - id: test-assignment-fence
+        name: assignment-fence.py answers as its test expects
+        language: python
+        entry: python -I scripts/test-assignment-fence.py
+        files: ^scripts/(test-)?assignment-fence\.py$
         pass_filenames: false
       # what scripts/port-check.py answers on fixture repositories
       - id: test-port-check
