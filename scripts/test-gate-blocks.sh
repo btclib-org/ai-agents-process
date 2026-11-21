@@ -24,6 +24,11 @@
 #   `other` holds a change git diff shows; then a new file `new` is
 #   untracked; then `other` holds the change with each bit set on it.
 #   It prints nothing, and exits other than 0.
+# - gated_tree, awk fails: an awk of the test's, first on the PATH, exits
+#   2 in the clean repository. It prints nothing, and exits other than 0.
+# - gated_tree, tmp set by its caller: the script that calls it sets
+#   `tmp` to a directory, and `other` holds a change git diff shows. It
+#   prints nothing, exits other than 0, and the directory is still there.
 # - gated_tree, mark: given a file made before, with `cache`, which
 #   `.git/info/exclude` names, and `sub/inner` written after it, it
 #   prints the tree.
@@ -37,17 +42,19 @@
 #   shell with no pipefail, as dash.
 # - gated_tree, signal: a cp of the test's, first on the PATH, sends
 #   TERM to the shell that runs it, once the directory exists. It prints
-#   nothing.
+#   nothing, and exits other than 0.
 # - gated_tree, signal in mktemp: a mktemp of the test's makes the
 #   directory, prints its name, and sends TERM to its process group,
-#   which perl starts for the case. It prints nothing. Skipped under
-#   zsh, which runs the trap before it assigns the name, and where perl
-#   is missing.
+#   which perl starts for the case. The script that calls gated_tree
+#   survives the TERM with `trap : TERM`, so its exit is gated_tree's. It
+#   prints nothing, and exits other than 0. Skipped under zsh, which runs
+#   the trap before it assigns the name, and where perl is missing.
 # - after each gated_tree case, its $TMPDIR is empty.
-# - hooks, set -u: the hooks block runs under `set -u`, with `peak`
-#   empty, then with `peak` a script of the test's, which records that
-#   it ran and runs the rest. Each exits 0, pre-commit runs in the
-#   worktree with `--files ./file`, and only the second runs the script.
+# - hooks, set -u: the hooks block runs twice under `set -u`, each time
+#   with a $TMPDIR of the test's: first with `peak` empty, then with
+#   `peak` a script of the test's, which records that it ran and runs the
+#   rest. Each exits 0, pre-commit runs in the worktree with
+#   `--files ./file`, and only the second runs the script.
 # - gate lock: the gate lock's block under `set -u`, its functions a
 #   stand-in's, as process/every-role.md's *A rehearsal of a block that
 #   takes the gate lock* says, and its next gate a script of the test's.
@@ -116,6 +123,9 @@ block 'gated_tree[(][)]' > "$tmp/gated.sh"
 { cat "$tmp/gated.sh"; echo gated_tree; } > "$tmp/gated-run.sh"
 { cat "$tmp/gated.sh"; printf "gated_tree '%s'\n" "$tmp/mark"; } \
   > "$tmp/gated-mark.sh"
+{ cat "$tmp/gated.sh"; printf "tmp='%s'\ngated_tree\n" "$tmp/keep"; } \
+  > "$tmp/gated-tmp.sh"
+{ cat "$tmp/gated.sh"; printf 'trap : TERM\ngated_tree\n'; } > "$tmp/gated-sig.sh"
 grep -q 'gated_tree()' "$tmp/gated.sh" ||
   { no "no block in $doc defines gated_tree"; exit 1; }
 block '^peak=[(][)]\n$' > "$tmp/empty.sh"
@@ -132,7 +142,8 @@ grep -q 'gate_take' "$tmp/lock.sh" ||
 [ "$(grep -cw -e gate-lock -e PROCESS "$tmp/lock.sh")" -ne 0 ] ||
   { no "the gate lock's block names neither gate-lock nor PROCESS"; exit 1; }
 
-mkdir "$tmp/bin" "$tmp/bin-mktemp" "$tmp/t" || exit 1
+mkdir "$tmp/bin" "$tmp/bin-mktemp" "$tmp/bin-awk" "$tmp/t" || exit 1
+printf '#!/bin/sh\nexit 2\n' > "$tmp/bin-awk/awk"
 cat > "$tmp/bin/cp" <<EOF
 #!/bin/sh
 kill -TERM "\$PPID"
@@ -149,7 +160,7 @@ cat > "$tmp/bin-mktemp/mktemp" <<EOF
 "$real_mktemp" "\$@" || exit 1
 kill -TERM 0
 EOF
-chmod +x "$tmp/bin/cp" "$tmp/bin-mktemp/mktemp" || exit 1
+chmod +x "$tmp/bin/cp" "$tmp/bin-mktemp/mktemp" "$tmp/bin-awk/awk" || exit 1
 
 # Runs gated_tree under shell $1 with PATH $2, from script $3 where
 # given, after the command words that follow; sets out and rc.
@@ -193,6 +204,20 @@ for s in sh bash zsh dash; do
       git -C "$wt" update-index "--no-$c" other || exit 1 ;; esac
     rm -f "$wt/new" && git -C "$wt" checkout -q -- other || exit 1
   done
+  gated "$s" "$tmp/bin-awk:$PATH"
+  if [ "$rc" -ne 0 ] && [ -z "$out" ]; then
+    ok "$s, awk fails: gated_tree prints nothing and exits $rc"
+  else no "$s, awk fails: exit $rc, gated_tree prints '$out'"; fi
+  emptied "$s, awk fails"
+  mkdir -p "$tmp/keep" && printf 'x\n' > "$wt/other" || exit 1
+  gated "$s" "$PATH" "$tmp/gated-tmp.sh"
+  if [ "$rc" -ne 0 ] && [ -z "$out" ] && [ -d "$tmp/keep" ]; then
+    ok "$s, tmp set by its caller: gated_tree prints nothing, exits $rc" \
+      "and leaves the caller's directory"
+  else no "$s, tmp set by its caller: exit $rc, gated_tree prints '$out'," \
+    "the caller's directory is $([ -d "$tmp/keep" ] || printf 'not ')there"; fi
+  emptied "$s, tmp set by its caller"
+  git -C "$wt" checkout -q -- other || exit 1
   # The sleep makes each write after the mark newer than it, where the
   # file system counts whole seconds.
   : > "$tmp/mark" && sleep 1 && : > "$wt/cache" &&
@@ -229,7 +254,8 @@ for s in sh bash zsh dash; do
     emptied "$s, pipefail"
   else echo "skip: $s, pipefail: $s has no pipefail"; fi
   gated "$s" "$tmp/bin:$PATH"
-  if [ -z "$out" ]; then ok "$s, signal: gated_tree prints nothing and exits $rc"
+  if [ "$rc" -ne 0 ] && [ -z "$out" ]; then
+    ok "$s, signal: gated_tree prints nothing and exits $rc"
   else no "$s, signal: exit $rc, gated_tree prints '$out'"; fi
   emptied "$s, signal"
   if [ "$s" = zsh ]; then
@@ -238,9 +264,9 @@ for s in sh bash zsh dash; do
   elif [ -z "$perl" ]; then
     echo "skip: $s, signal in mktemp: no perl to start a process group"
   else
-    gated "$s" "$tmp/bin-mktemp:$PATH" "" "$perl" -e \
+    gated "$s" "$tmp/bin-mktemp:$PATH" "$tmp/gated-sig.sh" "$perl" -e \
       'setpgrp(0, 0); exec @ARGV or die'
-    if [ -z "$out" ]; then
+    if [ "$rc" -ne 0 ] && [ -z "$out" ]; then
       ok "$s, signal in mktemp: gated_tree prints nothing and exits $rc"
     else no "$s, signal in mktemp: exit $rc, gated_tree prints '$out'"; fi
     emptied "$s, signal in mktemp"
@@ -258,7 +284,7 @@ for s in bash /bin/bash zsh; do
     { echo 'set -u'; cat "$tmp/empty.sh"
       [ "$c" = empty ] || echo "peak=(sh $tmp/peak.sh)"
       cat "$tmp/hooks.sh"; } > "$tmp/hooks-$n-$c.sh"
-    "$s" "$tmp/hooks-$n-$c.sh" > "$tmp/hooks-$n-$c.log" 2>&1
+    TMPDIR=$tmp/t "$s" "$tmp/hooks-$n-$c.sh" > "$tmp/hooks-$n-$c.log" 2>&1
     rc=$?
     got=$(cat "$tmp/pre-commit-args" 2> /dev/null)
     if [ "$c" = set ]; then want=yes; else want=no; fi
