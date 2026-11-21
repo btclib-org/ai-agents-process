@@ -1647,10 +1647,11 @@ gh api "repos/${irepo:?}/issues/${issue:?}" --jq '[.assignees[].login]'
 
 Where it prints any login, the assignees it prints keep the issue. Where
 it prints none, the session looks for the next taker: of the open pull
-requests that cite the issue, pass the `Sign-off` check and have an
-author GitHub can assign to the issue, in any repository of the
-organization, the same author's included, the first to pass it. This
-lists the candidates:
+requests that cite the issue, have a pass of the `Sign-off` check that
+counts on their head (*A pass counts only on a head*, below) and have
+an author GitHub can assign to the issue, in any repository of the
+organization, the same author's included, the one with the earliest
+pass that counts. This lists the candidates:
 
 ```shell
 gh search prs --owner btclib-org --state open "${issue:?} in:title,body" \
@@ -1662,49 +1663,87 @@ The search matches the number as a word, so the session reads each
 hit's title, body and `closingIssuesReferences`, and keeps the hits
 that cite the issue, as `<issue repo>#<issue>`, by the issue's URL, or
 as a bare `#<issue>` in `<issue repo>` itself. This prints when the
-`Sign-off` check on a hit's head passed, and nothing where it does not
-pass:
+`Sign-off` check on a hit's head passed, and nothing where it did not or
+where the pass does not count. Where a call fails it exits non-zero,
+and no taker is chosen until it has exited `0` for each hit:
 
 ```shell
 pr=<hit url>
 ```
 
 ```shell
-gh pr checks "${pr:?}" --json name,bucket,completedAt \
-  --jq '.[] | select(.name | test("(^|/ )Sign-off$"))
-    | select(.bucket == "pass") | .completedAt'
+info=$(gh pr view "${pr:?}" --json url,headRefOid,baseRefName \
+  --jq '(.url | split("/")[3:5] | join("/")), .headRefOid, .baseRefName') &&
+  { read -r prepo && read -r sha && read -r base; } <<< "$info" &&
+  at=$(gh api --paginate "repos/${prepo:?}/commits/${sha:?}/check-runs" \
+    --jq '.check_runs[] | select(.name | test("(^|/ )Sign-off$"))
+      | select(.conclusion == "success") | .completed_at') &&
+  if [ -n "$at" ]; then
+    keep=$(gh api "repos/${prepo:?}/compare/${base:?}...${sha:?}" \
+      --jq '(.files | length) < 300 and all(.files[];
+        [.filename, .previous_filename // empty]
+        | all(.[]; startswith(".github/workflows/") | not))') &&
+      if [ "$keep" = true ]; then printf '%s\n' "$at"; fi
+  fi
 ```
 
-A hit that passes is ranked by its first pass on any head it had, so a
-pull request pushed again after passing keeps its place. `gh pr checks`
-reads the current head alone. This prints the earliest time a `Sign-off`
-run passed, read from every `pull_request` workflow run on the hit's
-head branch, from a repository of its head owner, since it was opened,
-and nothing where none passed. Where a call fails it exits non-zero, and
-no taker is chosen until it has exited `0` for each hit that passes:
+A hit that passes is ranked by its first pass that counts on any head it
+had (*A pass counts only on a head*, below), so a pull request pushed
+again after passing keeps its place. The block above reads the current
+head alone. This prints the earliest time a `Sign-off` run passed on a
+head that counts, read from every `pull_request` workflow run on the
+hit's head branch, from a repository of its head owner, since it was
+opened, and nothing where none did. Where a call fails it exits
+non-zero, and no taker is chosen until it has exited `0` for each hit
+that passes:
 
 ```shell
 info=$(gh pr view "${pr:?}" \
-  --json url,headRefName,headRepositoryOwner,createdAt \
+  --json url,headRefName,headRepositoryOwner,createdAt,baseRefName \
   --jq '(.url | split("/")[3:5] | join("/")), .headRefName,
-    .headRepositoryOwner.login, .createdAt') &&
-  { read -r prepo && read -r branch && read -r from && read -r since; } \
-    <<< "$info" &&
+    .headRepositoryOwner.login, .createdAt, .baseRefName') &&
+  { read -r prepo && read -r branch && read -r from && read -r since &&
+    read -r base; } <<< "$info" &&
   ids=$(FROM=$from SINCE=$since gh api --paginate -X GET \
     "repos/${prepo:?}/actions/runs" -f event=pull_request \
     -f branch="${branch:?}" -F per_page=100 \
     --jq '.workflow_runs[] | select(.head_repository.owner.login == env.FROM
       and .created_at >= env.SINCE) | .check_suite_id') &&
-  times=$(while read -r id; do
+  passes=$(while read -r id; do
     [ -z "$id" ] || gh api --paginate -X GET -f filter=all \
       "repos/${prepo:?}/check-suites/${id}/check-runs" \
       --jq '.check_runs[] | select(.name | test("(^|/ )Sign-off$"))
-        | select(.conclusion == "success") | .completed_at' || exit
+        | select(.conclusion == "success")
+        | "\(.completed_at) \(.head_sha)"' || exit
   done <<< "$ids") &&
+  times=$(while read -r at sha; do
+    [ -z "$sha" ] || {
+      keep=$(gh api "repos/${prepo:?}/compare/${base:?}...${sha}" \
+        --jq '(.files | length) < 300 and all(.files[];
+          [.filename, .previous_filename // empty]
+          | all(.[]; startswith(".github/workflows/") | not))') || exit
+      [ "$keep" != true ] || printf '%s\n' "$at"
+    }
+  done <<< "$passes") &&
   printf '%s' "$times" | sort | head -n 1
 ```
 
-It matches the head's owner, not its repository: once a fork is
+**A pass counts only on a head that changes no file under
+`.github/workflows/`.** A fork's run uses the workflows of the pull
+request's merge commit (*A fork's workflow runs can wait for approval*,
+below), so a fork can change a workflow on one head until its
+`Sign-off` job passes, then push an honest head over it. The fork names
+the job and sets its result, so both blocks also read the files each
+passing head changes, from GitHub's compare of the pull request's base
+and that head, which reads a head no longer on the branch too. A renamed
+file counts under both its names. GitHub caps the files one compare
+lists
+([*Compare two commits*](https://docs.github.com/en/rest/commits/commits#compare-two-commits)),
+so a head whose list reaches the cap counts as changing a workflow. A
+pass on such a head neither makes a hit a candidate nor gives it a
+time.
+
+The block matches the head's owner, not its repository: once a fork is
 deleted, `gh pr view` gives the pull request no head repository, while
 its runs still name it.
 
