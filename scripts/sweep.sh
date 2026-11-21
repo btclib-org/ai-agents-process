@@ -72,28 +72,36 @@
 #
 # Nothing is removed before every check of the directory has passed. Then
 # the script makes the directory <work>/.sweep-unfinished with mkdir,
-# which follows no symbolic link; <work> being no worktree, no worktree
-# it removes holds it. It removes each linked worktree with its
-# repository's `git worktree remove`, so that the repository keeps no
-# entry for it. Once every one is removed, it deletes their branches with
+# which follows no symbolic link; <work> being no worktree, no worktree it
+# removes holds it. It removes each linked worktree with its repository's
+# `git worktree remove`, so that the repository keeps no entry for it.
+# Once every one is removed, it deletes their branches with
 # `git update-ref -d` at the tip that was checked, deleting once a branch
-# that two of them had checked out, and removes the directory. A branch
-# that a worktree outside the directory has checked out, or one inside
-# whose .git file is gone, as `git worktree list --porcelain -z` shows at
-# the check, is kept, even where a directory named later removes that
-# worktree: the run prints it as `kept branch:`, and --check as
-# `would keep branch:`, with ? for each newline in that worktree's path.
-# The run has removed the worktrees of a directory named earlier before
-# that check, and --check counts them as removed where it would remove
-# that directory. A branch whose tip moved meanwhile, or that git cannot
-# delete, is kept too, and printed as `kept branch:`. The directory still
-# goes. Where `git worktree remove` fails, the branches of the worktrees
-# already deregistered stay, and the refusal names them; the directory is
-# refused and keeps .sweep-unfinished, so that every later run refuses it
-# until a person has read it and removed .sweep-unfinished. Where rm -rf
-# fails, the directory is refused, and what it left had passed every
-# check. A worktree whose .git file is gone is not found, and its
-# repository keeps an entry for it, which `git worktree prune` clears.
+# that two of them had checked out, and removes the directory. A branch is
+# kept where, at the check, a worktree outside the directory, or one
+# inside whose .git file is gone, has it checked out, as
+# `git worktree list --porcelain -z` shows, or is rebasing or bisecting
+# it, which that list need not show. For a rebase or a bisect, the script
+# reads in each worktree's git directory the first line of
+# rebase-apply/head-name, rebase-merge/head-name and BISECT_START, and the
+# first line of each three-line record of rebase-merge/update-refs, which
+# rebase --update-refs writes. It keeps a branch where the line of
+# BISECT_START is its ref less refs/heads/, or another such line its full
+# ref, as git writes each. The branch is kept even where a directory named
+# later removes that worktree: the run prints it as `kept branch:`, and
+# --check as `would keep branch:`, with ? for each newline in that
+# worktree's path, or with the git directory where its gitdir file cannot
+# be read. The run has removed the worktrees of a directory named earlier
+# before that check, and --check counts them as removed where it would
+# remove that directory. A branch whose tip moved meanwhile, or that git
+# cannot delete, is kept too, and printed as `kept branch:`. The directory
+# still goes. Where `git worktree remove` fails, the branches of the
+# worktrees already deregistered stay, and the refusal names them; the
+# directory is refused and keeps .sweep-unfinished, so that every later
+# run refuses it until a person has read it and removed .sweep-unfinished.
+# Where rm -rf fails, the directory is refused, and what it left had
+# passed every check. A worktree whose .git file is gone is not found, and
+# its repository keeps an entry for it, which `git worktree prune` clears.
 #
 # Exit 0 where each directory named was removed, or would be under
 # --check, or does not exist; 1 where any was refused; 2, after the usage,
@@ -260,6 +268,50 @@ ours() {
   return 1
 }
 
+# busy <common dir> <branch>: sets $k where a worktree the run does not
+# remove is rebasing or bisecting the branch, which git worktree list need
+# not show. git's own refusal to delete the branch reads the files below
+# too. Each worktree's git directory is the repository's own, or
+# worktrees/<id>, whose gitdir file names the worktree's .git; the glob's
+# dot forms take an <id> that starts with a dot, as git's own listing does
+busy() {
+  for bg in "$1" "$1"/worktrees/* "$1"/worktrees/.[!.]* "$1"/worktrees/..?*
+  do
+    [ -d "$bg" ] || continue
+    if [ "$bg" = "$1" ]; then
+      bp=${1%/.git}
+    elif [ -f "$bg/gitdir" ] && bp=$(cat -- "$bg/gitdir") && [ -n "$bp" ]
+    then
+      bp=${bp%/.git}
+      case $bp in
+        /*) ;;
+        *) bp=$bg/$bp ;;
+      esac
+    else
+      # a worktree git does not list, which no run removes
+      bp=$bg
+    fi
+    if ours "$bp"; then continue; fi
+    for bs in rebase-apply/head-name rebase-merge/head-name BISECT_START; do
+      case $bs in
+        BISECT_START) bw=${2#refs/heads/} how=bisected ;;
+        *) bw=$2 how=rebased ;;
+      esac
+      if [ -f "$bg/$bs" ] && line "$bg/$bs" && [ "$line" = "$bw" ]; then
+        k="being $how in $(printf '%s' "$bp" | tr '\n' '?')"
+        return
+      fi
+    done
+    # update-refs holds a ref, its old and its new commit, a line each
+    if [ -f "$bg/rebase-merge/update-refs" ] &&
+      B=$2 awk 'NR % 3 == 1 && $0 == ENVIRON["B"] { f = 1 }
+        END { exit !f }' "$bg/rebase-merge/update-refs"; then
+      k="being rebased in $(printf '%s' "$bp" | tr '\n' '?')"
+      return
+    fi
+  done
+}
+
 # tree <dir>: the checks of the linked worktree <dir>, which the scan
 # found to be the session's; it goes in $todo, to be removed with git
 # worktree remove
@@ -311,8 +363,8 @@ tree() {
   fi
   wl=$(tr '\n\000' '\001\n' < "$wls")
   b=$(git -C "$t" symbolic-ref -q HEAD) || b=
-  # k: a worktree the run does not remove that has the branch checked out,
-  # which keeps it
+  # k: how a worktree the run does not remove holds the branch, which keeps
+  # it
   listed='' locked='' cur='' at='' k='' nlp=''
   while IFS= read -r l; do
     case $l in
@@ -329,12 +381,13 @@ tree() {
       locked*) [ -z "$cur" ] || locked=1 ;;
       "branch $b")
         [ -n "$k" ] || { [ -z "$nlp" ] && ours "$at"; } ||
-          k=$(printf '%s\n' "$at" | tr '\001' '?')
+          k="checked out in $(printf '%s\n' "$at" | tr '\001' '?')"
         ;;
     esac
   done << EOF
 $wl
 EOF
+  [ -n "$k" ] || [ -z "$b" ] || busy "$cd_" "$b"
   if [ -z "$listed" ]; then
     refuse "$cd_ does not list the worktree $t"
     return 1
@@ -478,7 +531,7 @@ remove() {
   while record; do
     once || continue
     if [ -n "$k" ]; then
-      printf 'kept branch: %s of %s, checked out in %s\n' "$b" "$cd_" "$k"
+      printf 'kept branch: %s of %s, %s\n' "$b" "$cd_" "$k"
     elif git --git-dir="$cd_" update-ref -d "$b" "$h" 2> /dev/null; then
       git --git-dir="$cd_" config --remove-section "branch.${b#refs/heads/}" \
         2> /dev/null
@@ -582,7 +635,7 @@ sweep() {
   while record; do
     once || continue
     if [ -n "$k" ]; then
-      printf 'would keep branch: %s of %s, checked out in %s\n' "$b" "$cd_" "$k"
+      printf 'would keep branch: %s of %s, %s\n' "$b" "$cd_" "$k"
     else
       printf 'would delete branch: %s of %s\n' "$b" "$cd_"
     fi

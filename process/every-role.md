@@ -13,15 +13,17 @@ approved and when it lands.
 This file binds both, with three files beside it: `writing.md`,
 `local-review.md` and `orchestration.md`. The four hold the rules the
 skills share, or name the file under `process/` that holds them, except
-those `/btclib-iss`'s *Following it* reads in `/btclib-pr`. A section of
-the process they name in italics with no file is in one of the four.
-Both skills open by having `process/every-session.md` and the four read
-whole, and each holds only what is its own. The `writer`, `reviewer` and
-`designer` agents are generic: the brief names `every-session.md`, the
-skill and the files of the four that its role reads, and they read
-`every-session.md` whole and the files and sections the maps give them.
-Change a rule in the file that holds it or in the skill where it fires,
-not in an agent.
+those `/btclib-iss`'s *Following it* reads in `/btclib-pr`. A section
+named in italics is in the file that names it, or in a file its sentence
+names, as `writing.md`'s *The gates* is: the `pointer-files` hook lists
+each pointer to another file's section that names neither, as
+`scripts/pointer-files.py` says. Both skills open by having
+`process/every-session.md` and the four read whole, and each holds only
+what is its own. The `writer`, `reviewer` and `designer` agents are
+generic: the brief names `every-session.md`, the skill and the files of
+the four that its role reads, and they read `every-session.md` whole and
+the files and sections the maps give them. Change a rule in the file
+that holds it or in the skill where it fires, not in an agent.
 
 **Which sections are yours.** A heading that is not yours is genuinely
 not yours; one that is cannot be skipped as somebody else's.
@@ -47,9 +49,9 @@ until it is brought in line. The process, a repository's own files
 included, wins over the generic agents, except that on the model and its
 effort the agent definition is the more specific text
 (`orchestration.md`'s *Models*), and each agent's *What holds whatever
-the process* holds as its heading says. A brief never overrides the
-process. Any other contradiction is still a defect, and it is fixed in
-the more general file.
+the process*, in `agents/`, holds as its heading says. A brief never
+overrides the process. Any other contradiction is still a defect, and it
+is fixed in the more general file.
 
 **Three roles the process names.** *The human* is whoever runs the
 session: they answer its questions and receive its reports, and the
@@ -102,9 +104,9 @@ will target.
 
 A bare `#123` stands only where the forge or the standard fixes the
 form: the closing keyword in a pull request body, and the `(closes #N)`
-or `(issue #N)` on the subject that lands (*Citations and closing
-keywords*). A repository's own files follow the standard's *A reference
-to another repository is qualified*.
+or `(issue #N)` on the subject that lands (`writing.md`'s *Citations and
+closing keywords*). A repository's own files follow the standard's *A
+reference to another repository is qualified*.
 
 ## What binds every role
 
@@ -120,52 +122,53 @@ set.
   as `$btclib-iss`; the process writes the first form. Claude Code puts
   the words after the skill's name in place of `$ARGUMENTS`. Codex
   leaves `$ARGUMENTS` as written, and it means the same words.
-- **The reviewer in the other client** (*A pull request's rounds*) is
-  started from the shell (`orchestration.md`'s *Starting the reviewer in
-  the other client*), and reviews a detached worktree at the sha. Its
-  brief holds what a fresh reviewer's brief holds, the bot's prompt
-  included. A new run of the same command, whose brief adds its last
-  verdict and the sha that verdict named, is how it is resumed: for *The
-  rounds* it is the same reviewer, though a new process. A run that
-  times out exits `124`.
+- **The reviewer in the other client** (`local-review.md`'s *A pull
+  request's rounds*) is started from the shell (`orchestration.md`'s
+  *Starting the reviewer in the other client*), and reviews a detached
+  worktree at the sha. Its brief holds what a fresh reviewer's brief
+  holds, the bot's prompt included. A new run of the same command, whose
+  brief adds its last verdict and the sha that verdict named, is how it
+  is resumed: for `local-review.md`'s *The rounds* it is the same
+  reviewer, though a new process. A run that times out exits `124`.
 
   In Codex it runs under `workspace-write` with one writable root: its
   own directory, `<work>/<name>`, which is also its working directory.
-  There it writes the inputs of *Every reviewer tries to break the
-  change* and runs them offline. Where the worktree holds a `uv.lock`,
-  they run with `uv run --project <wt>`, from the worktree's `.venv`,
-  which the session syncs, and from a `UV_CACHE_DIR` inside the
-  reviewer's directory, which holds what that sync had to download.
-  Otherwise they run with `uv run --no-project`, on the standard library
-  alone. On an outside contributor's branch `--project` names
-  `<gate wt>`, whose `.venv` the sandbox of *The gates* synced, and the
-  reviewer runs no git there (*The gates*). An input that needs a
-  package these do not hold is named in the verdict as not run. The
-  session runs it after reading it, where and as it runs the gates
-  (*The gates*), and resumes the reviewer with its result on the record
-  (*The rounds*). A write anywhere else fails with `Operation not
-  permitted`, the worktree it reviews included, and so do `git fetch`
-  and `git merge-tree --write-tree`, which write in the git directory,
-  and a heredoc in the `zsh` Codex runs commands in, which puts its
-  temporary file under `/tmp`. `git log --format=%G?` reads a signed
-  commit as `N`, and the network is off (`orchestration.md`'s *Starting
-  the reviewer in the other client*). The reviewer relies on the runs
-  its brief carries on the record, says so, and reads the worktree with
-  `git -C <wt> show` and `git -C <wt> diff` at shas, which the sandbox
-  allows.
+  There it writes the inputs of `local-review.md`'s *Every reviewer
+  tries to break the change* and runs them offline. Where the worktree
+  holds a `uv.lock`, they run with `uv run --project <wt>`, from the
+  worktree's `.venv`, which the session syncs, and from a `UV_CACHE_DIR`
+  inside the reviewer's directory, which holds what that sync had to
+  download. Otherwise they run with `uv run --no-project`, on the
+  standard library alone. On an outside contributor's branch `--project`
+  names `<gate wt>`, whose `.venv` the sandbox of `writing.md`'s *The
+  gates* synced, and the reviewer runs no git there (*The gates*). An
+  input that needs a package these do not hold is named in the verdict
+  as not run. The session runs it after reading it, where and as it runs
+  the gates (`writing.md`'s *The gates*), and resumes the reviewer with
+  its result on the record (`local-review.md`'s *The rounds*). A write
+  anywhere else fails with `Operation not permitted`, the worktree it
+  reviews included, and so do `git fetch` and `git merge-tree
+  --write-tree`, which write in the git directory, and a heredoc in the
+  `zsh` Codex runs commands in, which puts its temporary file under
+  `/tmp`. `git log --format=%G?` reads a signed commit as `N`, and the
+  network is off (`orchestration.md`'s *Starting the reviewer in the
+  other client*). The reviewer relies on the runs its brief carries on
+  the record, says so, and reads the worktree with `git -C <wt> show`
+  and `git -C <wt> diff` at shas, which the sandbox allows.
 
   An input a reviewer names as not run may be one the session cannot run
   either. The branch then goes to the human as one decision
   (`every-session.md`'s *When the human has to decide*), which carries
   the input and why no one could run it. One such input needs a package
-  that an outside contributor's branch adds: the sandbox of *The gates*
-  does not hold it, and CI, on which *The gates* then relies, runs no
-  reviewer's input. The branch is held as `every-session.md`'s *A hold
-  is recorded* says. The human's answer stands in for the input's
-  result: the reviewer's resumed run, or the dedicated reviewer that
-  takes over from it (`orchestration.md`'s *Where the other client is
-  unavailable*), gets the answer on the record in its place. The pull
-  request body records the decision and the answer.
+  that an outside contributor's branch adds: the sandbox of
+  `writing.md`'s *The gates* does not hold it, and CI, on which *The
+  gates* then relies, runs no reviewer's input. The branch is held as
+  `every-session.md`'s *A hold is recorded* says. The human's answer
+  stands in for the input's result: the reviewer's resumed run, or the
+  dedicated reviewer that takes over from it (`orchestration.md`'s
+  *Where the other client is unavailable*), gets the answer on the
+  record in its place. The pull request body records the decision and
+  the answer.
 
   A Claude Code reviewer's Bash commands run in Claude Code's own
   sandbox, so that the inputs it writes and runs are held as a Codex
@@ -208,7 +211,7 @@ set.
   and `remove`, a commit, an amend, a rebase, a push — runs outside the
   sandbox, through an escalation request or a `.rules` entry that allows
   it (`orchestration.md`'s *Escalation under Codex*), and never with
-  signing turned off (*Signed and signed off*).
+  signing turned off (`writing.md`'s *Signed and signed off*).
 
 ### Shell, checkouts and prose
 
@@ -273,8 +276,8 @@ This section is in `every-session.md`, beside this file.
       `<name>` that no role and no other reviewer in `<work>` uses, and
       the files `orchestration.md`'s *Starting the reviewer in the other
       client* puts beside it;
-    - the gate's basetemp (*The gates*) and the findings record's file
-      (`orchestration.md`'s *The findings record*);
+    - the gate's basetemp (`writing.md`'s *The gates*) and the findings
+      record's file (`orchestration.md`'s *The findings record*);
     - everything else a role writes, in its own directory,
       `<work>/<role>/`, which the process calls that role's scratch
       directory, `<scratch>`, each file under a name that is its own
@@ -289,10 +292,10 @@ This section is in `every-session.md`, beside this file.
   ```
 
   What the orchestrator keeps for the whole session belongs to no piece
-  of work and stays in `<scratchpad>/orchestrator/`, as the sha of *The
-  process is re-read when `main` changes it* does. So do the files of a
-  text that belongs to no issue yet, as the draft of an issue still to
-  be filed and its findings record.
+  of work and stays in `<scratchpad>/orchestrator/`, as the sha of
+  `orchestration.md`'s *The process is re-read when `main` changes it*
+  does. So do the files of a text that belongs to no issue yet, as the
+  draft of an issue still to be filed and its findings record.
 
   **Read back from the repository what you wrote from a file**:
   `git show -s --format=%B HEAD` after a `-F`, the committed file after a
@@ -339,25 +342,71 @@ This section is in `every-session.md`, beside this file.
   repositories and reports go before it hands back its verdict, and a
   writer's clones as `writing.md` says where it makes them.
 
-  **A piece of work's `<work>` goes when the last pull request of its
-  issue lands or is closed**, or when the pull request that stands in for
-  the issue does. It is the last only where the searches of *Before
-  starting* find no other open pull request for the issue, and `<work>`
-  holds no worktree on another branch and no file named for one, as
-  `msg-<branch>.txt` or `findings-<branch>.md`. The orchestrator first
-  fetches origin in the repository of each linked worktree directly in
-  `<work>`, and there the head of each pull request opened from a branch
-  one of those worktrees holds. An issue ported to several trees has a
-  `<work>` for each (*Your own worktree*), so each fetches the pull
-  requests of its own repository, not only the one that ended. The
-  script counts a ref of origin only where the repository holds its
-  commit, and a landing's commit is made on the forge, as is a head that
-  a bot moved on or that was pushed from another clone; a worktree whose
-  head was not fetched is refused as holding an unpushed commit. The
-  default fetch does not bring `refs/pull/*`:
+  **A local branch goes when its work ends**, by whom and when this list
+  says:
+
+    - a pull request's branch, by the session that worked the pull
+      request, once it lands or is closed, after its worktree. Its
+      branch on a remote is the human's: the session never deletes it,
+      and its report names one left;
+    - a branch a writer or a reviewer made, by that worker before it
+      reports, unless its brief or the orchestrator keeps it for a named
+      next step. The branch a writer hands over is kept so, and is the
+      session's from then on;
+    - a backup (`bak-*`, `*-backup`) or a retry (`*-redo*`,
+      `*-rebuild`), by whoever made it, in the turn the step it guarded
+      succeeds;
+    - a release attempt that another replaced, by the session that made
+      it, once the release that replaced it is tagged;
+    - a local copy of an outside contributor's pull request
+      (`fix-pr<N>-*`, `pr-<N>`), by the session that made it, once its
+      push lands on the pull request or the pull request is closed;
+    - a branch made in a primary checkout, by the session that made it,
+      in the turn its use ends, where it is provably that session's (*The
+      primary checkout is not written*).
+
+  A branch goes only where a ref of origin reaches its head: a branch, a
+  tag or a pull request's `refs/pull/<n>/head`, as `git ls-remote origin`
+  prints them, whose sha `git merge-base --is-ancestor <head> <sha>`
+  exits `0` on, the repository holding that sha's commit. A branch whose
+  head no such ref reaches, on no remote and in no pull request, is work
+  (*Before removing or discarding anything that could be work*): it is
+  named to the human, in a worker's report or the session's, at the
+  moment the list gives, and goes only on their word. Git refuses to
+  delete a branch a worktree holds, so its worktree goes first. This
+  deletes it:
 
   ```shell
-  git -C <checkout> fetch origin
+  checkout=<checkout>
+  branch=<branch>
+  git -C "${checkout:?}" branch -D "${branch:?}"
+  ```
+
+  `scripts/sweep.sh` deletes the branch of each worktree it removes,
+  under its own checks. A script that lists the local branches on no
+  remote and in no pull request is still to come
+  (ISS btclib-org/ai-agents-process#662).
+
+  **A piece of work's `<work>` goes when the last pull request of its
+  issue lands or is closed**, or when the pull request that stands in for
+  the issue does. It is the last only where the searches of
+  `writing.md`'s *Before starting* find no other open pull request for
+  the issue, and `<work>` holds no worktree on another branch and no
+  file named for one, as `msg-<branch>.txt` or `findings-<branch>.md`.
+  The orchestrator first fetches origin in the repository of each linked
+  worktree directly in `<work>`, and there the head of each pull request
+  opened from a branch one of those worktrees holds. An issue ported to
+  several trees has a `<work>` for each (*Your own worktree*), so each
+  fetches the pull requests of its own repository, not only the one that
+  ended. The script counts a ref of origin only where the repository
+  holds its commit, and a landing's commit is made on the forge, as is a
+  head that a bot moved on or that was pushed from another clone; a
+  worktree whose head was not fetched is refused as holding an unpushed
+  commit. The default fetch does not bring `refs/pull/*`:
+
+  ```shell
+  checkout=<checkout>
+  git -C "${checkout:?}" fetch origin
   ```
 
   For each worktree `<wt>`, with `<owner>/<repo>` the repository its
@@ -383,7 +432,9 @@ This section is in `every-session.md`, beside this file.
   ```
 
   ```shell
-  git -C <checkout> fetch origin refs/pull/<n>/head
+  checkout=<checkout>
+  n=<n>
+  git -C "${checkout:?}" fetch origin "refs/pull/${n:?}/head"
   ```
 
   It then moves each findings record at the top of `<work>`,
@@ -419,12 +470,13 @@ This section is in `every-session.md`, beside this file.
   ```
 
 - **The orchestrator, never a writer, sweeps what a session that no
-  longer runs left**, when the disk is short (*Before starting*). It
-  removes only a worktree that is clean and pushed, and that session's
-  scratch where none of its worktrees stays, never another live
-  session's (*Before removing or discarding anything that could be
-  work*). Where it is not certain a session has ended, it asks the human
-  (*A branch left by a session that no longer runs*).
+  longer runs left**, when the disk is short (`writing.md`'s *Before
+  starting*). It removes only a worktree that is clean and pushed, and
+  that session's scratch where none of its worktrees stays, never
+  another live session's (*Before removing or discarding anything that
+  could be work*). Where it is not certain a session has ended, it asks
+  the human (`writing.md`'s *A branch left by a session that no longer
+  runs*).
 - **Long jobs run in the background with a timeout; kill what you
   started.** Do not end your turn waiting for one — nothing wakes a
   stopped agent. Poll within the same turn, or hand back saying what
@@ -435,21 +487,22 @@ This section is in `every-session.md`, beside this file.
   marker as its last line, and those are read, never the wrapper's code.
 - **A denied permission is a stop.** No substitute for the refused act
   (`find -delete`, the same `rm` without the flag, `shutil.rmtree`),
-  except the `-r2` fallback for a refused force-push in *Committing and
-  rebasing*: the
-  test is whether the thing is still there afterwards. No delegating it
-  to another worker. Put the exact command in your report and in a
-  comment on the issue, and tell the human. Their word does not lift the
-  classifier's refusal, so a retry is a second refusal. Removing a
-  worktree at finishing is not a substitute for a refused deletion
-  inside it, even where it holds what a worker was refused deleting.
+  except the `-r2` fallback for a refused force-push in `writing.md`'s
+  *Committing and rebasing*: the test is whether the thing is still
+  there afterwards. No delegating it to another worker. Put the exact
+  command in your report and in a comment on the issue, and tell the
+  human. Their word does not lift the classifier's refusal, so a retry
+  is a second refusal. Removing a worktree at finishing is not a
+  substitute for a refused deletion inside it, even where it holds what
+  a worker was refused deleting.
 - **A branch has one author at a time.** A writer amends from its own
   worktree, so anything pushed meanwhile is silently rebuilt away. While
   a writer is live, send changes as instructions, even one word. Once it
   has reported finished — its report, not its silence — the orchestrator
   may fix the branch directly, with the same gates, signature and
-  review rounds (*Local review*). `git merge-base --is-ancestor <yours>
-  <theirs>` says whether an out-of-band edit survived.
+  review rounds (`local-review.md`'s *Local review*). `git merge-base
+  --is-ancestor <yours> <theirs>` says whether an out-of-band edit
+  survived.
 - **A finding against a file may also be in the commit message.** Read
   the message before `git commit --amend --no-edit`, and correct it
   there too: squashed, it lands on `main` and is never rewritten.
@@ -462,7 +515,8 @@ works. Nobody asks for it. Review sends branches back after they are
 pushed, and every rebase rewrites a pushed branch. Every brief states
 the grant, because the classifier has refused those pushes where none
 was on record. A refusal is still a stop (*A denied permission is a
-stop*), with the `-r2` fallback in *Committing and rebasing*.
+stop*), with the `-r2` fallback in `writing.md`'s *Committing and
+rebasing*.
 
 ### Issues left to newcomers
 
@@ -622,7 +676,8 @@ stop*), with the `-r2` fallback in *Committing and rebasing*.
   time.
 - **Under squash, ancestry is the wrong question.** A landed branch is
   not an ancestor of `main`; ask whether its content is on `origin/main`
-  before removing a branch, worktree or clone.
+  before removing a worktree or clone. A local branch goes as *Debris
+  goes when its work ends* says.
 - **A distribution is not a rule.** What a tree does is not what it
   owes: find the sentence that requires it, or say you are proposing one.
 - **A landed sentence constrains the next decision.** Read what the tree
@@ -683,7 +738,9 @@ an amend where the branch is amended anyway, and otherwise in the squash
   defect they name shows; a sentence its diff falsifies (*Where your diff
   falsifies a sentence elsewhere*); and what was already wrong that its
   diff makes materially worse (`REVIEWING.md`'s *What is filed, and what
-  is not*). A shared file or subsystem is not a shared subject.
+  is not*). A shared file or subsystem is not a shared subject, except
+  for a known-limits issue (`/btclib-iss`'s *Several issues, several
+  pull requests*).
 - **Anything else noticed goes where `REVIEWING.md`'s *What is filed,
   and what is not* says**; what it does not file is named in the report,
   for the next change on its subject. Wrong prose in a file the diff
@@ -698,7 +755,8 @@ an amend where the branch is amended anyway, and otherwise in the squash
   command in the body and say it was not run. A small, self-contained
   one that no red gate, security or packaging defect waits on is filed
   with the `good first issue` label, a *Done when* and the file to look
-  at. The last bullet says which finding the orchestrator files in the
+  at, except a known-limits issue (`local-review.md`'s *The rounds*).
+  The last bullet says which finding the orchestrator files in the
   reviewer's place.
 - **Before a change is proposed, closed issues and pull requests are
   searched for it too**, under broad words, and the maintainers'
@@ -730,4 +788,5 @@ an amend where the branch is amended anyway, and otherwise in the squash
 - **The reviewer files with the body inline**; where it cannot file,
   the body goes verbatim in its report. A finding `local-review.md`'s
   *The rounds* files from the third round is the exception: the
-  orchestrator files it, with the body the verdict carries.
+  orchestrator files it, with the body the verdict carries, as a line
+  of a known-limits issue where that section says.

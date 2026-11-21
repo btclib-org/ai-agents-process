@@ -24,11 +24,11 @@
 # A load generator takes every slot with gate_take_all and releases them with
 # gate_release_all. One runs at a time.
 #
-# gate_peak runs a program and records its peak memory. It takes no slot
-# and admits nothing: it only records. Each gate in the block above runs
-# through it, and so does a reviewer an orchestrator starts as a command,
-# with `codex exec` or `claude -p`. A run not started through it is not
-# recorded:
+# gate_peak runs a program and records its peak memory and its wall time. It
+# takes no slot and admits nothing: it only records. Each gate in the block
+# above runs through it, and so does a reviewer an orchestrator starts as a
+# command, with `codex exec` or `claude -p`. A run not started through it is
+# not recorded:
 #
 #   gate_peak <kind> <tree> <program> [<argument>...]
 #   gate_peak suite /abs/wt timeout 1800 uv run pytest -n "$GATE_LOCK_WORKERS"
@@ -36,22 +36,23 @@
 #
 # <program> is a program, not a shell function, since time runs it. It
 # returns the program's exit code and appends one line to
-# $GATE_LOCK_DIR/gate.peaks, tab-separated: the UTC time the program
-# ended, <kind>, <tree>, the peak resident memory in KB (`?` where it
-# could not be read), and that exit code. A tab or a newline in <kind> or
-# <tree> is written as a space. The peak is read with `/usr/bin/time -l` on
-# macOS and GNU `/usr/bin/time -v` elsewhere, which run the program through
-# sh, so that one a signal ends returns 128 plus its number, as 137 for
-# KILL: macOS's time alone returns 1 for it. time writes into a file
+# $GATE_LOCK_DIR/gate.peaks, tab-separated: the UTC time the program ended,
+# <kind>, <tree>, the peak resident memory in KB (`?` where it could not be
+# read), that exit code, and the wall time in whole seconds, the difference
+# of `date +%s` before and after the program. A tab or a newline in <kind>
+# or <tree> is written as a space. The peak is read with `/usr/bin/time -l`
+# on macOS and GNU `/usr/bin/time -v` elsewhere, which run the program
+# through sh, so that one a signal ends returns 128 plus its number, as 137
+# for KILL: macOS's time alone returns 1 for it. time writes into a file
 # beside the lock, which a later gate_peak removes where an interrupt left
 # it. Where neither time runs, the peak is the largest VmHWM that /proc
 # shows, once a second while the program runs, of the program and the
-# processes /proc lists below it. The program then runs as a background
-# job, which ignores SIGINT: TERM, as timeout sends, still stops it, and
-# an interrupt that ends the calling shell leaves it running, outside the
-# lock. Where none of the three can read the peak, the program runs alone
-# and the peak is `?`, as in Codex's workspace-write sandbox, which
-# refuses `time -l` a sysctl it reads.
+# processes /proc lists below it. The program then runs as a background job,
+# which ignores SIGINT: TERM, as timeout sends, still stops it, and an
+# interrupt that ends the calling shell leaves it running, outside the lock.
+# Where none of the three can read the peak, the program runs alone and the
+# peak is `?`, as in Codex's workspace-write sandbox, which refuses
+# `time -l` a sysctl it reads.
 #
 # The peak is that of the largest single process, not the sum over the
 # program's processes: of two processes of 200 MB at once it reads about
@@ -80,7 +81,7 @@
 # it takes none within GATE_LOCK_STAGGER seconds of the last take recorded
 # in gate.last, so that the idle reading shows the gate just started. While
 # a slot is held, it also takes none within GATE_LOCK_SETTLE seconds (60) of
-# that take, unless it read GATE_LOCK_FREE plus GATE_LOCK_MARGIN percent (35
+# that take, unless it read GATE_LOCK_FREE plus GATE_LOCK_MARGIN percent (30
 # plus 15) of memory or more free: a gate reaches its peak memory after it
 # starts, so gates taken seconds apart would each see the same free memory
 # and together exceed it. A slot is held while its owner file names a live
@@ -89,10 +90,10 @@
 # until GATE_LOCK_IDLE percent or more of the CPU was idle over the last
 # GATE_LOCK_POLL seconds, the 1-minute load is under GATE_LOCK_LOAD,
 # GATE_LOCK_DISK GB or more of disk is free where $GATE_LOCK_DIR sits (/tmp
-# when it is unset), and memory is admissible: pressure level 1 with
-# GATE_LOCK_FREE percent (35) of memory or more free, which leaves room for
-# the peak a gate has yet to reach, never level 2 or 4 (macOS answers 1
-# normal, 2 warn, 4 critical). Where the level cannot be read, the
+# when it is unset), and memory is admissible: a pressure level below 4
+# (macOS answers 1 normal, 2 warn, 4 critical) with GATE_LOCK_FREE percent
+# (30) of memory or more free. It adds no peak to that reading, since it is
+# not told which gate follows. Where the level cannot be read, the
 # percentage free decides alone. Where any other read fails, as off macOS,
 # it does not wait on that read. It prints the idle percentage, the load,
 # the level, the percentage free and the disk free, `?` for each read that
@@ -168,7 +169,7 @@ GATE_LOCK_LOAD=${GATE_LOCK_LOAD:-$((_gl_cpus * 3))}
 GATE_LOCK_IDLE=${GATE_LOCK_IDLE:-30}
 GATE_LOCK_WORKERS=${GATE_LOCK_WORKERS:-$((_gl_cpus / GATE_LOCK_SLOTS))}
 [ "$GATE_LOCK_WORKERS" -ge 1 ] || GATE_LOCK_WORKERS=1
-GATE_LOCK_FREE=${GATE_LOCK_FREE:-35}
+GATE_LOCK_FREE=${GATE_LOCK_FREE:-30}
 GATE_LOCK_DISK=${GATE_LOCK_DISK:-20}
 GATE_LOCK_STAGGER=${GATE_LOCK_STAGGER:-15}
 GATE_LOCK_SETTLE=${GATE_LOCK_SETTLE:-60}
@@ -355,7 +356,7 @@ _gl_admit() {
   [ -z "$_gl_u" ] || [ "$_gl_u" -ge "$GATE_LOCK_IDLE" ] || return 1
   [ -z "${_gl_l%.*}" ] || [ "${_gl_l%.*}" -lt "$GATE_LOCK_LOAD" ] || return 1
   [ -z "$_gl_g" ] || [ "$_gl_g" -ge "$GATE_LOCK_DISK" ] || return 1
-  [ -z "$_gl_p" ] || [ "$_gl_p" -le 1 ] || return 1
+  [ -z "$_gl_p" ] || [ "$_gl_p" -lt 4 ] || return 1
   [ -z "$_gl_f" ] || [ "$_gl_f" -ge "$GATE_LOCK_FREE" ]
 }
 
@@ -642,6 +643,7 @@ gate_peak() {
     _gl_peak_sweep
     _gl_pf=$(mktemp "$_gl_d/peak.$_gl_me.XXXXXX" 2>/dev/null) || _gl_pf=""
   fi
+  _gl_pt0=$(date +%s)
   # each time is tried on `true` first: where it fails after the program
   # has run, it returns its own code in place of the program's. time runs
   # the program through sh, which returns 128 plus the number of a signal
@@ -666,12 +668,13 @@ gate_peak() {
   else
     "$@" || _gl_prc=$?
   fi
+  _gl_psec=$(($(date +%s) - _gl_pt0))
   [ -z "$_gl_pf" ] || rm -f "$_gl_pf"
   if [ -n "$_gl_d" ] && [ -d "$_gl_d" ]; then
-    printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
       "$(printf '%s' "$_gl_pkind" | tr '\t\n' '  ')" \
       "$(printf '%s' "$_gl_ptree" | tr '\t\n' '  ')" \
-      "${_gl_pkb:-?}" "$_gl_prc" >> "$_gl_d/gate.peaks" ||
+      "${_gl_pkb:-?}" "$_gl_prc" "$_gl_psec" >> "$_gl_d/gate.peaks" ||
       echo "gate_peak: cannot append to $_gl_d/gate.peaks" >&2
   fi
   return "$_gl_prc"

@@ -21,18 +21,19 @@ ci:
   # the hooks that would take pre-commit.ci past its time limit:
   # actionlint-shellcheck, and the tests of scripts/, which take most of
   # a run. test-gate-sandbox is not among them: with no sandbox-exec
-  # there it skips at once.
+  # there it skips at once. Nor are test-pointer-files and
+  # test-placeholder-last, which read only small fixtures.
   # What the skip costs is nothing that decides a merge -- lint.yml runs
   # this file whole, with the command a developer runs, on every commit
   # and every pull request
   skip:
     - actionlint-shellcheck
     - test-git-c-allow
-    - test-suite-reads
     - test-port-check
     - test-rebase-clearance
     - test-pretooluse-rules
     - test-sweep
+    - test-gate-blocks
 
 repos:
   # this file checking itself, and the only two hooks with no environment
@@ -95,12 +96,36 @@ repos:
         entry: python scripts/test-git-c-allow.py
         files: ^scripts/(test-)?git-c-allow\.py$
         pass_filenames: false
-      # the reads scripts/suite-reads.py finds and misses in small trees
-      - id: test-suite-reads
-        name: suite-reads.py answers as its test expects
+      # a pointer to another file's section names the file, as the opening
+      # of process/every-role.md says; it is read against the sections of
+      # every Markdown file, so the hook reads the whole tree
+      - id: pointer-files
+        name: a pointer to another file's section names it
         language: python
-        entry: python scripts/test-suite-reads.py
-        files: ^scripts/(test-)?suite-reads\.py$
+        entry: python -I scripts/pointer-files.py
+        files: (\.md|^scripts/pointer-files\.py)$
+        pass_filenames: false
+      - id: test-pointer-files
+        name: pointer-files.py answers as its test expects
+        language: python
+        entry: python -I scripts/test-pointer-files.py
+        files: ^scripts/(test-)?pointer-files\.py$
+        pass_filenames: false
+      # section 9's *A placeholder is bare, and last*, in shell fences.
+      # CHANGELOG.md is append-only (section 9); in CONTRIBUTING.md and
+      # REVIEWING.md the script reads only the tree's own part, the
+      # organization's copy changing there first (btclib-org/.github#2371)
+      - id: placeholder-last
+        name: a bare placeholder is the last word of its line
+        language: python
+        entry: python -I scripts/placeholder-last.py
+        types: [markdown]
+        exclude: ^CHANGELOG\.md$
+      - id: test-placeholder-last
+        name: placeholder-last.py answers as its test expects
+        language: python
+        entry: python -I scripts/test-placeholder-last.py
+        files: ^scripts/(test-)?placeholder-last\.py$
         pass_filenames: false
       # what scripts/port-check.py answers on fixture repositories
       - id: test-port-check
@@ -140,6 +165,17 @@ repos:
         language: unsupported_script
         entry: scripts/test-gate-sandbox.sh
         files: ^(scripts/(test-gate-sandbox\.sh|gate-sandbox\.sb)|process/writing\.md)$
+        pass_filenames: false
+        verbose: true
+      # the blocks of process/writing.md's *The gates* that the script's
+      # header names, under each shell it finds; it skips a shell it does
+      # not find, and a case it cannot run there, and verbose shows that
+      # it did
+      - id: test-gate-blocks
+        name: writing.md's gate blocks outside the sandbox pass their test
+        language: unsupported_script
+        entry: scripts/test-gate-blocks.sh
+        files: ^(scripts/test-gate-blocks\.sh|process/writing\.md)$
         pass_filenames: false
         verbose: true
   - repo: https://github.com/pre-commit/pre-commit-hooks

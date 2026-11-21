@@ -87,7 +87,7 @@ in its name, and prints its path:
 bundle=$(mktemp "$PWD/bundle-$(date -u +%Y%m%dT%H%M%SZ)-XXXXXX") &&
   printf '%s\n' "$bundle" &&
   uvx --offline --exclude-newer 2026-11-16T23:16:00Z seed-scan@2026.11.17 \
-  identify > "$bundle"
+  identify >| "$bundle"
 ```
 
 Where they know an address the mnemonic gave, `--address` followed by
@@ -159,15 +159,16 @@ secret stays out of the session*). `scan` refuses a node URL that
 carries a login, and takes the Electrum server as `host:port` alone,
 with no path or query.
 
-A proxy passes every address on to each service behind it, which the
-report does not name, and it can forward to more than one, as a primary
-and a failover. Its address can read as the user's own node's or
-server's does: `http://127.0.0.1:8545` names either. So ask of each node
-URL and each Electrum server whether it forwards to other services,
-whether or not the user calls it a proxy. Where it does, ask for every
-service it forwards to, and run `scan` or `forks` only once they have
-named each and agreed that each learns every address. The answer names
-each of those services beside the report.
+A proxy passes every address on to each node or Electrum server behind
+it, which the report does not name, and it can forward to more than one,
+as a primary and a failover. Its URL can read as the user's own node's
+does: `http://127.0.0.1:8545` names either. So ask of each node URL, and
+of each Electrum server, the one for `scan` and each one for `forks`,
+whether it forwards to other services, whether or not the user calls it
+a proxy. Where it does, ask for every service it forwards to, and run
+`scan` or `forks` with it only once the user has named each and agreed
+that each learns every address. The answer names each of those services
+beside the report.
 
 ```shell
 server=<the Electrum server, as host:port>
@@ -175,11 +176,19 @@ node=<the EVM node's URL>
 chain=<the chain the node serves>
 ```
 
+Each chain's scan and report take a name of their own in the bundle's
+results directory: the chain the node serves, `bitcoin` where the scan
+asks a server and no node, and `forks` where the session skips the scan.
+
+```shell
+name=<the chain the node serves, bitcoin, or forks>
+```
+
 ```shell
 uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
   seed-scan scan --server "${server:?}" \
   --node "${node:?}" --evm-chain "${chain:?}" "${bundle:?}" \
-  > "${results:?}/scan.json"
+  > "${results:?}/scan-${name:?}.json"
 ```
 
 Leave out `--server` where the user named no server, and `--node` with
@@ -187,9 +196,8 @@ Leave out `--server` where the user named no server, and `--node` with
 `scan` refuses to run, so the session skips it. `--tcp` asks a server on
 their own machine, and `--cafile` one whose certificate the system does
 not trust. A run reads one node's chain, and a report reads one scan
-result: a further chain is a scan and a report of its own, each in a
-file of its own. The help lists the chains, and the bounds
-`--gap-limit` and `--account-gap`:
+result: a further chain is a scan and a report of its own. The help
+lists the chains, and the bounds `--gap-limit` and `--account-gap`:
 
 ```shell
 uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
@@ -226,9 +234,9 @@ with no `--scan` or `--forks` where none does:
 ```shell
 uvx --exclude-newer 2026-11-16T23:16:00Z --from seed-scan==2026.11.17 \
   seed-scan report \
-  --scan "${results:?}/scan.json" \
+  --scan "${results:?}/scan-${name:?}.json" \
   --forks "${results:?}/forks-${fork:?}.json" \
-  "${bundle:?}" > "${results:?}/report.txt"
+  "${bundle:?}" > "${results:?}/report-${name:?}.txt"
 ```
 
 The docstring of [`seed_scan.report`][report] at the tag gives the

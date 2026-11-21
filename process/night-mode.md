@@ -2,8 +2,7 @@
 
 This file binds the session that turns night mode on, whichever skill
 it runs or none; in `/btclib-iss` and `/btclib-pr` that is the
-orchestrator. A section named here in italics with no file is in
-`every-session.md`, beside this file.
+orchestrator.
 
 **The human turns night mode on and off** at any point, with
 `/night-mode` or in words, and turns it on with `--night` in a skill's
@@ -25,17 +24,17 @@ would let work go on overnight, and that the session can put now or once
 a measurement their shape needs returns, the table of `/btclib-pr`'s
 *The sweep* among them. Take those measurements before the offer. Where
 there are none, the night starts; otherwise ask once whether to put
-them. Where the human accepts, put them one per message, as *When the
-human has to decide* says, and the night starts after the last answer.
-Where they leave before it, the night does not start. Where the human
-declines, the night starts at once, and each question becomes a deferred
-item. A question answered here is not deferred; the night acts on its
-answer.
+them. Where the human accepts, put them one per message, as
+`every-session.md`'s *When the human has to decide* says, and the night
+starts after the last answer. Where they leave before it, the night does
+not start. Where the human declines, the night starts at once, and each
+question becomes a deferred item. A question answered here is not
+deferred; the night acts on its answer.
 
 **Turning it off** ends the night at once. The work in flight goes on
 under the ordinary rules. The morning report is the next message, unless
 it was given while the work waited. Its deferred items are then asked as
-*When the human has to decide* says.
+`every-session.md`'s *When the human has to decide* says.
 
 **`/night-mode status` answers from the session's context**: whether the
 night is on and since when, and the items deferred so far, listed as the
@@ -50,22 +49,23 @@ permission, a dirty primary checkout that is not provably the session's,
 an approval that is not obvious, a session whose state is uncertain, a
 branch that takes a decision its issue reserved — becomes an item of the
 morning report, and the work that depends on it stops there. A decision
-that goes to the maintainer (*When the human has to decide*) is a hold,
-not an item. A branch taking a reserved decision is opened, not landed,
-and its cut-back is one of the decision's alternatives. A design pass's
-question (`/btclib-iss`'s *The design pass*) stops no writer: the writer
-takes the recommended option, the question waits as any other decision
-does, and the branch is one taking a reserved decision. *When the human
-has to decide* says when a design question a branch's issue did not
-reserve stops that branch.
+that goes to the maintainer (`every-session.md`'s *When the human has to
+decide*) is a hold, not an item. A branch taking a reserved decision is
+opened, not landed, and its cut-back is one of the decision's
+alternatives. A design pass's question (`/btclib-iss`'s *The design
+pass*) stops no writer: the writer takes the recommended option, the
+question waits as any other decision does, and the branch is one taking
+a reserved decision. `every-session.md`'s *When the human has to decide*
+says when a design question a branch's issue did not reserve stops that
+branch.
 
 - **Record each item as a hold**, its comment carrying, in prose, what
-  the shape *When the human has to decide* gives; a missing label is not
-  created at night.
-  An item that belongs to no issue or pull request (a permission refused
-  outside any issue's work, a dirty primary checkout not provably the
-  session's), and any question about an outside contributor's pull
-  request, which they read, go in the report only.
+  the shape `every-session.md`'s *When the human has to decide* gives; a
+  missing label is not created at night. An item that belongs to no
+  issue or pull request (a permission refused outside any issue's work,
+  a dirty primary checkout not provably the session's), and any question
+  about an outside contributor's pull request, which they read, go in
+  the report only.
 - **Never resolve a deferred item by default**, nor by taking your own
   recommendation. The recommendation goes in the report. The one
   exception is `/btclib-pr`'s *The sweep*, which at night works pull
@@ -91,10 +91,11 @@ message and the comments on the issues. It holds:
 - what was opened, approved and landed, with links, and each landing's
   verification;
 - what is open and ready, and what it waits on;
-- the deferred items, listed as *When the human has to decide* says a
-  report lists what waits on the human, each line with the link to its
-  hold; an item that goes in the report only has no hold, so the report
-  also gives it in that section's shape, as its record;
+- the deferred items, listed as `every-session.md`'s *When the human has
+  to decide* says a report lists what waits on the human, each line with
+  the link to its hold; an item that goes in the report only has no
+  hold, so the report also gives it in that section's shape, as its
+  record;
 - the collateral filed, by number, each with its pull request, in review,
   or excepted with its reason;
 - the report of `orchestration.md`'s *Wrap-up*, where the session ends

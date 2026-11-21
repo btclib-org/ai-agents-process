@@ -1,8 +1,7 @@
 # The btclib-org process: orchestration
 
 `every-role.md`, beside this file, opens the process: its opening says
-which role reads this file. A section named here in italics with no file
-is in one of the four files that opening names.
+which role reads this file, and where a section named in italics is.
 
 ## Orchestration
 
@@ -16,8 +15,8 @@ is in one of the four files that opening names.
   `origin/main` sha it reads the tree at.
 - **Before dispatching, ask whether the issue is collateral of a pull
   request this session worked** (*Closing collateral*).
-- **The maps of *Which sections are yours* bind the brief.** A writer
-  does not open pull requests; do not ask it to.
+- **The maps of `every-role.md`'s *Which sections are yours* bind the
+  brief.** A writer does not open pull requests; do not ask it to.
 - **Every claim in a brief carries its command, or the words saying it
   is unmeasured.** A writer writes a false premise into prose that lands.
   `ls -d` a path before naming it; a missing checkout is a question for
@@ -39,22 +38,23 @@ is in one of the four files that opening names.
   without naming them, as a defect's class does for an embargoed fix.
   It matches without regard to case and across line breaks (*`grep`
   reads lines, and prose wraps*), and its zero is proved on a control
-  (*A zero is not a measurement until the pattern is proved*). In a
-  diff, a wrapped phrase runs into the next line's leading `+`, `-` or
-  space, or into the removed lines between a context line and the added
-  ones, and a match across line breaks misses it. So the search reads
-  the changed files whole, at the base and at the head, and
-  `git diff --name-status` for the paths: the head holds what is added,
-  in its context, and the base what is removed. A conclusion drawn from
-  words each harmless alone matches no pattern, so the brief also names
-  the conclusion a reader must not be able to draw. It asks the writer
-  to read each of those texts, and each file the diff changes, whole and
-  once for that conclusion, as a reader who knows nothing else would: a
-  sentence the branch adds can complete one it left unchanged.
+  (`every-role.md`'s *A zero is not a measurement until the pattern is
+  proved*). In a diff, a wrapped phrase runs into the next line's
+  leading `+`, `-` or space, or into the removed lines between a context
+  line and the added ones, and a match across line breaks misses it. So
+  the search reads the changed files whole, at the base and at the head,
+  and `git diff --name-status` for the paths: the head holds what is
+  added, in its context, and the base what is removed. A conclusion
+  drawn from words each harmless alone matches no pattern, so the brief
+  also names the conclusion a reader must not be able to draw. It asks
+  the writer to read each of those texts, and each file the diff
+  changes, whole and once for that conclusion, as a reader who knows
+  nothing else would: a sentence the branch adds can complete one it
+  left unchanged.
 - **Do not hand the reviewer your hypothesis as a premise.**
-- **After a rebase or a new commit, the gates *The gates* asks of the
-  new sha run before any reviewer is asked**, and the report you hand it
-  names that sha.
+- **After a rebase or a new commit, the gates `writing.md`'s *The gates*
+  asks of the new sha run before any reviewer is asked**, and the report
+  you hand it names that sha.
 - **Do not retract part of a brief mid-round.** Let the round finish and
   discard the finding. Where it cannot wait, say why the brief was wrong,
   and that a reviewer reading it as a contradiction should say so rather
@@ -71,8 +71,8 @@ is in one of the four files that opening names.
   the second round, remind the reviewer of `REVIEWING.md`'s stopping
   criterion.
 - **From the third round of a branch's local review, the brief names the
-  round**, and the rule of *The rounds* that files a finding from that
-  round on.
+  round**, and the rule of `local-review.md`'s *The rounds* that files a
+  finding from that round on.
 - **Weigh a finding by who reads the text and how often** before sending
   it on.
 - **Workers writing in one repository at once contend for regions of a
@@ -92,30 +92,31 @@ is in one of the four files that opening names.
   for the disagreement.
 - **Reuse.** A writer takes a new, unrelated pull request only after
   `/compact`; its own deferred half and its own collateral it takes
-  uncompacted. *The rounds* says which worker stays for which rounds;
-  the dedicated reviewer comes back only for its pull request's
-  collateral. *Agents in each client* and *Clients* say how a worker is
-  resumed, and that starting one always makes a new one.
+  uncompacted. `local-review.md`'s *The rounds* says which worker stays
+  for which rounds; the dedicated reviewer comes back only for its pull
+  request's collateral. *Agents in each client* and `every-role.md`'s
+  *Clients* say how a worker is resumed, and that starting one always
+  makes a new one.
 - **Models**: in Claude Code the writer, the reviewer and the designer
   run on Opus at effort `high`, which their agent definitions set, so
   none follows the effort of the session that starts it: the exception
-  *Which file wins* makes to the general model advice in `AGENTS.md`.
-  Where that session's environment sets `CLAUDE_CODE_EFFORT_LEVEL`, the
-  variable wins over the definition. A reviewer Codex starts with
-  `claude -p --agent` takes the definition's model but not its effort,
-  so its command in *Starting the reviewer in the other client* names
-  `--effort high`. The orchestrator may run on Opus. In Codex the agent
-  files set no model: an agent runs on the one its spawn request names,
-  else on the `[agents]` default of `config.toml`, else on the
-  orchestrator's. A reviewer `codex exec` starts runs on `gpt-6.1-sol`
-  at effort `high`, which its command in *Starting the reviewer in the
-  other client* names, rather than on `config.toml`'s `model` and
-  `model_reasoning_effort`.
+  `every-role.md`'s *Which file wins* makes to the general model advice
+  in `AGENTS.md`. Where that session's environment sets
+  `CLAUDE_CODE_EFFORT_LEVEL`, the variable wins over the definition. A
+  reviewer Codex starts with `claude -p --agent` takes the definition's
+  model but not its effort, so its command in *Starting the reviewer in
+  the other client* names `--effort high`. The orchestrator may run on
+  Opus. In Codex the agent files set no model: an agent runs on the one
+  its spawn request names, else on the `[agents]` default of
+  `config.toml`, else on the orchestrator's. A reviewer `codex exec`
+  starts runs on `gpt-6.1-sol` at effort `high`, which its command in
+  *Starting the reviewer in the other client* names, rather than on
+  `config.toml`'s `model` and `model_reasoning_effort`.
 - **A worker that exceeds the time you set is interrupted**, not waited
   for.
 - **Writing runs in parallel; heavy gating runs under the gate lock**
   (`every-session.md`'s *The machine is shared*). A reviewer that runs
-  the gates itself is briefed with *The gates*.
+  the gates itself is briefed with `writing.md`'s *The gates*.
 - **A writer that has reported is sent nothing further until its
   reviewer has answered.**
 - **The orchestrator checks `git status --porcelain` in the primary
@@ -176,12 +177,13 @@ is in one of the four files that opening names.
   ```
 
   A brief to a worker already running names the changed sections that
-  are its role's, and those gone. Where a map of *Which sections are
-  yours* changed, it also names each section the map now gives that
-  role, changed or not, and each it no longer gives, which the worker
-  stops following. It also names each file under `scripts/` the diff
-  lists, such as `scripts/gate-lock.sh`: the worker re-reads whole each
-  one it has read, and stops following each one `next` no longer holds.
+  are its role's, and those gone. Where a map of `every-role.md`'s
+  *Which sections are yours* changed, it also names each section the map
+  now gives that role, changed or not, and each it no longer gives,
+  which the worker stops following. It also names each file under
+  `scripts/` the diff lists, such as `scripts/gate-lock.sh`: the worker
+  re-reads whole each one it has read, and stops following each one
+  `next` no longer holds.
 
   A file under `agents/` is the definition a worker of its role is
   started from (*Agents in each client*, *Starting the reviewer in the
@@ -225,10 +227,11 @@ is in one of the four files that opening names.
   verdict*) is received. Each review whose verdict was not received runs
   again on the latest version, with a new reviewer. A reviewer that has
   a fix to read and can no longer be resumed (*Agents in each client*,
-  *Clients*) is replaced by a new one whose brief carries its last
-  verdict and the sha that verdict named. Each new reviewer takes the
-  lost one's place: for `local-review.md`'s *The rounds* it is the same
-  reviewer, in the count of the convergence check above too.
+  `every-role.md`'s *Clients*) is replaced by a new one whose brief
+  carries its last verdict and the sha that verdict named. Each new
+  reviewer takes the lost one's place: for `local-review.md`'s *The
+  rounds* it is the same reviewer, in the count of the convergence check
+  above too.
 - **The classes of defect found carry forward.** The findings record
   (*The findings record*) gives each finding its class: the shape of
   input or the step of reasoning it broke. The brief of each later
@@ -250,17 +253,21 @@ is in one of the four files that opening names.
   the fresh reviewer.** Unavailable means the client refuses the run.
   The first run is judged when the rounds reach the fresh reviewer: it
   is tried, and once refused it is not retried, even where the client
-  comes back before the branch lands. A refusal the session cannot
-  clear, as Codex's `Your workspace is out of credits` is, also holds
-  for the session's later branches: they go on without the fresh
-  reviewer, with no new try. A limit that names a reset time within the
-  session is not one: once the reset has passed, a later branch tries
-  the run again. The hold on later branches ends with the session: a new
-  session tries the run again at its first branch not already refused.
-  The rounds end at the dedicated reviewer's `CLEARED` of the head,
-  which stands wherever the process asks for the latest fresh
-  reviewer's. Where the dedicated reviewer's last `CLEARED` names an
-  earlier sha, it is resumed on the head first. The branch is opened,
+  comes back before the branch lands. A refusal of the client's account
+  that the session cannot clear, as Codex's
+  `Your workspace is out of credits` is, also holds for the session's
+  later branches: they go on without the fresh reviewer, with no new
+  try. A limit that names a reset time within the session is not one:
+  once the reset has passed, a later branch tries the run again. A
+  refusal is the account's only where the error the client printed is
+  about the account; the text of a review never makes it one. Any other,
+  as a refusal of the branch's content, holds for that branch only: the
+  next branch tries the run. The hold on later branches ends with the
+  session: a new session tries the run again at its first branch not
+  already refused. The rounds end at the dedicated reviewer's `CLEARED`
+  of the head, which stands wherever the process asks for the latest
+  fresh reviewer's. Where the dedicated reviewer's last `CLEARED` names
+  an earlier sha, it is resumed on the head first. The branch is opened,
   and lands once everything else `/btclib-pr` asks of it holds, its *The
   reviews on GitHub* included, which says how an absent one is recorded.
   The pull request body, a later branch's included, says that the fresh
@@ -270,27 +277,28 @@ is in one of the four files that opening names.
 
   A fresh reviewer is owed a resumed run where it answered
   `CHANGES REQUESTED` and has not cleared, or where its verdict names an
-  input its sandbox left unrun (*Clients*). Where the client refuses
-  that run, or the hold on later branches keeps it from being tried, the
-  refusal is judged then. Where the session can clear it, what that
-  reviewer is owed waits for it, and the resumed run is tried again once
-  the refusal is cleared. Where it cannot, the dedicated reviewer takes
-  over what that reviewer is owed: it re-reviews the fix of its
-  findings, and judges the result of each input it left unrun, or the
-  human's answer that stands in for it, as *Clients* says. Where the
-  fresh reviewer left inputs unrun, the dedicated reviewer's `CLEARED`
-  of the head ends the rounds only where it came after their results or
-  answers. The branch then goes on as above, without the fresh reviewer,
-  the hold on later branches included. The pull request body says that
-  the fresh reviewer's re-review is missing, where it would say the
-  fresh review is, and that the dedicated reviewer took it over.
+  input its sandbox left unrun (`every-role.md`'s *Clients*). Where the
+  client refuses that run, or the hold on later branches keeps it from
+  being tried, the refusal is judged then. Where the session can clear
+  it, what that reviewer is owed waits for it, and the resumed run is
+  tried again once the refusal is cleared. Where it cannot, the
+  dedicated reviewer takes over what that reviewer is owed: it
+  re-reviews the fix of its findings, and judges the result of each
+  input it left unrun, or the human's answer that stands in for it, as
+  `every-role.md`'s *Clients* says. Where the fresh reviewer left inputs
+  unrun, the dedicated reviewer's `CLEARED` of the head ends the rounds
+  only where it came after their results or answers. The branch then
+  goes on as above, without the fresh reviewer, the hold on later
+  branches included where the refusal is the account's. The pull request
+  body says that the fresh reviewer's re-review is missing, where it
+  would say the fresh review is, and that the dedicated reviewer took it
+  over.
 
   A fork's pull request body is the outside contributor's. What this
-  bullet, or *Clients*, has the body record goes in a comment of the
-  session's own on the pull request instead, posted before the approval
-  is asked for and naming the head it holds for. A comment, unlike an
-  approval review, is there whoever approves, and on a fork the approval
-  goes to the human (`/btclib-pr`'s *Outside contributors*).
+  bullet, or `every-role.md`'s *Clients*, has the body record goes in a
+  comment of the session's own on the pull request instead, posted
+  before the approval is given or asked for and naming the head it holds
+  for. A comment, unlike an approval review, is there whoever approves.
 - **Codex reads the branch locally before each round on the forge**
   (`local-review.md`'s *The rounds*): the whole head before the pull
   request is opened, and before a later push the delta from the last
@@ -326,21 +334,22 @@ on it, as below. A session that takes the pull request over then reads
 every finding, its outcome and the head it was last checked on, which a
 file in another session's scratch directory would not give it. An
 embargoed fix's record stays in the file until its advisory is published
-(*Committing and rebasing*). So does the record on a tree whose
-`CONTRIBUTING.md` does not yet exempt it from the comment limits: that
-file wins over `every-session.md`'s exemption (*Which file wins*) until
-the standard's *Write plainly* carries it, as btclib-org/.github#2306
-asks, and the tree takes the port. A text to be posted keeps its record
-in the file alone, `findings-<text file>.md` in `<work>`, or, for a text
-that belongs to no issue yet, in the directory `every-role.md`'s *The
-scratchpad is shared* gives it. The hash `shasum -a 256 <text file>`
-prints for each version stands for a head. Where the files are read
-once `<work>` is swept, `every-role.md`'s *Debris goes when its work
-ends* says.
+(`writing.md`'s *Committing and rebasing*). So does the record on a tree
+whose `CONTRIBUTING.md` does not yet exempt it from the comment limits:
+that file wins over `every-session.md`'s exemption (`every-role.md`'s
+*Which file wins*) until the standard's *Write plainly* carries it, as
+btclib-org/.github#2306 asks, and the tree takes the port. A text to be
+posted keeps its record in the file alone, `findings-<text file>.md` in
+`<work>`, or, for a text that belongs to no issue yet, in the directory
+`every-role.md`'s *The scratchpad is shared* gives it. The hash `shasum
+-a 256 <text file>` prints for each version stands for a head. Where the
+files are read once `<work>` is swept, `every-role.md`'s *Debris goes
+when its work ends* says.
 
-**The record lists every round, local or on the forge, as *The rounds*
-counts them**: its head, each reviewer that read the head in that round
-and its verdict, a round that brought no finding included.
+**The record lists every round, local or on the forge, as
+`local-review.md`'s *The rounds* counts them**: its head, each reviewer
+that read the head in that round and its verdict, a round that brought
+no finding included.
 
 **An entry holds** the finding in a sentence, with its class (*The
 classes of defect found carry forward*); who raised it; the head it was
@@ -388,7 +397,7 @@ quote=<excerpt file>
 n=$(wc -l < "${quote:?}")
 [ "$n" -gt 0 ] && (set -o pipefail
 git -C "${wt:?}" show "${sha:?}:${file:?}" |
-  sed -n "${line:?},$((line + n - 1))p" | cmp -s - "${quote:?}")
+  sed -n "${line:?},$((${line:?} + n - 1))p" | cmp -s - "${quote:?}")
 ```
 
 **On each new head, every entry is assessed again against the code**,
@@ -474,14 +483,20 @@ nor posts. Where it exits `0` and a line names the session's login
 not another login's is later:
 
 ```shell
-gh api -X PATCH repos/<owner>/<repo>/issues/comments/<id> \
-  -F body=@<record file>
+repo=<owner>/<repo>
+id=<id>
+record=<record file>
+gh api -X PATCH "repos/${repo:?}/issues/comments/${id:?}" \
+  -F "body=@${record:?}"
 ```
 
 Where no line does, it posts its own record:
 
 ```shell
-gh pr comment <n> --repo <owner>/<repo> --body-file <record file>
+n=<n>
+repo=<owner>/<repo>
+record=<record file>
+gh pr comment "${n:?}" --repo "${repo:?}" --body-file "${record:?}"
 ```
 
 Where the active record is another login's, the record the session
@@ -493,14 +508,15 @@ not edit a record another login posted.
 
 **A rebase that applies without a conflict keeps the `CLEARED`.** No
 reviewer reads it. It voids the gates: they run again on the new tip,
-and so does the check of *Signed and signed off*. This holds where the
-rebase replays the cleared commits and no others. Then these two
-commands print the same subjects in the same order, `<old base>` being
-the parent the cleared sha was reviewed on:
+and so does the check of `writing.md`'s *Signed and signed off*. This
+holds where the rebase replays the cleared commits and no others. Then
+these two `git log` commands print the same subjects in the same order,
+`<old base>` being the parent the cleared sha was reviewed on:
 
 ```shell
-git -C <wt> log --reverse --format=%s '<old base>..<cleared sha>'
-git -C <wt> log --reverse --format=%s '<new base>..<new tip>'
+wt=<wt>
+git -C "${wt:?}" log --reverse --format=%s '<old base>..<cleared sha>'
+git -C "${wt:?}" log --reverse --format=%s '<new base>..<new tip>'
 ```
 
 It holds even where `main` already carried a hunk, which the rebased
@@ -554,8 +570,9 @@ file names as quoted above under `diff.noPrefix`, which no case sets.
 text, to a program, which the test does not run:
 
 ```shell
+wt=<wt>
 change() {
-  { git -C <wt> diff --no-color --no-ext-diff --no-textconv --text \
+  { git -C "${wt:?}" diff --no-color --no-ext-diff --no-textconv --text \
       --find-renames -l0 --ignore-submodules=none --submodule=short \
       --src-prefix=a/ --dst-prefix=b/ "$1" "$2" ||
       echo "git diff $1 $2 failed: $?"; } \
@@ -564,10 +581,12 @@ change() {
 change '<cleared sha>^' '<cleared sha>' | env -i PATH="$PATH" shasum
 change '<new tip>^' '<new tip>' | env -i PATH="$PATH" shasum
 { change '<cleared sha>^' '<cleared sha>'; change '<new tip>^' '<new tip>'; } \
-  | env -i PATH="$PATH" grep -c .   # not zero
+  | env -i PATH="$PATH" grep -c .
 ```
 
-Equal hashes over a non-empty stream, and the clearance stands. Where
+Equal hashes over a non-empty stream, and the clearance stands: the
+last command prints the stream's count of lines, which must not be
+zero. Where
 `git diff` fails, even after printing part of the diff, as on a
 `diff.<driver>.xfuncname` that is not a regular expression, `change`
 ends its stream with a line naming both revisions, so the hashes differ
@@ -589,9 +608,9 @@ merge with the new `origin/main`, by the commands of `local-review.md`'s
 *A pull request's rounds*, at the rebase or at `/btclib-pr`'s *Landing*.
 The `CLEARED` stands. A sentence the re-read finds false there is fixed
 in a new commit, or by amend before the pull request is open
-(*Committing and rebasing*). A fresh reviewer reviews that fix, and the
-branch is merged only after its `CLEARED`, which ends the rounds
-(`local-review.md`'s *The rounds*).
+(`writing.md`'s *Committing and rebasing*). A fresh reviewer reviews
+that fix, and the branch is merged only after its `CLEARED`, which ends
+the rounds (`local-review.md`'s *The rounds*).
 
 ## Agents in each client
 
@@ -608,17 +627,18 @@ follow-up to its agent thread. Starting always makes a new agent.
 
 The session that starts a Codex reviewer, whose sandbox
 `every-role.md`'s *Clients* describes, first runs, outside the
-reviewer's sandbox, `git fetch origin`, the `merge-tree` of *A pull
-request's rounds*, the checks of *Signed and signed off* with the
-sign-off control, `uv sync --locked` where the worktree holds a
-`uv.lock`, and the gates where no run on the sha is on the record, the
-last two in `<gate wt>` and the sandbox of *The gates* on an outside
-contributor's branch. The brief carries them as runs on the record, the
-merge's tree sha included, names the worktree, and asks for no heredoc.
-On an outside contributor's branch it also names `<gate wt>`, as the
-worktree whose `.venv` the inputs run from (`every-role.md`'s
-*Clients*). The session removes the reviewer's directory once that
-reviewer's rounds end (*Debris goes when its work ends*).
+reviewer's sandbox, `git fetch origin`, the `merge-tree` of
+`local-review.md`'s *A pull request's rounds*, the checks of
+`writing.md`'s *Signed and signed off* with the sign-off control, `uv
+sync --locked` where the worktree holds a `uv.lock`, and the gates where
+no run on the sha is on the record, the last two in `<gate wt>` and the
+sandbox of *The gates* on an outside contributor's branch. The brief
+carries them as runs on the record, the merge's tree sha included, names
+the worktree, and asks for no heredoc. On an outside contributor's
+branch it also names `<gate wt>`, as the worktree whose `.venv` the
+inputs run from (`every-role.md`'s *Clients*). The session removes the
+reviewer's directory once that reviewer's rounds end (`every-role.md`'s
+*Debris goes when its work ends*).
 
 Claude Code starts a Codex reviewer with `codex exec`. That spawns no
 custom agent by name, so the brief's first sentence says to read
@@ -652,47 +672,52 @@ The session creates the reviewer's directory, syncs the worktree where
 it holds a `uv.lock`, removes the verdict file, and starts the
 reviewer. `-o` does not empty that file when a run starts. So a
 resumed run's brief takes the last verdict from the file first, and a
-verdict found there is the latest run's (*The rounds*). The `-u` keeps
-the sync in the worktree's `.venv`, where the reviewer's `uv run`
-looks for it. On an outside contributor's branch the sync is the
-sandboxed one of *The gates*, in `<gate wt>`, instead of the second
-command:
+verdict found there is the latest run's (`local-review.md`'s *The
+rounds*). The `-u` keeps the sync in the worktree's `.venv`, where the
+reviewer's `uv run` looks for it. On an outside contributor's branch the
+sync is the sandboxed one of `writing.md`'s *The gates*, in `<gate wt>`,
+instead of the second command:
 
 ```shell
-mkdir -p <work>/<name>/tmp
+dir=<work>/<name>
+mkdir -p "${dir:?}/tmp"
 ```
 
 ```shell
-env -C <wt> -u UV_PROJECT_ENVIRONMENT \
-  UV_CACHE_DIR=<work>/<name>/uv-cache uv sync --locked
+wt=<wt>
+dir=<work>/<name>
+env -C "${wt:?}" -u UV_PROJECT_ENVIRONMENT \
+  UV_CACHE_DIR="${dir:?}/uv-cache" uv sync --locked
 ```
 
 ```shell
-rm -f <work>/<name>.last.md
+dir=<work>/<name>
+rm -f "${dir:?}.last.md"
 ```
 
 ```shell
+dir=<work>/<name>
 . "${PROCESS:?}/scripts/gate-lock.sh"
-gate_peak codex <work>/<name> \
-  env -i -C <work>/<name> HOME="$HOME" PATH="$PATH" \
-  UV_CACHE_DIR=<work>/<name>/uv-cache UV_OFFLINE=1 \
-  TMPDIR=<work>/<name>/tmp \
+gate_peak codex "${dir:?}" \
+  env -i -C "${dir:?}" HOME="$HOME" PATH="$PATH" \
+  UV_CACHE_DIR="${dir:?}/uv-cache" UV_OFFLINE=1 \
+  TMPDIR="${dir:?}/tmp" \
   timeout 900 codex exec -s workspace-write --skip-git-repo-check \
   --ignore-rules -m gpt-6.1-sol -c model_reasoning_effort=high \
-  -c 'sandbox_workspace_write.writable_roots=["<work>/<name>"]' \
+  -c "sandbox_workspace_write.writable_roots=[\"${dir:?}\"]" \
   -c sandbox_workspace_write.network_access=false \
   -c sandbox_workspace_write.exclude_slash_tmp=true \
   -c sandbox_workspace_write.exclude_tmpdir_env_var=true \
-  -o <work>/<name>.last.md - \
-  < <work>/<name>-brief.txt > <work>/<name>.log 2>&1
+  -o "${dir:?}.last.md" - \
+  < "${dir:?}-brief.txt" > "${dir:?}.log" 2>&1
 ```
 
 Codex starts a Claude Code reviewer with `claude -p --agent reviewer`,
 outside its sandbox through an escalation request, as it does a git
-write (*Git writes under Codex*). The brief goes on stdin, because
-`--allowedTools` takes every argument after it, a trailing prompt
-included. The session prepares the reviewer and its brief, and removes
-its directory, as it does for a Codex reviewer.
+write (`every-role.md`'s *Git writes under Codex*). The brief goes on
+stdin, because `--allowedTools` takes every argument after it, a
+trailing prompt included. The session prepares the reviewer and its
+brief, and removes its directory, as it does for a Codex reviewer.
 
 The flags make its sandbox (`every-role.md`'s *Clients*) hold whatever
 the user's settings say. `--setting-sources project` loads no user
@@ -735,12 +760,14 @@ and removes the temporary directory once the run ends. The run starts
 or missing value stops it:
 
 ```shell
-mkdir -p <work>/<name>/.claude/agents
+dir=<work>/<name>
+mkdir -p "${dir:?}/.claude/agents"
 ```
 
 ```shell
+dir=<work>/<name>
 ln -s "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/agents/reviewer.md" \
-  <work>/<name>/.claude/agents/reviewer.md
+  "${dir:?}/.claude/agents/reviewer.md"
 ```
 
 ```shell
@@ -748,21 +775,23 @@ mktemp -d /tmp/rv.XXXXXX
 ```
 
 ```shell
+dir=<work>/<name>
+ctmp=<tmp>
 sbx='{"sandbox":{"enabled":true,"failIfUnavailable":true,'
 sbx="${sbx}"'"allowUnsandboxedCommands":false,'
 sbx="${sbx}"'"network":{"strictAllowlist":true}}}'
 . "${PROCESS:?}/scripts/gate-lock.sh"
-gate_peak claude <work>/<name> \
-  env -i -C <work>/<name> HOME="$HOME" USER="$USER" PATH="$PATH" \
+gate_peak claude "${dir:?}" \
+  env -i -C "${dir:?}" HOME="$HOME" USER="$USER" PATH="$PATH" \
   ${CLAUDE_CONFIG_DIR:+"CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"} \
-  CLAUDE_CODE_TMPDIR=<tmp> UV_CACHE_DIR=<work>/<name>/uv-cache \
+  CLAUDE_CODE_TMPDIR="${ctmp:?}" UV_CACHE_DIR="${dir:?}/uv-cache" \
   UV_OFFLINE=1 ZDOTDIR=/var/empty \
   sh -c 'test -d "${CLAUDE_CODE_TMPDIR:?}" && exec "$@"' sh timeout 1800 \
   claude -p --agent reviewer --effort high --max-turns 80 \
   --output-format text \
   --setting-sources project --permission-mode dontAsk \
   --settings "${sbx:?}" --allowedTools Bash,Read,Grep,Glob \
-  < <work>/<name>-brief.txt > <work>/<name>.log 2>&1
+  < "${dir:?}-brief.txt" > "${dir:?}.log" 2>&1
 ```
 
 ```shell
@@ -848,10 +877,13 @@ is deleted once that end has passed.
   session is done with that pull request, to the same writer/reviewer
   pair; what was filed outside any, to a new pair. Each is taken to an
   open pull request or closed with the measurement that refutes it. The
-  only exceptions are an issue in another repository or labelled
-  `upstream-report`, one the maintainer suspended, one a `BACKLOG` row or
-  an `EXPECTED_DRIFT` entry already points at, and one labelled `good
-  first issue`; each is named in the report with its reason.
+  exceptions are an issue in another repository or labelled
+  `upstream-report`, one the maintainer suspended, one a `BACKLOG` row
+  or an `EXPECTED_DRIFT` entry already points at, and one labelled `good
+  first issue`; each is named in the report with its reason. A
+  known-limits issue is an exception too, named in the report with its
+  reason like them: its lines are worked when `local-review.md`'s *The
+  rounds* says.
 - **The session is not done while an issue it opened has no pull
   request** outside those exceptions. One that waits on the human is a
   question, or at night a deferred item, never a silent leftover.
@@ -865,14 +897,16 @@ off, and what the orchestrator follows while it is on.
 
 Before the wrap-up, *Closing collateral*'s last bullet holds.
 
-**Release every pull request the session claimed** (*A claim holds a
-pull request's branch*).
+**Release every pull request the session claimed** (`writing.md`'s *A
+claim holds a pull request's branch*).
 
-**Remove what is left of what the session created** (*Debris goes when
-its work ends*): worktrees, build directories, and caches in its scratch
-directories. A worktree with uncommitted or unpushed work stays, and so
-does anything another session made. Name both in the report. A read-only
-tree, as Go's module cache is, is made writable first:
+**Remove what is left of what the session created** (`every-role.md`'s
+*Debris goes when its work ends*): worktrees, local branches, build
+directories, and caches in its scratch directories. A worktree with
+uncommitted or unpushed work stays, a local branch stays where that
+section keeps it, and so does anything another session made. Name them
+in the report. A read-only tree, as Go's module cache is, is made
+writable first:
 
 ```shell
 chmod -R u+w <dir>

@@ -87,11 +87,26 @@ error.
 ## Mail
 
 Where the session can read the human's mailbox through the session's
-mail connector, it then searches it for the messages whose From, To or
-Cc holds an address at `btclib.org`, sent or received at or after the
-`since` time on the script's last line. The time is compared to the
-second: where the connector's search takes only a day, the session drops
-that day's earlier messages itself.
+mail connector, it then searches it for the messages sent or received at
+or after the `since` time on the script's last line. In Gmail's search
+syntax, with `<day>` the day before that time's date, written as
+`2026/11/13`:
+
+```text
+(from:btclib.org OR to:btclib.org OR cc:btclib.org)
+-from:notifications@github.com after:<day>
+```
+
+A thread counts only where a message's From, To or Cc header holds an
+address ending in `@btclib.org`, whatever the search returned. A GitHub
+notification never counts, since the script's groups already read
+GitHub.
+
+The time is compared to the second: the session itself drops each
+message from before it. The search starts a day early because Gmail
+reads a date as midnight in the PST time zone, not in UTC ([*Search and
+filter
+messages*](https://developers.google.com/workspace/gmail/api/guides/filtering)).
 
 It lists the threads as a group of their own, **Mail with btclib.org**,
 after the script's groups and before its last line, newest first. A row

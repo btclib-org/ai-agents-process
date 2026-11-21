@@ -23,14 +23,18 @@ two disagree.
   reference checkout (not your own worktree) is read after:
 
   ```shell
-  git -C <checkout> rev-parse --abbrev-ref HEAD    # main or master
-  git -C <checkout> status --porcelain             # empty
-  git -C <checkout> fetch origin
-  git -C <checkout> pull --ff-only
-  git -C <checkout> rev-parse HEAD origin/<branch> # equal
+  checkout=<checkout>
+  branch=<branch>
+  git -C "${checkout:?}" rev-parse --abbrev-ref HEAD
+  git -C "${checkout:?}" status --porcelain
+  git -C "${checkout:?}" fetch origin
+  git -C "${checkout:?}" pull --ff-only
+  git -C "${checkout:?}" rev-parse HEAD "origin/${branch:?}"
   ```
 
-  Where it is not on its default branch or not clean, stop and say so.
+  The first `git` command prints `main` or `master`, the second nothing,
+  and the last the same sha twice. Where it is not on its default branch
+  or not clean, stop and say so.
 - **Write plainly.** Everything written — code comments, docs, these
   process files, commit messages, pull request and issue bodies,
   comments, reports — must be clear, simple and no longer than it needs
@@ -106,10 +110,10 @@ two disagree.
 
   A job that takes no slot and weighs on memory — an agent, a local
   Codex run, a targeted test run, a build outside the gate lock — starts
-  only at memory pressure level 1
+  only at a memory pressure level below 4
   (`sysctl -n kern.memorystatus_vm_pressure_level`), and only where the
   share of memory free (`memory_pressure -Q | tail -1`) stays above
-  about 35% once the job's peak is added. Otherwise it waits. While any
+  about 30% once the job's peak is added. Otherwise it waits. While any
   job waits, the session reads again every 120 seconds, and whenever one
   of its jobs ends. Where the level cannot be read, as in Codex's
   sandbox, the share free decides alone. The readings decide how many
