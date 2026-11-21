@@ -1408,6 +1408,99 @@ once and the candidate twice. That case has gone both ways before under
 configurations that differ in nothing it concerns (the runs above), so
 the run shows no gain from the change.
 
+- **Baseline and candidate**, 2026-11-20: `$PROCESS` `80b7f26` and
+  `341cc33e60e89ee9c74fd536fe84a4d1359b8ddf`, tree
+  `6ac4631eee6d6252ebdc1e38332f2bd15b254ec2`, the factor changed being
+  the brief: the change of ISS btclib-org/ai-agents-process#612 and ISS
+  btclib-org/ai-agents-process#614, which `git diff 80b7f26
+  341cc33e60e89ee9c74fd536fe84a4d1359b8ddf -- process` makes in
+  `local-review.md`: in its *The rounds*, and in the sentence of its *A
+  pull request's rounds* on a reply that declines a finding. A file
+  name, a text or a file's content is reachable where an outside
+  contributor's branch can put it where the code or a command of the
+  process reads it, a branch to another repository only where a command
+  of the process reads it before it lands. A reviewer's own test input
+  that reaches the code only through a call it writes is constructed.
+  From the third round on the forge, a finding the local rule files is
+  filed, not fixed. A reply that declines a false sentence the branch
+  adds, which the forge keeps off the branch, is a finding. Claude Code,
+  the `reviewer` agent, Opus, effort `high`, one run per case, and a
+  second in each configuration on PR btclib-org/ecc#484, which alone
+  decided the first runs. In both: PR btclib-org/ai-agents-process#444:
+  hit. PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
+  miss. PR btclib-org/btclib-node#2516: miss. PR
+  btclib-org/ai-agents-process#526: miss. PR btclib-org/ecc#580: miss.
+  PR btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with
+  no blocking finding. PR btclib-org/ecc#484: the baseline miss, then
+  hit; the candidate hit, then hit.
+
+On PR btclib-org/ecc#484 the candidate's runs block on perl's `<>`
+opening hostile file names, as `cmd|` runs and `-i` truncates, which an
+outside contributor's branch can supply. The baseline's first run names
+it only as `filed`, and its second blocks on it. On PR
+btclib-org/ai-agents-process#444 both block on the skills that still arm
+with `--auto`. On PR btclib-org/ai-agents-process#526 the candidate
+blocks on another finding, outside the defect: the item pattern refuses
+a wrapped prose line opening with `14.` and exits `2`. It does not name
+the item indented after a paragraph, which the baseline names only as
+`filed`. On PR btclib-org/ai-agents-process#317 the baseline blocks on
+the hold covering limits that reset, as in the runs above, and the
+candidate clears the head with non-blocking findings only. On PR
+btclib-org/.github#2288 both name whitespace other than one space only
+as `filed`. On PR btclib-org/btclib-secp256k1#1331 the baseline names
+only as `filed` that any exit `42` reads as a secret reaching a branch,
+and the candidate does not name it. On PR btclib-org/btclib-node#2516
+both name "`i` sums the length fields" only as non-blocking, and on PR
+btclib-org/ecc#580 neither names what the comment over `_AFF_CALLS`
+leaves out. The findings outside the cases' defects were not measured.
+
+Both of the baseline's verdicts on PR btclib-org/ecc#484 cite the
+session's auto-memory note of the maintainer's answer on ISS
+btclib-org/ai-agents-process#614, which states the candidate's rule, and
+the second's hit blocks on it. The note reached the reviewer from
+neither the copy nor the case's tree. ISS
+btclib-org/ai-agents-process#677 is filed for it.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, for which its check prints `copied`, and the case
+from a repository holding only the head and its ancestors, for which its
+check prints `isolated` and the check of *A case's tree can hold this
+file* prints `unnamed`. Each read its brief from a file in the run's
+directory, not inline. The copies hold `process/` alone, so the run left
+out the change's edit to `/btclib-pr`'s *Answering it*. Nothing was
+withheld: the change edits no `REVIEWING.md` and nothing in `agents/`. A
+baseline reviewer of PR btclib-org/ai-agents-process#522 read its case
+tree's own copy of this file down to line 60, which is the head's own
+(*A case's tree can hold this file*), so its verdict stands.
+
+The candidate has the baseline's hits and misses on eight cases, and
+loses none, and neither blocks on the clean case. PR btclib-org/ecc#484
+alone decided the first runs, so it ran again in both (*One factor at a
+time*), and over two runs the baseline hits it once and the candidate
+twice. The memory note confounds that difference, so the run cannot tie
+it to the change.
+
+- **Candidate**, 2026-11-20, for ISS btclib-org/ai-agents-process#588:
+  `$PROCESS` `80b7f26`, the factor changed being the effort: `medium`,
+  against the baseline at `80b7f26` above, at `high`. Claude Code, the
+  `reviewer` agent, Opus, one run per case. PR
+  btclib-org/ai-agents-process#444: hit. PR btclib-org/ecc#484: hit. PR
+  btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
+  miss. PR btclib-org/btclib-node#2516: miss. PR
+  btclib-org/ai-agents-process#526: miss. PR btclib-org/ecc#580: miss.
+  PR btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with
+  no blocking finding.
+
+Its reviewers read the process from the baseline's copy above, for which
+the check prints `copied`, the cases from the same trees, and each its
+brief from a file. The hit on PR btclib-org/ecc#484 rests on the same
+memory note as the baseline's second run (above). Effort `medium` has
+the baseline's hits and misses on eight cases, and loses none, and on PR
+btclib-org/ecc#484 it hits, as the baseline's second run does. Its
+findings outside the cases' defects were not measured either.
+
 - **Candidate**, 2026-11-20, for ISS btclib-org/ai-agents-process#620:
   `$PROCESS` `3e291f3e9d03187113523cf9fa705400df72aa46`, tree
   `1adc27f256ca9de6d8957c4fe1316a00ebff6b80`, the factor changed being
