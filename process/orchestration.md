@@ -292,10 +292,8 @@ which role reads this file, and where a section named in italics is.
   A fork's pull request body is the outside contributor's. What this
   bullet, or `every-role.md`'s *Clients*, has the body record goes in a
   comment of the session's own on the pull request instead, posted
-  before the approval is asked for and naming the head it holds for. A
-  comment, unlike an approval review, is there whoever approves, and on
-  a fork the approval goes to the human (`/btclib-pr`'s *Outside
-  contributors*).
+  before the approval is given or asked for and naming the head it holds
+  for. A comment, unlike an approval review, is there whoever approves.
 - **Codex reads the branch locally before each round on the forge**
   (`local-review.md`'s *The rounds*): the whole head before the pull
   request is opened, and before a later push the delta from the last
