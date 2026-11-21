@@ -234,8 +234,9 @@ recorded:
 
 - `baseRefOid`, the target's tip as the forge last recorded it;
 - the commits before and after each force-push of the target;
-- the heads of the pull requests opened from each branch the target was
-  changed from.
+- the heads of the pull requests opened from the target and from each
+  branch the target was changed from, and the commits before and after
+  each force-push of those pull requests' heads.
 
 For each tip, this prints how many commits the head is ahead of it, their
 merge base, and how many merges lie between the two, the smallest count
@@ -245,7 +246,8 @@ the first line whose count is above `0`. It prints no base, and exits
 non-zero, where:
 
 - a read fails, or a force-push it reads lacks a commit;
-- the compare lists fewer commits than it counts;
+- no tip leaves the head ahead;
+- that line's compare lists fewer commits than it counts;
 - a merge lies between that merge base and the head.
 
 ```shell
@@ -257,7 +259,7 @@ head=<head>
     -F repo="${repo#*/}" -F n="${n:?}" -f query='query($owner: String!,
       $repo: String!, $n: Int!, $endCursor: String) {
       repository(owner: $owner, name: $repo) { pullRequest(number: $n) {
-        baseRefOid timelineItems(first: 100, after: $endCursor,
+        baseRefName baseRefOid timelineItems(first: 100, after: $endCursor,
           itemTypes: [BASE_REF_FORCE_PUSHED_EVENT, BASE_REF_CHANGED_EVENT,
             AUTOMATIC_BASE_CHANGE_SUCCEEDED_EVENT]) {
           pageInfo { hasNextPage endCursor } nodes { __typename
@@ -266,16 +268,33 @@ head=<head>
             ... on BaseRefChangedEvent { previousRefName }
             ... on AutomaticBaseChangeSucceededEvent { oldBase } } } } } }' \
     --jq '.data.repository.pullRequest | (.baseRefOid // error("no base")),
+      "branch \(.baseRefName // error("no base"))",
       (.timelineItems.nodes[] | if .__typename == "BaseRefForcePushedEvent"
       then (.beforeCommit.oid // error("a force-push without its before")),
         (.afterCommit.oid // error("a force-push without its after"))
-      else "left \(.previousRefName // .oldBase // error("no branch"))"
-      end)' |
+      else "branch \(.previousRefName // .oldBase // error("no branch"))"
+      end)' | awk '!s[$0]++' |
   while IFS= read -r tip; do
     case $tip in
-      ('left '*) gh api -X GET --paginate "repos/${repo:?}/pulls" \
-        -f state=all -f head="${repo%%/*}:${tip#left }" \
-        --jq '.[].head.sha' || exit ;;
+      ('branch '*) gh api -X GET --paginate "repos/${repo:?}/pulls" \
+        -f state=all -f head="${repo%%/*}:${tip#branch }" \
+        --jq '.[] | "\(.number) \(.head.sha)"' |
+        while read -r p sha; do
+          printf '%s\n' "$sha"
+          gh api graphql --paginate -F owner="${repo%%/*}" \
+            -F repo="${repo#*/}" -F n="$p" -f query='query($owner: String!,
+              $repo: String!, $n: Int!, $endCursor: String) {
+              repository(owner: $owner, name: $repo) {
+                pullRequest(number: $n) { timelineItems(first: 100,
+                  after: $endCursor, itemTypes: [HEAD_REF_FORCE_PUSHED_EVENT]) {
+                  pageInfo { hasNextPage endCursor } nodes {
+                    ... on HeadRefForcePushedEvent {
+                      beforeCommit { oid } afterCommit { oid } } } } } } }' \
+            --jq '.data.repository.pullRequest.timelineItems.nodes[] |
+              (.beforeCommit.oid // error("a force-push without its before")),
+              (.afterCommit.oid // error("a force-push without its after"))' ||
+            exit
+        done || exit ;;
       (*) printf '%s\n' "$tip" ;;
     esac
   done | sort -u) &&
@@ -304,6 +323,17 @@ A head that merged its target has no one commit it was built on, as a
 branch that merges `main` once its parent lands. Ranking its counts can
 pick a merge base whose diff carries what the target gained, so such a
 case is left out of the set.
+
+The tips are only what the forge recorded. A pull request's timeline
+records the force-pushes of its own branch, and those of a branch while
+that branch is its target. The block reads no push made without force,
+as a commit added to the parent, and sees one only through a later tip
+that descends from it. So the commit the head was built on can be on no
+tip and in no tip's history, where a force-push that none of these
+timelines recorded replaced it: one made while the branch was not the
+target, before a pull request was opened from it or on a branch none was
+opened from. The block can then print a base below that commit and exit
+`0`.
 
 **A clean change belongs in the set too**, so that a change which only
 makes the reviewer raise more shows as false findings. PR
@@ -1340,8 +1370,9 @@ does not compare the two there.
   *A pull request's rounds* and rewrites the next sentence to "None of
   this applies to the resumed run of a fresh reviewer…", which exempts
   that run from the hold too.
-- found by CodeRabbit on GitHub after the dedicated reviewer's `CLEARED`
-  ([thread](https://github.com/btclib-org/ai-agents-process/pull/317#discussion_r4498549481)),
+- found by CodeRabbit on GitHub after the dedicated reviewer's
+  `CLEARED`, in review comment `4498549481` on [the pull
+  request](https://github.com/btclib-org/ai-agents-process/pull/317),
   and fixed in `a290019`. `REVIEWING.md` on `main` describes this
   defect, and the copy at the head does not (*What a case holds*).
 
@@ -1354,8 +1385,8 @@ does not compare the two there.
   where Valgrind gives that exit for every memcheck error, an invalid
   read included.
 - found by CodeRabbit on GitHub after the dedicated reviewer's
-  `CLEARED`
-  ([thread](https://github.com/btclib-org/btclib-secp256k1/pull/1331#discussion_r4493105492)),
+  `CLEARED`, in review comment `4493105492` on [the pull
+  request](https://github.com/btclib-org/btclib-secp256k1/pull/1331),
   and fixed in `49102ac`.
 
 ### PR btclib-org/ecc#484
@@ -1367,9 +1398,9 @@ does not compare the two there.
   with perl's two-argument `open`, so a tracked name ending in `|` runs
   as a shell command and one starting with `-` is read as a switch.
 - found by CodeRabbit on GitHub after the dedicated reviewer's
-  `CLEARED`
-  ([thread](https://github.com/btclib-org/ecc/pull/484#discussion_r4503224613)),
-  and fixed in `2545806`.
+  `CLEARED`, in review comment `4503224613` on [the pull
+  request](https://github.com/btclib-org/ecc/pull/484), and fixed in
+  `2545806`.
 
 ### PR btclib-org/ai-agents-process#444
 
