@@ -744,12 +744,12 @@ an amend where the branch is amended anyway, and otherwise in the squash
 
 - **A branch carries its subject and nothing beside** (`REVIEWING.md`'s
   *What to look for*). Its subject is what its issues ask, wherever the
-  defect they name shows; a sentence its diff falsifies (*Where your diff
-  falsifies a sentence elsewhere*); and what was already wrong that its
-  diff makes materially worse (`REVIEWING.md`'s *What is filed, and what
-  is not*). A shared file or subsystem is not a shared subject, except
-  for a known-limits issue (`/btclib-iss`'s *Several issues, several
-  pull requests*).
+  defect they name shows; a sentence its diff falsifies (*Where your
+  diff falsifies a sentence elsewhere*); and what was already wrong that
+  its diff makes materially worse (`REVIEWING.md`'s *What is filed, and
+  what is not*). A defect is not the branch's subject because it sits in
+  a file or subsystem the branch changes. `/btclib-iss`'s *Several
+  issues, several pull requests* says which issues one branch may take.
 - **Anything else noticed goes where `REVIEWING.md`'s *What is filed,
   and what is not* says**; what it does not file is named in the report,
   for the next change on its subject. Wrong prose in a file the diff

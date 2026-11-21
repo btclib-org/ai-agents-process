@@ -2605,6 +2605,11 @@ has not reported yet.
   The head branch is left to the human and named in the report:
   deleting a remote branch is hard to undo.
 
+  Where the pull request closed a known-limits issue
+  (`local-review.md`'s *The rounds*), the session files each line of it
+  that the body's `## Evidence` does not list as answered in a new
+  known-limits issue for the script, as *The rounds* says.
+
   Then the session sweeps the pull request's `<work>` where
   `every-role.md`'s *Debris goes when its work ends* says.
 
