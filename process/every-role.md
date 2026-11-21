@@ -692,7 +692,9 @@ an amend where the branch is amended anyway, and otherwise in the squash
   defect they name shows; a sentence its diff falsifies (*Where your diff
   falsifies a sentence elsewhere*); and what was already wrong that its
   diff makes materially worse (`REVIEWING.md`'s *What is filed, and what
-  is not*). A shared file or subsystem is not a shared subject.
+  is not*). A shared file or subsystem is not a shared subject, except
+  for a known-limits issue (`/btclib-iss`'s *Several issues, several
+  pull requests*).
 - **Anything else noticed goes where `REVIEWING.md`'s *What is filed,
   and what is not* says**; what it does not file is named in the report,
   for the next change on its subject. Wrong prose in a file the diff
@@ -707,7 +709,8 @@ an amend where the branch is amended anyway, and otherwise in the squash
   command in the body and say it was not run. A small, self-contained
   one that no red gate, security or packaging defect waits on is filed
   with the `good first issue` label, a *Done when* and the file to look
-  at. The last bullet says which finding the orchestrator files in the
+  at, except a known-limits issue (`local-review.md`'s *The rounds*).
+  The last bullet says which finding the orchestrator files in the
   reviewer's place.
 - **Before a change is proposed, closed issues and pull requests are
   searched for it too**, under broad words, and the maintainers'
@@ -739,4 +742,5 @@ an amend where the branch is amended anyway, and otherwise in the squash
 - **The reviewer files with the body inline**; where it cannot file,
   the body goes verbatim in its report. A finding `local-review.md`'s
   *The rounds* files from the third round is the exception: the
-  orchestrator files it, with the body the verdict carries.
+  orchestrator files it, with the body the verdict carries, as a line
+  of a known-limits issue where that section says.

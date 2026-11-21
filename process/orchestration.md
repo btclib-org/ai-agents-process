@@ -872,10 +872,13 @@ is deleted once that end has passed.
   session is done with that pull request, to the same writer/reviewer
   pair; what was filed outside any, to a new pair. Each is taken to an
   open pull request or closed with the measurement that refutes it. The
-  only exceptions are an issue in another repository or labelled
-  `upstream-report`, one the maintainer suspended, one a `BACKLOG` row or
-  an `EXPECTED_DRIFT` entry already points at, and one labelled `good
-  first issue`; each is named in the report with its reason.
+  exceptions are an issue in another repository or labelled
+  `upstream-report`, one the maintainer suspended, one a `BACKLOG` row
+  or an `EXPECTED_DRIFT` entry already points at, and one labelled `good
+  first issue`; each is named in the report with its reason. A
+  known-limits issue is an exception too, named in the report with its
+  reason like them: its lines are worked when `local-review.md`'s *The
+  rounds* says.
 - **The session is not done while an issue it opened has no pull
   request** outside those exceptions. One that waits on the human is a
   question, or at night a deferred item, never a silent leftover.
