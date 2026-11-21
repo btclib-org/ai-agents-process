@@ -1639,6 +1639,112 @@ hits twice where the baseline's first run misses, but the baseline's
 second run hits too, so the difference is within the baseline's spread
 and shows no gain from the change.
 
+- **Baseline and candidate**, 2026-11-21: `$PROCESS` `4f8000a` and
+  `43acfa66891d109417da8d4c7fd3b5edb2cb4eff`, tree
+  `96cd75be81487e6596295f6cf763fc7dc41eac85`, the factor changed being
+  the brief: the change of ISS btclib-org/ai-agents-process#694 and ISS
+  btclib-org/ai-agents-process#695, which `git diff 4f8000a
+  43acfa66891d109417da8d4c7fd3b5edb2cb4eff -- process agents skills
+  REVIEWING.md` makes in `writing.md` alone, all of it in *The gates*,
+  under *Writing work*, which the reviewer's map gives whole. On an
+  outside contributor's branch both `TREE=` lines' `HEAD=` name the
+  commit `<wt>` holds, and a run in `<gate wt>` counts for `<sha>` where
+  `<gate wt>` was added at `<sha>` and both lines name `<sha>` as
+  `HEAD`. The sandbox's status block and its `log stream` write their
+  file with `>|`. The baseline is the candidate's merge base, the parent
+  of `43acfa6`, run anew since the brief's files there differ from those
+  of every run above. Claude Code, the `reviewer` agent as
+  `agents/reviewer.md` defines it at both shas, Opus, effort `high`, one
+  run per case. In both: PR btclib-org/ai-agents-process#444: hit. PR
+  btclib-org/ecc#484: hit. PR btclib-org/ai-agents-process#317: miss. PR
+  btclib-org/btclib-secp256k1#1331: miss. PR btclib-org/.github#2288:
+  miss. PR btclib-org/btclib-node#2516: miss. PR btclib-org/ecc#580:
+  miss. PR btclib-org/ai-agents-process#526: miss. PR
+  btclib-org/ai-agents-process#522, the clean case: `CLEARED`, with no
+  blocking finding.
+
+On PR btclib-org/ecc#484 both block on perl's `<>` running or rewriting
+hostile tracked names, which an outside contributor's branch can supply,
+as `local-review.md`'s *The rounds* holds at both shas, which descend
+from the landing of PR btclib-org/ai-agents-process#673. Neither rests
+on a note outside the brief, unlike the hits at `80b7f26` above. On PR
+btclib-org/ai-agents-process#444 both block on the skills that still arm
+with `--auto`. On PR btclib-org/ai-agents-process#317 the baseline
+blocks on "tied to the account" covering limits that reset, a finding
+that holds, as in the runs above, and the candidate names it only as
+non-blocking and clears the head. On PR btclib-org/btclib-secp256k1#1331
+the baseline does not name that any exit `42` reads as reported, and the
+candidate names it only as non-blocking. On PR btclib-org/.github#2288
+both name whitespace other than one space only as `filed`, a constructed
+shape whose search of the other trees needs the forge. On PR
+btclib-org/btclib-node#2516 the baseline names "`i` sums the length
+fields" only as non-blocking, and the candidate only in a non-blocking
+finding on the commit message. On PR btclib-org/ecc#580 neither names
+what the comment over `_AFF_CALLS` leaves out. On PR
+btclib-org/ai-agents-process#526 the baseline does not name the item
+indented after a paragraph, and the candidate names it as `filed` and in
+a non-blocking finding. The searches the two `filed` findings name, of
+the other trees' justifications and of section 14 of
+btclib-org/.github's `README.md`, were run after the verdicts, in the
+local review of this entry, and found no tree holding either shape, so
+both findings stay filed. The other findings outside the cases' defects
+were not measured.
+
+Every verdict ends `Outside the brief: none`, the screen of *A reviewer
+carries more than its brief* prints `unaided` for each, and none rests
+on or quotes a note of an instruction file or of the memory index. The
+orchestrator read the instruction files and the index before the first
+reviewer and after the last verdict, and no note of either states the
+change under test or a case's finding.
+
+Each reviewer read the process from a copy of `process/` at its sha
+without this file, for which its check prints `copied`, the case from
+the tree of the 2026-11-20 runs above, at the same head, for which the
+checks still print `isolated` and `unnamed`, and its brief from a file
+in the run's directory. The brief was that of the runs above, with a
+scratch directory of the reviewer's own, which the orchestrator made
+with the `mkdir` that refuses a path that exists and removed once it
+saved the verdict, and with the paragraph that makes neither an
+instruction file nor the memory index a ground for a finding. The
+candidate's reviewer of PR btclib-org/ai-agents-process#522 read its
+case tree's own copy of this file down to line 60, the head's own, and
+no case entry, so its verdict stands. No verdict lists or quotes another
+copy. Nothing was withheld: the change edits no `REVIEWING.md` and
+nothing in `agents/` or `skills/`.
+
+The run departed from its plan. While the first reviewers ran, the
+orchestrator appended to every brief file a line asking each reviewer to
+also save its verdict to a file outside its scratch directory, and
+removed it from all of them once a reviewer reported it. The reviewers
+of PR btclib-org/ai-agents-process#317, PR
+btclib-org/ai-agents-process#522 and PR btclib-org/ai-agents-process#526
+started while it stood, and each declined it, citing the agent
+definition's rule that the verdict goes in the output only. So did the
+baseline's reviewer of PR btclib-org/ecc#580, which saw the brief change
+while it ran. The verdicts on PR btclib-org/ai-agents-process#444 and PR
+btclib-org/ecc#484, and the candidate's on PR btclib-org/ecc#580, do not
+mention the line, so on PR btclib-org/ecc#580 only the baseline's
+reviewer is shown to have read it. The reviewers of PR
+btclib-org/.github#2288, PR btclib-org/btclib-node#2516 and PR
+btclib-org/btclib-secp256k1#1331 had no such line. The line stood on
+both sides of each case it reached, so no case compares a brief with it
+against one without it.
+
+Every reviewer named the conflict between the brief, which forbids the
+gates, and `local-review.md`'s *The gates are the writer's*, which has a
+reviewer run them where none is on the record, and ran none, as in the
+runs above.
+
+The candidate has the baseline's hits on PR
+btclib-org/ai-agents-process#444 and PR btclib-org/ecc#484, loses none,
+and blocks on nothing in the clean case. No case alone decides the
+comparison, so none ran again. On PR btclib-org/ecc#580 one run per side
+can show no difference, since that case has gone both ways at one
+configuration in the runs above. No brief carried a gate run, and each
+forbade the gates, so no reviewer had a gate run to judge by the change.
+The run shows that the change costs no hit and adds no blocking finding
+on these cases, not that it finds anything.
+
 ## Cases
 
 ### PR btclib-org/ai-agents-process#317
