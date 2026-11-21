@@ -901,10 +901,11 @@ Before the wrap-up, *Closing collateral*'s last bullet holds.
 claim holds a pull request's branch*).
 
 **Remove what is left of what the session created** (`every-role.md`'s
-*Debris goes when its work ends*): worktrees, build directories, and
-caches in its scratch directories. A worktree with uncommitted or
-unpushed work stays, and so does anything another session made. Name
-both in the report. A read-only tree, as Go's module cache is, is made
+*Debris goes when its work ends*): worktrees, local branches, build
+directories, and caches in its scratch directories. A worktree with
+uncommitted or unpushed work stays, a local branch stays where that
+section keeps it, and so does anything another session made. Name them
+in the report. A read-only tree, as Go's module cache is, is made
 writable first:
 
 ```shell
