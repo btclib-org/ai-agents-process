@@ -44,23 +44,18 @@ out=${scratch:?}/gen.out pids=${scratch:?}/gen.pids
   free=$(( $(getconf _NPROCESSORS_ONLN) * idle / 100 - ${workers:?} ))
   : > "$pids"
   reaped=
-  # Codex's sandbox refuses ps, and kill -0 also fails for another user's
-  # process: only "No such process" reads as gone
   gen_gone() {
     case $(LC_ALL=C kill -0 "$1" 2>&1) in
       *[Nn]'o such process'*) ;;
       *) return 1 ;;
     esac
   }
-  # PIDs that cannot be recorded are killed, and the shell exits once they
-  # are gone
   gen_add() {
     printf '%s\n' "$@" >> "$pids" && return
     kill -9 "$@"
     for pid; do until gen_gone "$pid"; do sleep 1; done; done
     exit 1
   }
-  # the measured run is not signalled once wait has reaped it
   gen_stop() {
     trap '' HUP INT TERM
     while read -r pid; do
@@ -75,18 +70,13 @@ out=${scratch:?}/gen.out pids=${scratch:?}/gen.pids
     done < "$pids"
   }
   trap gen_stop EXIT
-  # a signal while the processes start is acted on once each is recorded
   stop=
   trap 'stop=1' HUP INT TERM
   while [ "$free" -gt 0 ]; do
     yes > /dev/null & gen_add $!
     free=$(( free - 1 ))
   done
-  # the measured run goes in the background so that a signal reaches
-  # the trap
   "$@" & run=$!; gen_add "$run"
-  # the watchdog is recorded ahead of its nap, so that gen_stop ends it
-  # first: this narrows the time it can signal a reaped run
   sleep 900 & nap=$!
   ( until gen_gone "$nap"; do sleep 5; done
     kill "$run"; sleep 1; gen_gone "$run" || kill -9 "$run" ) 2>/dev/null &
@@ -105,6 +95,15 @@ out=${scratch:?}/gen.out pids=${scratch:?}/gen.pids
 interactive shell that fails a `:?` goes on to the next line, so a check
 on a line of its own would still take every slot.
 
+The fence holds no comment line, which an interactive `zsh` runs as a
+command, as `scripts/placeholder-last.py`'s docstring says. `gen_gone`
+reads a PID as gone only where `kill -0` answers `No such process`:
+Codex's sandbox refuses `ps`, and `kill -0` also fails for another
+user's process. `gen_add` kills the PIDs it cannot record, and the shell
+exits once they are gone. A signal while the generators, the run and the
+watchdog start is acted on once each is recorded. The measured run goes
+in the background so that a signal reaches the trap.
+
 `gen_stop` runs when the measured run ends, and from the trap when the
 shell exits or receives SIGHUP, SIGINT or SIGTERM. It sends SIGTERM,
 then SIGKILL to each process not gone a second later, and returns only
@@ -112,7 +111,9 @@ once each is gone, ignoring those three signals meanwhile. So the shell
 holds the slots until then: where a PID never reads as gone, as another
 user's does, until the human sends the shell SIGKILL. A SIGKILL of the
 shell leaves the processes, and the PID file is there to kill them by
-hand.
+hand. `gen_stop` does not signal the measured run once `reaped` holds
+its PID, which the line after `wait` sets: a signal between the two
+still reaches the reaped PID.
 
 The watchdog and `gen_stop` signal the PIDs recorded, each one a `$!`,
 and no process those start. Of a pipeline `$!` names the last process:
@@ -137,4 +138,6 @@ stops the run nor ends until that process does.
 The watchdog can itself signal the reaped run. Where the run ends on its
 own just as the watchdog reads the nap gone, `wait` may reap it before
 the watchdog sends SIGTERM, which then goes to the reaped PID before
-`gen_stop` ends the watchdog.
+`gen_stop` ends the watchdog. The watchdog is recorded ahead of its nap,
+so that `gen_stop` signals it first, which narrows the time it can
+signal the reaped run.
