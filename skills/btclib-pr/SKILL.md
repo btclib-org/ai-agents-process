@@ -1597,14 +1597,17 @@ gh api graphql -f owner="${repo%%/*}" -f name="${repo#*/}" -F n="${n:?}" \
 ```
 
 On the closing day, the session reads the head's commits: the `Sign-off`
-check on the head, or, where it did not run, `writing.md`'s *Signed and
-signed off*'s script on those commits. Where the check, or the script
-where the check did not run, refuses a commit, the session closes the
-pull request with a comment, from a file. The comment thanks them, names
-the commits refused, links the request, and gives the commands the check
-or the script printed. It points to `CONTRIBUTING.md`'s *Pull requests*
-for how the pull request comes back, and says that a comment on each
-issue it cites, posted next, says who holds that issue:
+check on the head, or, where it did not run or its pass does not count
+(*A pass counts only on a head*, below), `writing.md`'s *Signed and
+signed off*'s script on those commits. The pass counts where the block
+below that reads a hit's current head, run with `pr` set to this pull
+request's URL, prints a time. Where the check, or the script where it
+ran instead, refuses a commit, the session closes the pull request with
+a comment, from a file. The comment thanks them, names the commits
+refused, links the request, and gives the commands the check or the
+script printed. It points to `CONTRIBUTING.md`'s *Pull requests* for how
+the pull request comes back, and says that a comment on each issue it
+cites, posted next, says who holds that issue:
 
 ```shell
 comment=<comment file>
@@ -1681,10 +1684,13 @@ info=$(gh pr view "${pr:?}" --json url,headRefOid,baseRefName \
     --jq '.check_runs[] | select(.name | test("(^|/ )Sign-off$"))
       | select(.conclusion == "success") | .completed_at') &&
   if [ -n "$at" ]; then
-    keep=$(gh api "repos/${prepo:?}/compare/${base:?}...${sha:?}" \
+    keep=$(REPO=$prepo gh api \
+      "repos/${prepo:?}/compare/${base:?}...${sha:?}" \
       --jq '(.files | length) < 300 and all(.files[];
         [.filename, .previous_filename // empty]
-        | all(.[]; startswith(".github/workflows/") | not))') &&
+        | all(.[]; ((split("/") | any(.[]; startswith(".")))
+          or (env.REPO == "btclib-org/.github"
+            and (contains("/") | not))) | not))') &&
       if [ "$keep" = true ]; then printf '%s\n' "$at"; fi
   fi
 ```
@@ -1720,30 +1726,41 @@ info=$(gh pr view "${pr:?}" \
   done <<< "$ids") &&
   times=$(while read -r at sha; do
     [ -z "$sha" ] || {
-      keep=$(gh api "repos/${prepo:?}/compare/${base:?}...${sha}" \
+      keep=$(REPO=$prepo gh api \
+        "repos/${prepo:?}/compare/${base:?}...${sha}" \
         --jq '(.files | length) < 300 and all(.files[];
           [.filename, .previous_filename // empty]
-          | all(.[]; startswith(".github/workflows/") | not))') || exit
+          | all(.[]; ((split("/") | any(.[]; startswith(".")))
+            or (env.REPO == "btclib-org/.github"
+              and (contains("/") | not))) | not))') || exit
       [ "$keep" != true ] || printf '%s\n' "$at"
     }
   done <<< "$passes") &&
   printf '%s' "$times" | sort | head -n 1
 ```
 
-**A pass counts only on a head that changes no file under
-`.github/workflows/`.** A fork's run uses the workflows of the pull
+**A pass counts only on a head that changes no path with a component
+starting with `.`.** A fork's run uses the workflows of the pull
 request's merge commit (*A fork's workflow runs can wait for approval*,
 below), so a fork can change a workflow on one head until its
-`Sign-off` job passes, then push an honest head over it. The fork names
-the job and sets its result, so both blocks also read the files each
-passing head changes, from GitHub's compare of the pull request's base
-and that head, which reads a head no longer on the branch too. A renamed
-file counts under both its names. GitHub caps the files one compare
-lists
+`Sign-off` job passes, then push an honest head over it. The job also
+runs uv at the root of that commit's checkout, and uv runs the
+interpreter of a `.venv` there. What else the job reads from the
+checkout is not listed, so the rule takes every such path, as the
+approval of a fork's runs does. The fork names the job and sets its
+result, so both blocks also read the files each passing head changes,
+from GitHub's compare of the pull request's base and that head, which
+reads a head no longer on the branch too. A renamed file counts under
+both its names. GitHub caps the files one compare lists
 ([*Compare two commits*](https://docs.github.com/en/rest/commits/commits#compare-two-commits)),
-so a head whose list reaches the cap counts as changing a workflow. A
+so a head whose list reaches the cap counts as changing such a path. A
 pass on such a head neither makes a hit a candidate nor gives it a
 time.
+
+In btclib-org/.github a pass also counts only on a head that changes no
+file at the repository's root. There the `Sign-off` job of `lint.yml`
+runs the merge commit's own `.github/scripts/check_sign_off.py`, with
+the settings uv reads from a root `uv.toml` or `pyproject.toml`.
 
 The block matches the head's owner, not its repository: once a fork is
 deleted, `gh pr view` gives the pull request no head repository, while
