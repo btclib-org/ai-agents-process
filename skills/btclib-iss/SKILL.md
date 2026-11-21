@@ -69,16 +69,22 @@ says which a number is. A pull request among the arguments is
 
 - **Never as a batch; never hold one that is ready.** Open each pull
   request as soon as it is cleared, except an embargoed fix
-  (`writing.md`'s *Committing and rebasing*). Ports of the standard are
-  the one batch (*Ports of the standard*).
-- **Bundle by subject, not by file**, as the tree's `CONTRIBUTING.md`
-  says in *One subject, opened as soon as it is written*. Issues one
-  decision answers share a subject; issues that only touch the same file
-  do not. Before assigning a worker, look for open issues sharing a
-  subject with the one at hand (`gh issue view` each) and take them
-  together. The exception is a known-limits issue (`local-review.md`'s
-  *The rounds*), which shares a subject with any issue whose branch
-  changes its script, and is taken with it.
+  (`writing.md`'s *Committing and rebasing*). Beyond the issues the next
+  bullet lets one pull request take, ports of the standard are the one
+  batch (*Ports of the standard*).
+- **Bundle by subject or by file**, as the standard's `CONTRIBUTING.md`
+  says in *One subject, opened as soon as it is written*: issues that
+  share a subject are one pull request, and issues that change the same
+  file may be one too. Issues one decision answers share a subject.
+  Before assigning a worker, look for open issues of both kinds beside
+  the one at hand (`gh issue view` each): take those sharing its subject
+  with it, and you may take those changing the same file. For each
+  script the issues name, or the test of one, look up the script's
+  known-limits issue with the command of `local-review.md`'s *The
+  rounds*, and take it with them, unless a pull request is already open
+  for it (next bullet). A branch that changes a script its issues do not
+  name does not take that script's known-limits issue, whose lines wait
+  for the next branch whose issues name the script or its test.
 - **Where a pull request is already open for an issue**, this skill
   opens no competing branch: that pull request is `/btclib-pr`'s.
 
@@ -290,11 +296,12 @@ open:**
   with their exit codes, as `writing.md`'s *The gates* reports them; the
   rebase case the clearance is in; the review, with each finding
   `local-review.md`'s *The rounds* files from the third round, as not
-  covered, with the issue that holds it; and, once they have answered,
-  each review on GitHub that is absent, with its reason (`/btclib-pr`'s
-  *The reviews on GitHub*). The records the tree asks of a body go here
-  too, each where its own text says it applies: the command that
-  verifies a rule (`CONTRIBUTING.md`), the count that decided the change
+  covered, with the issue that holds it; the lines the branch answers of
+  each known-limits issue it closes; and, once they have answered, each
+  review on GitHub that is absent, with its reason (`/btclib-pr`'s *The
+  reviews on GitHub*). The records the tree asks of a body go here too,
+  each where its own text says it applies: the command that verifies a
+  rule (`CONTRIBUTING.md`), the count that decided the change
   (`writing.md`'s *What the prose that lands may say*), the runs the bot
   can repeat (`local-review.md`'s *A pull request's rounds*), the
   command that reads a setting back (`every-role.md`'s *Collateral*),

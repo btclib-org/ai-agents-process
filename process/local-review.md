@@ -153,14 +153,20 @@ branch, or a text to be posted.
   reach. It takes no `good first issue` label, which would keep every
   branch from taking it (`every-role.md`'s *Issues left to newcomers*).
   A line is worked when a file in a tree or a caller meets its shape, or
-  when the script is next changed for another reason; a mutant's line
-  has no shape to meet, and waits for that change.
+  when the script is next changed for another reason, by a branch that
+  takes the issue as `/btclib-iss`'s *Several issues, several pull
+  requests* says; a mutant's line has no shape to meet, and waits for
+  that branch.
 
   A line filed from the rounds of a branch that changes the script is
   not that branch's to work, and a known-limits issue the branch filed
-  from its own rounds is not taken with it. Where the branch closes the
-  known-limits issue, the orchestrator files the line in a new one once
-  the branch lands.
+  from its own rounds is not taken with it. The orchestrator still adds
+  the line as above, to the issue the branch takes where it takes one.
+  Where the branch closes that issue, each line on it the branch did not
+  answer, from its own rounds or added by another branch meanwhile, is
+  added again as above once the branch lands, to the script's open
+  known-limits issue or to one filed where none is open, as
+  `/btclib-pr`'s *Check what landed* says.
 - **From the third round on the forge, a finding the bullet above would
   file is filed, not fixed, and of the rest only a defect, a false
   sentence or a crash on a reachable shape is fixed on the branch.** A
