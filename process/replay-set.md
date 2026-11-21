@@ -58,23 +58,34 @@ test rewrites such a sentence, its case is recorded as unable to
 evaluate the change, beside a case that tests the instruction without
 stating its answer, where one is needed.
 
-**A reviewer carries more than its brief.** Claude Code loads into each
-agent it starts the installed agent definition, the instruction files,
-as `~/.claude/CLAUDE.md`, and the session's memory index, `MEMORY.md` in
-`~/.claude/projects/<project>/memory/`. Its documentation says a
-subagent does not load the index ([*What loads at
+**A reviewer carries more than its brief.** Claude Code loads into the
+`reviewer` agent, as this tree's `agents/reviewer.md` defines it, the
+installed agent definition, the instruction files, as
+`~/.claude/CLAUDE.md`, and the session's memory index, `MEMORY.md` in
+`~/.claude/projects/<project>/memory/`. Its documentation says that the
+main conversation's auto memory is not loaded into a non-fork subagent
+([*What loads at
 startup*](https://code.claude.com/docs/en/sub-agents#what-loads-at-startup)),
-but in the runs of 2026-11-20 `reviewer` agents cited a line of it. No
-switch keeps the index from one reviewer alone. Claude Code turns auto
-memory off with the `CLAUDE_CODE_DISABLE_AUTO_MEMORY` variable or the
-`autoMemoryEnabled` setting. The agent runs in the session's process
-(`every-session.md`'s *The machine is shared*), so the variable turns it
-off for the orchestrator too, and the setting sits in a settings file
-that the orchestrator and other sessions read. The agent definition
-belongs to the configuration under test. The instruction files and the
-index belong to neither the configuration nor the case, and either can
-state the change under test or a case's finding, as a note of the
-maintainer's answer that a candidate turns into a rule does.
+but in the runs of 2026-11-20 `reviewer` agents cited a line of it.
+
+A switch keeps the index from one reviewer. One is `omitClaudeMd: true`
+in the agent's definition, which drops the instruction files too. The
+others serve a reviewer that `claude -p` starts as a process of its own,
+as `orchestration.md`'s *Starting the reviewer in the other client*
+starts one: the variable `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`, or
+`--settings '{"autoMemoryEnabled":false}'`. On 2026-11-21, at Claude
+Code 2.1.330, a subagent defined with `omitClaudeMd: true` reported
+neither a `MEMORY.md` nor a `CLAUDE.md` block in its context, and one
+with `false` reported both; a `claude -p` session with either of the
+other switches reported no `MEMORY.md` block, and one without reported
+one. `agents/reviewer.md` sets no `omitClaudeMd`, so a reviewer the
+`Agent` tool starts from it carries the index, and the run records and
+discards as below. Whether a run should start its reviewers with one is
+the question of ISS btclib-org/ai-agents-process#739. The agent
+definition belongs to the configuration under test. The instruction
+files and the index belong to neither the configuration nor the case,
+and either can state the change under test or a case's finding, as a
+note of the maintainer's answer that a candidate turns into a rule does.
 
 So the reviewer may carry them, and may rest no finding on them. Before
 the first reviewer starts, and again after the last verdict, since other
@@ -87,7 +98,15 @@ verdict end with the line `Outside the brief: none`, or with `Outside
 the brief:` followed by each note of either that the verdict relies on
 or quotes. The orchestrator saves each verdict to a file. This prints
 `unaided` only where the file's last line that holds text is `Outside
-the brief: none` and no line names the memory or an instruction file:
+the brief: none`, and where no line holds, case ignored, any of these:
+
+- `memory.md` or `claude.md`;
+- `auto` and `memory` with at most one character between them;
+- `memory`, a space, and `index`, `note`, `file` or `director`;
+- `session`, then any characters other than a space, or none, then a
+  space and `memory`, as in "session's memory";
+- `instruction file`, `global instruction` or `persistent note`;
+- `projects/` and then `/memory` with no space between them.
 
 ```shell
 v=<verdict>
@@ -96,17 +115,23 @@ v=<verdict>
 ```shell
 last=$(grep -v '^[[:space:]]*$' "${v:?}" | tail -n 1) &&
   [ "$last" = 'Outside the brief: none' ] &&
-  { rc=0; grep -n -i -E \
-    'memory\.md|auto.?memory|session[^[:space:]]* memory|claude\.md' \
-    "$v" || rc=$?; [ "$rc" -eq 1 ]; } && echo unaided
+  { rc=0; grep -n -i -E -e 'memory\.md|claude\.md|auto.?memory' \
+    -e 'memory (index|note|file|director)|session[^[:space:]]* memory' \
+    -e 'instruction file|global instruction|persistent note' \
+    -e 'projects/[^[:space:]]*/memory' "$v" || rc=$?; [ "$rc" -eq 1 ]; } &&
+  echo unaided
 ```
 
-The orchestrator reads each verdict for which it prints nothing. One
-that rests a finding on a note of the index or of an instruction file,
-or quotes one, is discarded and run again, as one that reads a copy of
-this file is (*A case's tree can hold this file*); one that names them
-only as not relied on is kept. Where the repeat rests on such a note
-too, the case is recorded as unable to evaluate the change.
+It is a first screen: a verdict can name the index or an instruction
+file in other words, or across a line break, so `unaided` does not show
+it free of them. The orchestrator therefore reads every verdict for a
+ground outside the brief as it scores it (*How a run is scored*),
+whatever the block printed. One that rests a finding on a note of the
+index or of an instruction file, or quotes one, is discarded and run
+again, as one that reads a copy of this file is (*A case's tree can hold
+this file*); one that names them only as not relied on is kept. Where
+the repeat is discarded too, the case is recorded as unable to evaluate
+the change.
 
 **Each reviewer writes in a scratch directory of its own**, which its
 brief names: `<work>/reviewer/<name>`, in the reviewer's `<scratch>`
@@ -125,7 +150,8 @@ dir=<work>/reviewer/<name>
 mkdir -- "${dir:?}"
 ```
 
-The run removes it once the verdict is saved, since the sweep of
+Where it refuses, the run takes another `<name>` and makes that one. The
+run removes the directory once the verdict is saved, since the sweep of
 `every-role.md`'s *Debris goes when its work ends* refuses a `<work>`
 that holds a repository an input made there:
 
