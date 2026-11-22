@@ -11,7 +11,8 @@
 # machine: a session redefines _gl_idle, _gl_load, _gl_level, _gl_free and
 # _gl_disk after sourcing. Every wait for an event polls once a second, up to 30
 # times. Past that, the test kills the sessions it started and their
-# children, prints the events, and exits 1. The cases, in order:
+# children, prints the events and what the generators printed, and exits 1.
+# The cases, in order:
 #
 # - One slot. Two sessions, each with a scratchpad of its own, call
 #   `gate_take <scratchpad> <worktree>`, the second while the first holds
@@ -51,9 +52,12 @@
 #   noclobber set, a shell starts `( ... ) &` that takes a slot, and
 #   exits. The owner of the slot is the subshell, which is alive, and not
 #   the shell that exited. The subshell releases it.
-# - Load generators. Under each of sh, bash, zsh and dash, two sessions ask
-#   at once for every slot with gate_take_all. Both finish, and their holds
-#   do not overlap.
+# - A mkdir that exits 0 on a directory it did not make. Under each of sh,
+#   bash, zsh and dash, a second claim of a slot fails, and the owner file
+#   still names the first.
+# - Load generators. Under each of sh, bash, zsh and dash, and under sh
+#   beside that mkdir, two sessions ask at once for every slot with
+#   gate_take_all. Both finish, and their holds do not overlap.
 # - gate_release_all called by a shell that holds nothing fails, and leaves
 #   the gate.generator and the slots of another shell as they were.
 # - A generator killed with SIGKILL while it holds every slot. The next
@@ -154,7 +158,7 @@ holder() {
   ' sh "$script" "$1" "$tmp/events" "$tmp" "$stubs"
 }
 
-pids=""
+pids="" shown=""
 fail() { # <reason>: stop the sessions started and their children
   # one PID a line, since zsh does not split an unquoted $pids
   printf '%s\n' "$pids" | tr ' ' '\n' | while read -r pid; do
@@ -167,6 +171,10 @@ fail() { # <reason>: stop the sessions started and their children
   done
   wait
   cat "$tmp/events"
+  # what the sessions named in $shown printed, one name a line as above
+  printf '%s\n' "$shown" | tr ' ' '\n' | while read -r n; do
+    [ -z "$n" ] || [ ! -f "$tmp/out-$n" ] || { echo "out-$n:"; cat "$tmp/out-$n"; }
+  done
   echo "FAIL: $1"
   exit 1
 }
@@ -434,17 +442,43 @@ for shell in sh bash zsh dash; do
 done
 rm -rf "${GATE_LOCK_DIR:?}"
 
+# A mkdir that exits 0 on a directory it did not make, as gate-lock.sh's
+# header says uutils' can, and records each such path in lies beside $idle. Under each shell, a second claim of a slot fails and
+# leaves the first claimant's owner file.
+liar='
+  mkdir() { command mkdir "$@" 2>/dev/null || { for _t_d; do :; done; [ -d "$_t_d" ] && echo "$_t_d" >> "${idle%/*}/lies"; }; }
+'
+for shell in sh bash zsh dash; do
+  command -v "$shell" > /dev/null || { echo "skipped: no $shell for a claim beside a lying mkdir"; continue; }
+  rm -rf "${GATE_LOCK_DIR:?}" "$tmp/lies"
+  "$shell" -c '
+    . "$1"
+    idle=$2/idle
+    eval "$3"
+    _gl_dir || exit 1
+    _gl_me=111 _gl_s=$_gl_d/gate.lock
+    _gl_claim wt-first || { echo "the first claim failed"; exit 1; }
+    _gl_me=222
+    ! _gl_claim wt-second || { echo "a second claim of a held slot succeeded"; exit 1; }
+    owner=""
+    read -r owner _ < "$_gl_s/owner"
+    [ "$owner" = 111 ] || { echo "the owner file names $owner, not 111"; exit 1; }
+    [ -s "$2/lies" ] || { echo "mkdir did not exit 0 on the held slot"; exit 1; }
+  ' "$shell" "$script" "$tmp" "$liar" || fail "under $shell, a lying mkdir let a second claim through"
+  echo "ok: under $shell, beside a mkdir that exits 0 on a directory it did not make, a second claim failed"
+done
+
 # Load generators. Two generators ask at once for every slot, each in a shell
 # of the kind named. Both finish, one after the other: a generator holds
 # every slot, as its own owner file says, so the two do not split them and
-# wait for ever.
+# wait for ever. Then the same under sh beside the lying mkdir above.
 generator() { # <shell> <name>
   exec "$1" -c '
     . "$1"
     idle=$4/idle
     eval "$5"
     echo "$(date +%s) $2 asks" >> "$3"
-    gate_take_all "wt-$2" > /dev/null || exit 1
+    gate_take_all "wt-$2" > "$4/out-$2" 2>&1 || exit 1
     # every slot has this shell as its owner
     for slot in gate.lock gate.lock.2 gate.lock.3; do
       owner=""
@@ -454,34 +488,44 @@ generator() { # <shell> <name>
     echo "$(date +%s) $2 taken" >> "$3"
     sleep 2
     echo "$(date +%s) $2 released" >> "$3"
-    gate_release_all > /dev/null || exit 1
+    gate_release_all >> "$4/out-$2" 2>&1 || exit 1
     echo "$(date +%s) $2 done" >> "$3"
   ' "$1" "$script" "$2" "$tmp/events" "$tmp" "$stubs"
 }
 GATE_LOCK_SLOTS=3
-for shell in sh bash zsh dash; do
+saved=$stubs
+for run in sh bash zsh dash sh-liar; do
+  shell=${run%-liar} how=""
+  stubs=$saved
+  [ "$run" = "$shell" ] || { stubs="$saved$liar" how=" beside the lying mkdir"; }
   command -v "$shell" > /dev/null || { echo "skipped: no $shell for the generators"; continue; }
-  rm -rf "${GATE_LOCK_DIR:?}"
+  rm -rf "${GATE_LOCK_DIR:?}" "$tmp/lies"
   : > "$tmp/events"
+  # what gate_take_all and gate_release_all print, which fail shows
+  shown="P Q"
   pids=""
   for n in P Q; do
     generator "$shell" "$n" &
     pids="$pids $!"
   done
-  await ' done$' 2 "under $shell, the two generators did not both finish"
+  await ' done$' 2 "under $shell$how, the two generators did not both finish"
   wait
   order=$(grep -v -e ' asks$' -e ' done$' "$tmp/events" | cut -d' ' -f2- | tr '\n' ',')
   case $order in
     "P taken,P released,Q taken,Q released," | "Q taken,Q released,P taken,P released,") ;;
-    *) cat "$tmp/events"; fail "under $shell, the generators overlapped: $order" ;;
+    *) cat "$tmp/events"; fail "under $shell$how, the generators overlapped: $order" ;;
   esac
   [ ! -e "$GATE_LOCK_DIR/gate.generator" ] && [ ! -e "$GATE_LOCK_DIR/gate.lock" ] &&
     [ ! -e "$GATE_LOCK_DIR/gate.lock.2" ] && [ ! -e "$GATE_LOCK_DIR/gate.lock.3" ] ||
-    fail "under $shell, a slot or gate.generator is left after the release"
+    fail "under $shell$how, a slot or gate.generator is left after the release"
+  [ -z "$how" ] || [ -s "$tmp/lies" ] ||
+    fail "under $shell, mkdir never exited 0 on a directory it did not make"
   "$shell" -c '. "$1"; gate_release_all > /dev/null' "$shell" "$script" &&
-    fail "under $shell, gate_release_all released nothing and succeeded"
-  echo "ok: under $shell, two generators took every slot one after the other"
+    fail "under $shell$how, gate_release_all released nothing and succeeded"
+  shown=""
+  echo "ok: under $shell$how, two generators took every slot one after the other"
 done
+stubs=$saved
 
 # gate_release_all releases only what its own shell holds: called by another
 # shell while a generator holds gate.generator and the slots, it fails and
