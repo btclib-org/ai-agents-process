@@ -82,9 +82,10 @@ says which a number is. A pull request among the arguments is
   script the issues name, or the test of one, look up the script's
   known-limits issue with the command of `local-review.md`'s *The
   rounds*, and take it with them, unless a pull request is already open
-  for it (next bullet). A branch that changes a script its issues do not
-  name does not take that script's known-limits issue, whose lines wait
-  for the next branch whose issues name the script or its test.
+  for it (next bullet). Where a branch's issues name neither a script
+  nor its test, the branch does not take that script's known-limits
+  issue, even where it changes the script: the issue's lines wait for
+  the next branch whose issues name the script or its test.
 - **Where a pull request is already open for an issue**, this skill
   opens no competing branch: that pull request is `/btclib-pr`'s.
 
