@@ -1678,14 +1678,17 @@ gh api graphql -f owner="${repo%%/*}" -f name="${repo#*/}" -F n="${n:?}" \
 ```
 
 On the closing day, the session reads the head's commits: the `Sign-off`
-check on the head, or, where it did not run, `writing.md`'s *Signed and
-signed off*'s script on those commits. Where the check, or the script
-where the check did not run, refuses a commit, the session closes the
-pull request with a comment, from a file. The comment thanks them, names
-the commits refused, links the request, and gives the commands the check
-or the script printed. It points to `CONTRIBUTING.md`'s *Pull requests*
-for how the pull request comes back, and says that a comment on each
-issue it cites, posted next, says who holds that issue:
+check on the head, or, where it did not run or its pass does not count
+(*A pass counts only on a head*, below), `writing.md`'s *Signed and
+signed off*'s script on those commits. The pass counts where the block
+below that reads a hit's current head, run with `pr` set to this pull
+request's URL, prints a time. Where the check, or the script where it
+ran instead, refuses a commit, the session closes the pull request with
+a comment, from a file. The comment thanks them, names the commits
+refused, links the request, and gives the commands the check or the
+script printed. It points to `CONTRIBUTING.md`'s *Pull requests* for how
+the pull request comes back, and says that a comment on each issue it
+cites, posted next, says who holds that issue:
 
 ```shell
 comment=<comment file>
@@ -1823,8 +1826,8 @@ file counts under both its names. GitHub caps the files one compare
 lists
 ([*Compare two commits*](https://docs.github.com/en/rest/commits/commits#compare-two-commits)),
 so a head whose list reaches the cap counts as changing a workflow. A
-pass on such a head neither makes a hit a candidate nor gives it a
-time.
+pass on such a head neither makes a hit a candidate, nor gives it a
+time, nor is read on the closing day (above).
 
 The block matches the head's owner, not its repository: once a fork is
 deleted, `gh pr view` gives the pull request no head repository, while
