@@ -1302,8 +1302,12 @@ since its hook reads the head's lock. In place of the head's lock they
 put the base's, then move each package the pull request's body names to
 the version it names. Dependabot names a group's moves one a line,
 ``Updates `x` from 1.0 to 1.1``, and a single move on the body's first
-line, which starts `Bumps [x]` and ends `from 1.0 to 1.1.` The command
-below that writes the moves reads both forms. The item holds where the
+line, which starts `Bumps [x]` and ends `from 1.0 to 1.1.` A group's
+body may also list its moves in a table, one row a move,
+``| [x](…) | `1.0` | `1.1` |``. Dependabot cuts a body past GitHub's
+limit and ends it with `_Description has been truncated_`, so the lines
+of the last moves can be lost while the table keeps them. The command
+below that writes the moves reads each form. The item holds where the
 lock uv writes is the head's, byte for byte, but for the `revision = N`
 line at its top, whose number depends on the uv that wrote the lock.
 Every other change in the lock, such as a version moved, a package
@@ -1332,7 +1336,8 @@ gh pr view "${n:?}" --repo "${repo:?}" --json body --jq .body |
 t = sys.stdin.read()
 N, V = r"([A-Za-z0-9][A-Za-z0-9._-]*)", r"([A-Za-z0-9._+!-]+)"
 m = re.findall(rf"^Updates `{N}` from \S+ to {V}$", t, re.M) + \
-    re.findall(rf"^Bumps \[{N}\]\(\S*\) from \S+ to {V}\.$", t, re.M)
+    re.findall(rf"^Bumps \[{N}\]\(\S*\) from \S+ to {V}\.$", t, re.M) + \
+    re.findall(rf"^\| \[{N}\]\(\S*\) \| `\S+` \| `{V}` \|$", t, re.M)
 for n, v in sorted(set(m)):
     print(f"--upgrade-package={n}=={v}")' > "${moves:?}"
 ```
