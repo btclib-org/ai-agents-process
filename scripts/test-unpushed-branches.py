@@ -11,19 +11,20 @@ asked, or written as objects, and the stand-in `gpg.program` fails a
 fixture that ever asks. The fixtures' git calls and the script's run
 with none of the caller's `GIT_` variables and no proxy variable:
 `GIT_CONFIG_GLOBAL` names the test's configuration, no system
-configuration is read, and `GIT_SSH_COMMAND` is `false`, so that no case
-reaches a real ssh. A stand-in for `gh`, first on the `PATH`, logs each
-call and answers the pull requests the test gives each repository and
-branch, as `gh` does: the open ones alone unless asked for every state,
-and no more than its `--limit`, 30 where none is given. Each run's
-working directory is an empty one, which must stay empty, and no run
-prints the credential a URL of origin carries.
+configuration is read, and `GIT_SSH_COMMAND` is `false`, or a stand-in
+that refuses the login with ssh's lines, so that no case reaches a real
+ssh. A stand-in for `gh`, first on the `PATH`, logs each call and
+answers the pull requests the test gives each repository and branch, as
+`gh` does: the open ones alone unless asked for every state, and no more
+than its `--limit`, 30 where none is given. Each run's working directory
+is an empty one, which must stay empty, and no run prints the credential
+a URL of origin carries.
 
 The cases, on one clone unless they say otherwise. Not listed:
 
-- a branch at a branch of origin, behind a branch of origin whose commit
-  the clone lacks, at a tag, or at a pull request's head the clone
-  holds;
+- a branch at a branch of origin, one named with U+2028 included, behind
+  a branch of origin whose commit the clone lacks, at a tag, or at a
+  pull request's head the clone holds;
 - a branch behind the head of a merged pull request the clone lacks,
   the 200th that `gh` names for that branch.
 
@@ -31,14 +32,14 @@ Listed: a branch with a commit no ref of origin holds, one only a
 remote-tracking ref reaches, one only a `refs/pull/<n>/merge` reaches,
 one pushed only to another remote, one behind a pull request's head that
 `gh` does not name, whose commit stays unfetched, one named
-`topic;>MARKER`, by that name, and one a worktree has checked out. `gh`
-is asked about the branches still unreached once origin's branches and
-tags are fetched, and about no other. The run writes no ref, no
-`FETCH_HEAD`, no configuration, no worktree entry and no file at the top
-of the git directory or in `objects/info`, though the clone's
-configuration asks a fetch for every tag and for a commit-graph, and
-asks for automatic maintenance at once; and the clone's
-`reference-transaction` hook does not run.
+`topic;>MARKER` and one named with U+2028, by those names, and one a
+worktree has checked out. `gh` is asked about the branches still
+unreached once origin's branches and tags are fetched, and about no
+other. The run writes no ref, no `FETCH_HEAD`, no configuration, no
+worktree entry and no file at the top of the git directory or in
+`objects/info`, though the clone's configuration asks a fetch for every
+tag and for a commit-graph, and asks for automatic maintenance at once;
+and the clone's `reference-transaction` hook does not run.
 
 Then:
 
@@ -67,6 +68,15 @@ Then:
   remote named origin, one whose origin cannot be read, at an https, an
   http or an ssh URL with a credential, and one with a branch at a blob
   or at a tag are refused, and the next checkout is still read;
+- where git or ssh prints a credential of origin's URL, as git is shown
+  to first, each checkout is refused with git's diagnostic, the
+  credential replaced by `****`: a server of the test on 127.0.0.1
+  answering 401 to a token alone, percent-encoded, as the URL holds it
+  and as `url.<base>.insteadOf` gives it; a URL with two `@`; and the
+  stand-in ssh refusing a password. With trace2 on standard error in the
+  global configuration, and curl's trace unredacted, neither the token's
+  refusal nor that of a URL with a password prints a credential, in
+  base64 included;
 - no checkout, and an option before a checkout or after one, exit 2 with
   the usage.
 
@@ -76,10 +86,13 @@ there is one.
 
 from __future__ import annotations
 
+import base64
+import http.server
 import os
 import subprocess
 import sys
 import tempfile
+import threading
 from pathlib import Path
 
 SCRIPT = Path(__file__).with_name("unpushed-branches.py")
@@ -130,12 +143,43 @@ H=$head R=$repo S=$state L=$limit awk -F '\\t' '$1 == ENVIRON["R"] &&
   $2 == ENVIRON["H"] && (ENVIRON["S"] == "all" || $4 == ENVIRON["S"]) &&
   n < ENVIRON["L"] + 0 { print $3; n++ }' "$GHANSWERS"
 """
+# the stand-in for ssh: it answers -G as OpenSSH does, so that git passes
+# it OpenSSH's options, and refuses the login with ssh's lines, the first
+# as -v prints it
+SSH = """#!/bin/sh
+for a; do [ "$a" != -G ] || exit 0; done
+while [ $# -gt 0 ]; do
+  case $1 in -o|-p) shift 2 ;; -*) shift ;; *) break ;; esac
+done
+user=${1%@*} host=${1##*@}
+echo "debug1: Authenticating to $host:22 as '$user'" >&2
+echo "$user@$host: Permission denied (publickey)." >&2
+exit 255
+"""
 failures: list[str] = []
+
+
+def lines(out: str) -> list[str]:
+    """The records of `out`, split at LF alone: a branch name can hold U+2028."""
+    return [line for line in out.split("\n") if line]
 
 
 def fail(text: str) -> None:
     failures.append(text)
     print(f"FAIL: {text}")
+
+
+class Refuse(http.server.BaseHTTPRequestHandler):
+    """Answer 401 to every request, asking for a password."""
+
+    def do_GET(self) -> None:
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="fixture"')
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def log_message(self, *args: object) -> None:
+        """Print nothing for a request."""
 
 
 class Fixture:
@@ -189,7 +233,7 @@ class Fixture:
         done = subprocess.run(
             ["git", "-C", str(repo), *args],
             capture_output=True,
-            text=True,
+            encoding="utf-8",
             env=self.env,
             stdin=subprocess.DEVNULL,
             check=False,
@@ -207,7 +251,7 @@ class Fixture:
         init = subprocess.run(
             ["git", "-C", str(repo), "commit-tree", "-m", "init", tree],
             capture_output=True,
-            text=True,
+            encoding="utf-8",
             env=self.env,
             stdin=subprocess.DEVNULL,
             check=True,
@@ -226,7 +270,7 @@ class Fixture:
         done = subprocess.run(
             ["git", "-C", str(repo), "commit-tree", "-p", parent, "-m", subject, tree],
             capture_output=True,
-            text=True,
+            encoding="utf-8",
             env=dict(self.env, **env),
             stdin=subprocess.DEVNULL,
             check=True,
@@ -240,7 +284,7 @@ class Fixture:
             + ["--literally", "--stdin"],
             input=body,
             capture_output=True,
-            text=True,
+            encoding="utf-8",
             env=self.env,
             check=True,
         ).stdout.strip()
@@ -256,19 +300,19 @@ class Fixture:
             [sys.executable, "-I", str(SCRIPT), *args],
             cwd=here,
             capture_output=True,
-            text=True,
+            encoding="utf-8",
             env=dict(self.env, **(extra or {})),
             stdin=subprocess.DEVNULL,
             check=False,
         )
         if any(here.iterdir()):
             fail(f"{args}: the run wrote {sorted(p.name for p in here.iterdir())}")
-        return done.returncode, done.stdout.splitlines(), done.stderr
+        return done.returncode, lines(done.stdout), done.stderr
 
     def asked(self) -> list[str]:
         """The branch of each `gh` call, in order."""
         heads: list[str] = []
-        for line in self.ghlog.read_text().splitlines():
+        for line in lines(self.ghlog.read_text(encoding="utf-8")):
             for arg in line.split("\037"):
                 if arg.startswith("--head="):
                     heads.append(arg.removeprefix("--head="))
@@ -314,6 +358,103 @@ def expect(
         fail(f"{label}: no {err!r} in {stderr!r}")
     if MARK in "".join(out) + stderr:
         fail(f"{label}: a credential of origin's URL was printed: {out} {stderr}")
+
+
+def ls_remote(fx: Fixture, repo: Path, extra: dict[str, str]) -> str:
+    """What `git ls-remote origin` prints on standard error in `repo`."""
+    return subprocess.run(
+        ["git", "-C", str(repo), "ls-remote", "origin"],
+        capture_output=True,
+        encoding="utf-8",
+        env=dict(fx.env, **extra),
+        stdin=subprocess.DEVNULL,
+        check=False,
+    ).stderr
+
+
+def credentials(fx: Fixture, origin: Path) -> None:
+    """Refusals where git's or ssh's text names a credential of origin's URL."""
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Refuse)
+    thread = threading.Thread(target=server.serve_forever)
+    thread.start()
+    try:
+        here = f"127.0.0.1:{server.server_address[1]}"
+        token = f"tok%5F{MARK}"
+        password = f"{MARK}%5Fpw"
+        asked = f"could not read Password for 'http://****@{here}': "
+        ssh = fx.tmp / "ssh"
+        ssh.write_text(SSH)
+        ssh.chmod(0o755)
+        cases = {
+            "token": (f"http://{token}@{here}/x", asked),
+            "insteadOf": ("https://example.invalid/rewritten", asked),
+            "two @": (f"http://oauth2@{MARK}@{here}/x", f"'http://****@{here}/x/'"),
+            "ssh": (
+                f"ssh://oauth2:{password}@127.0.0.1/x",
+                (
+                    "debug1: Authenticating to 127.0.0.1:22 as '****:****'; "
+                    "****:****@127.0.0.1: Permission denied (publickey)."
+                ),
+            ),
+        }
+        extra = {"GIT_SSH_COMMAND": str(ssh)}
+        paths: dict[str, Path] = {}
+        for label, (url, _) in cases.items():
+            path = fx.tmp / f"cred-{len(paths)}"
+            fx.git(fx.tmp, "clone", "-q", str(origin), str(path))
+            fx.git(path, "remote", "set-url", "origin", url)
+            paths[label] = path
+        fx.git(
+            paths["insteadOf"],
+            "config",
+            f"url.http://{token}@{here}/.insteadOf",
+            "https://example.invalid/",
+        )
+        basic = fx.tmp / "cred-basic"
+        fx.git(fx.tmp, "clone", "-q", str(origin), str(basic))
+        fx.git(basic, "remote", "set-url", "origin", f"http://oauth2:{MARK}@{here}/x")
+        # the fixtures' configuration with trace2 on standard error, which
+        # spells the token as the URL does, and curl's trace unredacted,
+        # which carries a user and a password in base64
+        traced = fx.tmp / "gitconfig-traced"
+        traced.write_text(
+            Path(fx.env["GIT_CONFIG_GLOBAL"]).read_text()
+            + "[trace2]\n\tnormalTarget = 2\n"
+        )
+        trace = {
+            "GIT_CONFIG_GLOBAL": str(traced),
+            "GIT_CURL_VERBOSE": "1",
+            "GIT_TRACE_CURL": "1",
+            "GIT_TRACE_REDACT": "0",
+        }
+        coded = base64.b64encode(f"oauth2:{MARK}".encode()).decode()
+        # each control: git itself prints the credential
+        for label, path in paths.items():
+            if MARK not in ls_remote(fx, path, extra):
+                fail(f"{label}: git names no credential")
+        if token not in ls_remote(fx, paths["token"], trace):
+            fail("trace: git does not spell the token as the URL does")
+        if coded not in ls_remote(fx, basic, trace):
+            fail("trace: curl's trace holds no Authorization header in base64")
+        rc, out, err = fx.run(*map(str, paths.values()), extra=extra)
+        expect("credentials", (rc, out, err), 1, [])
+        for label, (_, shown) in cases.items():
+            path = paths[label]
+            if f"refused: {path}: git -C {path} ls-remote exited 128: " not in err:
+                fail(f"{label}: is not refused by git ls-remote: {err}")
+            if shown not in err:
+                fail(f"{label}: no {shown!r} in {err!r}")
+        rc, out, err = fx.run(str(paths["token"]), str(basic), extra=trace)
+        expect("trace", (rc, out, err), 1, [])
+        for path in (paths["token"], basic):
+            if f"refused: {path}: git -C {path} ls-remote exited 128: " not in err:
+                fail(f"trace: {path} is not refused by git ls-remote: {err}")
+        if coded in err:
+            fail(f"trace: the Authorization header was printed: {err}")
+    finally:
+        server.shutdown()
+        thread.join()
+        server.server_close()
 
 
 def main() -> int:
@@ -400,6 +541,9 @@ def main() -> int:
         fx.git(ck, "remote", "add", "fork", str(fork))
         fx.git(ck, "push", "-q", "fork", f"{forked}:refs/heads/b-fork")
         hostile = branch("topic;>MARKER", "hostile")
+        # git allows U+2028 in a branch name, where str.splitlines() splits
+        spaced = branch("topic\u2028name", "spaced")
+        push(branch("\u2028pushed", "aside"), "refs/heads/\u2028pushed")
         held = branch("b-worktree", "worktree")
         fx.git(ck, "worktree", "add", "-q", str(fx.tmp / "wt"), "b-worktree")
         # pull request 8 is the 200th gh lists for b-pr8, which the
@@ -431,6 +575,7 @@ def main() -> int:
             f"{ck}: b-unpushed {unpushed}",
             f"{ck}: b-worktree {held}",
             f"{ck}: topic;>MARKER {hostile}",
+            f"{ck}: topic\u2028name {spaced}",
         ]
         # a hook of the checkout is code the script does not run
         hook = ck / ".git" / "hooks" / "reference-transaction"
@@ -453,11 +598,13 @@ def main() -> int:
             "b-unpushed",
             "b-worktree",
             "topic;>MARKER",
+            "topic\u2028name",
         ]
         if sorted(fx.asked()) != want:
             fail(f"one clone: gh was asked about {fx.asked()}, not {want}")
-        if "--repo=own/repo" not in fx.ghlog.read_text().split("\037"):
-            fail(f"one clone: gh was not asked about own/repo: {fx.ghlog.read_text()}")
+        log = fx.ghlog.read_text(encoding="utf-8")
+        if "--repo=own/repo" not in log.split("\037"):
+            fail(f"one clone: gh was not asked about own/repo: {log}")
         if not has(fx, ck, c7):
             fail("one clone: the head of pull request 8 was not fetched")
         if has(fx, ck, c9):
@@ -489,7 +636,8 @@ def main() -> int:
 
         for url, fc in forms:
             expect(url, fx.run(str(fc)), 0, [])
-            if "--repo=own/repo" not in fx.ghlog.read_text().split("\037"):
+            log = fx.ghlog.read_text(encoding="utf-8")
+            if "--repo=own/repo" not in log.split("\037"):
                 fail(f"{url}: gh was not asked about own/repo")
         expect(
             "not on GitHub, a credential in the URL",
@@ -623,7 +771,7 @@ def main() -> int:
             ["git", "-C", str(odd), "hash-object", "-w", "--stdin"],
             input="blob\n",
             capture_output=True,
-            text=True,
+            encoding="utf-8",
             env=fx.env,
             check=True,
         ).stdout.strip()
@@ -662,6 +810,8 @@ def main() -> int:
         ):
             if f"refused: {fx.tmp / which}: " not in err:
                 fail(f"refused: {which} is not refused: {err}")
+
+        credentials(fx, o2)
 
         expect("no checkout", fx.run(), 2, [], "usage:")
         expect("an option", fx.run("--all", str(plain)), 2, [], "usage:")
