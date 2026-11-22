@@ -83,7 +83,9 @@
 # - gate_peak. Under each of sh, bash, zsh and dash, it returns the exit
 #   code of the program it runs and appends one well-formed line to
 #   gate.peaks, whose wall time is between the second the program sleeps and
-#   a minute. A program holding 200 MB peaks between 200 and 300 MB, skipped
+#   a minute. Under zsh with noclobber set, it writes that line to a lock
+#   directory with no gate.peaks yet, skipped where zsh is missing. A
+#   program holding 200 MB peaks between 200 and 300 MB, skipped
 #   where neither time nor /proc reads a peak, as in Codex's sandbox. A
 #   program killed with KILL returns 137. gate_peak removes time's output
 #   file, and one a shell that is gone left, and keeps one of a live shell.
@@ -881,6 +883,23 @@ for shell in sh bash zsh dash; do
     { cat "$GATE_LOCK_DIR/gate.peaks"; fail "under $shell, the line of gate.peaks is not well formed"; }
   echo "ok: under $shell, gate_peak returned 7 and appended: $(cat "$GATE_LOCK_DIR/gate.peaks")"
 done
+
+# zsh with noclobber set refuses >> to a file that does not exist: a call
+# from it on a lock directory with no gate.peaks still writes its line.
+if command -v zsh > /dev/null; then
+  rm -rf "${GATE_LOCK_DIR:?}"
+  rc=0
+  zsh -c 'set -C; . "$1"; gate_peak noclobber /abs/wt sh -c "exit 7"' zsh "$script" || rc=$?
+  [ "$rc" -eq 7 ] || fail "under zsh with set -C, gate_peak returned $rc, not the program's 7"
+  [ -f "$GATE_LOCK_DIR/gate.peaks" ] && [ "$(wc -l < "$GATE_LOCK_DIR/gate.peaks")" -eq 1 ] ||
+    fail "under zsh with set -C, gate.peaks does not hold one line"
+  awk -F '\t' 'NF != 6 || $2 != "noclobber" || $3 != "/abs/wt" || $5 != 7 { exit 1 }' \
+    "$GATE_LOCK_DIR/gate.peaks" ||
+    { cat "$GATE_LOCK_DIR/gate.peaks"; fail "under zsh with set -C, the line of gate.peaks is not well formed"; }
+  echo "ok: under zsh with set -C, gate_peak created gate.peaks and appended: $(cat "$GATE_LOCK_DIR/gate.peaks")"
+else
+  echo "skipped: no zsh for gate_peak with set -C"
+fi
 
 # A program a signal ends returns 128 plus its number, as the shell gives
 # it: 137 for KILL, which macOS's time alone turns into 1.
