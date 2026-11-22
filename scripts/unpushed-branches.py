@@ -38,10 +38,18 @@ empty file), which could make origin's history reach a commit it does
 not hold. No git call runs a hook of the checkout
 (`core.hooksPath=/dev/null`).
 
-Its own lines name no URL, which can carry a credential. git's messages
-it passes on leave out a URL's userinfo, since it drops the caller's
-`GIT_TRACE*` and `GIT_CURL_VERBOSE`, whose output on standard error
-would carry it, as `GIT_TRACE`'s line for `git remote-https` does.
+Its own lines name no URL, which can carry a credential. It drops the
+caller's `GIT_TRACE*` and `GIT_CURL_VERBOSE`, whose output on standard
+error would carry one, as `GIT_TRACE`'s line for `git remote-https`
+does. The messages of git and ssh that it passes on can still carry
+one. Where an https or http URL holds a user and no password, as a
+token alone does, no credential helper gives a password, and the server
+answers 401, git's `could not read Password for
+'<scheme>://<user>@<host>'` names that user. Where an ssh server
+refuses the login, ssh's `<user>@<host>: Permission denied` names the
+user of origin's URL, with its password where the URL holds one. So its
+standard error is not safe to paste where origin's URL carries a
+credential.
 
 It prints `<checkout>: <branch> <sha>` for each branch it lists. Where a
 fetch or a lookup fails, it lists the branches it could not clear and
