@@ -671,11 +671,15 @@ gate_peak() {
   _gl_psec=$(($(date +%s) - _gl_pt0))
   [ -z "$_gl_pf" ] || rm -f "$_gl_pf"
   if [ -n "$_gl_d" ] && [ -d "$_gl_d" ]; then
-    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-      "$(printf '%s' "$_gl_pkind" | tr '\t\n' '  ')" \
-      "$(printf '%s' "$_gl_ptree" | tr '\t\n' '  ')" \
-      "${_gl_pkb:-?}" "$_gl_prc" "$_gl_psec" >> "$_gl_d/gate.peaks" ||
-      echo "gate_peak: cannot append to $_gl_d/gate.peaks" >&2
+    # noclobber off in a subshell: zsh with it set refuses >> to a file
+    # that does not exist, and the caller's setting stays as it was
+    (
+      set +C
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        "$(printf '%s' "$_gl_pkind" | tr '\t\n' '  ')" \
+        "$(printf '%s' "$_gl_ptree" | tr '\t\n' '  ')" \
+        "${_gl_pkb:-?}" "$_gl_prc" "$_gl_psec" >> "$_gl_d/gate.peaks"
+    ) || echo "gate_peak: cannot append to $_gl_d/gate.peaks" >&2
   fi
   return "$_gl_prc"
 }
