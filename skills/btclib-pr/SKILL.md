@@ -1679,13 +1679,17 @@ gh api graphql -f owner="${repo%%/*}" -f name="${repo#*/}" -F n="${n:?}" \
 
 On the closing day, the session reads the head's commits: the `Sign-off`
 check on the head, or, where it did not run, `writing.md`'s *Signed and
-signed off*'s script on those commits. Where the check, or the script
-where the check did not run, refuses a commit, the session closes the
-pull request with a comment, from a file. The comment thanks them, names
-the commits refused, links the request, and gives the commands the check
-or the script printed. It points to `CONTRIBUTING.md`'s *Pull requests*
-for how the pull request comes back, and says that a comment on each
-issue it cites, posted next, says who holds that issue:
+signed off*'s script on those commits. Where the script prints that it
+was not fetched, or exits other than `0` or `1`, the session decides
+nothing that day: it neither closes the pull request nor reads its
+commits as passing, and its report says the script did not run. Where
+the check, or the script where the check did not run, refuses a commit,
+the session closes the pull request with a comment, from a file. The
+comment thanks them, names the commits refused, links the request, and
+gives the commands the check or the script printed. It points to
+`CONTRIBUTING.md`'s *Pull requests* for how the pull request comes back,
+and says that a comment on each issue it cites, posted next, says who
+holds that issue:
 
 ```shell
 comment=<comment file>

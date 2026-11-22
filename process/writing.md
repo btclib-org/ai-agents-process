@@ -1394,19 +1394,37 @@ The findings of these local runs are answered as `/btclib-pr`'s
   scratch=<scratch>
   wt=<wt>
   range=<range>
-  gh api -H 'Accept: application/vnd.github.raw' \
-    repos/btclib-org/.github/contents/.github/scripts/check_sign_off.py |
+  ```
+
+  ```shell
+  script=${scratch:?}/check_sign_off.py
+  if gh api -H 'Accept: application/vnd.github.raw' \
+      repos/btclib-org/.github/contents/.github/scripts/check_sign_off.py \
+      >| "${script:?}" && test -s "${script:?}"; then
     env -C "${scratch:?}" \
       GIT_DIR="$(git -C "${wt:?}" rev-parse --absolute-git-dir)" \
-      uv run --no-config --no-project --python 3.15 python -I - \
-      "${range:?}"
+      uv run --no-config --no-project --python 3.15 python -I \
+      "${script:?}" "${range:?}"
+  else
+    echo 'Sign-off script not fetched: nothing checked' >&2
+    (exit 3)
+  fi
   ```
 
   It runs in the scratch directory, with git pointed at the worktree,
   whoever wrote the branch. From the worktree, uv would run the
   interpreter of a `.venv` there, whose `.pth` files run even under
   `python -I`, would read a `uv.toml` there, and Python would import a
-  `subprocess.py` there in place of the standard library's.
+  `subprocess.py` there in place of the standard library's. `python -I`
+  also keeps the script's own directory, the scratch directory, off
+  `sys.path`.
+
+  The script is fetched into a file before Python runs, because a failed
+  fetch piped into `python -` feeds it an empty script, which exits `0`,
+  and `set -o pipefail` would turn that into `1`, the refusal's own
+  code. Where `gh api` fails or writes an empty file, the command runs
+  no Python, prints `Sign-off script not fetched: nothing checked` and
+  exits `3`: neither a pass nor a refusal, and nothing is decided on it.
 
   Its control is commit `c1786962edc1` of `btclib-org/.github`, which
   carries no `Signed-off-by:` trailer. A tree's own commits may all carry
@@ -1418,10 +1436,9 @@ The findings of these local runs are answered as `/btclib-pr`'s
   ```
 
   The same command, with `<clone>` for `<wt>` and
-  `c1786962edc1~1..c1786962edc1` for `<range>`, exits `1`. A failed
-  fetch pipes an empty script, which exits `0`. The clone goes once the
-  control has run, since the sweep of `every-role.md`'s *Debris goes
-  when its work ends* refuses a `<work>` that holds it:
+  `c1786962edc1~1..c1786962edc1` for `<range>`, exits `1`. The clone
+  goes once the control has run, since the sweep of `every-role.md`'s
+  *Debris goes when its work ends* refuses a `<work>` that holds it:
 
   ```shell
   clone=<clone>
