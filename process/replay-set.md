@@ -90,13 +90,13 @@ reviewer, from its own new directory and with the setting, reported no
 `MEMORY.md` block, and the block of `~/.claude/CLAUDE.md`:
 `--setting-sources project` does not keep the instruction files out.
 `agents/reviewer.md` sets no `omitClaudeMd`, so a reviewer the `Agent`
-tool starts from it carries the index. A run therefore starts its
-reviewers as *A run starts each reviewer as a process of its own* says,
-below. The agent definition belongs to the configuration under test. The
-instruction files and the index belong to neither the configuration nor
-the case, and either can state the change under test or a case's
-finding, as a note of the maintainer's answer that a candidate turns
-into a rule does.
+tool starts from it carries the index. A run therefore starts its Claude
+Code reviewers as *A run starts each Claude Code reviewer as a process
+of its own* says, below. The agent definition belongs to the
+configuration under test. The instruction files and the index belong to
+neither the configuration nor the case, and either can state the change
+under test or a case's finding, as a note of the maintainer's answer
+that a candidate turns into a rule does.
 
 So the reviewer may carry them, and may rest no finding on them. Before
 the first reviewer starts, and again after the last verdict, since other
@@ -177,12 +177,16 @@ dir=<work>/reviewer/<name>
 rm -rf "${dir:?}"
 ```
 
-**A run starts each reviewer as a process of its own**, never with the
-`Agent` tool, so that no memory index loads (*A reviewer carries more
-than its brief*). It runs the `claude -p --agent reviewer` block of
-`orchestration.md`'s *Starting the reviewer in the other client*, and
-the steps that section gives around it, with `<work>/reviewer/<name>`,
-made as above, as `dir`. The brief is then
+**A run starts each Claude Code reviewer as a process of its own**,
+never with the `Agent` tool, so that no memory index loads (*A reviewer
+carries more than its brief*). It runs the `claude -p --agent reviewer`
+block of `orchestration.md`'s *Starting the reviewer in the other
+client*, with `<work>/reviewer/<name>`, made as above, as `dir`. Of the
+steps that section gives around the block, it takes these: the `mkdir`
+of `.claude/agents`, the link, the `mktemp` of the run's temporary
+directory and its removal once the run ends, and, where the case's tree
+holds a `uv.lock`, the `uv sync --locked` of a Codex reviewer, run in
+that tree, since the block sets `UV_OFFLINE`. The brief is then
 `<work>/reviewer/<name>-brief.txt`, and the verdict is written to
 `<work>/reviewer/<name>.log`. Three things change. First, the link names
 the agent definition at the `$PROCESS` sha of the reviewer's
@@ -197,7 +201,8 @@ agent=<agent>
 ```
 
 ```shell
-git -C "${clone:?}" show "${sha:?}:agents/reviewer.md" > "${agent:?}"
+[ ! -e "${agent:?}" ] && [ ! -L "$agent" ] &&
+  git -C "${clone:?}" show "${sha:?}:agents/reviewer.md" > "$agent"
 ```
 
 ```shell
@@ -222,6 +227,12 @@ Third, `--effort` and `--allowedTools` name the effort and the tools of
 the reviewer's configuration, since `claude -p --agent` does not take
 the definition's effort (`orchestration.md`'s *Models*), and `dontAsk`
 refuses a tool that `--allowedTools` leaves out.
+
+A reviewer that the block's `timeout` or `--max-turns` stops before its
+verdict, so that the log's first line is neither `CLEARED <sha>` nor
+`CHANGES REQUESTED`, gave no verdict. Its case runs again with a new
+reviewer, as `orchestration.md`'s *A session restart replaces each
+reviewer it lost* runs again a review whose verdict was not received.
 
 The case's tree is built at a new path from a checkout that holds the
 head, named by its path, so that the fetch needs no network and the
@@ -507,9 +518,9 @@ on one is re-measured: where it holds, the case moves to the defects,
 and where it does not, it is a false finding. A pull request becomes a
 clean case where, on the head it landed on, the three reviewers of
 `/btclib-pr`'s *The reviews on GitHub* read `ack`, both reads below
-print `0`, two fresh reviewers, briefed as for a run, each clear it, and
-no review names a defect in it that holds: a false sentence is one,
-wording that could only be better is not.
+print `0`, two fresh reviewers, briefed and started as for a run, each
+clear it, and no review names a defect in it that holds: a false
+sentence is one, wording that could only be better is not.
 
 ```shell
 repo=<owner>/<repo>
@@ -564,17 +575,20 @@ candidate's branch last merged or, with no merge, the parent of the
 branch's first commit, so that `git diff <baseline> <candidate> --
 process agents skills REVIEWING.md` shows that change alone. The entry
 names that sha, and the commit whose `process/replay-set.md` the run
-followed, which shows the brief it ran under. An entry that names no
-such commit stands as recorded, one that reused an earlier run's
-baseline included.
+followed, which shows the brief it ran under. Where that commit is not
+on `main`, the entry also records the file's blob, which `git rev-parse
+'<commit>:process/replay-set.md'` prints, for the reason *Runs* gives
+for a `$PROCESS` sha's tree. An entry that names no such commit stands
+as recorded, one that reused an earlier run's baseline included.
 
 ## Runs
 
 Each run is an entry: the date, the commit of this file it followed
 (*One factor at a time*), the `$PROCESS` sha, the factor changed and its
-value, the client, the model and the effort, a hit or a miss for each
-defect, or why its case was left out (*A case's tree can hold this
-file*) or recorded as unable to evaluate the change (*The expected
+value, the client and its version, as `claude --version` or
+`codex --version` prints it, the model and the effort, a hit or a miss
+for each defect, or why its case was left out (*A case's tree can hold
+this file*) or recorded as unable to evaluate the change (*The expected
 finding is kept out of the reviewer's input* and *A reviewer carries
 more than its brief*), each false finding on any case apart, and the
 notes outside the brief that *A reviewer carries more than its brief*
