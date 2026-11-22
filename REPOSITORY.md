@@ -116,7 +116,8 @@ the whole object; the one at the foot of the section of this name in
 **`links.yml` is not a required check and must not become one.** It asks
 whether somebody else's server answered, which is a question a merge
 cannot depend on. `claude-review.yml` is not one either, and its own
-header says why.
+header says why. `sign-off-comment.yml` runs on a completed run of
+`lint` and only writes a comment: the `Sign-off` job is what gates.
 
 ## Branch protection and the rulesets
 
@@ -322,13 +323,16 @@ declaration:
 git grep -nE '^ +[a-z-]+: write' -- .github/workflows/
 ```
 
-`claude-review` takes `pull-requests: write` to post a comment, and
-`claude-implement` takes `issues: write` to post an assessment and apply
-a label. Each calls the `btclib-org/.github` workflow of its name with
-`reusable-` before it, and takes `id-token: write` for the OIDC token
-the action mints at startup. `claude-implement` also needs it for the
-token its callee's `publish` job trades for the App's token. `lint.yml`
-and `links.yml` read the tree and the network and write nothing back.
+`claude-review` takes `pull-requests: write` to post the review, its
+reactions and the reply to a mention, and `claude-implement` takes
+`issues: write` to post an assessment and apply a label. Each calls the
+`btclib-org/.github` workflow of its name with `reusable-` before it,
+and takes `id-token: write` for the OIDC token the action mints at
+startup. `claude-implement` also needs it for the token its callee's
+`publish` job trades for the App's token. `sign-off-comment` calls
+`reusable-sign-off-comment.yml` and takes `pull-requests: write` to post
+its one comment. `lint.yml` and `links.yml` read the tree and the
+network and write nothing back.
 
 **What this call cannot say is whether that value is this repository's
 own or the organization's**, there being no endpoint that answers.
@@ -489,10 +493,12 @@ being published.
 ## Variables
 
 **Switches this repository does not set.** A switch is a variable that
-the jobs of a `btclib-org/.github` workflow called here guard on:
-`reusable-claude-review.yml`, which `claude-review.yml` calls, guards
-on `vars.CLAUDE_REVIEW_ENABLED`, and `reusable-claude-implement.yml`,
-which `claude-implement.yml` calls, on `vars.CLAUDE_IMPLEMENT_ENABLED`.
+jobs of a `btclib-org/.github` workflow called here guard on. Of
+`reusable-claude-review.yml`, which `claude-review.yml` calls, the
+review and mention jobs guard on `vars.CLAUDE_REVIEW_ENABLED`; the job
+that clears a new head's reactions runs whatever it says, for the reason
+that workflow's header gives. `reusable-claude-implement.yml`, which
+`claude-implement.yml` calls, guards on `vars.CLAUDE_IMPLEMENT_ENABLED`.
 A variable set here would take precedence over one of the same name on
 the organization, so the repository's own store is read too:
 
