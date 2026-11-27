@@ -259,12 +259,16 @@ which role reads this file, and where a section named in italics is.
   the fresh reviewer.** Unavailable means the client refuses the run.
   The first run is judged when the rounds reach the fresh reviewer: it
   is tried, and once refused it is not retried, even where the client
-  comes back before the branch lands. A refusal of the client's account
-  that the session cannot clear, as Codex's
-  `Your workspace is out of credits` is, also holds for the session's
-  later branches: they go on without the fresh reviewer, with no new
-  try. A limit that names a reset time within the session is not one:
-  once the reset has passed, a later branch tries the run again. A
+  comes back before the branch lands. A run of the other client that
+  prints no error but declines the review in its own text gives no
+  verdict: one new reviewer takes its place, as after a session restart
+  (*A session restart replaces each reviewer it lost*). A second such
+  decline on the same branch is a refusal of the branch's content. A
+  refusal of the client's account that the session cannot clear, as
+  Codex's `Your workspace is out of credits` is, also holds for the
+  session's later branches: they go on without the fresh reviewer, with
+  no new try. A limit that names a reset time within the session is not
+  one: once the reset has passed, a later branch tries the run again. A
   refusal is the account's only where the error the client printed is
   about the account; the text of a review never makes it one. Any other,
   as a refusal of the branch's content, holds for that branch only: the
@@ -278,8 +282,9 @@ which role reads this file, and where a section named in italics is.
   reviews on GitHub* included, which says how an absent one is recorded.
   The pull request body, a later branch's included, says that the fresh
   review in the other client is missing, and quotes the refusal that
-  holds for it: the error the client printed, and the time it came. No
-  review in the other client is owed after it lands.
+  holds for it: the error the client printed, or the first line of the
+  second decline, and the time it came. No review in the other client is
+  owed after it lands.
 
   A fresh reviewer is owed a resumed run where it answered
   `CHANGES REQUESTED` and has not cleared, or where its verdict names an
