@@ -369,8 +369,8 @@ a decision:
   git -C "${wt:?}" show "${base:?}:${file:?}"
   ```
 
-**A reply to a bot's finding goes through the branch's rounds before it
-is posted**, with the route it took, as `local-review.md`'s *A pull
+**A reply to a bot's finding goes through the rounds before it is
+posted**, with the route it took, as `local-review.md`'s *A pull
 request's rounds* says.
 
 **Every inline `suggestion` that is accepted is applied in the

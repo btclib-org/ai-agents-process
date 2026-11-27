@@ -387,8 +387,11 @@ before a push* says.
   the verdict says so and names the paths in its `CONFLICT` lines.
 - A branch a review on GitHub sends back, the bot's or a person's, goes
   through the same rounds before its fix is pushed.
-- **A reply to a bot's finding is read in the branch's rounds before it
-  is posted**, beside the fix where there is one. The brief carries each
+- **A reply to a bot's finding is read in the rounds before it is
+  posted**: in the branch's rounds beside the fix where there is one.
+  A reply with no fix is a text to be posted that the rounds review on
+  its own, so the dedicated reviewer reads it and then a fresh reviewer
+  in the writer's client. The brief carries each
   finding with its draft reply and the route taken, and names
   `/btclib-pr`'s *Answering it*, whose routes the reply is judged by.
   Each reviewer tries the reply's ground as it tries a claim of the
