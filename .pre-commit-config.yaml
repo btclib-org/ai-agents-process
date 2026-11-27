@@ -34,6 +34,7 @@ ci:
     - test-rebase-clearance
     - test-pretooluse-rules
     - test-sweep
+    - test-unpushed-branches
     - test-gate-blocks
     - test-gate-lock
 
@@ -184,6 +185,13 @@ repos:
         language: python
         entry: python -I scripts/test-pretooluse-rules.py
         files: ^scripts/(test-)?pretooluse-rules\.py$
+        pass_filenames: false
+      # what scripts/unpushed-branches.py lists on fixture repositories
+      - id: test-unpushed-branches
+        name: unpushed-branches.py answers as its test expects
+        language: python
+        entry: python -I scripts/test-unpushed-branches.py
+        files: ^scripts/(test-)?unpushed-branches\.py$
         pass_filenames: false
       # what scripts/sweep.sh removes and refuses on fixture directories,
       # run through its own shebang as check-changelog below is

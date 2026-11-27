@@ -386,9 +386,18 @@ This section is in `every-session.md`, beside this file.
   ```
 
   `scripts/sweep.sh` deletes the branch of each worktree it removes,
-  under its own checks. A script that lists the local branches on no
-  remote and in no pull request is still to come
-  (ISS btclib-org/ai-agents-process#662).
+  under its own checks. `scripts/unpushed-branches.py` lists the local
+  branches of a checkout whose head no such ref reaches, and deletes
+  none. Its docstring says what it fetches first, objects alone, and
+  when it lists a branch it could not clear:
+
+  ```shell
+  checkout=<checkout>
+  ```
+
+  ```shell
+  python3 -I "${PROCESS:?}/scripts/unpushed-branches.py" "${checkout:?}"
+  ```
 
   **A piece of work's `<work>` goes when the last pull request of its
   issue lands or is closed**, or when the pull request that stands in for
@@ -401,11 +410,11 @@ This section is in `every-session.md`, beside this file.
   opened from a branch one of those worktrees holds. An issue ported to
   several trees has a `<work>` for each (*Your own worktree*), so each
   fetches the pull requests of its own repository, not only the one that
-  ended. The script counts a ref of origin only where the repository
-  holds its commit, and a landing's commit is made on the forge, as is a
-  head that a bot moved on or that was pushed from another clone; a
-  worktree whose head was not fetched is refused as holding an unpushed
-  commit. The default fetch does not bring `refs/pull/*`:
+  ended. `scripts/sweep.sh` counts a ref of origin only where the
+  repository holds its commit, and a landing's commit is made on the
+  forge, as is a head that a bot moved on or that was pushed from another
+  clone; a worktree whose head was not fetched is refused as holding an
+  unpushed commit. The default fetch does not bring `refs/pull/*`:
 
   ```shell
   checkout=<checkout>
