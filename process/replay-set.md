@@ -77,7 +77,8 @@ points to `MEMORY.md` beside it for a search. On 2026-11-27, at Codex
 that no git repository holds, with a brief asking for one word, recorded
 both files whole in its session record under `~/.codex/sessions/`. It
 recorded no `AGENTS.md` of its working directory, which held none. That
-machine's `~/.codex/config.toml` set `use_memories = true`.
+machine's `~/.codex/config.toml` set `use_memories = true`. The screen
+below reads the names of both files.
 
 A switch keeps Claude Code's index from one reviewer. One is
 `omitClaudeMd: true` in the agent's definition, which drops the
@@ -130,7 +131,9 @@ ignored, any of these:
 - `session`, then any characters other than a space, or none, then a
   space and `memory`, as in "session's memory";
 - `instruction file`, `global instruction` or `persistent note`;
-- `projects/` and then `/memory` with no space between them.
+- `projects/` and then `/memory` with no space between them;
+- `memory_summary`, or `.codex/` directly followed by `agents.md` or
+  `memories`.
 
 ```shell
 v=<verdict>
@@ -143,7 +146,8 @@ last=$(grep -v '^[[:space:]]*$' "${v:?}" | tail -n 1) &&
     -e 'memory\.md|claude\.md|auto.?memory' \
     -e 'memory (index|note|file|director)|session[^ ]* memory' \
     -e 'instruction file|global instruction|persistent note' \
-    -e 'projects/[^ ]*/memory' "$v" || rc=$?; [ "$rc" -eq 1 ]; } &&
+    -e 'projects/[^ ]*/memory|memory_summary' \
+    -e '\.codex/(agents\.md|memories)' "$v" || rc=$?; [ "$rc" -eq 1 ]; } &&
   echo unaided
 ```
 
