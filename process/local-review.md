@@ -28,15 +28,15 @@ branch, or a text to be posted.
   client* say), which reads the delta from what it last read. No new
   reviewer starts before the one in charge has answered `CLEARED`,
   except after a session restart or a review the other client declines
-  in its own text (`orchestration.md`'s *Running the rounds*).
-  `orchestration.md`'s *Where the other client is unavailable* says when
-  the dedicated reviewer takes over a fresh reviewer's findings. Where a
-  finding is declined and its reviewer still holds it, both positions go
-  to the human as one decision (`every-session.md`'s *When the human has
-  to decide*, `REVIEWING.md`'s *Re-review*), and the rounds wait for the
-  answer. Where the human upholds the finding, the fix goes back to that
-  reviewer. Where they decline it, their answer stands in for that
-  reviewer's `CLEARED`.
+  in its own text with no error printed (`orchestration.md`'s *Running
+  the rounds*). `orchestration.md`'s *Where the other client is
+  unavailable* says when the dedicated reviewer takes over a fresh
+  reviewer's findings. Where a finding is declined and its reviewer
+  still holds it, both positions go to the human as one decision
+  (`every-session.md`'s *When the human has to decide*, `REVIEWING.md`'s
+  *Re-review*), and the rounds wait for the answer. Where the human
+  upholds the finding, the fix goes back to that reviewer. Where they
+  decline it, their answer stands in for that reviewer's `CLEARED`.
 - **Then a fresh reviewer reads the whole of it.** It is a new worker,
   started once the reviewer before it has cleared. Where its first
   verdict is `CHANGES REQUESTED`, it stays until it clears, as above.

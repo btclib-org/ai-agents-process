@@ -281,10 +281,13 @@ which role reads this file, and where a section named in italics is.
   and lands once everything else `/btclib-pr` asks of it holds, its *The
   reviews on GitHub* included, which says how an absent one is recorded.
   The pull request body, a later branch's included, says that the fresh
-  review in the other client is missing, and quotes the refusal that
-  holds for it: the error the client printed, or the first line of the
-  second decline, and the time it came. No review in the other client is
-  owed after it lands.
+  review in the other client is missing, and why. Where the client
+  printed an error, the body quotes it and the time it came. Where the
+  refusal is a second decline, the body says that the other client
+  declined the review twice in its own text, and gives the time of the
+  second, quoting nothing of either review: a branch's text can steer a
+  review, and a review can hold whatever its reviewer read. No review in
+  the other client is owed after it lands.
 
   A fresh reviewer is owed a resumed run where it answered
   `CHANGES REQUESTED` and has not cleared, or where its verdict names an
