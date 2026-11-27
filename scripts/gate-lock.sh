@@ -140,7 +140,11 @@
 #
 # gate_take writes the holder's PID into the slot's owner file, so that
 # only the holder releases it. A slot whose holder's process is gone is
-# stale, and gate_take removes it.
+# stale, and gate_take removes it. It makes the owner file with noclobber,
+# and holds the slot only where it made that file; a generator takes
+# gate.generator the same way. mkdir's exit alone does not decide: uutils'
+# mkdir can exit 0 where another process made the directory at the same
+# moment (uutils/coreutils#13970).
 #
 # Reclaiming renames the owner file, which only one waiter wins (mv is
 # atomic; the others find no file). The winner reads the PID in what it
@@ -412,6 +416,13 @@ _gl_stamp() {
   date +%s > "$_gl_d/.last.$_gl_me" && mv "$_gl_d/.last.$_gl_me" "$_gl_d/gate.last"
 }
 
+# Makes the directory $_gl_s and its owner file, naming this shell, the
+# time and $1; succeeds only where this shell made the owner file
+_gl_claim() {
+  mkdir "$_gl_s" 2>/dev/null &&
+    (set -C && echo "$_gl_me $(date +%s) $1" > "$_gl_s/owner") 2>/dev/null
+}
+
 gate_wait() {
   until _gl_admit; do :; done
   echo "gate_wait: $(_gl_status)"
@@ -477,8 +488,7 @@ EOF
     _gl_i=1
     while [ "$_gl_i" -le "$GATE_LOCK_SLOTS" ]; do
       _gl_slot "$_gl_i"
-      if mkdir "$_gl_s" 2>/dev/null; then
-        echo "$_gl_me $(date +%s) $_gl_wt" > "$_gl_s/owner"
+      if _gl_claim "$_gl_wt"; then
         _gl_stamp
         rm -f "$_gl_ticket"
         echo "${_gl_s##*/} taken by $_gl_me at $(_gl_status)"
@@ -531,10 +541,7 @@ gate_take_all() {
   _gl_gwt=${2:-${1:-}}
   while :; do
     _gl_s="$_gl_d/gate.generator"
-    if mkdir "$_gl_s" 2>/dev/null; then
-      echo "$_gl_me $(date +%s) $_gl_gwt" > "$_gl_s/owner"
-      break
-    fi
+    _gl_claim "$_gl_gwt" && break
     _gl_reclaim || sleep "$GATE_LOCK_POLL"
   done
   _gl_gi=0
