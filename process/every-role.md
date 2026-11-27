@@ -47,11 +47,11 @@ repository's own file that has drifted from the standard in
 `btclib-org/.github` is a defect, tracked there, and the standard wins
 until it is brought in line. The process, a repository's own files
 included, wins over the generic agents, except that on the model and its
-effort the agent definition is the more specific text
-(`orchestration.md`'s *Models*), and each agent's *What holds whatever
-the process*, in `agents/`, holds as its heading says. A brief never
-overrides the process. Any other contradiction is still a defect, and it
-is fixed in the more general file.
+effort `orchestration.md`'s *Models* says which text wins, and each
+agent's *What holds whatever the process*, in `agents/`, holds as its
+heading says. A brief never overrides the process. Any other
+contradiction is still a defect, and it is fixed in the more general
+file.
 
 **Three roles the process names.** *The human* is whoever runs the
 session: they answer its questions and receive its reports, and the

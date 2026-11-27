@@ -99,19 +99,34 @@ which role reads this file, and where a section named in italics is.
   makes a new one.
 - **Models**: in Claude Code the writer, the reviewer and the designer
   run on Opus at effort `high`, which their agent definitions set, so
-  none follows the effort of the session that starts it: the exception
-  `every-role.md`'s *Which file wins* makes to the general model advice
-  in `AGENTS.md`. Where that session's environment sets
-  `CLAUDE_CODE_EFFORT_LEVEL`, the variable wins over the definition. A
-  reviewer Codex starts with `claude -p --agent` takes the definition's
-  model but not its effort, so its command in *Starting the reviewer in
-  the other client* names `--effort high`. The orchestrator may run on
-  Opus. In Codex the agent files set no model: an agent runs on the one
-  its spawn request names, else on the `[agents]` default of
-  `config.toml`, else on the orchestrator's. A reviewer `codex exec`
-  starts runs on `gpt-6.1-sol` at effort `high`, which its command in
-  *Starting the reviewer in the other client* names, rather than on
-  `config.toml`'s `model` and `model_reasoning_effort`.
+  none follows the effort of the session that starts it: on the model
+  and the effort, the definition wins over the general model advice in
+  `AGENTS.md` (`every-role.md`'s *Which file wins*). Where that
+  session's environment sets `CLAUDE_CODE_EFFORT_LEVEL`, the variable
+  wins over the definition. A reviewer Codex starts with
+  `claude -p --agent` takes the definition's model but not its effort,
+  so its command in *Starting the reviewer in the other client* names
+  `--effort high`. The orchestrator may run on Opus. In Codex the agent
+  files set no model: an agent runs on the one its spawn request names,
+  else on the `[agents]` default of `config.toml`, else on the
+  orchestrator's. A reviewer `codex exec` starts runs on `gpt-6.1-sol`
+  at effort `high`, which its command in *Starting the reviewer in the
+  other client* names, rather than on `config.toml`'s `model` and
+  `model_reasoning_effort`.
+
+  The reviewer the orchestrator starts with the `Agent` tool on a branch
+  whose diff is Markdown only runs at effort `medium`, which that call's
+  `effort` sets over the definition's. Where `CLAUDE_CODE_EFFORT_LEVEL`
+  is set, it wins over that call's `effort` too. The diff is Markdown
+  only where every path
+  `git diff -z --name-only --no-renames <base>...<head>` prints ends in
+  `.md`, `<base>` being the branch it targets. The class is read when
+  the reviewer is started, and a resumed reviewer keeps its effort. On
+  the cases of the replay set whose diff is Markdown only, the reviewer
+  at `medium` lost no hit of the `high` baseline in the run for ISS
+  btclib-org/ai-agents-process#588 in `replay-set.md`'s *Runs*. On any
+  other branch it stays at `high` until a run of the replay set decides
+  it.
 - **A worker that exceeds the time you set is interrupted**, not waited
   for.
 - **Writing runs in parallel; heavy gating runs under the gate lock**
