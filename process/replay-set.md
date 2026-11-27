@@ -77,8 +77,10 @@ points to `MEMORY.md` beside it for a search. On 2026-11-27, at Codex
 that no git repository holds, with a brief asking for one word, recorded
 both files whole in its session record under `~/.codex/sessions/`. It
 recorded no `AGENTS.md` of its working directory, which held none. That
-machine's `~/.codex/config.toml` set `use_memories = true`. The screen
-below reads the names of both files.
+machine's `~/.codex/config.toml` set `memories = true` under
+`[features]` and `use_memories = true` under `[memories]`. Which of the
+two decides whether the summary loads is not measured. The screen below
+reads the names of both files.
 
 A switch keeps Claude Code's index from one reviewer. One is
 `omitClaudeMd: true` in the agent's definition, which drops the
@@ -117,13 +119,13 @@ either that states the change under test or a case's finding, or says
 that none does. The brief says that neither is a ground for a finding,
 and has the verdict end with the line `Outside the brief: none`, or with
 `Outside the brief:` followed by each note of either that the verdict
-relies on or quotes. That line comes after the coverage list that
-`local-review.md`'s *The rounds* has a first verdict end with, so that
-the block below reads it. The orchestrator saves each verdict to a file
-in its own `<scratch>`, outside `<work>/reviewer/<name>`, which the run
-removes. This prints `unaided` only where the file's last line that
-holds text is `Outside the brief: none`, and where no line holds, case
-ignored, any of these:
+relies on or quotes. That line comes last, after the coverage list that
+`local-review.md`'s *The rounds* has a first verdict end with and after
+whatever follows that list, so that the block below reads it. The
+orchestrator saves each verdict to a file in its own `<scratch>`,
+outside `<work>/reviewer/<name>`, which the run removes. This prints
+`unaided` only where the file's last line that holds text is `Outside
+the brief: none`, and where no line holds, case ignored, any of these:
 
 - `memory.md` or `claude.md`;
 - `auto` and `memory` with at most one character between them;
@@ -133,7 +135,8 @@ ignored, any of these:
 - `instruction file`, `global instruction` or `persistent note`;
 - `projects/` and then `/memory` with no space between them;
 - `memory_summary`, or `.codex/` directly followed by `agents.md` or
-  `memories`.
+  `memories`;
+- `oai-mem-citation`, `rollout_summary` or `rollout_summaries`.
 
 ```shell
 v=<verdict>
@@ -147,6 +150,7 @@ last=$(grep -v '^[[:space:]]*$' "${v:?}" | tail -n 1) &&
     -e 'memory (index|note|file|director)|session[^ ]* memory' \
     -e 'instruction file|global instruction|persistent note' \
     -e 'projects/[^ ]*/memory|memory_summary' \
+    -e 'oai-mem-citation|rollout_summary|rollout_summaries' \
     -e '\.codex/(agents\.md|memories)' "$v" || rc=$?; [ "$rc" -eq 1 ]; } &&
   echo unaided
 ```
