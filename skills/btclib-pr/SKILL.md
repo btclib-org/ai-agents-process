@@ -2626,8 +2626,10 @@ has not reported yet.
 - **The collateral goes back now** (`orchestration.md`'s *Closing
   collateral*), before anything new starts.
 - **Remove the worktrees and the local branches** — yours, the branch
-  the writer handed over among them, once the writer has removed its
-  worktree (`every-role.md`'s *Debris goes when its work ends*).
+  the writer handed over among them, once the writer's worktree is gone
+  (`every-role.md`'s *Debris goes when its work ends*). Tell a writer
+  still live to remove that worktree; once it has reported finished,
+  remove it yourself.
 
 Then `orchestration.md`'s *Wrap-up*.
 

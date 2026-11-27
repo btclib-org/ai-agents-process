@@ -323,7 +323,8 @@ all of `/btclib-pr`'s *Landing* applies.
 - **The `/btclib-pr` *Landing* bullets on the collateral and on the
   worktrees hold here**, and `every-role.md`'s *Debris goes when its
   work ends* removes the worktrees once the session hands the pull
-  request over to whom it waits on.
+  request over to whom it waits on. The local branch stays until the
+  pull request lands or is closed, as that section's list says.
 - **Report to the human** each pull request as a `PR` link with its
   diff balance (`every-role.md`'s *How an issue and a pull request are
   named*), what it closes, and whom it waits on or that it landed.
