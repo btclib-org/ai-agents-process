@@ -146,18 +146,40 @@
 # mkdir can exit 0 where another process made the directory at the same
 # moment (uutils/coreutils#13970).
 #
-# Reclaiming renames the owner file, which only one waiter wins (mv is
-# atomic; the others find no file). The winner reads the PID in what it
-# moved: only if that is the dead PID it judged stale does it remove the
-# slot. Otherwise its read was out of date and it moved a live holder's
-# file, which it puts back at once. While a slot has no owner file nobody
-# reclaims it, and gate_release reads again for up to 5 seconds. A slot made
-# by hand with mkdir, or left by a waiter killed while it held the owner file
-# renamed to stale.<pid>, has no owner file. Nor is a gate.generator with
-# no owner file reclaimed. The human removes either by its directory name,
-# after checking that no gate runs in it:
+# Where every waiter runs this copy of the script, reclaiming leaves a live
+# holder's owner file in place, so that a claimant whose mkdir lies finds it
+# there. A waiter that reads a PID whose process is gone links the owner
+# file to .seen.<pid> beside the slots, <pid> being its own, and reads the
+# PID again through the link. Only where the process of that PID is gone too
+# does it link .reclaim.<slot>.<dead pid> beside them to a file holding its
+# own PID, which only one waiter wins: ln fails where the name exists,
+# whatever the shell's options. A holder that took the slot since, under the
+# dead PID reused, is so judged live. The winner moves the owner file to
+# .gone.<pid> only where it is still the file linked (test -ef), and then
+# checks that the file it moved is that one. Among waiters of this copy no
+# other process removes that file, its holder being gone. It then removes
+# the slot, which stays where a claimant has made an owner file since, and
+# the files it made. While a slot has no owner file nobody reclaims it, and
+# gate_release reads again for up to 5 seconds.
+#
+# A waiter of an older copy, which another session may still run, renames
+# the owner file aside and removes the slot on its own. Where it does so
+# between the winner's check and its move, and a shell takes the slot again,
+# the winner moves that holder's file, and links it back to owner at once.
+# That ln fails where a claimant whose mkdir lies made an owner file in the
+# meantime, and two shells then hold the slot. The exposure ends once every
+# session sources this copy.
+#
+# A slot made by hand with mkdir has no owner file, and nor has one left by
+# a waiter killed after it moved the owner file. A waiter killed while it
+# held .reclaim.<slot>.<dead pid> keeps every other waiter from reclaiming
+# that slot: the file names that waiter's PID, and is stale where no process
+# has it. Nor is a gate.generator with no owner file reclaimed. The human
+# removes the slot by its directory name, and its .reclaim file, after
+# checking that no gate runs in it:
 #
 #   rm -r "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/<slot>
+#   rm -f "${GATE_LOCK_DIR:-/tmp/claude-$(id -u)/gate}"/.reclaim.<slot>.<dead pid>
 
 # The number of cores
 _gl_ncpu() {
@@ -434,17 +456,29 @@ _gl_reclaim() {
   [ -r "$_gl_s/owner" ] && read -r _gl_pid _ < "$_gl_s/owner"
   [ -n "$_gl_pid" ] || return 1
   ! _gl_running "$_gl_pid" || return 1
-  mv "$_gl_s/owner" "$_gl_s/stale.$_gl_me" 2>/dev/null || return 1
-  _gl_now=""
-  read -r _gl_now _ < "$_gl_s/stale.$_gl_me"
-  if [ "$_gl_now" = "$_gl_pid" ]; then
-    echo "${_gl_s##*/} of pid $_gl_pid is stale, its process gone: removed"
-    rm -f "$_gl_s/stale.$_gl_me"
-    rmdir "$_gl_s" 2>/dev/null
-    return 0
+  _gl_seen=$_gl_d/.seen.$_gl_me _gl_mine=$_gl_d/.mine.$_gl_me
+  _gl_gone=$_gl_d/.gone.$_gl_me
+  rm -f "$_gl_seen" "$_gl_mine" "$_gl_gone"
+  ln "$_gl_s/owner" "$_gl_seen" 2>/dev/null || return 1
+  _gl_now="" _gl_rrc=1
+  read -r _gl_now _ < "$_gl_seen"
+  _gl_tok=$_gl_d/.reclaim.${_gl_s##*/}.$_gl_now
+  if [ -n "$_gl_now" ] && ! _gl_running "$_gl_now" &&
+    echo "$_gl_me" >| "$_gl_mine" && ln "$_gl_mine" "$_gl_tok" 2>/dev/null; then
+    if [ "$_gl_s/owner" -ef "$_gl_seen" ] &&
+      mv "$_gl_s/owner" "$_gl_gone" 2>/dev/null; then
+      if [ "$_gl_gone" -ef "$_gl_seen" ]; then
+        echo "${_gl_s##*/} of pid $_gl_now is stale, its process gone: removed"
+        rmdir "$_gl_s" 2>/dev/null
+        _gl_rrc=0
+      else
+        ln "$_gl_gone" "$_gl_s/owner" 2>/dev/null
+      fi
+    fi
+    rm -f "$_gl_tok"
   fi
-  mv "$_gl_s/stale.$_gl_me" "$_gl_s/owner"
-  return 1
+  rm -f "$_gl_seen" "$_gl_mine" "$_gl_gone"
+  return "$_gl_rrc"
 }
 
 gate_take() {
@@ -505,8 +539,9 @@ gate_release() {
   _gl_dir && _gl_self || return 1
   _gl_i=0
   while [ "$_gl_i" -lt 5 ]; do
-    # a slot with no owner file may be ours, its file renamed by a waiter
-    # that is about to put it back
+    # a slot with no owner file may be ours: another session may run an
+    # older copy of this script, whose waiter renames a live holder's file
+    # and then puts it back
     _gl_unowned="" _gl_n=1
     # counted rather than globbed: zsh stops at a glob with no match
     while [ "$_gl_n" -le "$GATE_LOCK_SLOTS" ]; do

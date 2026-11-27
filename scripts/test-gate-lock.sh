@@ -55,6 +55,19 @@
 # - A mkdir that exits 0 on a directory it did not make. Under each of sh,
 #   bash, zsh and dash, a second claim of a slot fails, and the owner file
 #   still names the first.
+# - A claim while a slot is reclaimed. Under each of sh, bash, zsh and
+#   dash, and zsh with clobber_empty set, a reclaimer reads a dead PID
+#   in gate.generator's owner file, and C, whose mkdir lies, tries to
+#   claim the slot at each step of the reclaim. Where another reclaimer
+#   removes the slot and B takes it, B alone holds it, and the same
+#   where B took it under the dead PID reused, and beside a mkdir that
+#   does not lie. Where nobody takes the slot, C alone holds it, and so
+#   it does where a file is already at the reclaimer's .seen name, and
+#   where a second reclaimer runs whole after the first's link or before
+#   its move of the owner file. Where a waiter of an older copy reclaims
+#   the slot before that move and B takes it, beside a mkdir that does
+#   not lie, B alone holds it. The reclaimers leave no file of their
+#   own.
 # - Load generators. Under each of sh, bash, zsh and dash, and under sh
 #   beside that mkdir, two sessions ask at once for every slot with
 #   gate_take_all. Both finish, and their holds do not overlap.
@@ -466,6 +479,126 @@ for shell in sh bash zsh dash; do
     [ -s "$2/lies" ] || { echo "mkdir did not exit 0 on the held slot"; exit 1; }
   ' "$shell" "$script" "$tmp" "$liar" || fail "under $shell, a lying mkdir let a second claim through"
   echo "ok: under $shell, beside a mkdir that exits 0 on a directory it did not make, a second claim failed"
+done
+
+# A claim while a slot is reclaimed. The reclaimer, 444, reads PID 111,
+# which is gone, in gate.generator's owner file. Each run then builds one
+# race:
+#
+# - retaken: the stub of _gl_running has another reclaimer remove the slot
+#   and B, 222, take it;
+# - reused: the same, B taking it under the dead PID 111, which the stub
+#   then reports alive;
+# - dead: nobody takes the slot;
+# - planted: the same, with a file at the reclaimer's .seen name already;
+# - late: another reclaimer, 555, runs whole in a subshell after the first
+#   ln;
+# - both: the same, before the first mv or rm of the owner file;
+# - old: before that mv or rm, a waiter of an older copy of the script
+#   renames the owner file aside and removes it and the slot, and B takes
+#   the slot.
+#
+# From then until the reclaim returns, C, 333, tries to claim the slot after
+# each mv, ln and rm, until it has. Each claim that makes an owner file is
+# recorded in claimed beside $idle: those shells are the holders.
+window='
+  _gl_running() {
+    [ "$1" = 111 ] && [ -z "$_t_reused" ] || return 0
+    if [ -z "$_t_in" ]; then
+      case $_t_how in
+        retaken | reused)
+          command rm -f "$_gl_s/owner" && command rmdir "$_gl_s" || return 0
+          ;;
+      esac
+      case $_t_how in
+        retaken) _t_take B 222 ;;
+        reused) _t_take B 111 && _t_reused=1 ;;
+      esac
+    fi
+    _t_in=1
+    return 1
+  }
+  _t_take() {
+    _t_me=$_gl_me _gl_me=$2 _t_got=1
+    _gl_claim "wt-$1" && echo "$1" >> "${idle%/*}/claimed" && _t_got=0
+    _gl_me=$_t_me
+    return "$_t_got"
+  }
+  _t_poke() {
+    [ -n "$_t_in" ] && [ -z "$_t_c" ] || return 0
+    _t_in=""
+    _t_take C 333 && _t_c=1
+    _t_in=1
+  }
+  _t_pre() {
+    [ -n "$_t_in" ] && [ -z "$_t_late" ] || return 0
+    for _t_a; do [ "$_t_a" = "$_gl_s/owner" ] && break; done
+    [ "$_t_a" = "$_gl_s/owner" ] || return 0
+    case $_t_how in
+      both) _t_late=1; (_t_in="" _gl_me=555; _gl_reclaim > /dev/null) ;;
+      old)
+        _t_late=1
+        command mv "$_gl_s/owner" "$_gl_s/stale.666" &&
+          command rm -f "$_gl_s/stale.666" && command rmdir "$_gl_s" &&
+          _t_take B 222
+        ;;
+    esac
+  }
+  mv() { _t_pre "$@"; command mv "$@"; _t_rc=$?; _t_poke; return "$_t_rc"; }
+  rm() { _t_pre "$@"; command rm "$@"; _t_rc=$?; _t_poke; return "$_t_rc"; }
+  ln() {
+    command ln "$@"; _t_rc=$?
+    if [ "$_t_how" = late ] && [ -n "$_t_in" ] && [ -z "$_t_late" ]; then
+      _t_late=1
+      (_t_in="" _gl_me=555; _gl_reclaim > /dev/null)
+    fi
+    _t_poke; return "$_t_rc"
+  }
+'
+for run in sh bash zsh dash zsh-clobber; do
+  shell=${run%-clobber} opts=""
+  [ "$run" = "$shell" ] || opts="setopt clobber_empty;" shell="zsh"
+  command -v "$shell" > /dev/null || { echo "skipped: no $shell for a claim while a slot is reclaimed"; continue; }
+  [ -z "$opts" ] || "$shell" -c "$opts" 2>/dev/null ||
+    { echo "skipped: no clobber_empty in $shell"; continue; }
+  for kind in lying-retaken true-retaken lying-reused lying-dead lying-planted lying-late lying-both true-old; do
+    how=${kind%-*} when=${kind#*-}
+    rm -rf "${GATE_LOCK_DIR:?}" "$tmp/claimed"
+    stub=$opts$window
+    [ "$how" = true ] || stub=$opts$liar$window
+    case $when in
+      retaken | old) holders="B" want=222 ret=1 ok="B alone holds the slot B took while it was reclaimed ($when)" ;;
+      reused) holders="B" want=111 ret=1 ok="B alone holds the slot B took while it was reclaimed ($when)" ;;
+      dead | planted) holders="C" want=333 ret=0 ok="C alone holds the slot it claimed while it was reclaimed ($when)" ;;
+      late | both) holders="C" want=333 ret=any ok="C alone holds the slot it claimed while two reclaimers ran ($when)" ;;
+    esac
+    "$shell" -c '
+      . "$1"
+      idle=$2/idle
+      eval "$3"
+      _t_how=$4 _t_in="" _t_c="" _t_late="" _t_reused=""
+      _gl_dir || exit 1
+      _gl_s=$_gl_d/gate.generator
+      _gl_me=111
+      _gl_claim wt-dead || { echo "the claim of the dead holder failed"; exit 1; }
+      [ "$4" != planted ] || echo 999 > "$_gl_d/.seen.444"
+      _gl_me=444
+      got=0
+      _gl_reclaim > /dev/null || got=$?
+      _t_in=""
+      made=$(tr "\n" " " < "$2/claimed" 2>/dev/null)
+      made=${made% }
+      [ "$made" = "$5" ] || { echo "the holders are ${made:-none}, not $5"; exit 1; }
+      owner=""
+      read -r owner _ < "$_gl_s/owner"
+      [ "$owner" = "$6" ] || { echo "the owner file names $owner, not $6"; exit 1; }
+      [ "$7" = any ] || [ "$got" = "$7" ] || { echo "_gl_reclaim returned $got, not $7"; exit 1; }
+      [ "$(ls -A "$_gl_s")" = owner ] || { echo "the slot holds $(ls -A "$_gl_s" | tr "\n" " ")"; exit 1; }
+      [ "$(ls -A "$_gl_d")" = gate.generator ] || { echo "the lock holds $(ls -A "$_gl_d" | tr "\n" " ")"; exit 1; }
+    ' "$shell" "$script" "$tmp" "$stub" "$when" "$holders" "$want" "$ret" ||
+      fail "under $run, beside a $how mkdir, a claim while the slot was reclaimed ($when) left the wrong holders"
+    echo "ok: under $run, beside a $how mkdir, $ok"
+  done
 done
 
 # Load generators. Two generators ask at once for every slot, each in a shell
