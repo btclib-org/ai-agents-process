@@ -301,7 +301,12 @@ of the standard* says.
   that reads one, and exits `0`. The paths are read as the sandbox's
   hooks block reads them (*An outside contributor's branch*):
   NUL-terminated, each as `./<path>`, a deleted file left out, and
-  `--all-files` where the diff only deletes. A hook with
+  `--all-files` where the diff only deletes. Every `git diff` in this file
+  that lists paths passes `--no-relative --ignore-submodules=none`, as
+  `scripts/port-check.py`'s `DIFF` does: without them, `ignore = all` in
+  `.gitmodules`, which a branch can add, or `diff.ignoreSubmodules`
+  drops a changed gitlink, and `diff.relative` run from a subdirectory
+  drops every path. A hook with
   `pass_filenames: false` or `always_run: true` still reads what its own
   command reads, as btclib-node's `core-citation-pin` reads what `git
   ls-files` lists. Where the tree's gates hold no suite and the diff
@@ -336,7 +341,7 @@ of the standard* says.
   list=$(mktemp "${TMPDIR:-/tmp}/hooks.XXXXXX")
   if ! mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) ||
     ! git -C "${wt:?}" diff -z --cached --name-only --diff-filter=d \
-      "${mb:?}" >| "$list"; then
+      --no-relative --ignore-submodules=none "${mb:?}" >| "$list"; then
     rc=2
   else
     while IFS= read -r -d '' name; do
@@ -381,7 +386,7 @@ of the standard* says.
     rc=2
   elif ! mb=$(git -C "${wt:?}" merge-base "${base:?}" HEAD) ||
     ! git -C "${wt:?}" diff -z --cached --name-only --no-renames \
-      "${mb:?}" >| "$list"; then
+      --no-relative --ignore-submodules=none "${mb:?}" >| "$list"; then
     rc=2
   else
     while IFS= read -r -d '' name; do
@@ -418,8 +423,10 @@ of the standard* says.
   ```shell
   wt=<wt>
   m=<merge>
-  a=$(git -C "${wt:?}" diff --name-only --no-renames "${m:?}^2...${m:?}^1") &&
-    b=$(git -C "${wt:?}" diff --name-only --no-renames "${m:?}^1" "${m:?}") &&
+  a=$(git -C "${wt:?}" diff --name-only --no-renames --no-relative \
+    --ignore-submodules=none "${m:?}^2...${m:?}^1") &&
+    b=$(git -C "${wt:?}" diff --name-only --no-renames --no-relative \
+      --ignore-submodules=none "${m:?}^1" "${m:?}") &&
     (set -o pipefail; printf '%s\n' "$a" "$b" | grep . | sort | uniq -d)
   ```
 
@@ -913,7 +920,8 @@ of the standard* says.
   files=()
   list=$(mktemp)
   if ! git -C "${wt:?}" diff -z --name-only --diff-filter=d \
-    "${base:?}...${sha:?}" >| "$list"; then
+    --no-relative --ignore-submodules=none "${base:?}...${sha:?}" >| "$list"
+  then
     rc=2
   else
     while IFS= read -r -d '' name; do
