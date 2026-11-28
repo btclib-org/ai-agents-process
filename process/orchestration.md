@@ -118,15 +118,26 @@ which role reads this file, and where a section named in italics is.
   whose diff is Markdown only runs at effort `medium`, which that call's
   `effort` sets over the definition's. Where `CLAUDE_CODE_EFFORT_LEVEL`
   is set, it wins over that call's `effort` too. The diff is Markdown
-  only where every path
-  `git diff -z --name-only --no-renames <base>...<head>` prints ends in
-  `.md`, `<base>` being the branch it targets. The class is read when
-  the reviewer is started, and a resumed reviewer keeps its effort. On
-  the cases of the replay set whose diff is Markdown only, the reviewer
-  at `medium` lost no hit of the `high` baseline in the run for ISS
-  btclib-org/ai-agents-process#588 in `replay-set.md`'s *Runs*. On any
-  other branch it stays at `high` until a run of the replay set decides
-  it.
+  only where every path this prints ends in `.md`, `<base>` being the
+  branch it targets:
+
+  ```shell
+  wt=<wt>
+  base=<base>
+  head=<head>
+  ```
+
+  ```shell
+  git -C "${wt:?}" diff -z --name-only --no-renames --no-relative \
+    --ignore-submodules=none "${base:?}...${head:?}"
+  ```
+
+  The class is read when the reviewer is started, and a resumed reviewer
+  keeps its effort. On the cases of the replay set whose diff is
+  Markdown only, the reviewer at `medium` lost no hit of the `high`
+  baseline in the run for ISS btclib-org/ai-agents-process#588 in
+  `replay-set.md`'s *Runs*. On any other branch it stays at `high` until
+  a run of the replay set decides it.
 - **A worker that exceeds the time you set is interrupted**, not waited
   for.
 - **Writing runs in parallel; heavy gating runs under the gate lock**
