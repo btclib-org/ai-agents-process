@@ -68,47 +68,64 @@ main conversation's auto memory is not loaded into a non-fork subagent
 startup*](https://code.claude.com/docs/en/sub-agents#what-loads-at-startup)),
 but in the runs of 2026-11-20 `reviewer` agents cited a line of it.
 
-A switch keeps the index from one reviewer. One is `omitClaudeMd: true`
-in the agent's definition, which drops the instruction files too. The
-others serve a reviewer that `claude -p` starts as a process of its own:
-the variable `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`, or `autoMemoryEnabled`
-set to `false` in the settings that `--settings` passes. A later
-`--settings` replaces an earlier one, so the setting goes inside the one
-the run already passes, as the sandbox's in `orchestration.md`'s
-*Starting the reviewer in the other client*. On 2026-11-21, at Claude
-Code 2.1.330, a subagent defined with `omitClaudeMd: true` reported
-neither a `MEMORY.md` nor a `CLAUDE.md` block in its context, and one
-with `false` reported both. A plain `claude -p` session, started from a
-directory whose project holds an index, reported no `MEMORY.md` block
-with either of the other switches, and reported one without them. The
-reviewer that section starts, run from its own new directory, whose
-project holds no index, reported none with no switch; with the same
-flags from a directory whose project holds one, and the definition
-passed by `--agents`, it reported one, and none with the setting inside
-the sandbox's settings. `agents/reviewer.md` sets no `omitClaudeMd`, so
-a reviewer the `Agent` tool starts from it carries the index, and the
-run records and discards as below. Whether a run should start its
-reviewers with a switch is the question of ISS
-btclib-org/ai-agents-process#739. The agent definition belongs to the
-configuration under test. The instruction files and the index belong to
-neither the configuration nor the case, and either can state the change
-under test or a case's finding, as a note of the maintainer's answer
-that a candidate turns into a rule does.
+A Codex reviewer, started as `orchestration.md`'s *Starting the reviewer
+in the other client* says, carries its own. Its instruction file is
+`~/.codex/AGENTS.md`, and its index is the memory summary,
+`~/.codex/memories/memory_summary.md`, under a `## Memory` heading that
+points to `MEMORY.md` beside it for a search. On 2026-11-27, at Codex
+0.169.0, a run started that way, from a new directory of the scratchpad
+that no git repository holds, with a brief asking for one word, recorded
+both files whole in its session record under `~/.codex/sessions/`. It
+recorded no `AGENTS.md` of its working directory, which held none. That
+machine's `~/.codex/config.toml` set `memories = true` under
+`[features]` and `use_memories = true` under `[memories]`. Which of the
+two decides whether the summary loads is not measured. The screen below
+reads the names of both files.
+
+A switch keeps Claude Code's index from one reviewer. One is
+`omitClaudeMd: true` in the agent's definition, which drops the
+instruction files too. The others serve a reviewer that `claude -p`
+starts as a process of its own: the variable
+`CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`, or `autoMemoryEnabled` set to
+`false` in the settings that `--settings` passes. A later `--settings`
+replaces an earlier one, so the setting goes inside the one the run
+already passes, as the sandbox's in `orchestration.md`'s *Starting the
+reviewer in the other client*. On 2026-11-21, at Claude Code 2.1.330, a
+subagent defined with `omitClaudeMd: true` reported neither a
+`MEMORY.md` nor a `CLAUDE.md` block in its context, and one with `false`
+reported both. A plain `claude -p` session, started from a directory
+whose project holds an index, reported no `MEMORY.md` block with either
+of the other switches, and reported one without them. The reviewer that
+section starts, run from its own new directory, whose project holds no
+index, reported none with no switch; with the same flags from a
+directory whose project holds one, and the definition passed by
+`--agents`, it reported one, and none with the setting inside the
+sandbox's settings. `agents/reviewer.md` sets no `omitClaudeMd`, so a
+reviewer the `Agent` tool starts from it carries the index, and the run
+records and discards as below. Whether a run should start its reviewers
+with a switch is the question of ISS btclib-org/ai-agents-process#739.
+The agent definition belongs to the configuration under test. The
+instruction files and the index belong to neither the configuration nor
+the case, and either can state the change under test or a case's
+finding, as a note of the maintainer's answer that a candidate turns
+into a rule does.
 
 So the reviewer may carry them, and may rest no finding on them. Before
 the first reviewer starts, and again after the last verdict, since other
 sessions write the index meanwhile, the orchestrator reads the
-instruction files and the index the session loaded. The run's entry
-names, in its own words and quoting none of it, each note of either that
-states the change under test or a case's finding, or says that none
-does. The brief says that neither is a ground for a finding, and has the
-verdict end with the line `Outside the brief: none`, or with `Outside
-the brief:` followed by each note of either that the verdict relies on
-or quotes. The orchestrator saves each verdict to a file in its own
-`<scratch>`, outside `<work>/reviewer/<name>`, which the run removes.
-This prints `unaided` only where the file's last line that holds text is
-`Outside the brief: none`, and where no line holds, case ignored, any of
-these:
+instruction files and the index its reviewers carry, as above. The run's
+entry names, in its own words and quoting none of it, each note of
+either that states the change under test or a case's finding, or says
+that none does. The brief says that neither is a ground for a finding,
+and has the verdict end with the line `Outside the brief: none`, or with
+`Outside the brief:` followed by each note of either that the verdict
+relies on or quotes. That line comes last, after the coverage list that
+`local-review.md`'s *The rounds* has a first verdict end with and after
+whatever follows that list, so that the block below reads it. The
+orchestrator saves each verdict to a file in its own `<scratch>`,
+outside `<work>/reviewer/<name>`, which the run removes. This prints
+`unaided` only where the file's last line that holds text is `Outside
+the brief: none`, and where no line holds, case ignored, any of these:
 
 - `memory.md` or `claude.md`;
 - `auto` and `memory` with at most one character between them;
@@ -116,7 +133,10 @@ these:
 - `session`, then any characters other than a space, or none, then a
   space and `memory`, as in "session's memory";
 - `instruction file`, `global instruction` or `persistent note`;
-- `projects/` and then `/memory` with no space between them.
+- `projects/` and then `/memory` with no space between them;
+- `memory_summary`, or `.codex/` directly followed by `agents.md` or
+  `memories`;
+- `oai-mem-citation`, `rollout_summary` or `rollout_summaries`.
 
 ```shell
 v=<verdict>
@@ -125,12 +145,23 @@ v=<verdict>
 ```shell
 last=$(grep -v '^[[:space:]]*$' "${v:?}" | tail -n 1) &&
   [ "$last" = 'Outside the brief: none' ] &&
-  { rc=0; grep -n -i -E -e 'memory\.md|claude\.md|auto.?memory' \
+  { rc=0; LC_ALL=C.UTF-8 grep -n -i -E \
+    -e 'memory\.md|claude\.md|auto.?memory' \
     -e 'memory (index|note|file|director)|session[^ ]* memory' \
     -e 'instruction file|global instruction|persistent note' \
-    -e 'projects/[^ ]*/memory' "$v" || rc=$?; [ "$rc" -eq 1 ]; } &&
+    -e 'projects/[^ ]*/memory|memory_summary' \
+    -e 'oai-mem-citation|rollout_summary|rollout_summaries' \
+    -e '\.codex/(agents\.md|memories)' "$v" || rc=$?; [ "$rc" -eq 1 ]; } &&
   echo unaided
 ```
+
+The second `grep` runs in the `C.UTF-8` locale, which `locale -a` lists
+on macOS, so that "at most one character" counts a character of UTF-8,
+not a byte, whatever the caller's locale. Under `LC_ALL=C`,
+`/usr/bin/grep` reads U+00A0 as two bytes and U+2013 as three, and the
+block without the pin prints `unaided` for `auto` and `memory` joined by
+either. A locale the system lacks raises no error, and the block then
+misses them too.
 
 It is a first screen: a verdict can name the index or an instruction
 file in other words, or across a line break, so `unaided` does not show
