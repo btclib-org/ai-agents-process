@@ -118,8 +118,11 @@ which role reads this file, and where a section named in italics is.
   whose diff is Markdown only runs at effort `medium`, which that call's
   `effort` sets over the definition's. Where `CLAUDE_CODE_EFFORT_LEVEL`
   is set, it wins over that call's `effort` too. The diff is Markdown
-  only where every path this prints ends in `.md`, `<base>` being the
-  branch it targets:
+  only where each entry this prints has a path that ends in `.md`, and
+  neither of its modes, the two fields after its leading `:`, is
+  `120000`, a symbolic link, or `160000`, a gitlink. With `-z` an
+  entry's path follows its fields after a NUL. `<base>` is the branch it
+  targets:
 
   ```shell
   wt=<wt>
@@ -128,7 +131,7 @@ which role reads this file, and where a section named in italics is.
   ```
 
   ```shell
-  git -C "${wt:?}" diff -z --name-only --no-renames --no-relative \
+  git -C "${wt:?}" diff -z --raw --no-renames --no-relative \
     --ignore-submodules=none "${base:?}...${head:?}"
   ```
 
